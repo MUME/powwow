@@ -1,0 +1,34 @@
+There is a sample module included to test module support.  To build
+it run:
+
+make plugtest.so
+
+from your powwow source directory.  This will build a test plugin that
+can be loaded using:
+
+#module plugtest
+
+If it works, when you do "#help" you will see a new command called 
+"#plugtest" that is listed.  It will just echo the arguments back
+to the terminal.  This is the minimum required to make a functional
+module for powwow 1.2.7 and later.
+
+Modules are loaded using the libdl interface with RTLD_LAZY so that
+symbol resolution is deferred until as late as possible.  This means
+that you should test any commands you create since just because a 
+module loads, that doesn't mean that there are no undefined references.
+
+The basic requirements for a module are:
+
+1) define a cmdstruct with your command name, help text, and function to
+   call
+2) add your cmdstruct to the global command list via cmd_add_command in
+   your powwow_init function.  You can also initialize anything else you
+   need here, it will be called once at module load time.
+3) perform whatever extentions you want at runtime in your custom functions
+
+For a more complete example, you should look at the powwow-perl package
+which creates the bindings from powwow using the #perl command and allows
+access to powwow internals from perl via the powwow:: namespace in perl.
+It also includes autoconf support and is probably the most complete
+module for powwow currently.
