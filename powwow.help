@@ -114,6 +114,21 @@ Wildcards are allowed ($ for a single word, & for any string). Examples:
 #mark Sizzler=				(Sizzler is no longer put in bold)
 #mark					(lists all markers)
 #mark *&*=inverse			(mark in reverse any string in * *)
+@module
+#module [module name]
+
+This loads a shared library module by name, if supported by your system.  The
+name of the module should be included in the documentation that came with the
+powwow extension, for example to load the perl module you would use:
+
+#module perl
+
+Which gives you the perl command that can be used like:
+
+#perl powwow::exec( "say it is " . scalar(localtime()) )
+
+The commands added and their syntax varies depending on the module.
+
 @history
 #history [number]
 
