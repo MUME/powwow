@@ -142,7 +142,7 @@ void abort_edit_fd __P1 (int,fd)
 	    continue;
 	}
 
-	PRINTF("#aborted `%s' (%u)\n", p->descr, p->key);
+	PRINTF("#aborted \"%s\" (%u)\n", p->descr, p->key);
 	p->cancel = 1;
     }
 }
@@ -160,7 +160,7 @@ void cancel_edit __P1 (editsess *,sp)
 	errmsg("kill editor child");
 	return;
     }
-    PRINTF("#killed `%s' (%u)\n", sp->descr, sp->key);
+    PRINTF("#killed \"%s\" (%u)\n", sp->descr, sp->key);
     sprintf(keystr, "C%u\n", sp->key);
     sprintf(buf, "%sE%d\n%s", MPI, (int)strlen(keystr), keystr);
     tcp_write(sp->fd, buf);

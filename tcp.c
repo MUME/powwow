@@ -769,7 +769,7 @@ void tcp_open __P4 (char *,id, char *,initstring, char *,host, int,port)
 	return;
     }
     if (tcp_find(id)>=0) {
-	PRINTF("#connection `%s' already open.\n", id);
+	PRINTF("#connection \"%s\" already open.\n", id);
 	return;
     }
     
@@ -816,7 +816,7 @@ void tcp_open __P4 (char *,id, char *,initstring, char *,host, int,port)
     tcp_count++;
 
     if (echo_int && tcp_count) {
-	PRINTF("#default connection is now `%s'\n", id);
+	PRINTF("#default connection is now \"%s\"\n", id);
     }
     tcp_set_main(tcp_fd = newtcp_fd);
     if (opt_sendsize)
@@ -845,7 +845,7 @@ void tcp_close __P1 (char *,id)
     
     if (id) {  /* #zap cmd */
 	if ((sfd = tcp_find(id)) < 0) {
-	    tty_printf("#no such connection: `%s'\n", id);
+	    tty_printf("#no such connection: \"%s\"\n", id);
 	    return;
 	}
     } else
@@ -856,7 +856,7 @@ void tcp_close __P1 (char *,id)
 
     abort_edit_fd(sfd);
     
-    tty_printf("#connection on `%s' closed.\n", CONN_LIST(sfd).id);
+    tty_printf("#connection on \"%s\" closed.\n", CONN_LIST(sfd).id);
     
     if (sfd == tcp_main_fd) { /* main connection closed */
 	if (tcp_count == 1) { /* was last connection */
@@ -870,7 +870,7 @@ void tcp_close __P1 (char *,id)
 		if (!CONN_INDEX(i).id || CONN_INDEX(i).fd == sfd
 		    || (CONN_INDEX(i).flags & SPAWN))
 		    continue;
-		tty_printf("#default connection is now `%s'\n", CONN_INDEX(i).id);
+		tty_printf("#default connection is now \"%s\"\n", CONN_INDEX(i).id);
 		tcp_main_fd = CONN_INDEX(i).fd;
 		break;
 	    }
@@ -940,7 +940,7 @@ void tcp_spawn __P2 (char *,id, char *,cmd)
     int i, childpid, sockets[2];
 
     if (tcp_find(id)>=0) {
-	PRINTF("#connection `%s' already open.\n", id);
+	PRINTF("#connection \"%s\" already open.\n", id);
 	return;
     }
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0) {
@@ -1011,7 +1011,7 @@ void tcp_spawn __P2 (char *,id, char *,cmd)
 	conn_max_index = i+1;
     
     if (echo_int) {
-	PRINTF("#successfully spawned `%s' with pid %d\n", id, childpid);
+	PRINTF("#successfully spawned \"%s\" with pid %d\n", id, childpid);
     }
     
     /*

@@ -79,7 +79,7 @@ INSTALLING
 	type M-x server-start).
 
 	If you want to use the editing functions, you must execute the
-	`#identify' command to notify the server that the client supports the
+	"#identify" command to notify the server that the client supports the
 	protocol. This can also be done with an action; see the documentation
 	for details.
 

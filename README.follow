@@ -3,15 +3,15 @@
 
 This mini-program is mainly intended for debugging powwow.
 It is completely standalone, and needs to be called with a file-name
-(example: `follow mycapture').
-Hitting ESC or ^C quits `follow', hitting RETURN prints the next line
+(example: "follow mycapture").
+Hitting ESC or ^C quits "follow", hitting RETURN prints the next line
 of the file, any other key prints the next character (only one) of the file
 
 I know it is a _stupid_ program, but it is useful if you find screen-related
 bugs in powwow, i.e. powwow does not print some lines or prints something
 wrong.
 In that case, if you redirect powwow output to a file and reproduce the bug,
-you can use `follow your-filename' to examine the file and see what is wrong
+you can use "follow your-filename" to examine the file and see what is wrong
 
 How to send a copy of powwow output to a file:
 powwow your-arguments | tee your-filename

@@ -30,7 +30,7 @@ int argc; char *argv[];
     if (strstr(argv[0], "movie_play"))
 	play = 1;
     else if (!strstr(argv[0], "movie2ascii")) {
-	fprintf(stderr, "Please run this program as `movie_play' or `movie2ascii'\n");
+	fprintf(stderr, "Please run this program as \"movie_play\" or \"movie2ascii\"\n");
 	return 1;
     }
     
@@ -39,7 +39,7 @@ int argc; char *argv[];
 	    infile = fopen(argv[1], "rb");
 	    outfile = stdout;
 	    if (infile == NULL) {
-		fprintf(stderr, "Error opening input file `%s'\n", argv[1]);
+		fprintf(stderr, "Error opening input file \"%s\"\n", argv[1]);
 		return 1;
 	    }
 	} else {
@@ -51,11 +51,11 @@ int argc; char *argv[];
 	    infile = fopen(argv[1], "rb");
 	    outfile = fopen(argv[2], "wb");
 	    if (infile == NULL) {
-		fprintf(stderr, "Error opening input file `%s'\n", argv[1]);
+		fprintf(stderr, "Error opening input file \"%s\"\n", argv[1]);
 		return 1;
 	    }
 	    if (outfile == NULL) {
-		fprintf(stderr, "Error opening output file `%s'\n", argv[2]);
+		fprintf(stderr, "Error opening output file \"%s\"\n", argv[2]);
 		return 1;
 	    }
 	} else {

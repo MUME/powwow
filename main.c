@@ -31,6 +31,7 @@
  */
 
 #define POWWOW_VERSION VERSION ", Copyright 2000-2005 by Cosmos\n" \
+                                " Copyright 2005 by bpk - http://hoopajoo.net\n" \
 				"(contributions by Yorick, Vivriel, Thuzzle, Ilie, Fror, Dain)\n"
 #define HELPNAME "powwow.help"
 #define COPYNAME "COPYING"
@@ -318,9 +319,9 @@ int main __P2 (int,argc, char **,argv)
     
     if (argc == 1) {
 	tty_printf(
-"\nPowwow comes with ABSOLUTELY NO WARRANTY; for details type `#help warranty'.\n\
+"\nPowwow comes with ABSOLUTELY NO WARRANTY; for details type \"#help warranty\".\n\
 This is free software, and you are welcome to redistribute it\n\
-under certain conditions; type `#help copyright' for details.\n"
+under certain conditions; type \"#help copyright\" for details.\n"
 		   );
     }
     
@@ -841,7 +842,7 @@ static int process_first_fragment __P2 (char *,buf, int,got)
 	     * Kludge for kludge: don't delete the old prompt immediately.
 	     * Instead, match actions on it first.
 	     * If it matches, clear the line before running the action
-	     * (done by the `1' in search_action() )
+	     * (done by the "1" in search_action() )
 	     * If it doesn't match, delete it only if opt_compact != 0
 	     */
 	    
@@ -1135,7 +1136,7 @@ static int match_weak_action __P4 (char *,pat, char *,line, int *,match_s, int *
 		if (c == '$')
 		    mword = 1;
 	    } else {
-		PRINTF("#error: bad action pattern `%s\'\n#missing digit after `%s\'\n",
+		PRINTF("#error: bad action pattern \"%s\"\n#missing digit after \"%s\"\n",
 		       realpat, pat);
 		DROP_PTR(pbuf);
 		return 0;
@@ -1222,7 +1223,7 @@ static int match_weak_action __P4 (char *,pat, char *,line, int *,match_s, int *
 static int search_action_or_prompt __P3 (char *,line, char,clearline, char,onprompt)
 {
     /*
-     * we need actionnode and promptnode to be the same `triggernode' type
+     * we need actionnode and promptnode to be the same "triggernode" type
      */
     triggernode *p;
     int ret = 0;
@@ -1614,7 +1615,7 @@ char *parse_instruction __P4 (char *,line, char,silent, char,subs, char,jit_subs
 	    otcp_fd = tcp_fd;
 	    if ((tcp_fd = tcp_find(buf))<0) {
 		error = OUT_RANGE_ERROR;
-		PRINTF("#no connection named `%s'\n", buf);
+		PRINTF("#no connection named \"%s\"\n", buf);
 		break;
 	    }
 	    arg = skipspace(line);
@@ -1669,7 +1670,7 @@ char *parse_instruction __P4 (char *,line, char,silent, char,subs, char,jit_subs
 		    pop_params();
 		
 		/* now check for internal commands */
-		/* placed here to allow also aliases starting with `#' */
+		/* placed here to allow also aliases starting with "#" */
 	    } else if (*(end = skipspace(line)) == '#') {
 		
 		if (*(end = skipspace(end + 1)) == '(') {    /* execute #() */
@@ -1742,7 +1743,7 @@ static void parse_commands __P2 (char *,command, char *,arg)
 		}
 	    }
 
-	PRINTF("#unknown powwow command `%s'\n", command);
+	PRINTF("#unknown powwow command \"%s\"\n", command);
     }
 }
 
@@ -1827,7 +1828,7 @@ static int subst_param __P2 (ptr *,buf, char *,src)
 /*
  * just-in-time substitution:
  * substitute ${name}, @{name} and #{expression} in a string 
- * (unless `${', `@{' or `#{' are escaped with backslash)
+ * (unless "${", "@{" or "#{" are escaped with backslash)
  * 
  * return 0 if dst not filled. if returned 0 and not error,
  * there was nothing to substitute.

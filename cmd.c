@@ -77,7 +77,7 @@ cmdstruct *commands = NULL;
 cmdstruct default_commands[] =
 {
     {NULL,"help", "[keys|math|command]\tthis text, or help on specified topic", cmd_help,NULL},
-    {NULL,"17", "command\t\t\trepeat `command' 17 times", (function_str)0,NULL},
+    {NULL,"17", "command\t\t\trepeat \"command\" 17 times", (function_str)0,NULL},
 #ifndef NO_SHELL
     {NULL,"!", "shell-command\t\texecute a shell command using /bin/sh", cmd_shell,NULL},
 #endif
@@ -96,22 +96,22 @@ cmdstruct default_commands[] =
     {NULL,"connect", "[connect-id [initstr] [address port]\topen a new connection", cmd_connect,NULL},
     {NULL,"cpu", "\t\t\t\tshow CPU time used by powwow", cmd_cpu,NULL},
     {NULL,"delim", "[normal|program|{custom [chars]}]\n\t\t\t\tset word completion delimeters", cmd_delim,NULL},
-    {NULL,"do", "(expr) command\t\trepeat `command' (expr) times", cmd_do,NULL},
+    {NULL,"do", "(expr) command\t\trepeat \"command\" (expr) times", cmd_do,NULL},
     {NULL,"edit", "\t\t\t\tlist editing sessions", cmd_edit,NULL},
     {NULL,"emulate", "[<|!]{text|(expr)}\tprocess result as if received from host", cmd_emulate,NULL},
     {NULL,"exe", "[<|!]{text|(string-expr)}\texecute result as if typed from keyboard", cmd_exe,NULL},
     {NULL,"file", "[=[filename]]\t\tset/show powwow definition file", cmd_file,NULL},
-    {NULL,"for", "([init];check;[loop]) command\twhile `check' is true exec `command'", cmd_for,NULL},
-    {NULL,"group", "[name] [on|off|list]\tgroup alias/action manipulation'", cmd_group,NULL},
+    {NULL,"for", "([init];check;[loop]) command\twhile \"check\" is true exec \"command\"", cmd_for,NULL},
+    {NULL,"group", "[name] [on|off|list]\tgroup alias/action manipulation", cmd_group,NULL},
     {NULL,"hilite", "[attr]\t\t\thighlight your input line", cmd_hilite,NULL},
     {NULL,"history", "[{number|(expr)}]\tlist/execute commands in history", cmd_history,NULL},
     {NULL,"host", "[hostname port]]\tset/show address of default host", cmd_host,NULL},
     {NULL,"identify", "[startact [endact]]\tsend MUME client identification", cmd_identify,NULL},
-    {NULL,"if", "(expr) instr1 [; #else instr2]\tif `expr' is true execute `instr1'\n\t\t\t\totherwise execute `instr2'", cmd_if,NULL},
+    {NULL,"if", "(expr) instr1 [; #else instr2]\tif \"expr\" is true execute \"instr1\"\n\t\t\t\totherwise execute \"instr2\"", cmd_if,NULL},
     {NULL,"in", "[label [(delay) [command]]]\tdelete/list/define delayed labels", cmd_in,NULL},
     {NULL,"init", "[=[command]]\t\tdefine command to execute on connect to host", cmd_init,NULL},
     {NULL,"isprompt", "\t\t\trecognize a prompt as such", cmd_isprompt,NULL},
-    {NULL,"key", "name\t\t\texecute the `name' key binding", cmd_key,NULL},
+    {NULL,"key", "name\t\t\texecute the \"name\" key binding", cmd_key,NULL},
     {NULL,"keyedit", "editing-name\t\trun a line-editing function", cmd_keyedit,NULL},
     {NULL,"load", "[filename]\t\tload powwow settings from file", cmd_load,NULL},
 #ifdef HAVE_LIBDL
@@ -149,8 +149,8 @@ cmdstruct default_commands[] =
     {NULL,"time", "\t\t\t\tprint current time and date", cmd_time,NULL},
     {NULL,"var", "variable [= [<|!]{string|(expr)} ]\twrite result into the variable", cmd_var,NULL},
     {NULL,"ver", "\t\t\t\tshow powwow version", cmd_ver,NULL},
-    {NULL,"while", "(expr) instr\t\twhile `expr' is true execute `instr'", cmd_while,NULL},
-    {NULL,"write", "[>|!](expr;name)\t\twrite result of expr to `name' file", cmd_write,NULL},
+    {NULL,"while", "(expr) instr\t\twhile \"expr\" is true execute \"instr\"", cmd_while,NULL},
+    {NULL,"write", "[>|!](expr;name)\t\twrite result of expr to \"name\" file", cmd_write,NULL},
     {NULL,"zap", "connect-id\t\t\tclose a connection", cmd_zap,NULL},
     {NULL,(char *)0, (char *)0, (function_str)0,NULL}
 };
@@ -398,7 +398,7 @@ static void cmd_help __P1 (char *,arg)
     
     f = fopen(helpfile, "r");
     if (!f) {
-	PRINTF("#cannot open help file `%s': %s\n",
+	PRINTF("#cannot open help file \"%s\": %s\n",
 	       helpfile, strerror(errno));
 	return;
     }
@@ -408,7 +408,7 @@ static void cmd_help __P1 (char *,arg)
 	;
 	    
     if (!tmp) {
-	PRINTF("#no entry for `%s' in the help file.\n", arg);
+	PRINTF("#no entry for \"%s\" in the help file.\n", arg);
 	fclose(f);
 	return;
     }
@@ -532,7 +532,7 @@ static void cmd_delim __P1 (char *,arg)
 
     arg = skipspace(arg);
     if (!*arg) {
-	PRINTF("#delim: `%s' (%s)\n", delim_name[delim_mode], DELIM);
+	PRINTF("#delim: \"%s\" (%s)\n", delim_name[delim_mode], DELIM);
 	return;
     }
 
@@ -594,7 +594,7 @@ static void cmd_do __P1 (char *,arg)
 	while (!error && result--)
 	    (void)parse_instruction(arg, 1, 0, 1);
     else {
-	PRINTF("#do: bogus repeat count `%ld'\n", result);
+	PRINTF("#do: bogus repeat count \"%ld\"\n", result);
     }
 }
 
@@ -751,7 +751,7 @@ static void cmd_in __P1 (char *,arg)
     if (!*p)  p = lookup_delay(name, 1);
     
     if (!*arg && !*p) {
-	PRINTF("#unknown delay label, cannot show: `%s'\n", name);
+	PRINTF("#unknown delay label, cannot show: \"%s\"\n", name);
 	return;
     }
     if (!*arg) {
@@ -794,7 +794,7 @@ static void cmd_in __P1 (char *,arg)
 	}
 	delete_delaynode(p);
     } else {
-	PRINTF("#unknown delay label, cannot delete: `%s'\n", name);
+	PRINTF("#unknown delay label, cannot delete: \"%s\"\n", name);
     }
 }
 
@@ -824,7 +824,7 @@ static void cmd_at __P1 (char *,arg)
     if (!*p)  p = lookup_delay(name, 1);
     
     if (!*arg && !*p) {
-	PRINTF("#unknown delay label, cannot show: `%s'\n", name);
+	PRINTF("#unknown delay label, cannot show: \"%s\"\n", name);
 	return;
     }
     if (!*arg) {
@@ -861,7 +861,7 @@ static void cmd_at __P1 (char *,arg)
     if (hour < 0 || hour>23 || minute < 0 || minute>59
 	|| second < 0 || second>59) {
 	
-	PRINTF("#at: #error: invalid time `%s'\n",
+	PRINTF("#at: #error: invalid time \"%s\"\n",
 	       pbuf && buf ? buf : (char *)"");
 	error=OUT_RANGE_ERROR;
 	ptrdel(pbuf);
@@ -976,7 +976,7 @@ static void cmd_key __P1 (char *,arg)
     if ((q = *lookup_key(arg)))
 	q->funct(q->call_data);
     else {
-	PRINTF("#no such key: `%s'\n", arg);
+	PRINTF("#no such key: \"%s\"\n", arg);
     }
 }
 
@@ -992,7 +992,7 @@ static void cmd_keyedit __P1 (char *,arg)
     if ((function = lookup_edit_name(arg, &param)))
 	internal_functions[function].funct(param);
     else {
-	PRINTF("#no such editing function: `%s'\n", arg);
+	PRINTF("#no such editing function: \"%s\"\n", arg);
     }
 }
 
@@ -1260,7 +1260,7 @@ static void cmd_emulate __P1 (char *,arg)
 	
 	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
 	if (!fp) {
-	    PRINTF("#emulate: #error opening `%s'\n", arg);
+	    PRINTF("#emulate: #error opening \"%s\"\n", arg);
 	    print_error(error=SYNTAX_ERROR);
 	    ptrdel(pbuf);
 	    return;
@@ -1314,7 +1314,7 @@ static void cmd_exe __P1 (char *,arg)
 	
 	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
 	if (!fp) {
-	    PRINTF("#exe: #error opening `%s'\n", arg);
+	    PRINTF("#exe: #error opening \"%s\"\n", arg);
 	    error = SYNTAX_ERROR;
 	    ptrdel(pbuf);
 	    return;
@@ -1353,7 +1353,7 @@ static void cmd_print __P1 (char *,arg)
 	char buf[BUFSIZE];
 	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
 	if (!fp) {
-	    PRINTF("#print: #error opening `%s'\n", arg);
+	    PRINTF("#print: #error opening \"%s\"\n", arg);
 	    error=SYNTAX_ERROR;
 	    ptrdel(pbuf);
 	    return;
@@ -1384,7 +1384,7 @@ static void cmd_send __P1 (char *,arg)
 	char buf[BUFSIZE];
 	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
 	if (!fp) {
-	    PRINTF("#send: #error opening `%s'\n", arg);
+	    PRINTF("#send: #error opening \"%s\"\n", arg);
 	    error = SYNTAX_ERROR;
 	    ptrdel(pbuf);
 	    return;
@@ -1490,7 +1490,7 @@ static void cmd_write __P1 (char *,arg)
 	
 	fp = (kind == '!') ? popen(arg, "w") : fopen(arg, kind ? "w" : "a");
 	if (!fp) {
-	    PRINTF("#write: #error opening `%s'\n", arg);
+	    PRINTF("#write: #error opening \"%s\"\n", arg);
 	    error=SYNTAX_ERROR;
 	    goto write_cleanup2;
 	}
@@ -1565,7 +1565,7 @@ static void cmd_var __P1 (char *,arg)
 		if (REAL_ERROR)
 		    return;
 		if (echo_int) {
-		    PRINTF("#new variable: `%s'\n", arg - 1);
+		    PRINTF("#new variable: \"%s\"\n", arg - 1);
 		}
 	    } else {
 		print_error(error=UNDEFINED_VARIABLE_ERROR);
@@ -1661,11 +1661,11 @@ static void cmd_var __P1 (char *,arg)
 	/* R.I.P. named variables */
 	if (named_var) {
 	    if (is_permanent_variable(named_var)) {
-		PRINTF("#cannot delete variable: `%s'\n", arg - 1);
+		PRINTF("#cannot delete variable: \"%s\"\n", arg - 1);
 	    } else {
 		delete_varnode(p_named_var, kind);
 		if (echo_int) {
-		    PRINTF("#deleted variable: `%s'\n", arg - 1);
+		    PRINTF("#deleted variable: \"%s\"\n", arg - 1);
 		}
 	    }
 	} else if ((type = TYPE_TXT_VAR)) {
@@ -1724,7 +1724,7 @@ static void cmd_var __P1 (char *,arg)
 	char buf2[BUFSIZE];
 	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
 	if (!fp) {
-	    PRINTF("#var: #error opening `%s'\n", arg);
+	    PRINTF("#var: #error opening \"%s\"\n", arg);
 	    error=SYNTAX_ERROR;
 	    ptrdel(pbuf);
 	    return;
@@ -2022,9 +2022,9 @@ static void cmd_capture __P1 (char *,arg)
 		    append = 1;
 	    }
             if ((capturefile = fopen(arg, (append) ? "a" : "w")) == NULL) {
-                PRINTF("#error writing file `%s'\n", arg);
+                PRINTF("#error writing file \"%s\"\n", arg);
             } else if (echo_int) {
-                PRINTF("#capture to `%s' active, `#capture' ends.\n", arg);
+                PRINTF("#capture to \"%s\" active, \"#capture\" ends.\n", arg);
             }
         }
     }
@@ -2050,10 +2050,10 @@ static void cmd_movie __P1 (char *,arg)
             PRINTF("#movie already active.\n");
         } else {
             if ((moviefile = fopen(arg, "w")) == NULL) {
-                PRINTF("#error writing file `%s'\n", arg);
+                PRINTF("#error writing file \"%s\"\n", arg);
             } else {
 		if (echo_int) {
-		    PRINTF("#movie to `%s' active, `#movie' ends.\n", arg);
+		    PRINTF("#movie to \"%s\" active, \"#movie\" ends.\n", arg);
 		}
 		update_now();
 		movie_last = now;
@@ -2082,9 +2082,9 @@ static void cmd_record __P1 (char *,arg)
             PRINTF("#record already active.\n");
         } else {
             if ((recordfile = fopen(arg, "w")) == NULL) {
-                PRINTF("#error writing file `%s'\n", arg);
+                PRINTF("#error writing file \"%s\"\n", arg);
             } else if (echo_int) {
-                PRINTF("#record to `%s' active, `#record' ends.\n", arg);
+                PRINTF("#record to \"%s\" active, \"#record\" ends.\n", arg);
             }
         }
     }
@@ -2337,7 +2337,7 @@ keyecho speedwalk wrap autoprint reprint sendsize autoclear\n");
 		    reprint_clear();
 
 		/* as above, but always print status if
-		 * `#option info' alone was typed */
+		 * "#option info" alone was typed */
 		if (mode != MODE_REP && !*arg && count==1 &&
 		    (echo_int || (mode == MODE_TOGGLE && varp==&echo_int))) {
 		    PRINTF("#option %s is now o%s.\n", str[i],
@@ -2372,7 +2372,7 @@ static void cmd_file __P1 (char *,arg)
 	set_deffile(++arg);
 	if (echo_int) {
 	    if (*arg) {
-		PRINTF("#save-file set to `%s'\n", deffile);
+		PRINTF("#save-file set to \"%s\"\n", deffile);
 	    } else {
 		PRINTF("#save-file is now undefined.\n");
 	    }
@@ -2390,7 +2390,7 @@ static void cmd_save __P1 (char *,arg)
     if (*arg) {
 	set_deffile(arg);
 	if (echo_int) {
-	    PRINTF("#save-file set to `%s'\n", deffile);
+	    PRINTF("#save-file set to \"%s\"\n", deffile);
 	}
     } else if (!*deffile) {
 	PRINTF("#save-file not defined.\n");
@@ -2410,7 +2410,7 @@ static void cmd_load __P1 (char *,arg)
     if (*arg) {
 	set_deffile(arg);
 	if (echo_int) {
-	    PRINTF("#save-file set to `%s'\n", deffile);
+	    PRINTF("#save-file set to \"%s\"\n", deffile);
 	}
     }
     else if (!*deffile) {

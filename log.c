@@ -41,7 +41,7 @@ static int datasize  = 0;	/* size of circular string list */
 typedef struct logentry {
     enum linetype kind;
     long msecs;			/* millisecs to sleep if kind == SLEEP */
-    char *line;			/* pointer to string in `datalist' circular buffer */
+    char *line;			/* pointer to string in "datalist" circular buffer */
 } logentry;
 
 logentry *loglist;		/* circular (pointer to string) list */

@@ -88,12 +88,12 @@ static int check_alias __P1 (char *,name)
 	return 1;
     }
     if (*p == '{') {
-	PRINTF("#illegal beginning '{' in alias name: `%s'\n", name);
+	PRINTF("#illegal beginning '{' in alias name: \"%s\"\n", name);
 	error = INVALID_NAME_ERROR;
 	return 1;
     }
     if (strchr(name, ' ')) {
-	PRINTF("#illegal spaces in alias name: `%s'\n", name);
+	PRINTF("#illegal spaces in alias name: \"%s\"\n", name);
 	error = INVALID_NAME_ERROR;
 	return 1;
     }
@@ -129,13 +129,13 @@ static int check_alias __P1 (char *,name)
     }
 	
     if (!ok) {
-	PRINTF("#illegal non-escaped `;' in alias name: `%s'\n", name);
+	PRINTF("#illegal non-escaped ';' in alias name: \"%s\"\n", name);
 	error = INVALID_NAME_ERROR;
 	return 1;
     }
 	
     if (quotes || paren || braces) {
-	PRINTF("#warning: unbalanced%s%s%s in alias name `%s' may cause problems\n",
+	PRINTF("#warning: unbalanced%s%s%s in alias name \"%s\" may cause problems\n",
 	       quotes ? " \"\"" : "", paren ? " ()" : "", braces ? " {}" : "", name);
     }
 
@@ -178,7 +178,7 @@ void parse_alias __P1 (char *,str)
                 }
                 delete_aliasnode(np);
             } else {
-                PRINTF("#unknown alias, cannot delete: `%s'\n", left);
+                PRINTF("#unknown alias, cannot delete: \"%s\"\n", left);
             }
         } else {
             /* add/redefine alias */
@@ -221,7 +221,7 @@ void parse_alias __P1 (char *,str)
 		    (*np)->group == NULL ? "*" : (*np)->group,
 		    BUFSIZE-(int)strlen(buf)-9, (*np)->subst);
         } else {
-            PRINTF("#unknown alias, cannot show: `%s'\n", left);
+            PRINTF("#unknown alias, cannot show: \"%s\"\n", left);
         }
     }
 }
@@ -439,7 +439,7 @@ void parse_action __P2 (char *,str, int,onprompt)
 	/* '<' : remove action */
         if (assign == '<') {
             if (!np || !*np) {
-                PRINTF("#no %s, cannot delete label: `%s'\n",
+                PRINTF("#no %s, cannot delete label: \"%s\"\n",
 		       ONPROMPT, label);
             }
             else {
@@ -586,7 +586,7 @@ void parse_action __P2 (char *,str, int,onprompt)
 			BUFSIZE - 6 /*strlen(ONPROMPT)*/ - 7 - len - (int)strlen((*np)->pattern),
 			(*np)->command);
             } else {
-                PRINTF("#no %s, cannot list label: `%s'\n", ONPROMPT, label);
+                PRINTF("#no %s, cannot list label: \"%s\"\n", ONPROMPT, label);
             }
 	    
 	    /* '+', '-': turn action on/off */
@@ -600,7 +600,7 @@ void parse_action __P2 (char *,str, int,onprompt)
 			   (*np)->pattern, (sign == '+') ? "n" : "ff");
                 }
             } else {
-                PRINTF("#no %s, cannot turn o%s label: `%s'\n", ONPROMPT,
+                PRINTF("#no %s, cannot turn o%s label: \"%s\"\n", ONPROMPT,
 		       (sign == '+') ? "n" : "ff", label);
             }
         }
@@ -629,7 +629,7 @@ void parse_action __P2 (char *,str, int,onprompt)
             else if (np && *np)
 		delete_action(np);
             else {
-                PRINTF("#no action, cannot delete pattern: `%s'\n",
+                PRINTF("#no action, cannot delete pattern: \"%s\"\n",
 		       pattern);
                 return;
             }
@@ -641,7 +641,7 @@ void parse_action __P2 (char *,str, int,onprompt)
 			BUFSIZE - (int)strlen((*np)->pattern) - 10,
 			(*np)->command);
             } else {
-                PRINTF("#no action, cannot show pattern: `%s'\n", pattern);
+                PRINTF("#no action, cannot show pattern: \"%s\"\n", pattern);
             }
         }
     }
@@ -908,7 +908,7 @@ void parse_mark __P1 (char *,str)
 		    BUFSIZE-9, name);
 	    ptrdel(pbuf);
         } else {
-            PRINTF("#unknown marker, cannot show: `%s'\n", str);
+            PRINTF("#unknown marker, cannot show: \"%s\"\n", str);
         }
 	
     } else {
@@ -948,7 +948,7 @@ void parse_mark __P1 (char *,str)
 		}
 		delete_marknode(np);
 	    } else {
-		PRINTF("#unknown marker, cannot delete: `%s%s'\n",
+		PRINTF("#unknown marker, cannot delete: \"%s%s\"\n",
 		       mbeg ? "^" : "", pattern);
 	    }
         else {
@@ -1144,7 +1144,7 @@ char *read_seq __P2 (char *,name, int *,len)
     static char seq[CAPLEN];
     int i = 1, tmp;
     
-    PRINTF("#please press the key `%s' : ", name);
+    PRINTF("#please press the key \"%s\" : ", name);
     tty_flush();
 
     if ((tmp = get_one_char(0)) >= 0)
@@ -1255,7 +1255,7 @@ static void parse_bind_noninteractive __P1 (char *,arg)
     
     p = strchr(arg, ' ');
     if (!p) {
-        PRINTF("#syntax error: `#bind %s'\n", arg);
+        PRINTF("#syntax error: \"#bind %s\"\n", arg);
         return;
     }
     *(p++) = '\0';
@@ -1263,7 +1263,7 @@ static void parse_bind_noninteractive __P1 (char *,arg)
     
     p = unescape_seq(rawseq, p, &seqlen);
     if (!p[0] || !p[1]) {
-        PRINTF("#syntax error: `#bind %s %s'\n", arg, seq);
+        PRINTF("#syntax error: \"#bind %s %s\"\n", arg, seq);
         return;
     }
     *p++ = '\0';
@@ -1331,7 +1331,7 @@ void parse_bind __P1 (char *,arg)
 		    show_single_bind("deleting key binding:", np);
 		delete_keynode(npp);
             } else {
-                PRINTF("#no such key: `%s'\n", name);
+                PRINTF("#no such key: \"%s\"\n", name);
             }
         }
     } else {
@@ -1356,7 +1356,7 @@ void parse_bind __P1 (char *,arg)
 			np->call_data ? np->call_data : "");
 	    }
 	} else {
-            PRINTF("#no such key: `%s'\n", name);
+            PRINTF("#no such key: \"%s\"\n", name);
         }
     }
 }
@@ -1381,7 +1381,7 @@ void parse_rebind __P1 (char *,arg)
     
     kp = lookup_key(arg);
     if (!kp || !*kp) {
-	PRINTF("#no such key: `%s'\n", arg);
+	PRINTF("#no such key: \"%s\"\n", arg);
 	return;
     }
     
@@ -1416,7 +1416,7 @@ void parse_rebind __P1 (char *,arg)
 /*
  * evaluate an expression, or unescape a text.
  * set value of start and end line if <(expression...) or !(expression...)
- * if needed, use/malloc `pbuf' as buffer (on error, also free pbuf)
+ * if needed, use/malloc "pbuf" as buffer (on error, also free pbuf)
  * return resulting char *
  */
 char *redirect __P7 (char *,arg, ptr *,pbuf, char *,kind, char *,name, int,also_num, long *,start, long *,end)
@@ -1568,7 +1568,7 @@ void show_delaynode __P2 (delaynode *,p, int,in_or_at)
 		    BUFSIZE - LONGLEN - 9 - (int)strlen(p->name), p->command);
     } else {
 	(void)strftime(buf, BUFSIZE - 1, "%H:%M:%S", s);
-	PRINTF("#at (%s) #in (%ld) `%s' %s\n", buf, d, p->name, p->command);
+	PRINTF("#at (%s) #in (%ld) \"%s\" %s\n", buf, d, p->name, p->command);
     }
 }
 

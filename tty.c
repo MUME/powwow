@@ -347,7 +347,7 @@ void tty_bootstrap __P0 (void)
 	break;
      case 0:
 	fprintf(stderr,
-		"There is no entry for `%s' in the terminal data base.\n", term);
+		"There is no entry for \"%s\" in the terminal data base.\n", term);
 	fprintf(stderr,
 		"Please set your $TERM environment variable correctly.\n");
 	exit(1);
@@ -359,7 +359,7 @@ void tty_bootstrap __P0 (void)
 	    if (np->len) *np->len += i;
 	} else if (np->critic) {
 	    fprintf(stderr,
-		    "Your `%s' terminal is not powerful enough, missing `%s'.\n",
+		    "Your \"%s\" terminal is not powerful enough, missing \"%s\".\n",
 		    term, np->cap);
 	    exit(1);
 	}

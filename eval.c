@@ -113,7 +113,7 @@ char *error_msg[] = {
 	"numeric value expected",
 	"string expected",
 	"missing label",
-	"missing separator `;'",
+	"missing separator \";\"",
 	"#history recursion too deep",
 	"user break",
 	"too many defined variables",

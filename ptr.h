@@ -1,5 +1,5 @@
 /*
- *  ptr.h -- type definitions for ptr (aka `pointer'), a char* replacement
+ *  ptr.h -- type definitions for ptr (aka "pointer"), a char* replacement
  *           which allows for '\0' inside a string.
  */
 

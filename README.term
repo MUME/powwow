@@ -15,7 +15,7 @@ Edit any of the other variables you find neccessary.
 
 Read the original README for information you might need to know.
 
-Then do `make termpowwow'
+Then do "make termpowwow"
 
 Note: Unfortunately one of the setbacks of termpowwow is that it won't
 detect unknown hosts, nor will it detect if the host refused the connection. 

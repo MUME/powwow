@@ -851,7 +851,7 @@ static void load_missing_stuff __P1 (int,n)
 	parse_alias(buf);
 	limit_mem = 1048576;
 	tty_printf("#compatibility aliases loaded:\n\t%s\n", "#lines, #settimer");
-	tty_puts("#max text/strings length set to 1048576 bytes\n\tuse `#setvar mem' to change it\n\n#wait...");
+	tty_puts("#max text/strings length set to 1048576 bytes\n\tuse \"#setvar mem\" to change it\n\n#wait...");
 	tty_flush();
 	sleep(1);
 	tty_puts("ok\n");
@@ -880,7 +880,7 @@ int read_settings __P0 (void)
     
     f = fopen(deffile, "r");
     if (!f) {
-        PRINTF("#error: cannot open file `%s': %s\n", deffile, strerror(errno));
+        PRINTF("#error: cannot open file \"%s\": %s\n", deffile, strerror(errno));
 	return 0;
     }
 
@@ -941,7 +941,7 @@ int read_settings __P0 (void)
 	
 	if (!cmd) {
 	    if (feof(f)) {
-		PRINTF("#error: missing newline at end of file `%s'\n", deffile);
+		PRINTF("#error: missing newline at end of file \"%s\"\n", deffile);
 		break;
 	    }
 	    /* no newline yet. increase line size and try again */
@@ -981,7 +981,7 @@ int read_settings __P0 (void)
     if (error)
 	failed = -1;
     else if (ferror(f) && !feof(f)) {
-	PRINTF("#error: cannot read file `%s': %s\n", deffile, strerror(errno));
+	PRINTF("#error: cannot read file \"%s\": %s\n", deffile, strerror(errno));
         failed = -1;
     } else if (limit_mem_hit) {
 	PRINTF("#error: cannot load save-file: got a line longer than limit\n");
@@ -1006,7 +1006,7 @@ static char tmpname[BUFSIZE];
 
 static void fail_msg __P0 (void)
 {
-    PRINTF("#error: cannot write to temporary file `%s': %s\n", tmpname, strerror(errno));
+    PRINTF("#error: cannot write to temporary file \"%s\": %s\n", tmpname, strerror(errno));
 }
 
 /*
@@ -1240,7 +1240,7 @@ int save_settings __P0 (void)
     else {
 	failed = rename(tmpname, deffile);
 	if (failed == -1) {
-	    PRINTF("#error: cannot move temporary file `%s' to `%s': %s\n",
+	    PRINTF("#error: cannot move temporary file \"%s\" to \"%s\": %s\n",
 		       tmpname, deffile, strerror(errno));
 	} else
 	    failed = 1;
@@ -1253,7 +1253,7 @@ int save_settings __P0 (void)
 }
 
 /*
- * update `now' to current time
+ * update "now" to current time
  */
 void update_now __P0 (void)
 {

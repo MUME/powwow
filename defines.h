@@ -264,7 +264,7 @@ typedef struct sortednode {
 } sortednode;
 
 /*
- * linked list nodes: keep `next' first, then string to sort by,
+ * linked list nodes: keep "next" first, then string to sort by,
  * then (eventually) `snext'
  */
 typedef struct aliasnode {

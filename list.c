@@ -165,7 +165,7 @@ static sortednode **selflookup_sortednode __P2 (sortednode *,self, sortednode **
     while (*p && *p != self)
 	p = &(*p)->snext;
     if (!*p) {
-	PRINTF("#internal error, selflookup_sortednode(`%s') failed!\n", self->sortfield);
+	PRINTF("#internal error, selflookup_sortednode(\"%s\") failed!\n", self->sortfield);
 	error = INTERNAL_ERROR;
     }
     return p;

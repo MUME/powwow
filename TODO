@@ -38,7 +38,7 @@ From the authors of cancan:
 
 THINGS TO DO/PLANNED IMPROVEMENTS on powwow:
        - make a better #help
-       - add termcap `end of bold', `end of blink' etc.
+       - add termcap "end of bold", "end of blink" etc.
        
        If you have ideas, suggestions or whatever, e-mail them to me
        (max@Linuz.sns.it) and if I find them interesting, I will add them.
