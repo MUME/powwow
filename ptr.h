@@ -62,6 +62,9 @@ char *memrchrs  __P ((char *p, int lenp, char *q, int lenq));
 # define memfind memmem
 #else
 char *memfind   __P ((char *hay, int haylen, char *needle, int needlelen));
+/* TODO: watch memrchr, it is defined differently here than under _GNU_SOURCE,
+ * so it could cause bizarre results if a module makes use of a library that
+ * uses it */
 char *memrchr   __P ((char *p, int lenp, char c));
 #endif
 

@@ -259,15 +259,17 @@ static void cmd_module __P1 (char *,arg) {
 	/* open lib */
 	lib = dlopen( libname, RTLD_LAZY );
 	if( ! lib ) {
-		PRINTF( "#lib error: %s\n", dlerror() );
+		PRINTF( "#module error: %s\n", dlerror() );
 		return;
+	}else{
+		PRINTF( "#module loaded %s\n", libname );
 	}
 
 	func = dlsym( lib, "powwow_init" );
 	if( func ) {
 		(*func)();
 	}else{
-		PRINTF( "#lib error: %s\n", dlerror() );
+		PRINTF( "#module error: %s\n", dlerror() );
 	}
 }
 
