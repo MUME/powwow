@@ -228,28 +228,48 @@ static void cmd_module __P1 (char *,arg) {
 	void *lib;
 	void (*func)();
 
+	int pindex;
+	struct stat junk;
+	char *prefixes[] = {
+		"./",
+		"/lib/powwow",
+		"/usr/lib/powwow",
+		"/usr/local/lib/powwow",
+		"$HOME/.powwow/lib" /* this doesn't work, but is here to remind me :p */
+	};
+
 	arg = skipspace(arg);
 
-	bzero( libname, 1024 );
-	if( *arg == '.' || *arg == '/' ) {
-		/* No path mungling */
-		strncpy( libname, arg, 1024 );
-	}else{
-		snprintf( libname, 1024, "/usr/local/lib/powwow/%s", arg );
+	/* I changed it to work this way so that you can have libs in multiple places and
+	 * also eventually to allow it to use .dll instead of .so under the cygwin environment */
+	for( pindex = 0; pindex < 4; pindex++ ) {
+		bzero( libname, 1024 );
+
+		snprintf( libname, 1024, "%s/%s", prefixes[ pindex ], arg );
+		if( stat( libname, &junk ) == 0 ) {
+			break;
+		}
+
+		snprintf( libname, 1024, "%s/%s.so", prefixes[ pindex ], arg );
+		if( stat( libname, &junk ) == 0 ) {
+			break;
+		}
 	}
 
 	/* open lib */
 	lib = dlopen( libname, RTLD_LAZY );
 	if( ! lib ) {
-		PRINTF( "#lib error: %s\n", dlerror() );
+		PRINTF( "#module error: %s\n", dlerror() );
 		return;
+	}else{
+		PRINTF( "#module loaded %s\n", libname );
 	}
 
 	func = dlsym( lib, "powwow_init" );
 	if( func ) {
 		(*func)();
 	}else{
-		PRINTF( "#lib error: %s\n", dlerror() );
+		PRINTF( "#module error: %s\n", dlerror() );
 	}
 }
 
