@@ -111,7 +111,9 @@ cmdstruct default_commands[] =
     {NULL,"key", "name\t\t\texecute the `name' key binding", cmd_key,NULL},
     {NULL,"keyedit", "editing-name\t\trun a line-editing function", cmd_keyedit,NULL},
     {NULL,"load", "[filename]\t\tload powwow settings from file", cmd_load,NULL},
-    {NULL,"module","[filename]\t\tload shared library extension", cmd_module,NULL},
+#ifdef HAVE_LIBDL
+    {NULL,"module","[name]\t\tload shared library extension", cmd_module,NULL},
+#endif
     {NULL,"map", "[-[number]|walksequence]\tshow/clear/edit (auto)map", cmd_map,NULL},
     {NULL,"mark", "[string[=[attr]]]\t\tdelete/list/define markers", cmd_mark,NULL},
     {NULL,"movie", "[filename]\t\tbegin/end of movie record to file", cmd_movie,NULL},
@@ -223,6 +225,7 @@ void _cmd_init() {
 		cmd_add_command( &default_commands[ i ] );
 }
 
+#ifdef HAVE_LIBDL
 static void cmd_module __P1 (char *,arg) {
 	char libname[1024];
 	void *lib;
@@ -272,6 +275,7 @@ static void cmd_module __P1 (char *,arg) {
 		PRINTF( "#module error: %s\n", dlerror() );
 	}
 }
+#endif
 
 static void cmd_group __P1 (char *,arg) {
     char *group;
