@@ -114,11 +114,11 @@ cmdstruct default_commands[] =
     {NULL,"key", "name\t\t\texecute the \"name\" key binding", cmd_key,NULL},
     {NULL,"keyedit", "editing-name\t\trun a line-editing function", cmd_keyedit,NULL},
     {NULL,"load", "[filename]\t\tload powwow settings from file", cmd_load,NULL},
+    {NULL,"map", "[-[number]|walksequence]\tshow/clear/edit (auto)map", cmd_map,NULL},
+    {NULL,"mark", "[string[=[attr]]]\t\tdelete/list/define markers", cmd_mark,NULL},
 #ifdef HAVE_LIBDL
     {NULL,"module","[name]\t\tload shared library extension", cmd_module,NULL},
 #endif
-    {NULL,"map", "[-[number]|walksequence]\tshow/clear/edit (auto)map", cmd_map,NULL},
-    {NULL,"mark", "[string[=[attr]]]\t\tdelete/list/define markers", cmd_mark,NULL},
     {NULL,"movie", "[filename]\t\tbegin/end of movie record to file", cmd_movie,NULL},
     {NULL,"net", "\t\t\t\tprint amount of data received from/sent to host", cmd_net,NULL},
     {NULL,"nice", "[{number|(expr)}[command]]\tset/show priority of new actions/marks", cmd_nice,NULL},
