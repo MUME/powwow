@@ -1,5 +1,5 @@
 # Default help file directory
-AM_CFLAGS=-DPOWWOW_DIR=$(pkgdatadir)
+AM_CFLAGS=-DPOWWOW_DIR=\"$(pkgdatadir)\"
 
 bin_PROGRAMS = powwow muc catrw follow movie
 powwow_SOURCES = beam.c cmd.c log.c edit.c cmd2.c eval.c \
@@ -17,9 +17,10 @@ catrw_SOURCES = catrw.c
 
 man_MANS = powwow.6
 pkgdata_DATA = powwow.doc powwow.help
-EXTRA_DIST = README README.follow README.term TODO Hacking Config.demo \
-	     powwow.doc powwow.help powwow.6 plugtest.c debian/rules \
-	     debian/control debian/changelog
+EXTRA_DIST = README README.follow README.term README.modules \
+		TODO Hacking Config.demo \
+		powwow.doc powwow.help powwow.6 plugtest.c debian/rules \
+		debian/control debian/changelog
 
 plugtest.so: plugtest.c
 	gcc -shared -o plugtest.so plugtest.c

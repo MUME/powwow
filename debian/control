@@ -4,7 +4,7 @@ Priority: optional
 Standards-Version: 3.0.1
 
 Package: powwow
-Version: 1.2.7
+Version: 1.2.8
 Description: a powerful and extensible curses based mud client
  powwow is a powerful mud client that supports triggers, aliases,
  multiple connections, and more.  It is extensible through a plugin

@@ -187,7 +187,7 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 
 # Default help file directory
-AM_CFLAGS = -DPOWWOW_DIR=$(pkgdatadir)
+AM_CFLAGS = -DPOWWOW_DIR=\"$(pkgdatadir)\"
 powwow_SOURCES = beam.c cmd.c log.c edit.c cmd2.c eval.c \
 		 utils.c main.c tcp.c list.c map.c tty.c \
 		 ptr.c
@@ -204,9 +204,10 @@ follow_SOURCES = follow.c
 catrw_SOURCES = catrw.c
 man_MANS = powwow.6
 pkgdata_DATA = powwow.doc powwow.help
-EXTRA_DIST = README README.follow README.term TODO Hacking Config.demo \
-	     powwow.doc powwow.help powwow.6 plugtest.c debian/rules \
-	     debian/control debian/changelog
+EXTRA_DIST = README README.follow README.term README.modules \
+		TODO Hacking Config.demo \
+		powwow.doc powwow.help powwow.6 plugtest.c debian/rules \
+		debian/control debian/changelog
 
 all: all-am
 

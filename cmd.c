@@ -263,7 +263,7 @@ static void cmd_module __P1 (char *,arg) {
 	}
 
 	/* open lib */
-	lib = dlopen( libname, RTLD_LAZY );
+	lib = dlopen( libname, RTLD_GLOBAL | RTLD_LAZY );
 	if( ! lib ) {
 		PRINTF( "#module error: %s\n", dlerror() );
 		return;

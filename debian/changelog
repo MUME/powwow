@@ -1,8 +1,8 @@
-powwow (1.2.7) unstable; urgency=low
+powwow (1.2.8) unstable; urgency=low
 
   * First release.
 
- -- Your Name <your@email.address>  Mon,  20 Mar 2000 17:58:49 +0000
+ -- Steve Slaven <bpk@hoopajoo.net>  Mon,  20 Mar 2000 17:58:49 +0000
 
 Local variables:
 mode: debian-changelog

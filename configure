@@ -3226,7 +3226,11 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_lib_dl_dlopen" >&5
 echo "${ECHO_T}$ac_cv_lib_dl_dlopen" >&6
 if test $ac_cv_lib_dl_dlopen = yes; then
-  dl_ldflags="-rdynamic -ldl"
+  cat >>confdefs.h <<\_ACEOF
+#define HAVE_LIBDL 1
+_ACEOF
+
+	dl_ldflags="-rdynamic -ldl"
 
 fi
 
