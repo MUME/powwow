@@ -1301,7 +1301,8 @@ static void cmd_eval __P1 (char *,arg)
 static void cmd_exe __P1 (char *,arg)
 {
     char kind;
-    long start, end, i = 1;
+    char *clear;
+    long offset, start, end, i = 1;
     FILE *fp;
     ptr pbuf = (ptr)0;
     
@@ -1319,10 +1320,25 @@ static void cmd_exe __P1 (char *,arg)
 	    ptrdel(pbuf);
 	    return;
 	}
-	while (!error && (!start || i<=end) && fgets(buf, BUFSIZE, fp))
-	    if (!start || i++>=start) {
-		buf[strlen(buf)-1] = '\0';
-		parse_user_input(buf, 0);
+	offset = 0;
+	/* We may go in to a loop if a single function is more than 4k, but if that's
+	 * the case then maybe you should break it down a little bit :p */
+	while (!error && (!start || i<=end) && fgets(buf + offset, BUFSIZE - offset, fp))
+	    /* If it ends with \\\n then it's a line continuation, so clear
+	     * the \\\n and do another fgets */
+	    if( buf[ strlen( buf ) - 2 ] == '\\' ) {
+		/* Clear all \n prefixed with a literal backslash '\\' */
+		while( clear = strstr( buf, "\\\n" ) ) {
+		    clear[ 0 ] = ' ';
+		    clear[ 1 ] = ' ';
+		}
+		offset = strlen( buf );
+	    }else{
+	        if (!start || i++>=start) {
+		    buf[strlen(buf)-1] = '\0';
+		    parse_user_input(buf, 0);
+		    offset = 0;
+		}
 	    }
 	
 	if (kind == '!') pclose(fp); else fclose(fp);
