@@ -22,6 +22,7 @@
  * Many new features added by Dain.
  * As usual, all the developers are in debt to countless users 
  * for suggestions and debugging.
+ * Maintance was taken over by Steve Slaven (bpk@hoopajoo.net) in 2005
  */
 
 /*
@@ -526,7 +527,7 @@ static void mainloop __P0 (void)
 	    tcp_flush();
 	    
 	    if (!(pos <= edlen)) {
-		PRINTF("\n#*ARGH* assertion failed (pos <= edlen): mail max@linuz.sns.it\n");
+		PRINTF("\n#*ARGH* assertion failed (pos <= edlen): mail bpk@hoopajoo.net\n");
 		pos = edlen;
 	    }
 	    
