@@ -1,5 +1,5 @@
 
-			powwow 1.2.4 README
+			powwow 1.2.8 README
 
 Powwow is a client program intended mainly for playing MUD.
 It implements (a subset of) the telnet protocol.
@@ -9,11 +9,8 @@ Files you should have received:
 	README		This text.
 	Changelog 	What has changed since the last release.
 	powwow.doc	Complete documentation. READ this!
-	make_it		A shell script that automatically compiles powwow on
-			many systems.
-        Compile.how     A hopefully detailed text file showing how to compile
-                        powwow on different systems.
-	Makefile	Makefile: tailor it for your system if make_it fails.
+	configure	A shell script that will create a Makefile
+			suitable for your system
 	*.[ch]		Sources.
 	tools/*		Additional standalone utilities.
 	powwow.help	Online help file (in plain ASCII).
@@ -26,16 +23,28 @@ Files you should have received:
 
 COMPILING
 
-	Try the shell-script 'make_it', ie type './make_it'.
-	If that doesn't	work, read the file 'Compile.how', try to edit
-	the 'Makefile' manually and either run './make_it' or 'make'.
-	If you have to edit the Makefile, or edit the source
-	code, to get it to work, pleae e-mail any changes you did to:
-	<max@Linuz.sns.it>. Also include info on what system you have
-	(type 'uname -a' to get the necessary info).
+	powwow is built using GNU autoconf scripts, it should detect any
+	system dependancies it needs and set the appropriate flags.  Just
+	run:
 
-	You may also want to edit the Makefile in order to fine-tune powwow
-	to your system (change optimizations, include regexp library, etc.)
+	./configure
+	make
+
+	To build the powwow binary.  It will run from any location, but there
+	are some settings set at compile time that will make more sense if 
+	you use the "install" make target to install the binaries and 
+	documentation together.  For example, POWWOWDIR will default to the 
+	location that "make install" will put the online powwow documentation,
+	making the #help feature work out of the box without modifying any
+	settings or flags.
+
+	If you require changes to the build process, please e-mail the problems
+	(and hopefully solution) to me at bpk@hoopajoo.net.  Also please
+	include your system information (uname -a, etc)
+
+	There are also some other options that may be turned on or off or
+	forced using configure.  Try "configure --help" to see the full
+	list of compile-time configuration options.
 
 INSTALLING
 
@@ -101,7 +110,7 @@ BUGS
 
 	If you have any problems with powwow, try to fix them yourself
 	(you have the source, right?) or at least isolate the bugs so
-	the maintainer has a fair change of fixing them. Don't expect
+	the maintainer has a fair chance of fixing them. Don't expect
 	a bug to be fixed, unless you explain it in detail (expecially
 	how to reproduce it) and supply the powwow and OS version,
 	as well as the compilation options. 
@@ -124,11 +133,14 @@ AUTHORS OF POWWOW
         Massimiliano Ghilardi <max@Linuz.sns.it>, alias Cosmos,
 	is the original author, and Gustav Hållberg <f92-gha@nada.kth.se>
 	contributed a lot of new features.
-        The powwow WWW page is: http://Linuz.sns.it/~max/powwow.html
+
+	powwow moved to hoopajoo.net in 2005, and is now maintained by
+	Steve Slaven <bpk@hoopajoo.net>
+
+        The powwow WWW page is: http://hoopajoo.net/projects/powwow.html
 	
 	If you forgot where you downloaded powwow from, you can get it from
-	the above address, or from
-	ftp://Linuz.sns.it/pub/Linux/ext-pack/powwow/
+	the above address.
 
 	To learn more about MUME, have a look at http://fire.pvv.org/mume/
 	which also explains how to connect.
