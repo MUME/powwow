@@ -14,7 +14,8 @@ catrw_SOURCES = catrw.c
 
 man_MANS = powwow.6
 EXTRA_DIST = README README.follow README.term TODO Hacking Config.demo \
-	     powwow.doc powwow.help powwow.6 plugtest.c
+	     powwow.doc powwow.help powwow.6 plugtest.c debian/rules \
+	     debian/control debian/changelog
 
 plugtest.so: plugtest.c
 	gcc -shared -o plugtest.so plugtest.c
