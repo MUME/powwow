@@ -56,13 +56,13 @@ char *ptrmchrs  __P ((ptr p, char *q, int lenq));
 char *ptrrchrs  __P ((ptr p, ptr q));
 char *ptrmrchrs __P ((ptr p, char *q, int lenq));
 
-char *memrchr   __P ((char *p, int lenp, char c));
 char *memchrs   __P ((char *p, int lenp, char *q, int lenq));
 char *memrchrs  __P ((char *p, int lenp, char *q, int lenq));
 #ifdef _GNU_SOURCE
 # define memfind memmem
 #else
 char *memfind   __P ((char *hay, int haylen, char *needle, int needlelen));
+char *memrchr   __P ((char *p, int lenp, char c));
 #endif
 
 #endif /* _PTR_H_ */

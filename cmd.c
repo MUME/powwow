@@ -244,6 +244,12 @@ static void cmd_module __P1 (char *,arg) {
 	 * also eventually to allow it to use .dll instead of .so under the cygwin environment */
 	for( pindex = 0; pindex < 4; pindex++ ) {
 		bzero( libname, 1024 );
+
+		snprintf( libname, 1024, "%s/%s", prefixes[ pindex ], arg );
+		if( stat( libname, &junk ) == 0 ) {
+			break;
+		}
+
 		snprintf( libname, 1024, "%s/%s.so", prefixes[ pindex ], arg );
 		if( stat( libname, &junk ) == 0 ) {
 			break;
