@@ -25,7 +25,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+
+#ifdef HAVE_LIBDL
 #include <dlfcn.h>
+#endif
 
 #include "defines.h"
 #include "main.h"
