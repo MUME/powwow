@@ -30,9 +30,19 @@
  * #define POWWOW_DIR	"/home/gustav/powwow"
  */
 
-#define POWWOW_VERSION VERSION ", Copyright 2000-2005 by Cosmos\n" \
-                                " Copyright 2005 by bpk - http://hoopajoo.net\n" \
-				"(contributions by Yorick, Vivriel, Thuzzle, Ilie, Fror, Dain)\n"
+#ifdef USE_LOCALE
+  #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fr\363r, D\341in"
+  #define COPYRIGHT      "\251 "
+#else
+  #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fror, Dain"
+  #define COPYRIGHT      ""
+#endif
+
+#define POWWOW_VERSION VERSION                       \
+    ", Copyright 2000-2005 by Cosmos\n"              \
+    "Copyright 2005 by bpk - http://hoopajoo.net\n" \
+    "(contributions by " POWWOW_HACKERS ")\n"
+
 #define HELPNAME "powwow.help"
 #define COPYNAME "COPYING"
 
@@ -55,6 +65,10 @@
 #include <sys/wait.h>
 #include <memory.h>
 #include <unistd.h>
+
+#ifdef USE_LOCALE
+#include <locale.h>
+#endif
 
 /* are these really needed? */
 extern int errno;
@@ -227,7 +241,13 @@ int main __P2 (int,argc, char **,argv)
     int i;
     int read_file = 0;	/* GH: if true, powwow was started with
 			 * a file argument, and initstr shall be ran */
-    
+
+#ifdef USE_LOCALE
+    if (!setlocale(LC_ALL, "")) {
+        fprintf(stderr, "Failed setlocale(LC_ALL, \"C\")\n");
+    }
+#endif
+
     /* initializations */
     initstr[0] = 0;
     memzero(conn_list, sizeof(conn_list));
@@ -399,26 +419,33 @@ under certain conditions; type \"#help copyright\" for details.\n"
  */
 void printver __P0 (void)
 {
-    tty_printf("Powwow version %s\n%s (%s, %s)%s\n", POWWOW_VERSION, 
-#if __STDC__
-	       "compiled " __TIME__ " " __DATE__,
-#else
-	       "", 
-#endif
+    tty_printf("Powwow version %s\nOptions: %s%s\n", POWWOW_VERSION, 
 #ifdef USE_VT100
-	       "vt100-only",
+	       "vt100-only,"
 #else
-	       "termcaps",
+	       "termcaps,"
 #endif
 #ifdef USE_SGTTY
-	       "BSD sgtty",
+	       " BSD sgtty,"
 #else
-	       "termios",
+	       " termios,"
 #endif
 #ifdef USE_REGEXP
-	       ""
+	       " regexp,"
 #else
-	       " no regexp"
+	       " no regexp,"
+#endif
+#ifdef USE_LOCALE
+	       " locale,"
+#endif
+#ifdef HAVE_LIBDL
+	       " modules,"
+#endif
+	       ,
+#if __STDC__
+	       " compiled " __TIME__ " " __DATE__
+#else
+	       " uknown compile date" 
 #endif
 	       );
 }
@@ -1282,7 +1309,7 @@ static void get_user_input __P0 (void)
     if (!(linemode & (LM_NOECHO | LM_CHAR))) /* line mode, local echo */
 	chunk = BUFSIZE;
     
-    while ((j = tty_read(tty_read_fd, c, chunk)) < 0 && errno == EINTR)
+    while ((j = tty_read(c, chunk)) < 0 && errno == EINTR)
 	;
     if (j <= 0 || (chunk == 1 && j != chunk))
 	syserr("read from tty");

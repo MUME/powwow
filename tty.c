@@ -9,12 +9,21 @@
  *  (at your option) any later version.
  *
  */
+#include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
+
+#ifdef USE_LOCALE
+#include <wchar.h>
+#include <locale.h>
+#endif
 
 #include "defines.h"
 #include "main.h"
@@ -133,6 +142,9 @@ char *tty_modebold = modebold,       *tty_modeblink = modeblink,
 int tty_read_fd = 0;
 static int wrapglitch = 0;
 
+#ifdef USE_LOCALE
+FILE *tty_read_stream, *tty_write_stream;
+#endif
 
 #ifdef USE_SGTTY
 static struct sgttyb ttybsave;
@@ -289,6 +301,12 @@ void tty_sig_winch_bottomhalf __P0 (void)
  */
 void tty_bootstrap __P0 (void)
 {
+#ifdef USE_LOCALE
+    tty_read_stream = stdin;
+    tty_write_stream = stdout;
+    fcntl(tty_read_fd, F_SETFL, O_NONBLOCK | fcntl(tty_read_fd, F_GETFL));
+#endif
+
 #ifndef USE_VT100
     struct tc_init_node {
 	char cap[4], *buf;
@@ -772,3 +790,135 @@ void input_insert_follow_chars __P2 (char *,str, int,n)
 	tty_gotoxy_opt(CURCOL(p), cl, CURCOL(pos), CURLINE(pos));
 }
 
+#ifdef USE_LOCALE
+/* curses wide character support by Dain */
+
+void tty_puts __P ((const char *s))
+{
+    while (*s)
+	putwc((unsigned char)*s++, tty_write_stream);
+}
+
+void tty_putc __P ((char c))
+{
+    putwc((unsigned char)c, tty_write_stream);
+}
+
+
+void tty_printf __P ((const char *format, ...))
+{
+    char buf[1024], *bufp = buf;
+    va_list va;
+    int res;
+
+    char *old_locale = strdup(setlocale(LC_ALL, NULL));
+
+    setlocale(LC_ALL, "C");
+
+    va_start(va, format);
+    res = vsnprintf(buf, sizeof buf, format, va);
+    va_end(va);
+
+    if (res >= sizeof buf) {
+	bufp = alloca(res + 1);
+	va_start(va, format);
+	vsprintf(bufp, format, va);
+	va_end(va);
+    }
+
+    setlocale(LC_ALL, old_locale);
+    free(old_locale);
+
+    tty_puts(bufp);
+}
+
+static char tty_in_buf[MB_LEN_MAX + 1];
+static int tty_in_buf_used = 0;
+
+int tty_has_chars __P ((void))
+{
+    return !!tty_in_buf_used;
+}
+
+int tty_read __P ((char *buf, size_t count))
+{
+    int result = 0;
+    int converted;
+    wchar_t wc;
+
+    if (count && tty_in_buf_used) {
+	converted = mbtowc(&wc, tty_in_buf, tty_in_buf_used);
+	if (converted >= 0)
+	    goto another;
+    }
+
+    while (count) {
+	int should_read = sizeof tty_in_buf - tty_in_buf_used;
+	int did_read = read(tty_read_fd, tty_in_buf + tty_in_buf_used,
+			    should_read);
+
+	if (did_read < 0 && errno == EINTR)
+	    continue;
+	if (did_read <= 0)
+	    break;
+
+	tty_in_buf_used += did_read;
+
+	converted = mbtowc(&wc, tty_in_buf, tty_in_buf_used);
+	if (converted < 0)
+	    break;
+
+    another:
+	if (converted == 0)
+	    converted = 1;
+
+	if (!(wc & ~0xff)) {
+	    *buf++ = (unsigned char)wc;
+	    --count;
+	    ++result;
+	}
+
+	tty_in_buf_used -= converted;
+	memmove(tty_in_buf, tty_in_buf + converted, tty_in_buf_used);
+
+	if (count == 0)
+	    break;
+
+	converted = mbtowc(&wc, tty_in_buf, tty_in_buf_used);
+	if (converted >= 0 && tty_in_buf_used)
+	    goto another;
+
+	if (did_read < should_read)
+	    break;
+    }
+
+    return result;
+}
+
+
+void tty_gets __P ((char *s, int size))
+{
+    wchar_t *ws = alloca(size * sizeof *ws);
+
+    if (!fgetws(ws, size, stdin))
+	return;
+
+    while (*ws) {
+	if (!(*ws & ~0xff))
+	    *s++ = (unsigned char)*ws;
+	++ws;
+    }
+}
+
+void tty_flush __P ((void))
+{
+    fflush(tty_write_stream);
+}
+
+void tty_raw_write __P ((char *data, int len))
+{
+    tty_flush();
+    write(1, data, len);
+}
+
+#endif /* USE_LOCALE */

@@ -25,28 +25,30 @@ void input_overtype_follow		__P ((char c));
 void input_insert_follow_chars		__P ((char *str, int n));
 void input_moveto			__P ((int new_pos));
 
-#if 1
+#ifndef USE_LOCALE 
 
 #define tty_puts(s) fputs((s), stdout)
 /* printf("%s", (s)); would be as good */
 
-#define tty_putc(c)	putc((int)(char)(c), stdout)
-#define tty_printf	printf
-#define tty_read	read
-#define tty_gets(s,size) fgets((s), (size), stdin)
-#define tty_flush()	fflush(stdout)
-#define tty_raw_write(s,size) do { tty_flush(); write(1, (s), (size)); } while (0)
 
-#else /* !1 */
+#define tty_putc(c)             putc((unsigned char)(c), stdout)
+#define tty_printf              printf
+#define tty_read(buf, cnt)      read(tty_read_fd, (buf), (cnt))
+#define tty_gets(s,size)        fgets((s), (size), stdin)
+#define tty_flush()             fflush(stdout)
+#define tty_raw_write(s,size)   do { tty_flush(); write(1, (s), (size)); } while (0)
 
-void tty_puts		__P ((char *s));
-void tty_putc		__P ((char c));
-void tty_printf		__P ((const char *format, ...));
-int  tty_read		__P ((int fd, char *buf, size_t count));
-void tty_gets		__P ((char *s, int size));
-void tty_flush		__P ((void));
-void tty_raw_write	__P ((char *data, int len));
+#else /* USE_LOCALE */
 
-#endif /* 1 */
+void tty_puts           __P ((const char *s));
+void tty_putc           __P ((char c));
+void tty_printf         __P ((const char *format, ...));
+int  tty_read           __P ((char *buf, size_t count));
+void tty_gets           __P ((char *s, int size));
+void tty_flush          __P ((void));
+void tty_raw_write      __P ((char *data, int len));
+int  tty_has_chars      __P ((void));
+
+#endif /* USE_LOCALE */
 
 #endif /* _TTY_H_ */

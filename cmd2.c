@@ -1059,7 +1059,7 @@ static int get_one_char __P1 (int,timeout)
 	errmsg("select");
 	return -1;
     }
-    while ((err = tty_read(tty_read_fd, &c, 1)) < 0 && errno == EINTR)
+    while ((err = tty_read(&c, 1)) < 0 && errno == EINTR)
 	;
     if (err != 1) {
 	errmsg("read from tty");
