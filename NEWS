@@ -1,5 +1,6 @@
 1.2.8 Mar-21-2005
-- Incorporated patch for locale support and some cleanup from Dain
+- Incorporated patch for locale support and some cleanup/bugfixes
+  from Dain
 - Fixed #module to use RLTD_GLOBAL so that symbols from modules ar
   available to other modules
 - Minor bugfixes and documentation fixes
