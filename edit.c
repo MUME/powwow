@@ -687,17 +687,18 @@ void del_word_left __P1 (char *,dummy)
 void upcase_word __P1 (char *,dummy)
 {
     int opos = pos;
+    int npos = pos;
     
     if (last_edit_cmd == (function_any)upcase_word)
-	pos = 0;
+	npos = 0;
     else {
-	while (pos > 0 && IS_DELIM(edbuf[pos])) pos--;
-	while (pos > 0 && !IS_DELIM(edbuf[pos - 1])) pos--;
+	while (npos > 0 && IS_DELIM(edbuf[npos])) npos--;
+	while (npos > 0 && !IS_DELIM(edbuf[npos - 1])) npos--;
     }
-    input_moveto(pos);
-    while (!IS_DELIM(edbuf[pos]) ||
-	   (last_edit_cmd == (function_any)upcase_word && edbuf[pos]))
-	input_overtype_follow(toupper(edbuf[pos]));
+    input_moveto(npos);
+    while (!IS_DELIM(edbuf[npos]) ||
+	   (last_edit_cmd == (function_any)upcase_word && edbuf[npos]))
+	input_overtype_follow(toupper(edbuf[npos++]));
     input_moveto(opos);
 }
 
@@ -707,17 +708,18 @@ void upcase_word __P1 (char *,dummy)
 void downcase_word __P1 (char *,dummy)
 {
     int opos = pos;
-    
+    int npos = pos;
+
     if (last_edit_cmd == (function_any)downcase_word)
-	pos = 0;
+	npos = 0;
     else {
-	while (pos > 0 && IS_DELIM(edbuf[pos])) pos--;
-	while (pos > 0 && !IS_DELIM(edbuf[pos - 1])) pos--;
+	while (npos > 0 && IS_DELIM(edbuf[npos])) npos--;
+	while (npos > 0 && !IS_DELIM(edbuf[npos - 1])) npos--;
     }
-    input_moveto(pos);
-    while (!IS_DELIM(edbuf[pos]) ||
-	   (last_edit_cmd == (function_any)downcase_word && edbuf[pos])) {
-	input_overtype_follow(tolower(edbuf[pos]));
+    input_moveto(npos);
+    while (!IS_DELIM(edbuf[npos]) ||
+	   (last_edit_cmd == (function_any)downcase_word && edbuf[npos])) {
+	input_overtype_follow(tolower(edbuf[npos++]));
     }
     input_moveto(opos);
 }
