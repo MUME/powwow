@@ -1,7 +1,7 @@
 			     P O W W O W
 
-			doc for version 1.2.4
-		     last modified Sep 23, 1998
+			doc for version 1.2.8
+		     last modified Apr 04, 2005
 
 INTRODUCTION
 
@@ -139,7 +139,35 @@ COMMAND CHAINING
 	The verbatim mode disables this special meaning of semicolons and
 	braces, and the #quote command lets you switch between verbatim and
 	normal mode.
-	
+
+COMMAND CONTINUATION
+
+	Long lines can be continued by ending each intermediate line with a 
+	backslash (\).  This way long and complicated aliases can be written 
+	a somewhat readable format.  For example:
+
+	#al drau={#send ("get tail "+$hcon);#send ("get fur "+$hcon);#send ("get vial "+$hcon);#send ("get tarragon "+$hcon);put tail kit;put fur kit;put vial kit;put tarragon kit}
+
+	Could be written (somewhat) more legibly as:
+
+	#al drau={\
+		#send ("get tail "+$hcon);\
+		#send ("get fur "+$hcon);\
+		#send ("get vial "+$hcon);\
+		#send ("get tarragon "+$hcon);\
+		put tail kit;\
+		put fur kit;\
+		put vial kit;\
+		put tarragon kit\
+	}
+
+	Note that when powwow saves your aliases (e.g. you leave #file defined)
+	that it will not preserve this formatting, so it is most useful if
+	you use a file that is not saved over on exit.  For example, if
+	you use a single configuration file that calls several smaller 
+	configuration files that are grouped by similar intent, like having
+	an xp counter script, a prompt script, etc.
+
 SPECIAL COMMANDS: ALIASES AND ACTIONS
 
 	Powwow parses all lines beginning with the character '#' as
@@ -291,7 +319,25 @@ SPECIAL COMMANDS: ALIASES AND ACTIONS
 	Example:
 	#action >reply ^$1 tells you={#print; #alias reply=tell $1 \$0}
 	-----------------------------------------------------------
-	
+
+ACTION GROUPS
+
+	Groups allow related triggers to be enabled and disabled together
+	using a single command, instead of toggling them all on or off 
+	individually.  To put actions in to a group specify the group name
+	after an '@' when the action is defined.  For example:
+
+	#action >+auto-ride@non-pk ZBLAM! A &1 doesn't want you={#print;stand;ride}
+
+	Would create the action auto-ride in the non-pk group.  Then if you
+	wanted to toggle off all non-pk actions, you could do it using:
+
+	#group non-pk off
+
+	And then later to turn them back on, use:
+
+	#group non-pk on
+
 MISSING: #PROMPT
 
 	There is another special command quite similar to #action:
