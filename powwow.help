@@ -1,0 +1,553 @@
+@alias
+#alias [name[=[command]]]
+
+Aliases are abbreviations for longer, frequently used commands.
+As all powwow commands, they are only recognized at the beginning
+of a line or directly after a semicolon, an open or a closed brace.
+When an alias is used, the first word following the alias name
+is placed in the variable $1, the second in $2, etc... up to $9.
+also, the whole string following alias name is placed in $0.
+
+Then, before executing <command>, every $n in <command> is replaced by its
+value. Examples:
+
+#alias summ=cast 'summon' $0		(then "summ thor" is replaced by
+					 "cast 'summon' thor")
+#alias cs=cast '$1' $2			("cs summon thor" is expanded to
+					 "cast 'summon' thor")
+#alias summ				(lets you edit the definition of summ)
+#alias summ=				(removes the alias summ)
+#alias					(displays all defined aliases)
+#alias ws={wake;stand}			(note that you must use braces)
+
+Aliases are saved automatically if you started powwow with a file name as
+argument. Aliases are not expanded in verbatim mode.
+@action
+#action [[<|=|>|%][+|-]label] [{pattern | (expression)}=[command]]
+
+When 'pattern' is found in a line from the remote host, the 'command' is
+automatically executed. If the pattern contains $n, powwow matches one word
+of the remote line and puts it in the variable $n. Instead, if pattern contains
+&n, powwow places the shortest possible text (can be more than one word, less,
+or even one word) in the corresponding $n (NOT in &n).
+
+As in #alias, before executing <command>, every $n in <command> is replaced
+by its value. If the first character of the pattern is ^ (caret), the match
+will only be possible at the beginning of a line.
+If 'label' is specified, the action is labeled; otherwise it is numbered.
+The match is case-sensitive. Examples:
+
+#action >fount ^There is a fountain here={#print;drink water}
+#action -fount					(turns off action)
+#action +fount					(turns it back on)
+#action =fount					(lets you edit it)
+#action <fount					(removes action)
+
+If you use % instead of >, you define an action that uses an Extended POSIX
+regexp to match instead of the standard matcher.
+
+#action %first ^([[:alpha:]]+) ([[:digit:]]+)=#print $2 counted $3.
+						(matches abc 123)
+
+Note that if the pattern starts with '(', it is evaluated, which means that
+a regexp that starts with '(' has to be surrounded by  ("...")
+
+#action %second ("(..+)-\\1")=#print Double $1
+						(matches xyz-xyz)
+For regexp actions, $0 = the line, $1 = the whole match and $2... contain the
+submatches.
+@bind
+#bind [edit|key[=[command]]]
+
+You can bind most function keys and control keys to enter a command for you
+when the key is pressed. You cannot (yet) redefine a key already used for an
+editing function (such as the arrow keys). 'key' is the name of the key you
+want to define; When defining a new key, you will be asked to press it so
+powwow can record the control sequence your terminal sends. Examples:
+
+#bind						(lists all key bindings)
+#bind f1=recite scroll of recall		(you'll have to press f1 then)
+#bind f1=cast 'sanctuary'			(change exiting definition)
+#bind f1					(lets you edit the definition)
+#bind f1=					(removes the key)
+#bind edit					(lists editing keys)
+
+By default, the vt100 numeric keypad is partially used to walk around
+@key
+#key name
+
+If 'name' is the name of one of the key defined with #bind, #key executes the
+corresponding command. Example:
+
+#bind f1=flee		(binds the f1 key to the 'flee' command)
+At any time, then, you can either:
+- Press your f1 key on you keyboard
+- Execute the command '#key f1'
+and powwow will execute the command 'flee' for you.
+@reset
+#reset {all|list-name}
+
+Argument:	Effect:
+all		clear everything (apply all lines below this)
+alias		clear all aliases
+action		clear all actions
+bind		clear all key bindings and restart with default
+		settings. Note that also editing keys are resetted
+		to default function.
+at		clear all delayed commands
+in		(same thing)
+mark		clear all markers
+var		clear all variables
+@mark
+#mark [text[=[attribute]]]
+
+This command highlights a text in your output in the way you choose
+(if your terminal supports it). Attributes:
+one or more of bold, blink, inverse, underline and/or
+[<foreground>] [on <background>], where the colors are:
+black, red, green, yellow, blue, magenta, cyan, white and
+BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, none.
+Wildcards are allowed ($ for a single word, & for any string). Examples:
+
+#mark Sizzler=bold			(mark Sizzler in bold)
+#mark Sizzler				(lets you edit the above definition)
+#mark Sizzler=				(Sizzler is no longer put in bold)
+#mark					(lists all markers)
+#mark *&*=inverse			(mark in reverse any string in * *)
+@history
+#history [number]
+
+#history alone shows you the last commands in history, up to the number
+of lines in your screen.
+#history -n shows the last n commands in history, and
+#history n  executes the n-th command of the history.
+
+#history commands are not placed in history.
+@hilite
+#hilite [attribute]
+
+This sets the attribute of your entered text to the given attribute.
+Just #hilite turns it off. 
+
+Attributes: one or more of bold, blink, inverse, underline and/or
+[<foreground>] [on <background>], where the colors are:
+black, red, green, yellow, blue, magenta, cyan, white and
+BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, none.
+@host
+#host [hostname port]
+
+Sets the default host that powwow shall try to connect to when you use 
+#connect.
+If you type #host without any arguments, the current host and port are
+shown (provided that you have specified them).
+@color
+#color [attrib]
+
+(This command exists only if BUG_TELNET is defined, to cope with
+ deficiencies of NCSA telnet 2.2)
+Set your standard foreground and background to the colours you specify.
+#color  		sets default colors
+@connect
+#connect [session-id [initstr] [address port]]
+
+Connect a new session.
+
+To connect your first session, use:
+#connect main <address> <port>
+where <address> and <port> indicate the host you want to connect to.
+
+If no address/port is defined, you either get connected to the default 
+host and port (if you have no open connection) or a list of open
+connections is shown.
+
+Last opened session will be the default one.
+
+If <initstr> is specified, it is sent to host on connection.
+@keys
+Default editing keys:
+
+^A	&begin-of-line	   
+^E	&end-of-line	   
+^B	&prev-char		M-b	&prev-word
+^F	&next-char		M-f	&next-word
+^P	&prev-line	   
+^N	&next-line	   
+^D	&del-char-right		M-d	&del-word-right
+BS	&del-char-left		M-BS	&del-word-left
+^K	&kill-to-eol		M-k	&redraw-line-noprompt
+^L	&redraw-line		M-l	&downcase-word	
+^T	&transpose		M-t	&transpose-words	
+^Q	&clear-line
+				M-u	&upcase-word
+^W	&to-history	
+^Z	&suspend	
+Tab	&complete-word		M-Tab	&complete-line
+Ret	&enter-line
+LF      &enter-line
+			
+not assigned: &insert-string 	
+
+M-<key> means press escape and then <key>, or press meta/alt key at the same
+time as <key>. ^ means control.
+If your terminal has arrow keys, they are set for default to move cursor and to
+step around history.
+@wrap
+#wrap [on|off]
+
+Normally, powwow wraps words that would have been cut by the right
+margin to the next line. This command lets you turn it off and on.
+@compact
+#compact [on|off]
+
+Normally, powwow does not touch the prompts on screen while you play.
+In #compact mode, instead, lines containing only a prompt are deleted when
+further messages arrive from the remote host.
+@echo
+#echo [on|off]
+
+Normally, powwow echoes on your screen each command sent to remote
+host but not directly typed (example: aliases and actions sending text
+to the MUD). When #echo is off, such commands are still sent to host,
+but not echoed on screen.
+@info
+#info [on|off]
+
+Normally, powwow prints on screen some messages each time you
+define/edit/delete an #alias, #action, #bind and similar.
+When #info is off, those messages are not typed at all.
+(But errors are still printed on screen)
+@debug
+#debug [on|off]
+
+Normally, powwow does not print on screen the command lines it
+executes. When #debug is on, every line executed by powwow is also
+echoed on screen (warning: this prints LOTS of lines on your screen)
+@delim
+#delim [normal|program|{custom <chars>}
+
+By default, when powwow adds words to the word completion buffer,
+it uses only SPACE (' ') and SEMI-COLON (';') as delimeters. You
+can change this behaviour by specifying "program" or "custom" mode.
+The "program" mode uses ' <>!=(),.;"'{}[]+-/*%=' as separators, which
+is suitable if you are doing some kind of on-line programming.
+You can also make a customized setting with the "custom" mode (space
+is always used as a delimeter).
+This setting also affects &transpose-words (usually bound as M-t)
+@for
+#for ([init];check;[loop]) command
+
+Directly copied from C language, this command evaluates 'init'
+(if specified), then repeats the following cycle:
+	1) evaluate 'check', if result is 0 (false) stop repetition
+	2) execute 'command'
+	3) evaluate 'loop' (if specified)
+	4) restart from 1)
+
+As with #while, #for performs the parameter substitution in 'command'. Example:
+#for (@0=32; @0<=47; @0++) read @0	(read messages 32-47)
+@at
+@in
+#at [label [(time-expression) [command]]]
+or
+#in [label [(delay in millisec.) [command]]]
+
+If you want to tell powwow to execute the command 'kill wolf'
+2 seconds after you type it, use this command:
+#in attack (2000) kill wolf
+
+If you do not specify the command, powwow assumes the label is already
+defined, and changes its delay. 
+A delay less than zero means the delayed label is disabled.
+A delay of zero deletes the delayed label.
+
+If you specify only a label, powwow lists it.
+If you specify nothing, all delayed labels are listed.
+
+The #at command is almost the same as #in, but assumes the expression
+in ( ) is a time.
+For example (114520) means 11:45:20 and ("114520") is the same.
+
+After executing a delayed command, powwow does not delete it, but simply
+disables it.
+@stop
+#stop
+
+Disables all delayed commands (not delete).
+Useful if you start an infinite loop with a self-reactivating delayed command
+@add
+#add {text|(expression)}
+
+Add the text or result of expression (calculator is used to evaluate the
+expression) to the word completion list. Example:
+
+#action >reply ^$1 tells you={#print;#add $1}
+			(from now on, you can use TAB to complete that name)
+@option
+#option [none|[history][words][exit]]
+
+This command sets a number of options for powwow.
+
+	history		write history lines to the savefiles
+	words		write words in completion buffer to the savefile
+	exit		close powwow when the last connection is closes
+	none		go figure (DEFAULT)
+@put
+#put {text|(expression)}
+
+If a text is specified, powwow puts it in history. If an expression is
+specified, powwow uses the inline calculator to evaluate it, and then puts the
+result in history.
+@()
+@ ()
+#(expression) or # (expression)
+
+Evaluate expression with calculator, and trash result. Examples:
+
+#(@7=45)             		(set value of variable @7 to 45)
+#alias set=#($-1 = \$0) 	(copy parameter $0 of the alias into $-1)
+@print
+#print [<|!][string|(expression)]
+
+If a string is specified, powwow simply prints it on screen. If an expression
+is specified, powwow uses the inline calculator to evaluate it, and then
+prints the result.
+
+If a #print without arguments is found, powwow prints the value of the
+variable $0 (this is a special feature of #print, and is not present in #send,
+#exe, #emulate or #var).
+
+If < precedes the text or expression, #print assumes text (or result of
+expression) to be name of a file, and displays the contents of that file.
+
+Instead if ! precedes the text or expression, #print assumes text (or result of
+expression) to be a Bourne shell command, whose output is displayed.
+Examples:
+
+#action disint ^&1 disintegrates &2=#print $1 DISINTEGRATES $2
+#action disint ^&1 disintegrates &2=#print (\$1+" DISINTEGRATES "+\$2)
+#print <mytext			(display a text on screen)
+#print !more mytext     	(same thing, but uses 'more' as text viewer)
+#print (@-7)			(print value of variable on screen)
+#print <($2)			(display the contents of file whose name is in
+				 variable $2)
+
+Further feature (supported also by #send, #exe, #emulate and #var):
+If < or ! is specified, and you use an expression after it, you can also
+specify starting and ending line of the file/command output that you want
+to use (the other lines will be ignored), in this way:
+
+#print {<|!}(string-expr;[start];[end])
+@send
+#send [<|!]{text|(string-expr)}
+
+The simplest use of #send is to evaluate an expression and to send
+the result to the MUD. More generally, #send is very similar to #print,
+with the only difference that the final text is sent to the MUD rather
+than displayed on screen.
+The meaning of < and ! is the same, and #send do the expected things
+when they are used. Examples:
+
+#send <mytext					(stuff a text into the mud)
+#send !awk ' {print "tell arthur " $0} ' file	(say a file to your friend)
+#send ("say I have been playing for " + %(timer/86400000) + " hours")
+@exe
+#exe [<|!]{text|(expression)}
+
+Evaluate the expression and get result, then execute result as if typed from
+keyboard. If < or ! is specified, #exe behaves exactly like #print, but
+executes the final text as if typed. Examples:
+
+#exe ("sigh")       		(is the same as typing sigh from keyboard)
+#bind control_s=#exe ("#capture emergency" + %(@-7++))
+				(each time you press control_s, a different
+				 file is opened as capture)
+#exe <mytext			(read the file mytext and execute it)
+@emulate
+#emulate [<|!]{text|(expression)}
+
+Evaluate the expression and get result, then parse result as if received from
+remote host. If < or ! is specified, #emulate behaves exactly like #print,
+but parses the final text as if received from host. Examples:
+
+#emulate The assassin is dead! R.I.P.	(powwow reacts in the same way as
+					 if received the text from remote host)
+#emulate <mytext			(read the file mytext and parse it as
+					 if received)
+@var
+#var $number = [<|!]{text|(expression)}
+#var @number = [<|!]{text|(expression)}
+
+Evaluate the expression and get result, then put result in the indicated
+variable. If < or ! is specified, #var behaves exactly like #print, but puts
+the final text in the variable.
+You can also use an expression instead of 'number'. Examples:
+
+#var @(-1*4) = 27		       (same as #(@(-1*4)=27) )
+#var @1=!echo '5.6+6.48' | bc -l       (use bc calculator and put result in @1)
+#var $test = this is a very very very long text	   (you do not need quotes)
+#var $-6 = ("a short text")	       (since there are parentheses, you must
+				        also use quotes as in calculator)
+#var $-1 = <myfile		       (if myfile is longer than 1024 bytes,
+					powwow will read only the first 1024)
+
+#var variable
+will let you edit the current value of the variable
+
+#var variable=
+will delete the variable
+@write
+#write [>|!](text;name)
+
+Evaluate expression and get result, then append result to 'name' file.
+If > is specified, 'name' file is truncated before actually writing result.
+
+If ! is specified, 'name' shell command is executed, and result is written
+to its standard input. Examples:
+
+#write ($test; "myfile")	(append contents of $test to the end of myfile)
+#write !("55+12"; "bc -l")	(eval 55+12 using bc program)
+@if
+#if (expression) command1 [#else command2]
+
+Evaluate the expression: if result is 'true' execute command1,
+otherwise (if there is an #else) execute command2.
+If expression is false and there is no #else, execute nothing.
+remember that you must use braces {} if command1 or command2
+contain more than one instruction.
+@settimer
+#settimer (expr)
+
+Evaluate the expression and get result, then set 'timer' to restart from the
+corresponding number of milliseconds. Examples:
+
+#settimer (0)		(reset internal timer to 0)
+#settimer (20000)	(make internal timer restart from 20000 milliseconds)
+@while
+#while (expression) command
+
+This construct repeats a command while expression keeps true. As with #alias,
+#action and #for, the $n and @n in command are replaced by their values.
+Examples:
+
+#while (@0<13) {read @0;#(\@0++)}	  (read messages 0-12)
+	(As you can see, the last @0 is escaped to avoid it to be
+	 substituted with its value - we want to decrease the variable!)
+@math
+The inline calculator is used to evaluate expressions inside
+#(), #print (), #exe (), #send (), #if (), #while (), #for (), #do (), etc.
+and (if you use this syntax) expressions in pattern of #actions
+
+The inline calculator recognizes the following objects:
+
+numbers (only integers are supported)
+  decimal numbers:
+    simply write them.
+
+  hexadecimal numbers:
+    use '#' as prefix: #F is 15, #a0 is 160, and so on
+
+  numbers in any other base:
+    use base# as prefix: 2#101 is 5, 7#14 is 11...
+
+  if you use negative non-decimal numbers, you must put '-'
+  before the base: -2#101 is -5, 2#-101 causes an error.
+
+quoted-strings (i.e.: strings in " ").
+NOTE: powwow unescapes them when they are evaluated
+
+timer (number of milliseconds since last timer reset)
+
+map   (string containing the map shown by #map command)
+
+variables:
+  @n with n within -50 and 9, are numeric-variables
+  $n with n within -50 and 9, are string-variables
+
+  Variables with negative index (@-1...@-50 and $-1...$-50) are global,
+  while variables with positive or zero index are parameters: they are local to
+  the #alias, #action, #while or #for powwow is executing, and each time
+  powwow executes one of these commands, a new set of parameters is created.
+
+  @name are numeric-variables
+  $name are string-variables
+
+  Every character of the name must be either:
+    a letter (uppercase or lowercase)
+    an underscore '_'
+    a number
+  Exception: the first char of the name must NOT be a number
+
+operators between numbers:
+  ++ --  +  -
+   *  /  %
+   +  -
+  << >>
+   < <=  > >= == !=
+   &  |  ^
+  && || ^^
+   = *= /= %= += -= <<= >>= &= ^= |= &&= ^^= ||=
+   ,
+   (  )
+(no help on these operators, see a C-language manual)
+(note: unlike C, operators && and || always eval both arguments)
+(also, % and %= always return non-negative values)
+
+random number generator:
+
+  rand positive-number		(return a random number between 0 and n-1)
+
+operators between strings:
+   + chain two strings
+   = assign a string to a string-variable
+  += append a string to a string-variable
+   - compare two strings: result -1 if s1<s2, +1 if s1>s2, 
+      0 if s1==s2
+   < <=  > >= == != compare two strings
+  .? number of chars in a string
+  :? number of words in a string
+   ? position of first occurrence of second string in the first
+   * convert first char of a string into its ASCII code or vice versa
+   % convert string into its numeric value or vice versa
+
+operators between a string and a number:
+ (string is first argument)
+  : n-th word of a string
+  . n-th char of a string
+  :< :> <: >: .< .> <. >. return part of a string, in this way:
+     : before > or < means 'mark the n-th word from start'
+     . before > or < means 'mark the n-th char from start'
+     :  after > or < means 'mark the n-th word from end'
+     .  after > or < means 'mark the n-th char from end'
+     > means: return from marked word/char to end
+     < means: return from start to marked word/char
+
+Examples:
+
+#print($5="Hello, world")	(assign "Hello, world" to $5  and print it)
+
+#action >+exp ^You have scored $1 exp={#print;#print ("You gained " + 
+	%($1 - @-5) + " exp. points since last score"); #(@-5 = $1)}
+		(when you type 'score' in MUME, one of the lines you get is:
+		 You have scored xxx experience points ... )
+@warranty
+			    NO WARRANTY
+
+  11. BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
+FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
+OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
+PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED
+OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS
+TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE
+PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
+REPAIR OR CORRECTION.
+
+  12. IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
+REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,
+INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
+OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED
+TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
+YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
+PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGES.

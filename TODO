@@ -1,0 +1,46 @@
+-*-indented-text-*-
+
+From the authors of cancan:
+
+    THINGS TO DO
+	  Cancan should know the codes of at least some keys
+	  by looking in the TERMCAP. (especially control keys are trivial!)
+
+	- Run (a)lint!
+
+	- There seems to be problems with running cancan on exotic terminals.
+	  This defeats the very purpose of all the carefully terminal-
+	  independent code with TERMCAP, and is generally embarrassing.
+
+	- more system calls should be checked for EINTR for sysV unices
+
+	- negotiate the telnet BINARY option
+
+	- support the telnet IAC GA command to identify prompts
+	  (But what for? Prompts have to be identified as such in the absence
+	   of GA anyway, and there doesn't seem to be a need for it right
+	   now.)
+
+	- implement reverse-incremental-search (like ^R in GNU Readline)
+
+    KNOWN BUGS
+	- Deleting more than one character with deletechar() might leave
+	  ugly traces on lines that are entirely deleted.
+
+	- using #hilite with coloured background might have effects beyond the
+	  input line, depending on the terminal (don't do that, then :-)
+
+    FUTURE POSSIBLE IMPROVEMENTS
+	Do some more for portability (clean up the terminal mess)
+	The source should be more modular
+	Filtering output through shell command (grep etc)
+
+
+THINGS TO DO/PLANNED IMPROVEMENTS on powwow:
+       - make a better #help
+       - add termcap `end of bold', `end of blink' etc.
+       
+       If you have ideas, suggestions or whatever, e-mail them to me
+       (max@Linuz.sns.it) and if I find them interesting, I will add them.
+       Also, I am trying to keep powwow updated with further releases
+       of cancan.

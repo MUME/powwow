@@ -1,0 +1,2152 @@
+			     P O W W O W
+
+			doc for version 1.2.4
+		     last modified Sep 23, 1998
+
+INTRODUCTION
+
+	powwow is a client program, which replaces telnet for the lazy
+	mudder who wants some (only some?) extra features. 
+	It is primarily designed for DikuMUDs, but nothing prevents its use
+	for other types of muds.  powwow is based on another client, cancan,
+	and cancan was originally inspired by tintin (yet another client)
+	by Peter Unold (pjunold@daimi.aau.dk), but is entirely re-written.
+	powwow also implements the MUME remote editing protocol, which
+	enables you to edit texts on the mud using your own favourite
+	editor, several texts at once if you have a windowing terminal.
+
+STARTING POWWOW
+
+	Powwow maintains definition files where aliases, actions and
+	mud addresses are saved. Powwow is then called by:
+
+	$ powwow definition-file
+	
+	(the $ above stands for your prompt, do NOT type it)
+
+	If the definition file doesn't exist (as the first time you
+	use powwow) you are asked for a host name and port number.
+	This will then be stored in the file. The file will be updated
+	every time you type '#save' or when powwow terminates.
+	The file is in plain text, so you can edit it if you want.
+	It makes sense to have one file for each mud you play, or for
+	each set of definitions you use in the same mud.
+
+	If the environment variable POWWOWDIR exists, that directory
+	is first searched for definition files and new files are
+	created there rather than in the current directory, unless
+	definition-file contains a slash ("/").
+	
+	The file 'Config.demo' is a demonstrative definition file provided
+	together with powwow to help you building your own configuration.
+	Look at it: there are many useful examples and non-trivial code
+	to fully use powwow.
+
+	You may also start powwow with:
+
+	$ powwow netaddress portnumber
+
+	but nothing will then be saved.
+
+	In alternative you can simply type:
+
+	$ powwow
+
+	and you will enter test-mode: you will be able to use internal commands
+	but you will need to start a session manually
+	(#connect main <address> <port>) if you want to connect to a MUD.
+
+	To solve the problem met in MUME, where you may have to try many
+	different servers to connect to the game, a fourth syntax has been 
+	added:
+
+	$ powwow definition-file netaddress portnumber
+
+	With this syntax powwow reads settings from definition file,
+	but overwrites the old address with the newly specified one.
+
+	Note: If you have several sessions (different invokations)
+	with the same definition file active simultaneously, the
+	settings changed in one session can be overwritten by a change
+	in another session.
+
+QUITTING POWWOW
+
+	At any time, you can type #quit to exit from powwow. Be
+	careful, as #quit brutally closes the connection to the mud,
+	without renting your character. Normally, you want to log out
+	gracefully from the mud before doing that. If you wish to cut
+	your link manually, you can also press the break key on your
+	system twice (usually Control-C or DEL) (You must hit it twice
+	because hitting only once is used to stop command parsing -
+	see the bottom of this file).
+
+POWWOW TEST MODE
+
+	There are various ways to enter powwow test mode:
+
+	1) typing `powwow' from you command shell
+	   (You will have to load your definition file manually if you need it,
+	    using the following command: #load <save-file> )
+
+	2) starting powwow with a definition file that does not contain
+	   a '#host' line or contains a '#host' alone, without any address
+
+	3) starting powwow opening one or more MUD connections,
+	   then closing them all. (You'll need to have #option quit
+	   disabled or powwow will exit when closing the last connection)
+	   
+	Remember that to connect to a MUD from test mode you must use:
+	#connect main <address> <port>
+
+COMMAND CHAINING
+
+	Powwow allows you to type several commands on one line
+	separated by the ; character. If you want to use a semicolon
+	literally, prefix it by a backslash (\). (Backslashes must of
+	course be escaped too if used literally.)
+
+	Examples:
+	> n;get coins;s			rapidly rescue some money
+	> say No beer? \;)		semicolon must be escaped
+
+	In addition, you must also surround every list of commands by braces:
+	'{' and '}'. The only exception (as you can see from the example above)
+	is when you type multiple commands from keyboard: in that case,
+	and only in that, braces are not needed.
+	Also, if you want to use a { or } literally, prefix it with a backslash
+	as you do with semicolons.
+
+	Another use of semicolons is to send a <new-line> character to the MUD
+	you are connected to. Infact powwow sends a <new-line> every time it
+	meets a null command (0 chars) followed by a semicolon.
+
+	Examples:
+	>				press <return> only: send a <new-line>
+	> ;				press ; and then <return>: same effect
+	> ;;				send two <new-line>
+	> ;;;				three <new-line> ...
+
+	Of course multiple <new-line> are considered as multiple commands,
+	so you usually have to surrond them with braces. If directly typed
+	from keyboard, the braces are optional.
+	
+	> {}				do nothing
+	> {;}				send a <new-line>
+	> {;;}				send two <new-line>
+	> {;;;}				and so on...
+	
+	The verbatim mode disables this special meaning of semicolons and
+	braces, and the #quote command lets you switch between verbatim and
+	normal mode.
+	
+SPECIAL COMMANDS: ALIASES AND ACTIONS
+
+	Powwow parses all lines beginning with the character '#' as
+	special commands. To send a line that begins with '#' itself, precede
+	it with a backslash. The commands are case-sensitive.
+	Commands can be abbreviated as much as you want.
+	-----------------------------------------------------------
+	Alias definition
+	#alias [name[=[command]]]
+
+	Aliases are abbreviations for longer, frequently used commands.
+	As all powwow commands, they are only recognized at the beginning
+	of a line or directly after a semicolon, an open or closed brace.
+	When an alias is used, the first word following the alias name
+	is placed in the variable $1, the second in $2, etc... up to $9.
+	also, the whole string following alias name is placed in $0.
+
+	Then, before executing <command>, every $n in <command> is replaced 
+	by its contents.
+	
+	Example:
+	#alias summ=cast 'summon' $0	(then "summ thor" is replaced by
+					 "cast 'summon' thor")
+	#alias cs=cast '$1' $2		("cs summon thor" is expanded to
+					 "cast 'summon' thor")
+	#alias summ			(lets you edit the definition of summ)
+	#alias summ=			(removes the alias summ)
+	#alias				(display all defined aliases)
+	#alias ws={wake;stand}		(note that you must use braces)
+
+	As noted above, aliases are saved automatically if you started powwow
+	with a file name as argument.
+	Aliases can contain other aliases, and an alias can also contain itself
+	(be careful, or powwow will enter a long - but not infinite - loop)
+	Aliases are not expanded in verbatim mode.
+
+	Where aliases contain other aliases, one or more '\' can be prepended
+	to $n to delay text substition or to use the symbol $n literally.
+
+	Example:
+	#alias ac=#alias $1=cast '$2' \$0
+		(then "ac sm summon" will give you a new alias
+		 "#alias sm=cast 'summon' $0")
+
+	#alias \==score
+		(this defines = as an alias for 'score', Note that you must
+		 escape the first = to force powwow to consider it literally)
+
+	#alias \`=#history $0
+		(this defines \ as an alias for '#history'. Note that you must
+		 use ` to escape the \ . Just doing \= would escape the = )
+
+	Aliases starting with `#' are allowed and do work,
+	but cannot override any special command.
+	-----------------------------------------------------------
+	Automatic command execution triggered on output
+	#action [[<|=|>|%][+|-]label] [{pattern | (expression)}=[command]]
+
+	When 'pattern' is found in a line from the remote host, the
+	'command' is automatically executed. If the pattern contains $n,
+	powwow matches one word of the remote line and puts it in the
+	variable $n. If the pattern contains &n, powwow matches a string
+	(possibly more than one word) of the shortest possible length
+	from the remote line and puts it in the variable $n.
+
+	As in aliases, $n can be from $1 to $9. NOTE: $0 is a variable as well,
+	but #action automatically places in it the whole line from remote host.
+	As well, &n can be from &1 to &9.
+
+	Warning: powwow does NOT print on screen lines from MUD that are
+	intercepted with an #action. So if you want to print them, you
+	must explicitly use a #print or set the #option +autoprint
+	(the help on #print and #option is below in this text)
+	If you want to intercept a prompt, use #prompt instead of #action.
+	(the help on #prompt is near the end of this file)
+
+	If the first character of the pattern is ^ (caret), the match
+	will only be possible at the beginning of a line.
+	The match is case-sensitive.
+	If 'label' is specified, the action is labeled; otherwise it is
+	numbered.
+	
+	If an <expression surrounded by parentheses> is used insted of pattern,
+	powwow evaluates the expression with the inline calculator (see below)
+	and then uses the result as pattern.
+
+	Examples:
+	#action ^You are hungry=eat bread
+	#action ^You are hungry=	   		(removes the action)
+	#action ^$1 hugs you={#print;kiss $1}
+	#action ^$1 says &2=say $1 said $2      (note you must use $, not &
+						 after the =)
+	#action Jehova={#print;say Who said that? Stone him!}
+
+	Labeled actions:
+	> means define, < means delete, = is edit, + is turn on, - is turn off.
+	Also, >- means define and turn off, while >+ means define and turn on
+	( > alone is the same as >+ )
+
+	#action >fount ^There is a fountain here={#print;drink water}
+							(named action)
+	#action -fount					(turns off action)
+	#action +fount					(turns it back on)
+	#action =fount					(lets you edit it)
+	#action <fount					(removes action)
+
+	#action >-loot is dead! R.I.P.={#print;get all from corpse}
+					(define and turn off the action)
+
+	#action >joke ("^$1 says '&2;)'")= wink $1
+				(you must either use this syntax or escape the
+				 ; to force it to be considered literally)
+
+	#action >argh ^$1 tells you 'hello \`=tell $1 I heard you
+				(as in #alias, \ must be followed by ` when you
+				 need the \ to be followed by a special char
+				 and you do not want this char to be escaped)
+
+	If you have compiled powwow with -DUSE_REGEXP and use % instead of >
+	you define an action that uses an Extended POSIX regexp to match
+	instead of the standard matcher.
+
+	#action %first ^([[:alpha:]]+) ([[:digit:]]+)=#print $2 counted $3.
+							(matches abc 123)
+
+	Note that if the pattern starts with '(', it is evaluated, which means
+	that a regexp that starts with '(' has either to be surrounded by
+	("...") or to be prepended by a backslash.
+	Also note that powwow requires parentheses to be balanced:
+	for example, \(.+|) would be a valid regexp pattern as the backslash
+	gets removed by the unescaping, but powwow will choke on it
+	as the first parenthesis is escaped while the second is not.
+
+	#action %second ("(..+)-\\1")=#print Double $1
+						(matches xyz-xyz)
+	#action %third \(..+\)-\\1=#print Double $1
+						(same as above)
+	For regexp actions, $0 = the line, $1 = the whole match and $2...
+	contain the submatches.
+
+	Actions and aliases can run other powwow commands, including
+	#action and #alias.
+	Example:
+	#alias calc=#! echo '$0' | bc -l
+	#alias hungryon=#action ^You are hungry=eat bread
+
+	As with aliases, additional \'s can be prepended to $n to
+	delay text substitution in actions.
+	Example:
+	#action >reply ^$1 tells you={#print; #alias reply=tell $1 \$0}
+	-----------------------------------------------------------
+	
+MISSING: #PROMPT
+
+	There is another special command quite similar to #action:
+	#prompt [[<|=|>|%][+|-]label] [{pattern | (expression)}=[command]]
+
+	You will need to use it only if you want to mess with the prompt
+	that your MUD sends, which is often not needed. Also, to use it
+	you need to understand exactly how powwow recognizes prompts,
+	so the description is considered an advanced topic and is placed
+	near the end of this file, in the "ADVANCED TOPIC: #PROMPT" section.
+
+MISSING: SUBSTITUTION AND UNESCAPING
+
+	Also, only intuitive definitions of substitution, delayed substition
+	and escaping/unescaping have been given so far. If you want the real,
+	rigorous thing, read the "ADVANCED TOPIC: SUBSTITUTIONS AND UNESCAPING"
+	section near the end of this file. That section also explains
+	`just in time' substitution, not yet introduced.
+	-----------------------------------------------------------
+	
+SPECIAL COMMANDS: ALL OTHERS
+	
+	This is the rest of #commands recognized by powwow.
+	-----------------------------------------------------------
+	Toggle verbatim mode
+	#quote [on | off]
+
+	In verbatim mode, no alias expansion takes place and
+	semicolons, escapes, braces and `  are sent as typed,
+	unless the command line begins with a #, so you can still issue
+	powwow - specific commands.
+	This is useful if you want to paste a text from an editor into
+	a powwow session.
+	Type #quote to turn on the verbatim mode, and type #quote again
+	to turn it off.
+	-----------------------------------------------------------
+	Show/execute commands in history
+	#history [number]
+
+	#history alone shows you the last commands in history, up to the number
+		of lines in your screen.
+	#history -n shows the last n commands in history, and
+	#history n  executes the n-th command of the history.
+
+	Recursive #history commands (i.e. an #history <n> calling itself or
+	another #history <n>) are allowed only up to levels of 128 recursions.
+	
+	Example:
+	
+	#history 1				(repeat last command)
+	-----------------------------------------------------------
+	Add a text or expression to word completion list (not to history)
+	#add {text | (expression)}
+
+	#add puts the text or result of expression (calculator is used to
+	evaluate the expression) in the word completion list.
+	Useful if used together with #action. 
+	Example:
+
+	#action >reply ^$1 tells you={#print;#add $1}
+			(from now on, you can use TAB to complete that name)
+	-----------------------------------------------------------
+	Put a text or expression into history (and to word completion list)
+	#put {text | (expression)}
+
+	#put puts the text or result of expression (uses calculator) in the
+	history, so that you can use cursor-up key to recall the text as if
+	typed from keyboard.
+	Also, you can execute the text using the #history command.
+	Example:
+
+	#action >safeflee ^You flee head over heels.=
+		{#print;#put #print You have already fled away!}
+
+	(If you type 'flee' from keyboard, you can keep trying to flee using
+	 cursor-up (which gets the last command in history) and <RETURN> key.
+	 When you finally manage to flee, the message above is put in history,
+	 so that further attempts to flee do not lead you again in danger)
+	-----------------------------------------------------------
+	Bind keys to enter commands
+	#bind [edit | name [sequence][=[command]]]
+
+	You can bind most function keys and control keys to enter a command
+	for you when the key is pressed. Also, you can redefine a key already
+	used for an editing function (such as the arrow keys).
+	'name' is the label of the key you want to define; you can just use
+	what is written upon it. When defining a new key binding, you will
+	be asked to press it so powwow can record the control sequence
+	your terminal sends.
+	If you want, you can specify the control sequence directly in the #bind
+	command instead of having to press the key on your keyboard.
+
+	Examples:
+
+	#bind				(lists all user key bindings)
+	#bind edit			(lists all line editing keys)
+	#bind f1=recite scroll		(you'll have to press f1 then)
+	#bind f1=cast 'sanctuary'	(change existing definition)
+	#bind f1			(lets you edit the definition)
+	#bind f1=			(removes the key)
+	#bind f1 [[A=cast 'heal'	(also tell powwow that f1 on your
+					 keyboard sends ESC [ [ A, so you
+					 do not have to press it)
+
+	NOTE: if there is already something on your input line, powwow
+	does not ruin it when you press f1 (or any other #bind), but executes
+	the command you want and then shows you again the input line.
+
+	#bind f5=&prev-line	(&prev-line is one of the reserved commands for
+				 line-editing functions, see bottom
+				 of this file)
+	#bind Up=u		(Up is an editing key, but can be redefined)
+
+	By default, the vt100 numeric keypad is partially used to walk around
+	with:
+		Key	string sent
+		2	s
+		3	d
+		4	w
+		5	exits
+		6	e
+		7	look
+		8	n
+		9	u
+
+	The reserved names that powwow identifies as line-editing functions
+	are at the end of this file, together with the default keys used for
+	them.
+
+	Remember that ALL keys can be redefined...
+	-----------------------------------------------------------
+	Change the keyboard sequence associated to an existing key binding
+	#rebind name [sequence]
+	
+	If you just want to change the control sequence of a binding, but not
+	its name or its effect, you can just tell powwow to 'rebind' it.
+	If #rebind is invoked with only the name of a binding, you are asked
+	to press the key you want to rebind.
+	Of course, you will not be asked to press the key if you specify
+	its control codes in the #rebind command.
+	Examples:
+	
+	#rebind f1 ^[OP		(tell powwow that your f1 key sends ESC O P
+				 and not ESC [ [ A)
+	#rebind f1		(you are asked to press again f1, useful if you
+				 changed terminal in the meanwhile)
+        -----------------------------------------------------------
+	Change the keyboard sequence of all existing key bindings
+	#rebindall
+	#rebindALL
+
+	#rebindall runs #rebind on most key bindings (skips trivial ones like
+	^A, ^B, etc.), asking you to press each corresponding key.
+
+	#rebindALL does the same, but for really every key binding.
+	-----------------------------------------------------------
+	Execute a key as if pressed on keyboard
+	#key name
+
+	If 'name' is the label of one of the key defined with #bind, 
+	(see above) #key executes the corresponding command.
+
+	Example:
+	If you have already typed
+	  #bind f1=cast 'heal'
+
+	At any time, then, you can either:
+	- Press your f1 key on you keyboard
+	- Execute the command "#key f1"
+	and powwow will execute the command "cast 'heal'" for you.
+	
+	Using #key, for example, can be useful from inside an 
+	#alias or #action, since powwow cannot press f1 for you.
+
+	Since 1.1.5, powwow allows #key also for editing functions.
+	If you have already
+	  #bind Up=&prev-line
+	and you execute
+	  #key Up
+	powwow will do what you expect: step to the previous line in history.
+	
+	Warning: powwow does not distinguish at all between a real key pressed
+	on the keyboard and one faked with #key, so commands executed with #key
+	will also be written in the #record file.
+
+	-----------------------------------------------------------
+	Execute an editing function as if pressed on keyboard
+	#keyedit function
+
+	If 'function' is the name of one of the reserved commands
+	for line-editing functions, #keyedit function will run it.
+	
+	For example, if you already have
+	  #bind Up=&prev-line
+	the following are all equivalent:
+	  * pressing the key Up on your keyboard
+	  * executing #key Up
+	  * executing #keyedit &prev-line
+
+	Anyway, if you type #key or #keyedit directly from the keyboard
+	the effect is slightly different, as you have to press ENTER
+	to run them and the function &enter-line (which is executed by ENTER)
+	has a few side effects.
+	-----------------------------------------------------------
+	Clear aliases, actions or what you specify
+	#reset {all | name of a list}
+
+	Argument:	Effect:
+	all		clear everything (apply all lines below)
+	alias		clear all aliases
+	action		clear all actions
+	bind		clear all key bindings and restart with default
+			settings. Note that also editing keys are resetted
+			to default function.
+	at		clear all delayed commands
+	in		(same thing)
+	mark		clear all markers
+	prompt		clear all prompts
+	var		clear all variables
+	-----------------------------------------------------------
+	Mark certain output
+	#mark [pattern[=[attribute]]]
+
+	This command highlights a part of a line in your output in the way you
+	choose (if your terminal supports it).
+	See the section "ATTRIBUTES: COLORS AND OTHER HILIGHTINGS"
+	about the syntax of attributes.
+
+	Wildcards are allowed in the pattern, and syntax is very similar to
+	#action: $ matches a single word, & matches any string.
+
+	Examples:
+	#mark Sizzler=bold		(mark `Sizzler' in bold)
+	#mark Sizzler			(lets you edit the above definition)
+	#mark Sizzler=			(Sizzler is no longer put in bold)
+	#mark				(lists all markers)
+	#mark {&}=inverse		(mark in reverse any string in { }
+					 note that also the { } are highlited)
+	#mark ^You=yellow		(mark `You' in yellow only if it appears
+					 at the beginning of a line)
+	#mark \^=on blue		(mark a literal ^ )
+	-----------------------------------------------------------
+	Set/show priority for new actions/marks
+	#nice [{number | (expression)} [command]]
+
+	When #nice is 0 (default) powwow puts new actions at the bottom of the
+	action list (and same thing for marks). If you want to put new
+	actions/marks in another point of the list, just set #nice to the
+	corresponding value:
+
+	If you specify a command after 'number', the new #nice value is used
+	only for that command, then the old value is restored.
+
+	Examples:
+
+	#nice 12 	(tells powwow to put new actions/marks in the 12th
+			(place of the list)
+
+	#nice 4 #mark Grizzly=red on blue  (put the mark in the 4th place of
+					    the list)
+
+	Note that #nice works only for new actions/marks: if an action/mark
+	is already defined, you cannot change its place in the list.
+	-----------------------------------------------------------
+	Input highlighting
+	#hilite [attribute]
+
+	This sets the attribute of your entered text to the given attribute.
+	Just #hilite turns it off.
+	See "ATTRIBUTES: COLORS AND OTHER HILIGHTINGS" below for more syntax.
+	-----------------------------------------------------------
+	Set standard colours
+	#color [attrib]
+
+	(This command exists only if BUG_TELNET is defined, to cope with
+	 deficiencies of NCSA telnet 2.2)
+	Set your standard foreground and background to the colours you specify.
+	#color			returns to the default colors for your screen
+	-----------------------------------------------------------
+	Capture output to file	
+	#capture [[>]filename]
+
+	This captures all output from the main MUD connection and your typed
+	commands to a local disk file. To close the file and end the
+	capturing, type #capture without argument.
+	If the filename starts with a '>', new text will be appended to the 
+	end of the file instead of overwriting it.
+	You can only capture output to one file at a time.
+	Example:
+	> #capture message
+	> look at board
+	> #capture
+	
+	It is possible to capture in the #capture file even text that you have
+	_already_ received: see #setvar buffer.
+	-----------------------------------------------------------
+	Record typed commands to file	
+	#record [filename]
+
+	This records all text typed from keyboard to a local disk file.
+	(output from remote host is not recorded)
+	To close the file and end the recording, type #record without argument.
+	You can only record typed text to one file at a time, but #capture and
+	#record can be active at the same time on different files.
+	Example:
+	> #record walk-home
+	> n;e;e;u;n;w;s
+	> open door
+	> s
+	> close door
+	> sleep
+	> #record
+	-----------------------------------------------------------
+	Capture output to file, with timestamps
+	#movie [filename]
+
+	This is similar to #capture, but adds timestamps to each line
+	received from the main MUD connection or typed from the keyboard,
+	to allow replay at correct speed.
+	The program `movie_play' for replay is included with powwow sources.
+	Usage: `movie_play <filename>'
+	To convert a movie to plain ASCII, the program `movie2ascii'
+	is included too.
+	Usage: `movie2ascii <infile> <outfile>'.
+
+	It is possible to capture in the #movie file even text that you have
+	_already_ received: see #setvar buffer.
+	-----------------------------------------------------------
+	Execute a shell command
+	#! command
+
+	Executes a command using /bin/sh. Powwow waits until your shell
+	finishes, but you can put jobs in the background with & as usual.
+	Example:
+	> #! who | sort | less
+	> #! nethack
+	> #! xbiff &
+
+	Note that semicolons, escapes and braces need to be escaped if they
+	are to be sent to the shell.
+	If your shell has job control, you can also suspend powwow
+	with ^Z as usual.
+	-----------------------------------------------------------
+	Put a string in the edit buffer automatically
+	#prefix [string]
+
+	Each new line you type will automatically begin with the prefix string.
+	You can of course edit or delete the inserted string as usual. To
+	remove the prefix, just issue a #prefix command without arguments.
+	This is handy when you are talking to someone, for example.
+	> #prefix tell arthur 
+	-----------------------------------------------------------
+	Help
+	#help [keys | math | command]
+
+	Shows a list of powwow's commands. 
+	'#help keys' shows the editing keys.
+	'#help math' show help on inline calculator.
+	You can also have help on specific commands, using for example
+	'#help alias' or in general '#help <command-name>'.
+	A help file is needed and provided for this last feature of #help,
+	and powwow will look for the file "powwow_help" in the directory
+	specified by the environment variable POWWOWHELP. If this variable
+	does not exist, powwow looks in current directory.	
+	-----------------------------------------------------------
+	Command repetition
+	#n command
+
+	This repeats the command n times. Example:
+	> #5 buy bread				(buy five breads)
+
+
+	Alternatively, you can use this syntax to repeat a command n times:
+	#do (expr) command
+
+	In this case, powwow evaluates the expression, and uses the result
+	as counter.
+	Example:
+	> #do (3*8) north			(go north 24 times)
+	-----------------------------------------------------------
+	Iterate a command
+	#while (expression) command
+
+	This syntax repeats a command while expression (evaluated with
+	calculator) keeps true. (see below for help about calculator)
+	As with #alias and #action, the $n and @n in command are
+	replaced by their values. (Even if you can, using @n after the =
+	in #action and #alias is useless, because you have no way to
+	assign them a non-zero value. This is the reason why we did not talk
+	about them in the #alias and #action section)
+
+	Example:
+
+	#while (@0<13) {read @0;#(\@0++)}	  read messages 0-12
+	As you can see, the last @0 is escaped to avoid it to be
+	substituted with its value. (We want to increase the variable!)
+	-----------------------------------------------------------
+	Iterate a command
+	#for ([init];check;[loop]) command
+
+	Directly copied from C language, this command evaluates 'init'
+	with calculator (if specified), then repeats the following cycle:
+		1) evaluate 'check', if result is 0 (false) stop repetition
+		2) execute 'command'
+		3) evaluate 'loop' (if specified)
+		4) restart from 1)
+
+	As with #while, #for performs the parameter substitution in 'command',
+	so the only significative difference between #while and #for is that
+	#for allows you to execute an initialization before the repeat cycle.
+
+	Example:
+
+	#for (@1=32; @1<=47; @1++) read @0	(read messages 32-47)
+	-----------------------------------------------------------
+	Branch execution command
+	#if (expression) command1 [; #else command2]
+
+	Evaluate the expression: if result is 'true' execute command1,
+	otherwise (if there is an #else) execute command2.
+	If expression is false and there is no #else, execute nothing.
+	remember that you must use braces {} if command1 or command2
+	contain more than one instruction.
+
+	Note that nested #if-#else are allowed, and that #if-#else itself
+	is not a multiple command.
+
+	WARNING: using an alias for #if is very dangerous and will cause
+	powwow to make confusion when the full #if-#else syntax is used.
+	-----------------------------------------------------------
+	Automapping control
+	#map [-[number] | walksequence]
+
+	With no argument, "#map" shows the map of the directions you
+	travelled up to now.  "#map -" clears the last number of steps
+	from the map.
+
+	Example:
+	#map		(displays "#current map: e3su" after above walk)
+	#map -1		(leaves the map as "esss")
+	#map -		(clears the whole map and starts fresh)
+	#map nsssue	(add the list of directions to map)
+	-----------------------------------------------------------
+	Retrace steps
+	#retrace [number]
+
+	This command walks you in the reverse direction of the last
+	number of steps.  If number is 0 or left blank, you walk all
+	the way back to where automapping started.
+	-----------------------------------------------------------
+	Connect initialization string
+	#init [=[command]]
+
+	This command sets up the initialization string to send to
+	the host on establishing a connection.
+
+	Example:
+	#init				(shows the string)
+	#init ={#identify;#speedwalk}	(sets the string)
+	#init =				(clears the whole string)
+	-----------------------------------------------------------
+	Identify as an editing client
+	#identify [startedit [endedit]]
+
+	This command sends an identification string to the server, to
+	indicate that the client supports editing functions. It is
+	best attached to an action trigged by a string in the login
+	screen, but can also be entered by hand.
+	This command must be issued for the cooperative editing to work
+	on servers that support it (currently only MUME).
+	The startedit/endedit parameters are commands issued when an editing
+	session starts/ends (for changing your title, emoting etc).
+
+	Example:
+
+	#action >mume ***  MUME=#identify
+	#identify foo bar
+	(where foo and bar are aliases that do something useful)
+	-----------------------------------------------------------
+	Identify as a IAC GA compliant client
+	#idprompt
+
+	This command sends an identification string to the server, to
+	indicate that the client supports (and wants) the special sequence
+	IAC GA at the end of each prompt. This helps the client
+	to automatically detect the prompt, and can be used as alternative
+	to #prompt / #isprompt if all you want with the prompt is detecting
+	it (and not altering it)
+
+	BIG WARNING:
+		this is experimental and not tested!
+		last time I checked, MUME used to kill the link on #idprompt
+		
+	Example:
+
+	#action >mume ***  MUME={#print;#identify;#idprompt}
+	#idprompt
+	-----------------------------------------------------------
+	List all editing sessions
+	#edit
+
+	This command shows your active editing sessions, with a brief
+	description and their number.
+	-----------------------------------------------------------
+	Cancel an editing session
+	#cancel [number]
+
+	Without an argument, all editing sessions are cancelled;
+	otherwise, only the given session is cancelled. The corresponding
+	editor processes are brutally killed.
+	-----------------------------------------------------------
+	List/turn various options on/off
+	#option [[+|-|=]option-name]
+	
+	Currently available option names are:
+		exit, history, wrap, compact, debug, echo, info, keyecho,
+		speedwalk, wrap, autoprint, buffer, reprint, sendsize,
+		autoclear
+
+	#option +name		turns an option on
+	#option -name		turns it off
+	#option  name		toggles it
+	#option =name		reports its status
+	
+	-------------
+	#option exit
+	
+	If the `exit' option is on, powwow automatically quits when the last
+	connection is closed. Otherwise, to quit powwow you need to manually
+	type `#quit'
+	-------------
+	#option history
+	
+	With `history' option on, powwow writes into your savefile also
+	all your commands in history
+	-------------
+	#option words
+	
+	With `words' option on, powwow writes into your savefile also
+	your word completion list
+	-------------
+	#option compact
+
+	Normally, powwow does not touch the prompts on screen while you play.
+	In `compact' mode, instead, lines containing only a prompt are deleted
+	when further messages arrive from the remote host.
+
+	WARNING: this command works correctly only if you have #prompts which
+		 correctly run #isprompt. Otherwise it may occasionally erase
+		 some lines from the screen.
+	-------------
+	#option debug
+
+	Normally, powwow does not print on screen the command lines it
+	executes. When `debug' is on, every line executed by powwow is also
+	echoed on screen, so that you can check if your code works correctly
+	(warning: this prints LOTS of lines on your screen)
+	-------------
+	#option echo
+
+	Normally, powwow echoes on your screen each command sent to remote
+	host but not directly typed (example: aliases and actions sending text
+	to the MUD). When `echo' is off, such commands are still sent to host,
+	but not echoed on screen.
+	-------------
+	#option info
+
+	Normally, powwow prints on screen some messages each time you
+	define/edit/delete an #alias, #action, #bind and similar.
+	When `info' is off, those messages are not typed at all.
+	(But errors are still printed on screen)
+	-------------
+	#option keyecho
+
+	Normally, powwow echoes on your screen the commands sent to remote host
+	when you hit a key associated to a #bind. When `keyecho' is off, such
+	commands are still sent to host, but not echoed on screen.
+	-------------
+	#option speedwalk
+
+	With `speedwalk' on, a command consisting of only lowercase
+	n, e, s, w, u, d and numeric digits is considered to be a
+	walk sequence.  The numeric digits specify the number of
+	times to repeat the direction immediately following.
+
+	Example:
+	esssu		(walk east, 3 south, up)
+	e3su		(same as above)
+	-------------
+	#option wrap
+
+	Normally, powwow wraps words that would have been cut by the right
+	margin to the next line. This command lets you turn it off and on.
+	-------------
+	#option autoprint
+
+	If `autoprint' is on, powwow prints lines matched by an #action
+	even without an explicit #print.	
+	-------------
+	#option sendsize
+
+	Usually powwow does not send the window size to the MUD unless asked.
+	If you want to send the window size automatically upon connecting,
+	you may enable this option.
+	-------------
+	#option autoclear
+	
+	Powwow normally erases the input line before executing commands
+	from spawned programs, but that is slow and causes flicker.
+	If autoclear is disabled flicker reduces to minimum,
+	on the other hand spawned programs must then execute #clear
+	before sending anything to screen.
+	-------------
+	#option reprint
+
+	If `reprint' is on (off by default), powwow prints again commands
+	sent to the mud but not yet executed.
+	WARNING: it works only if you use #prompts which correctly run
+		 #isprompt.
+
+	++++ example: ++++
+	*>look
+	south
+	down
+	
+	The High Path
+
+	*>Path Climbing a Hill
+	
+	*>
+	Alas, you cannot go that way.
+	
+	*>
+	++++ becomes: ++++
+	*>look
+	south
+	down
+	
+	The High Path
+	
+	*>(south)
+	Path Climbing a Hill
+	
+	*>(down)
+	Alas, you cannot go that way.
+	
+	*>
+	-----------------------------------------------------------
+	Show current version
+	#ver
+
+	Displays the current version, some compile options and (if
+	your compiler supports it) when powwow was compiled.
+	-----------------------------------------------------------
+	Multiple connections handling commands
+	#connect [session-id [initstr] [host port]]
+				connect a new session / list sessions
+	#snoop session-id	toggle output display for session
+	#zap session-id		disconnect a session
+	##<session-id>		set <session-id> as default session
+	##<session-id> command	execute command on <session-id> session
+
+	No docs here. If multiplaying is allowed on you MUD (and many
+	do NOT allow) you can experiment a little to find how they work.
+	Or you can open two connections to two different MUDs :)
+	-----------------------------------------------------------
+	Spawn an external program
+	#spawn session-id command
+	
+	Creates a new session, connected to a shell command instead of a MUD.
+	Writing to ##<session-id> sends data to the command's standard input,
+	while the command's standard output is executed as if typed
+	from keyboard. Useful if you are a programmer and you want to create
+	very complex filters or robots, for which #actions are too limited.
+	Command's standard output *MUST* terminate with a newline ('\n') in
+	order for powwow to execute it.
+	You can send multiple commands at once terminating each of them
+	by either a semi-colon ';' or a newline '\n', except for the last one
+	which (I repeat) *MUST* terminate with a newline.
+	
+	You can close these sessions with #zap and list them with #connect
+	as usual.
+	
+	Depending on how lazy you are, you can choose two different ways
+	to have spawned programs print to screen:
+	
+	The first is automatic, but slow: with `#option +autoclear'
+	powwow clears the input line before executing every line received
+	from the program. This is of course slow and causes flickering.
+	
+	The second is more complex, but faster and reduces flickering to the
+	minimum: set `#option -autoclear' from the beginning, then have
+	the program execute `#clear' before printing.
+	-----------------------------------------------------------
+	Exit from powwow
+	#quit
+
+	Very little to say here. Just remember that #quit brutally
+	closes all mud connections that are still open, without
+	renting your characters. Quite likely, you want to rent them all
+	before quitting.
+	-----------------------------------------------------------
+	Set definition-file and save settings to it.
+	#save [definition-file]
+
+	Useful after you write large chunks of code.
+	Remember anyway that powwow automatically saves the settings
+	before exiting.
+	
+	#save actually writes settings to a temporary file and overwrites
+	the definition file only if write succeeds. This is to avoid wiping out
+	definition file in case of `disk full' or other errors.
+	-----------------------------------------------------------
+	Set definition-file and load settings from it.
+	#load [definition-file]
+
+	Useful if you want to undo the changes in your settings.
+	
+	NOTE: current settings are completely erased before actually loading
+	from file. In case of errors, powwow reloads the default editing keys.
+
+	If you just want to add the contents of a file to your current settings
+	use #exe <filename instead of #load.
+	-----------------------------------------------------------
+	Set/show/clear definition-file name
+	#file [=[definition-file]]
+
+	As default, the definition-file is the one loaded when you start
+	powwow. Remember that powwow automatically saves your settings to it
+	before exiting. If you want to disable this autosave, use #file =
+	-----------------------------------------------------------
+	Various commands:
+	#net		show amount of data transmitted to and received from
+			the remote host.
+	#cpu		show the CPU time used by powwow.
+			(if powwow does not find the symbol CLOCKS_PER_SEC
+			 defined at compile time, the result may not be in
+			 seconds...)
+	#time		show current time/date. Useful if you want to use #at.
+
+	#beep		ring your terminal's bell (like #print (*7))
+	-----------------------------------------------------------
+	List/delete/define/edit delayed commands
+	#at [label [(time-expression) [command]]]
+	or
+	#in [label [(delay in millisec.) [command]]]
+
+	If you want to tell powwow to execute the command 'kill wolf'
+	2 seconds after you type it, use this command:
+	#in attack (2000) kill wolf
+	Let's explain the command:
+	'attack' is a label, exactly as in #actions, and is used only to have
+	a quick reference to the delayed command; 
+	(2000) means wait 2000 millisec., i.e. 2 seconds;
+	'kill wolf' simply executes kill wolf, as if typed from keyboard.
+
+	Of course, you can use an expression (as complex as you like)
+	instead of the number in parentheses,
+	and the command can also be an alias, internal command or even
+	another #at or #in. (of course you can use multiple commands by
+	placing them in { } )
+
+	If you do not specify the command, powwow assumes the label is already
+	defined, and changes its delay. 
+	A delay less than zero means the delayed label is disabled,
+	but still in powwow's memory, similar to what happems when you
+	turn off an #action.
+	A delay of zero deletes the delayed label.
+
+	If you specify only a label, powwow lists it.
+	If you specify nothing, all delayed labels are listed.
+
+	The #at command is nearly equal to #in, but assumes the expression
+	in ( ) is a time. For example (114520) means 11:45:20 , 
+	and ("114520") is the same.
+	After evaluating the time, powwow converts it into a delay,
+	and places the delayed label in the same list of #in.
+	NOTE: it is not possible to delete a delayed label using #at,
+	since (0) means midnight.
+	One more thing: it is not possible do define disabled labels using #at,
+	because a time < 0 is an error, and a time < current-time is assumed
+	to be refering to the following day.
+	
+	Last note: after executing a delayed command, powwow does not delete
+	it, but simply disables it.
+	-----------------------------------------------------------
+	Disable all delayed commands
+	#stop
+
+	All active delayed commands are set to 'disabled', but are not deleted
+	from memory. Useful to stop infinite loops due to self-reactivating
+	delayed commands.
+	-----------------------------------------------------------
+	Set save file options
+	#option [none]|[words][history]
+	
+	Controls wether command history and completion words shall be saved
+	in the save file.
+
+	Without arguments, #option displays the current settings.
+	To turn off both words and history, use #option none; otherwise
+	use #option followed by words and/or history.
+
+	-----------------------------------------------------------
+	Evaluate expression with calculator, and trash result.
+	# (expression)	  or	#(expression)
+
+	-----------------------------------------------------------
+	Print a text or result of an expression on screen.
+	(does NOT send it to the MUD)
+	#print [< | !][text | (expression)]
+
+	If a string is specified, powwow simply prints it on screen.
+	If an expression is specified, powwow uses the inline calculator
+	to evaluate it, and then prints the result.
+
+	If a #print without arguments is found, powwow prints the value
+	of the variable $0 (this is a special feature of #print, and is not
+	present in #exe, #send, #emulate or #var).
+	This is usually used to print a line from remote host that was
+	intercepted by an #action, in fact #action places the whole line in $0
+
+	If < precedes the text or expression, #print assumes text (or result
+	of expression) to be name of a file, and displays the contents of
+	that file.
+
+	Instead if ! precedes the text or expression, #print assumes text (or
+	result of expression) to be a Bourne shell command, whose output is
+	displayed.
+
+	Example:
+
+	#action >disint ^&1 disintegrates &2=#print $1 DISINTEGRATES $2
+					put the text in upper case
+	#action >disint ^&1 disintegrates &2=#print ($(1)+" DISINTEGRATES "+$(2))
+					same thing, but using calculator
+
+	#print <mytext			display a text on screen
+	#print !("more mytext")		same thing, but uses 'more'
+					as text viewer and alternate syntax
+	#print (@-7)			print value of variable on screen
+	#print <($2)			display the contents of file whose
+					name is in variable $2
+
+	Further feature:
+
+	If < is specified, and you use an expression after it, you can also
+	specify starting and ending line of the file that you want to use,
+	in this way:
+
+	#print <(string-expr;[start];[end])
+
+	Note: if you use a plain text as file name (like in #print <myfile )
+	you cannot specify starting and ending line.
+
+	If starting line is not specified, powwow begins from the first line,
+	if ending line is not specified, powwow stops at the end of the file:
+
+	#print <("myfile";3;42)		print lines from 3 to 42 of myfile
+
+	#print <("myfile";;57)		print lines from start of file to 57
+
+	#print <("myfile";;)		print whole file
+
+	Note that you can use expressions instead of filename, starting line
+	and ending line:
+
+	#print <($5;4;3+@0)		print file whose name is in variable $5
+					from line 4 to line 3+@0
+
+	Of course, you can still use the whole file in the old way:
+	#print <("myfile")	or 	#print <myfile
+
+
+	Further feature (another):
+
+	The starting and ending line can be specified ALSO when you use a !
+	before an expression:
+
+	#print !(string-expr;[start];[end])
+
+	In this case, powwow executes the Bourne shell command contained in
+	the string, and prints ONLY lines from <start> to <end> of its output.
+
+	Also here, you can use expressions instead of Bourne shell command,
+	start and end, and powwow still begins from first line if <start>
+	is not specified and/or stops at the end of the output if <end>
+	is not specified.
+
+	Both these special features are supported ALSO in #send, #exe,
+	#emulate and #var.
+	-----------------------------------------------------------
+	Send text or result of an expression to MUD
+	#send [< | !]{text | (expression)}
+
+	The simplest use of #send is to evaluate an expression and to send
+	the result to the MUD. More generally, #send is very similar to #print,
+	with the only difference that the final text is sent to the MUD rather
+	than displayed on screen.
+	The meaning of < and ! is the same, and #send does the expected things
+	when they are used.
+
+	Example:
+
+	#send <mytext				stuff a text into the mud
+	#send !awk ' {print "tell arthur " $0} ' file
+						say a file to your friend
+	#send ("say I have been playing for " + %(timer/86400000) + " hours")
+			timer is a variable holding the number of millisec
+			elapsed since last timer reset, and the big number
+			after it converts the elapsed time in hours.
+	-----------------------------------------------------------
+	Execute text or result of an expression
+	#exe [< | !]{text | (expression)}
+
+	Evaluate the expression and get result,
+	then execute result as if typed from keyboard.
+	If < or ! is specified, #exe behaves exactly like #print,
+	but executes the final text as if typed.
+
+	Example:
+	#exe ("sigh")       is the same as typing sigh from keyboard.
+
+	#bind control_s=#exe ("#capture emergency" + %(@-7++))
+			(control_s must be a user defined key)
+			safe capture to file: each time you press control_s,
+			a different file is opened as capture.
+
+	#exe <mytext	read the file mytext and execute all the
+			commands in it, one line at time.
+			Very useful to read a set of #alias for example
+	-----------------------------------------------------------
+	Process a text/expression/file as if received from remote host
+	#emulate [< | !]{text | expression}
+
+	Evaluate expression and get result, then process result as if received
+	from remote host
+	If < or ! is specified, #emulate behaves exactly like #print,
+	but processes the final text as if received from remote host
+	(check for matching #actions, extract prompt, etc.)
+
+	This command is particularly useful to test and debug #actions.
+	Example:
+
+	#emulate The assassin is dead! R.I.P.
+	#emulate <myfile
+	-----------------------------------------------------------
+	Put a text or expression in a variable / delete a variable
+	#var variable[=[[< | !]{text | (expression)}]]
+	
+	Evaluate expression and get result, then put result
+	in the specified variable.
+	If < or ! is specified, #var behaves exactly like #print,
+	but puts the final text into the specified variable.
+	If you specify no right-hand expression, powwow puts the current value
+	of the variable on input line, to allow you edit it.
+	If you specify no right-hand expression, BUT YOU USE the =, powwow
+	deletes the variable and frees memory used by it.
+
+	Note: If you use a numbered variable rather than a named one,
+	instead of a number you can place an expression after the $ or @
+	and before the =
+	Example:
+
+	#var @7=22			(same as #(@7=22) )
+	#var $-4 = hello		(note that you do not need quotes
+					 since you are using a plain text)
+	#var $-4 = ("hello")		(if you use parenthesis, you must also
+					 use quotes)
+	#var $test=    long sentence	(all the spaces but the first following
+					 the = are placed in the variable)
+	#var $(2+4) = <myfile		(put the whole file in $6. Remember
+					 that string variables cannot be longer
+					 than 1024 characters...)
+	#alias calc=#var @-1 = !echo '$0' | bc -l
+			(place result from bc calculator into @-1)
+
+	#var $target			(put current value on input line)
+
+	#var $my_variable=		(delete $my_variable and free memory)
+	-----------------------------------------------------------
+	Write text to a file
+	#write [> | !](expression ; file)
+	
+	Evaluate expression and get result, then write result into file.
+	By default, text is appended at the end of the file.
+
+	If > is specified, #write deletes the contents of the file before
+	actually writing the text.
+
+	If ! is specified, #write assumes second parameter to be
+	a Bourne shell command (instead of a file name) that is executed
+	using the text as its input.
+
+	Example:
+
+	#write ($test; "myfile")	(append contents of $test to myfile)
+
+	#write !("55+12";"bc -l")	(execute 'bc -l' writing text to its
+					 standard input)
+
+	Advanced `#write' usage:
+	
+	If you are using a terminal allowing multiple windows (an X11 graphic
+	terminal for example) it is possible to duplicate/split powwow output
+	to multiple windows using #write. This is more a UNIX topic rather
+	than a powwow-specific one, but that's it. Here is a brief summary:
+	
+	First, compile the `catrw' mini-program i.e. type
+	$ make_it catrw
+	if the above worked, type
+	$ mkfifo fifo
+	This will create a special file named `fifo' in the directory
+	(any other name would do, of course)
+	Then you have to open another window. This depends on the terminal
+	you're using, but for X11 terminals the following works:
+	$ xterm &
+	On the second window, type
+	$ exec catrw fifo
+	(in case this gives you an error, try just `catrw fifo')
+	Now return to the first window and start powwow normally.
+	To send text to the second window from within powwow, type:
+	#write ("some text"; "fifo")
+	You should see `some text' (without the quotes) immediately
+	appear in the second window.
+	
+	Of course you may now want to send text automatically
+	to the second window: just use #write ( <your-text> ; "fifo")
+	from within an #alias, #action or whatever you like.
+	
+	P.S.:
+	for experienced users: if you are using the `bash' shell,
+	you don't need `catrw' as you can use
+	$ exec cat <> fifo
+	instead of the above
+	$ exec catrw fifo
+	-----------------------------------------------------------
+	Set/show internal variables
+	#setvar name[={number|(expr)}]
+
+	Evaluate the expression and get result, then set the internal
+	variable `name' to that value.
+	
+	Known internal variables are:
+
+	buffer	with `buffer' different from zero, powwow saves
+		the most recent text from the MUD in a circular list
+		(which is `buffer' bytes long) and writes it
+		at the beginning of #capture and #movie files when
+		you open them. This is useful if something important
+		happens suddenly and you want to log it somewhere:
+		you can start #capture and/or #movie even _after_ the event
+		has happened and it will still get written to the file.
+
+		if `buffer' is zero (default), powwow starts logging
+		text from the MUD only at the moment you activate
+		#capture or #movie.
+	
+		To discard the text stored in memory by `buffer',
+		change its value (for example, set it to zero
+		and then back to a non-zero value).
+
+	lines	the number of lines your terminal has. Powwow usually
+		autodetects it correctly, but on few terminals you may
+		have to set it manually.
+	
+	mem	the maximum length of a text or string, in bytes.
+		The default is 0 (zero) which means no limit.
+		I added it only to prevent bringing down the whole system
+		with things like
+		#while (1) #($foo += $foo + "x")
+		Consider it an emergency setting, as powwow _discards_ text
+		and strings longer than the limit.
+		The failsafe limit set when loading a savefile from an older
+		version is 1Megabyte, which won't give any problem
+		(like increased memory usage) as powwow	allocates memory
+		only when it *has* to.
+		
+	timer	the number of milliseconds since program start.
+		It can be changed to synchronize with an external clock
+		like MUD ticks.
+			
+	Example:
+
+	#setvar timer=0			(reset internal timer to 0)
+	#setvar timer=20000		(make internal timer restart from
+					 20000 milliseconds)
+	#setvar timer			(show timer and let you edit it)
+	
+	#setvar mem=1048576		(max strings length is now 1Megabyte)
+	-----------------------------------------------------------
+	Send raw data to MUD
+	#rawsend {text | (expression)}
+
+	This is mostly a MUD debugging tool, but it can be useful in some cases.
+	Like its cousin #send, #rawsend evaluates the expression (or unescapes
+	the text) and sends the result to the MUD. The difference is that
+	#rawsend does NOT add a final newline, nor does IAC escaping to protect
+	ASCII 255 characters. On the other hand, #rawsend can handle ASCII 0
+	characters, while plain #send can't.
+	-----------------------------------------------------------
+	Send raw data to screen
+	#rawprint {text | (expression)}
+
+	Like its cousin #print, #rawprint evaluates the expression (or
+	unescapes the text) and sends the result to the screen. The difference
+	is that #rawprint does NOT add a final newline. On the other hand,
+	#rawprint can handle ASCII 0 characters, while plain #print can't.
+	-----------------------------------------------------------
+
+INLINE CALCULATOR:
+
+	The inline calculator is used to evaluate expressions inside
+	#(), #print (), #exe (), #send (), #if (), #while(), #for (), #do (),
+	expressions in pattern of #actions and in other commands allowing ()
+
+	The inline calculator recognizes the following objects:
+
+	numbers (only integers are supported)
+	  decimal numbers:
+	    simply write them.
+
+	  hexadecimal numbers:
+	    use '#' as prefix: #F is 15, #a0 is 160, and so on.
+
+	  numbers in any other base:
+	    use base# as prefix: 2#101 means 101 in base 2 (that gives 5)
+	    7#14 gives 11, etc...
+
+	  if you use negative non-decimal numbers, you must put '-'
+	  before the base: - 2#101 is -5, 2#-101 causes an error.
+
+	  it is possible to chain more than one '#':
+	    3#12#100 = (3#12)#100 = 5#100 = 25
+
+	  both base and argument must be numbers, not variables:
+	    things like 7#@count or @count#7 are not allowed, you will
+	    have to use an #exe for that.
+
+	quoted-strings (i.e.: strings in " ")
+
+	  NOTE:
+	  since version 0.6d, powwow performs unescaping on quoted strings
+	  when they are evaluated. For example "\"" is the string that contains
+	  the character " only.
+
+	timer (number of milliseconds since last timer reset)
+
+	map   (string containing the last 999 steps you walked,
+		as the #map command)
+
+	variables:
+	  @n with n within -50 and 9, are numeric-variables
+	  $n with n within -50 and 9, are string-variables
+
+	  Since version 0.8, also named variables are supported:
+
+	  @any_name1
+	  $any_name2
+
+	    The name following @ or $ can contain any of these chars:
+	      uppercase or lowercase letters ('A'...'Z' and 'a'...'z')
+	      underscore ('_')
+	      numbers ('0'...'9')
+	    Anyway, the first char of the name must NOT be a number.
+
+	    Remember that powwow is case sensitive:
+	      $test and $Test are NOT the same variable
+
+	    Named variables are created the first time you use them
+	      and can be deleted only using the #var command
+	    
+	    A special named variable is $prompt, which contains
+	      the current prompt. It cannot be deleted.
+	    Another special variable is $last_line, which contains
+	      the last non-empty line received from the MUD. Again,
+	      it cannot be deleted.
+
+	  Difference between the various kind of variables:
+
+	    Numbered variables with negative counter (@-50..@-1 and $-50..$-1)
+	    and named variables are global:
+	      They can be accessed at any time, but cannot be used for the
+	      substitution performed by #alias, #action, #while and #for.
+
+	    Instead, numbered variables with positive counter (@0..@9 and
+	    $0..$9) are local:
+	      A new set is created (and initialized to zero) every time powwow
+	      executes an #alias, #action, #while or #for, and the old set
+	      is made invisible. After the #alias (or #action, #while, #for)
+	      is executed, the old set is restored.
+	      Note that also @0..@9 can be used for parameter substitution,
+	      and not only $0..$9.
+	      
+	  Variable names as expressions:
+	  
+	    The symbols $ and @ are implemented as normal operators,
+	    which means that variable names can be arbitrary expressions.
+	    For example,
+	      $(1-3)		is the numbered variable $-2
+	      @("foo"+"bar")	is the named variable @foobar
+	      $$1		is the variable whose name is in $1
+	      
+	operators between numbers:
+	  ++ --  +  -
+	   *  /  %
+	   +  -
+	  << >>
+	   < <=  > >= == !=
+	   &  |  ^
+	  && || ^^
+	   = *= /= %= += -= <<= >>= &= ^= |= &&= ^^= ||=
+	   ,
+	   (  )
+	(% and %= always return non-negative values)
+	(no help on these operators, see a C-language manual)
+	(note: unlike C, operators &&, ^^ and || always eval both arguments)
+
+	random number generator:
+
+	  rand positive-number	(return a random number between 0 and n-1)
+
+	operators between strings:
+	   + chain two strings
+	   = assign a string to a string-variable
+	  += append a string to a string-variable
+	   - compare two strings: result -1 if s1<s2, +1 if s1>s2, 
+	      0 if s1==s2
+	   < <=  > >= == != compare two strings
+	  .? number of chars in a string
+	  :? number of words in a string
+	   ? position of first occurrence of second string in the first
+	   * convert first char of a string into its ASCII code or vice versa
+	   % convert string into its numeric value or vice versa
+	
+	operators between a string and a number:
+		 (string is first argument)
+	  : n-th word of a string
+	  . n-th char of a string
+	  :< :> <: >: .< .> <. >. return part of a string, in this way:
+	     : before > or < means 'mark the n-th word from the left'
+	     . before > or < means 'mark the n-th char from the left'
+	     :  after > or < means 'mark the n-th word from the right'
+	     .  after > or < means 'mark the n-th char from the right'
+	     > means: return from marked word/char to end
+	     < means: return from start to marked word/char
+	     
+	     so we get:
+	     :< n     first n words
+	     :> n     from the n-th word (include) to the end
+	     <: n     from the begin to the n-th word (included)
+	     >: n     last n words
+	     
+	     and similarly for .< .> <. >.
+	     
+	  *  repeat a string n times: "ab" * 3 gives "ababab"
+	  *= usual shortcut: `$x *= n' is the same as `$x = $x * n'
+	
+	functions for low-level color handling: 
+
+	  noattr      (string containing the escape sequence to reset terminal
+		      colors and attributes -- bold, underline, inverse)
+
+	  attr "quoted-string"
+		      (return the escape sequence needed to turn on
+		       the attributes and colors in the string.
+		       Syntax of the string is the same as #mark, #hilite, etc)
+
+
+	Examples:
+
+	#print ($5="Hello, world")	(assign "Hello, world" to $5
+					 and print it)
+	#print ("This is a test">:3)	(print from the 3rd word from the right
+					 till the end of the string)
+	  Result: "is a test" is printed on screen
+
+	#action >+exp ^You have scored $1 exp={#print;#print ("You gained " + 
+		( $1 - @-5) + " exp. points since last score"); #(@-5 = $1)}
+
+		(when you type 'info' in MUME, one of the lines you get is:
+		 You have scored xxx exp. points ... 
+		 The #action above intercepts this line, prints it, prints the
+		 difference between your current score and the contents of
+		 variable @-5, then copies your current score in @-5)
+
+	#print ($5 = (attr "bold green") + "Hello, world!" + noattr)
+
+		(same as first example, but with colors/attributes.
+		 Rememeber to print noattr at the end of every colored line,
+		 or everything appearing on the screen after your line
+		 will be colored as well)
+	-----------------------------------------------------------
+
+HOW INLINE CALCULATOR IS IMPLEMENTED
+
+	Info and hints to get the most out of calculator and/or hack it.
+	
+	The structure `op_list[]' defined in xeval.c contains definitions for
+	all the implemented operators, one for each line. Have a look at it
+	to find things like:
+
+	precedence (first number in each line)
+	associativity (LEFT or RIGHT)
+	    LEFT  means that 1+2+3 actually is (1+2)+3
+	    RIGHT means that 1+2+3 actually is 1+(2+3)
+	    (replace numbers and operators with what you are actually using)
+	if it is unary, i.e. needs ONE argument
+	    PRE_UNARY means that the operator comes before its argument,
+	    POST_UNARY is the opposite
+	or binary i.e. needs TWO arguments
+	
+	Note that stuff like `attr', `rand', `@' and `$' are actually
+	implemented as PRE_UNARY operators (named variables are treated as an
+	exception to this), thus `$(1+5)' and `attr ("bold"+" "+"inverse")'
+	are fully allowed. Also note that using `$(5)' is a good way to avoid
+	the parameter substitution performed by aliases, #action, #for, #while
+	and use instead the actual variables.
+	
+	`timer', `map', `noattr' are implemented as read-only values:
+	the calculator simply substitutes them with their value
+	
+	Remember that there is a , (comma) operator:
+	Instead of `#(foo);#(bar)' you can use `#(foo, bar)'
+	Using comma operator is easier for both you and powwow, since it uses
+	a single command instead of two.
+	-----------------------------------------------------------
+
+ATTRIBUTES: COLORS AND OTHER HILIGHTINGS
+
+	Some commands use attributes to specify the visual appearance of text.
+	The following attributes are available:
+		bold, blink, underline, inverse
+					-- the obvious effects
+		reverse			-- same as inverse
+		[color] [on color]	-- foreground and/or background
+	    Colors are:
+		black, red, green, yellow, blue, magenta, cyan, white and
+		BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, none
+		('none' means to use default and is implemented as a color)
+
+	Examples: The following are all valid attributes:
+		none			-- no attribute, use default
+		green			-- only foreground
+		on white		-- only background
+		yellow on cyan		-- foreground and background
+		inverse bold		-- 
+		blink red on blue	-- you can use multiple attributes,
+					   but you must put 'bold' 'inverse'
+					   and/or 'underline' BEFORE colors
+
+	Observe that bold, blink, underline and reverse work with all terminals
+	that support these attributes, but colors only on terminals that
+	support	ANSI color escape sequences.
+
+	Capitalized colors (BLACK..WHITE) are non-ANSI high intensity colors,
+	and will not work on all terminals (They work on the 'aixterm' terminal
+	emulator under AIX, but they may work on other terminals as well.
+	Let me know if you find other terminals that support them).
+
+	Notes for IBM PC and compatibles with VGA or SVGA cards in text mode:
+	    -- yellow is actually brown
+	    -- bold is usually represented as high intensity
+	    -- blink can be represented either with actual blink or
+	       high intensity background - depends from card configuration
+	       (it is possible to reprogram it - I can send details if asked)
+	-----------------------------------------------------------
+
+HISTORY
+
+	Powwow keeps in memory the last 127 lines you typed from keyboard.
+	If you want to recall one of them (to correct a mistake for example)
+	you just need to press your arrow-up key or control-p to scroll through
+	the whole history, one step at time (see COMMAND LINE EDITING below
+	in the text for details about editing keys).
+
+	Another way to find a certain line in the history is to type the first
+	few chars of it, and then press M-TAB to tell powwow to complete the
+	line for you. If you hit M-TAB repeatedly, powwow will cycle
+	through all the possible completions.
+
+	Also, you can use the '#put' command to add a line to history
+	as if you typed it (see above for help on #put).
+	-----------------------------------------------------------
+
+WORD COMPLETION LIST
+
+	Powwow also remembers the last 512 words you typed from keyboard.
+	This list of words is named `word completion list'. If you have already
+	typed a long or difficult word, you can type the first few chars of it
+	and then press TAB key to ask powwow to complete it for you.
+	Again, if you hit TAB repeatedly powwow will cycle through
+	all the possible completions.
+
+	Powwow can also complete the name of any built-in command even if
+	not present in the word completion list.
+
+	Also, you can use the '#add' command to add a word to word completion
+	list (see above for help on #add).
+	-----------------------------------------------------------
+
+COMMAND LINE EDITING
+
+	The default key bindings for line editing follow quite closely Emacs:
+	These are all the keys, together with the reserved names that identify
+	their function (they can be listed typing '#bind edit'):
+
+	Key:	Function name:	Description:
+
+	^A	&begin-of-line	beginning of line
+	^E	&end-of-line	end of line
+	^B	&prev-char	backward one character
+	^F	&next-char	forward one character
+	^P	&prev-line	use previous line in history (step backward)
+	^N	&next-line	use next line in history (step forward)
+	^D	&del-char-right	delete character under cursor
+	BS	&del-char-left	delete character left of cursor
+	^K	&kill-to-eol	kill to end of line
+	^T	&transpose	transpose previous character with next
+				(if at the end of the line, the two last)
+	^L	&redraw-line	redraw your command line.
+				This is useful if something garbles your input
+				line.
+	^Q	&clear-line	clear input line.
+	^W	&to-history	put current line in history and clear input
+				line. This is useful when you are typing a long
+				line and need to send another urgent command
+				first.
+	^Z	&suspend	suspend powwow in the background
+	Tab	&complete-word	complete the word being typed to the last
+				matching word in the history (or added with an
+				#add command; see above).
+				Hit multiple times to browse the possible
+				completions.
+				This is similar to the GNU Emacs M-/ command.
+	M-Tab	&complete-line	complete the line being typed to the last
+				matching line in the history.
+				Hit multiple times to browse the possible
+				completions.
+	M-f	&next-word	forward one word
+	M-k	&redraw-line-noprompt
+				redraw command line, discarding prompt 
+	M-b	&prev-word	backward one word
+	M-d	&del-word-right	delete word right of cursor
+	M-BS	&del-word-left	delete word left of cursor
+	M-l	&downcase-word	turn word to lowercase
+	M-t	&transpose-words transpose previous word with next
+	M-u	&upcase-word	turn word to uppercase
+	Ret	&enter-line	the most obvious: execute the typed line
+	LF      &enter-line     same thing, but for ^J key (some terminals
+				send this when you hit return)
+	(none)  &insert-string 	insert on command line the specified chars
+
+	M-x means pressing the META or Alt key at the same time as x,
+	or pressing and releasing the escape key, then typing x. The former
+	way doesn't work on all terminals.
+
+	^x  means pressing the Control key at the same time as x.
+
+	If your terminal has arrow keys, they can be used to move the
+	cursor and step around in history. In addition, you can define your
+	own key bindings for sending quick commands (see the #bind command).
+	If you have a vt100-compatible terminal, the numeric keypad is
+	predefined for movement (keys 2, 3, 4, 5, 6, 7, 8 and 9).
+
+	Remember that ALL keys can be redefined...
+
+
+	A brief note about &insert-string:
+
+	By default no key is bound to this function, and it works somewhat
+	differently than other editing functions.
+
+	For example, say you don't have `{' and `}' on you keyboard
+	(it happens on all italian keyboards -- like mine -- and other ones).
+	Obviously, typing { or } gets quite difficult. A solution is:
+	
+	#bind F11=&insert-string \173
+	#bind F12=&insert-string \175
+	
+	where \173 and \175 are typed normally: a backslash and three digits.
+	Once you defined these two bindings, hitting F11 will be exactly like
+	typing { and hitting F12 will be exactly like typing } .
+	
+	Another possible use is to enter strange characters or strings:
+	
+	#bind F10=&insert-string Ro\353ntgen
+	does exactly what you expect: insert "Roëntgen" on the input line
+	( ë is the ASCII char (octal)353 or (decimal)234 )
+	as if you typed it (of course you could also type the first few chars
+	of the name then hit TAB if that name is already in the word completion
+	list...).
+	-----------------------------------------------------------
+
+SECURITY
+
+	When you define an #action that automatically sends something back to
+	the MUD you are connected to, you must be VERY careful since you may
+	allow other players to force you to execute commands.
+	Let's explain better: Suppose you define the following #action:
+
+	#action >+autogroup ^&1 starts following you.={#print;group $1}
+
+	Even though this may look harmless, such an action is potentially
+	lethal, for the following reason:
+	If you receive a text from the MUD containing something like
+
+	Cauldron ;remove all;drop all;kill dragon starts following you.
+	(for example it may be an emote, many MUDs allow it)
+
+	powwow will realize that the line matches with the action you defined
+	(remember that &n can match text of every length, even if containing
+	spaces or ; ) and will execute this:
+
+	{#print;group Cauldron ;remove all;drop all;kill dragon}
+
+	The consequences of such a command can be easily imagined...
+	There are two strategies to avoid such embarassing situations:
+	1) Use #send and calculator. In fact this is NOT dangerous:
+
+	   #action >+autogroup ^&1 starts following you.=
+		{#print;#send ("group "+$(1))}
+
+	   (in the worst case you will send some semicolon-separated commands
+	   to the MUD, but I saw no MUDs accepting multiple commands as clients
+	   do...):
+
+	2) Try to use $n instead of &n, so that semicolons and spaces
+	   are skipped.
+
+	   #action >+autogroup ^$1 starts following you.=
+		{#print;group $1}
+
+	   WARNING:
+	   versions older than 0.7a were bugged and they did NOT skip
+	   semicolons (but they skipped spaces), so also using $n was
+	   dangerous!
+
+	   If you really need to use a &n, check you are not losing security,
+	   and if you cannot write safe code, use calculator as in point 1).
+	   Note that this is NOT dangerous too:
+
+	   #action >+autogroup ^&1 starts following you.=group $1
+
+	   since if someone tries to force you as explained above
+	   it will not work, because #action allows only ONE command to follow
+	   the pattern and you did not place braces around "group $1",
+	   so only the first command (in this case "group <name>")
+	   will be executed.
+
+	In every case, remember the best strategy is: check what you are doing,
+	and do not lose control. If you are not sure a command is safe, better
+	not to use it.
+	-----------------------------------------------------------
+
+LIMITS
+
+	Powwow has the following limitations:
+
+	Numeric variables are defined as 'long', that means 32-bit integers
+	  on most systems.
+	  
+	String variables, text lines and commands by default have no length
+	  limits. If you want, you _can_ set a max limit with `#setvar mem'.
+	  Powwow discards text and strings longer than such a limit.
+
+	  Exceptions: the labels/patterns of #aliases, #actions, #prompts,
+	  #marks, #in/#at etc. cannot be longer than 4095 chars.
+	  The same limit (4095 chars) applies for the input line.
+	  (the number can be changed by modifying the symbol BUFSIZE)
+	  
+	Unnamed ('numbered') variables must have indexes from -50 to 9.
+	  (the 50 can be changed modifying the symbol NUMVAR, the 9 cannot
+	   be increased due to hardcoded limits)
+
+	Inline calculator can hold up to 100 suspended operations, due to
+	  parentheses and/or inverted priority of operators.
+	  (the number can be changed by modifying the symbol MAX_STACK)
+
+	The depth of nested/recursive aliases, actions, prompts, #while and
+	#for commands is limited to 100 nested calls.
+	  (the number can be changed by modifying the symbol MAX_STACK)
+
+	The number of loops of a #while or #for is limited to 10000.
+	  (the number can be changed by modifying the symbol MAX_LOOP)
+	  
+	Automap can be at most 999 steps.
+	  (the number can be changed by modifying the symbol MAX_MAPLEN)
+	
+	History can contain at most 127 lines.
+	  (the number can be changed by modifying the symbol MAX_HIST)
+	  #history commands can execute other #history commands, up to
+	  MAX_HIST levels of recursion.
+	  
+        Word completion list can contain at most 512 words.
+	  (the number can be changed by modifying the symbol MAX_WORDS)
+
+        Up to 32 MUD (or spawned) connections can be open simultaneously.
+	  (the number can be changed by modifying the symbol MAX_FDSCAN)
+
+	For all other resources, the only limit is the available memory.
+	-----------------------------------------------------------
+
+THE BREAK KEY
+
+	It is usually Control-C or DEL (it depends from the terminal you use).
+
+	Powwow cannot redefine it, but you need to hit it twice in a row
+	to actually stop powwow.
+	This is because hitting it only once is used to stop command parsing:
+	if you enter a long loop using internal commands
+	(for example: #while (1) drop 1 coin)
+	you can simply press your break key and powwow will immediatly exit
+	from the loop with this message: `#interrupted. Press again to quit.'
+
+	If you press the break key again, you will exit powwow.
+	Otherwise, if you first type something, then you press break key once
+	more, you will get again: `#interrupted. Press again to quit.'
+	-----------------------------------------------------------
+	
+ADVANCED TOPIC: SUBSTITUTIONS AND UNESCAPING
+
+	WARNING:
+	this is a bit complicated and not recommended for beginners,
+	as the explanation given at the beginning about $n and \'s might
+	suffice	in many cases. So you might skip this paragraph if you want.
+	
+	Still reading? Ok, this is it:
+	
+	We described in the beginning that adding \'s to $n delays text
+	substitution in aliases and actions. Actually, every time powwow
+	is asked to execute a command, it can make one or more of the
+	following operations on the command itself before executing it:
+
+	Step (a) : `PARAMETER SUBSTITUTION' or simply `substitution'
+
+	(a1) place in $1..$9 the correct words
+
+	(a2) replace every occurrence of $1..$9 with the contents of the
+	     corresponding variable. Also replace every occurrence of @1..@9
+	     with the contents of the corresponding variable.
+	     Note that if one or more \ are preceding a $n or @n,
+	     it will be NOT substituted.
+
+	Step (b) : `JUST IN TIME SUBSTITUTION' or `jit' in short
+
+	(b1) replace every occurence of #{expression} with the value of the
+	     expression. Also replace every occurrence of ${name} and @{name}
+	     with the contents of the corresponding variable. Again,
+	     if one or more \ are preceding a #{expr}, ${name} or @{name},
+	     it will NOT be substituted. This substitution works also
+	     for numbered variables ${number} and @{number}.
+
+	Step (c) : `UNESCAPING'
+	
+	(c1) Remove ONE \ from every list of consecutive escapes,
+	     unless they are followed by one or more ` (i.e. reverse-escaped)
+	     For example, \\\$1 is replaced with \\$1
+
+	(c2) Remove ONE ` from every list of consecutive escapes immediately
+	     followed by a list of consecutive `
+	     For example, @``` is not modified,
+		while \\` is replaced with \\
+		and   \\``` is replaced with \\``
+	
+	The steps actually executed vary from command to command,
+	but are always ran in order:
+	if both present, (a) always precedes (b)
+	if both present, (a) always precedes (c)
+	if both present, (b) always precedes (c).
+
+	-----------------------------------------------------------
+
+	When each step is performed/not performed:
+	
+	Step (a) (substitution) is performed when executing one of the
+	  following:
+	  aliases, actions, prompts, #for or #while
+	
+	Step (b) (jit) is performed when executing _any_ command that allows
+	  a single instruction, and is executed on that instruction before
+	  running it. The list is:
+	  #alias, #action, #prompt, #at, #bind, #connect, #do, #for, #identify,
+	  #if-#else, #in, #init, #nice, #while.
+
+	  Also performed on normal (not yet implemented for regexp) patterns
+	  of #actions before matching them. On regexp patterns, step (c)
+	  is made instead.
+
+	Step (c) (unescaping) is performed any time that step (a)
+	  and/or step (b) are performed.
+
+	  In addition, unescaping is also performed on text
+	  (not on expressions) following all #commands that allow plain text:
+	  #add, #emulate, #exe, #mark, #print, #put, #send, #var
+	
+	  on labels of all #commands that allow labels:
+	  #alias, #action, #prompt, #at, #in
+	
+	  and last, on text that is not a #command nor an alias
+	  before sending it to the MUD, unless the last operation on the
+	  text was _already_ an unescaping.
+	
+	Examples:
+	
+	#alias fb=cast 'fireball' ${target}
+	#var $target=troll
+	fb				(effect: cast 'fireball' troll)
+	#var $target=dragon
+	fb				(effect: cast 'fireball' dragon)
+	
+	#action >chase ^${target} leaves $1={#print; #alias f=$1}
+					(whenever `dragon' leaves the room,
+					 the alias 'f' is set to follow it)
+
+	#action >chase2 ^\${target} leaves $1={#print; #alias f=$1}
+					(the text `${target}' will be matched
+					 literally)
+	WARNINGS:
+	
+	Step (b) is NOT automatically performed on text typed from the keyboard
+	  so for example `#print ${target}' just prints literally `${target}'
+	  and not the contents of the variable.
+	  If you need step (b) on text you type, you can do something like:
+	  #alias /=$0
+	  and then prepend all commands with `/ ' :
+	  / #print ${target}
+	
+	Step (b) is not yet implemented for regexp actions/prompt due to
+	  internal difficulties. As a workaround, step (c) (unescaping)
+	  is instead performed on regexp patterns.
+
+	Since powwow 1.1.3, unescaping is performed also on the text coming
+	  from substition and jit. This causes subtle incompatibilities with
+	  previous versions in case $n contains any \ or \` .
+	  I tried to avoid this incompatibility, but it is really complicated
+	  to do since I want the text coming from substitution to be subject
+	  to jit as well. So you (and me) will have to live with it :-(
+	-----------------------------------------------------------
+
+ADVANCED TOPIC: SPECIAL COMMAND #PROMPT
+
+	Automatic command execution triggered on prompts
+	#prompt [[<|=|>|%][+|-]label] [{pattern | (expression)}=[command]]
+	
+	WARNING:
+	this is quite a complicated topic too. You will only need to read this
+	paragraph if you want to mess with prompts in strange ways, as powwow
+	usually handles prompts correctly.
+	
+	Second warning:
+	#prompt works only on the main MUD connection.
+	
+	O.K, since you are still reading, let's get a bit technical about
+	powwow internals:
+	
+	(WARNING: this changed since powwow 1.1.7:)
+
+	Unless you use #actions, powwow sends immediately to the screen
+	whatever text it receives from the MUD. It sends to screen both
+	newline-ended lines (we'll name these `full lines')
+	and lines not ended with a newline (`incomplete lines').
+	Now, there are two problems:
+	1) there's no way to know whether an incomplete line is actually
+	   finished or there is a continuation we still have to receive.
+	2) powwow cannot know if the line, or an initial part of it,
+	   is a prompt.
+	
+	When powwow receives a line (either full or incomplete),
+	its beginning part may be a prompt, so it matches #prompts on the line.
+	If the beginning part is _actually_ a prompt, #prompt should
+	execute #isprompt on it, to let powwow recognize the prompt as such.
+
+	To be exact #isprompt must also specify how long the initial prompt is,
+	so that powwow can split it from the rest of the line.
+	For this reason, #isprompt is invoked with a numerical argument:
+	#isprompt <number>
+	or
+	#isprompt (expression)
+	
+	a)If the number (or the result of the expression) is positive
+	  and equals to (n), #isprompt declares that the initial prompt
+	  is (n) characters long.
+	b)If the number is negative and equals to (-n), #isprompt declares
+	  that the initial prompt is the same length as the parameter $n.
+	c)If the number is 0 (or is missing), #isprompt declares
+	  the whole line as a prompt.
+
+	Also, if a #prompt does not run #isprompt, it is interpreted as
+	'this text is not a prompt'
+
+	Putting #isprompt in a #prompt inhibits further attempts to match
+	that part of the line against both #prompts and #actions
+	(so should be used only on a complete prompt, not on a part of it)
+	
+	NOTE: Since a prompt may be followed by other text, when using
+	  regexp patterns in #prompt it is important not to end the pattern
+	  with $ (which matches the 'end of line')
+	
+	Examples:
+	
+	On MUME the prompt starts with either `o' or `*' and finishes with `>'
+	So the regexp pattern ^[o\*].*> will match all prompts and nothing else
+	To do the same using normal patterns, one should use two patterns
+	(and two #prompts): ^o&1> and ^*&1>
+	
+	On other MUDs of course the possible prompts will vary, so one must
+	find which pattern (or patterns) will match all the possible prompts.
+	If it also matches strings that are not prompts, care is required
+	_not_ to run #isprompt in such cases.
+	
+	Let's continue with the MUME example: using regexp patterns,
+	a correct #prompt is:
+	
+	#prompt %default ^[o\\*][^>]*>=
+	    {#isprompt -1; #($prompt = "xyz " + attr "bold" + $prompt + noattr)}
+	    
+	Note that the pattern contains _two_ backslashes instead of one,
+	as powwow unescapes regexp patterns.
+	Also, [^>]*> is used instead of .*> to stop matching at the _first_ `>'
+	(regexp by default would match the longest text possible,
+	 stopping at the _last_ `>' in the line)
+
+	The #prompt above correctly matches every MUME prompt,
+	runs #isprompt -1 on it
+	  (which declares that the prompt is as long as $1
+	   since in regexp patterns $1 is the whole match, it is a good choice)
+	then modifies the prompt in a custom way
+	  (puts it in bold then appends it to "xyz ")
+
+	Of course #prompts may do whatever one wants, but with a limitation:
+	they must run #isprompt _before_ modifying the prompt, or unpredictable
+	things could happen.
+	
+	To have the same effect with normal patterns, the following
+	would be needed:
+	
+	#prompt >default1 ^o&1>=
+	    {#isprompt (2+.?$(1)); #($prompt = "xyz " + attr "bold" + $prompt + noattr)}
+
+	#prompt >default2 ^*&1>=
+	    {#isprompt (2+.?$(1)); #($prompt = "xyz " + attr "bold" + $prompt + noattr)}
+
+	The expression after #isprompt meanxs "2 plus the length of $1"
+	which is obviously the correct length, as $1 does not contain
+	`o' (or `*') and `>'.
+	
+	Final note:
+	If the prompt is longer than a whole line, it may be drawn incorrectly
+	and may	interfere with the input line (yep, it's a bug).
+	
+	MUME players who happen to own a Valar+ character will find this
+	useful too:
+	#prompt >default3 ^+&1>={#isprompt (2+.?$(1))}
+	or, to use regexp patterns:
+	#prompt %default ^[o\\*\\+][^>]*>={#isprompt -1}
+	
+	-----------------------------------------------------------

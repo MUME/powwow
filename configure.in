@@ -1,0 +1,49 @@
+# Process this file with autoconf to produce a configure script.
+AC_INIT
+AM_INIT_AUTOMAKE(powwow, 1.2.7)
+
+AC_ARG_ENABLE(vt100,
+	AC_HELP_STRING([--enable-vt100],
+			[Hard code vt100 escape sequences, use if you have no termcap ]),
+        AC_DEFINE(VT100))
+
+AC_ARG_ENABLE(sort,
+	AC_HELP_STRING([--enable-sort],
+			[Sort aliases and actions]),
+	AC_DEFINE(DO_SORT))
+
+AC_ARG_ENABLE(noshell,
+	AC_HELP_STRING([--enable-noshell],
+			[Disables the "#!" command]),
+	AC_DEFINE(NO_SHELL))
+
+AC_ARG_ENABLE(ansibug,
+	AC_HELP_STRING([--enable-ansibug],
+		       [enables fixes for "#mark" ansi bugs on some terminals]),
+	AC_DEFINE(BUG_ANSI))
+
+AC_ARG_ENABLE(bsd,
+	AC_HELP_STRING([--enable-bsd],
+		       [Needed for BSD systems, in powwow this was USE_SGTTY and BSD_LIKE]),
+	AC_DEFINE(USE_SGTTY)
+	AC_DEFINE(BSD_LIKE))
+
+# Checks for programs.
+AC_PROG_CC
+
+# Checks for libraries.
+AC_CHECK_LIB(curses, initscr)
+AC_CHECK_FUNC(regcomp,AC_DEFINE(USE_REGEXP))
+AC_CHECK_FUNC(lrand48,,AC_DEFINE(USE_RANDOM))
+
+# Checks for header files.
+AC_CHECK_HEADERS([stdlib.h unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+
+# Checks for library functions.
+AC_FUNC_MALLOC
+AC_CHECK_FUNCS([bzero])
+
+AC_OUTPUT(Makefile)

@@ -1,0 +1,401 @@
+#savefile-version 1
+#("We use an old version number to force creation of sane default #binds")
+
+#init ={#(@oldxp=0);mapend;#option +compact -info -echo}
+
+#("Connect to MUME")
+#host mume.pvv.org 4242
+
+#("Some aliases to use labeled #actions")
+#alias ac=#action $0
+#alias <=#action <$0
+#alias \==#action =$0
+#alias >=#action >$0
+#alias +=#action +$0
+#alias -=#action -$0
+
+#("Some variables")
+#(@emergency = 1, @xp = -0)
+#($E_col = "bold")
+#($Elbereth = "Grima Slinket Crug Camaro")
+#($S_col = "inverse")
+#($Sauron = "Homie Aridhol Quigley Mournblade ")
+
+#("Some useful binds -- they all are on numeric keypad")
+#alias ?=#history 1
+#alias ??=#history $0
+#bind * ^[Oj=stat
+#bind + ^[Ol=open honeycomb
+#bind - ^[Om=close honeycomb
+#bind . ^[On=sneak
+#bind / ^[Oo=!
+#bind 0 ^[Op=?
+#bind 1 ^[Oq=hide
+#bind 2 ^[Or=s
+#bind 3 ^[Os=d
+#bind 4 ^[Ot=w
+#bind 5 ^[Ou=exits
+#bind 6 ^[Ov=e
+#bind 7 ^[Ow=look
+#bind 8 ^[Ox=n
+#bind 9 ^[Oy=u
+
+#alias plusminus={#bind +=open $1;#bind -=close $1}
+#action >+close The $1 is open={#print;plusminus $1}
+#action >+open2 The $1 seems to be closed={#print;plusminus $1}
+#action >+open1 The $1 is closed={#print;plusminus $1}
+
+#("Bindings for function keys")
+#alias HELP=#alias HELP={remove ring;narrate HELP! EMERGENCY TRANSFER! rings off!}
+#bind F01 ^[OP=HELP
+#alias wi=change wimpy $0
+#alias wq=wi 100
+#alias ww=wi 1000
+#bind F02 ^[OQ=ww
+#bind F03 ^[OR=wq
+#bind F04 ^[OS=examine
+#bind F05 ^[m=now
+#bind F06 ^[[17~=#option compact
+#bind F07 ^[[18~=listen all
+#bind F08 ^[[19~=listen none
+#alias ck=change mood berserk
+#alias ca=change mood aggressive
+#alias cb=change mood brave
+#alias cn=change mood normal
+#alias cp=chan mood prudent
+#alias cw=change mood wimpy
+#bind F09 ^[[20~=cw
+#bind F10 ^[[21~=ca
+#alias pi={remove sword;draw}
+#alias sla={sheath;wield sword}
+#bind F11 ^[[23~=pi
+#bind F12 ^[[24~=sla
+
+#("Two nice aliases")
+#alias ,e=emote leaves east
+#alias emsay=emote says '$0'
+
+#("Teleporting")
+#alias ll=cast 'locate life' $0
+#alias tp=cast 'teleport' $0
+#alias portal=cast 'portal' $0
+#alias go={#if (!*\$0:>2) #(\$0+="tp"); #else #if (\$0:>2=="portal") #(\$0+=" u"); #exe (\$0:>2+" "+\$0:1)}
+
+#alias loc={#var $talias=$1; #action +tkey; ll $2}
+#action >tkey Key: '$1'={#print; #action -tkey; #alias ${talias}=go $1 \$0}
+
+#alias zharlond=go whicewhile $0
+#alias zmichdelv=go sillelega $0
+#alias zbree=go dorwhimile $0
+#alias 1=zHarlond
+#alias 2=zMichDelv
+#alias 3=zBree
+
+#("An emote for enchanting weapons")
+#alias ench=cast 'enchant weapon' $0
+#alias enchant={, makes a swift gesture and the $0 starts floating in mid air...;EnchSet +;ench $0}
+#alias EnchSet={#action $1EnchSucc;#action $1EnchFail;#action $1BackFire}
+#action >-BackFire Your spell backfired!={#print;, starts swearing loudly;EnchSet -}
+#action >-EnchFail You lost your concentration!={#print;, frowns and exclaims, 'This cannot be! I failed!';EnchSet -}
+#action >-EnchSucc $1 glows blue.={#print;, gestures again, and arcane runes flare on the $1!;EnchSet -}
+
+#("Keep count of game time and also put it in the prompt")
+    #mark Game time =underline
+#("length of a game tick in milliseconds :")
+    #(@tick = 61500)
+#("this is to synchronize")
+    #action >+clock ^The current time is $1:$2 $3.={#print;#if (\@0=$1*@tick+$2*@tick/60, \$3=="pm" ^^ $1==12) #(\@0+=12*@tick); #settimer (\@0);settick}
+#("print time")
+    #alias time={#if ((\@1=timer%@tick*60/@tick) < 10) #(\$1=":0"); #else #(\$1=":");#print ("Game time "+%(timer/@tick%24)+\$1+%\@1)}
+#("manually set time")
+    #alias now={#if (*\$1) #(\@0=$1*@tick+0$2*@tick/60); #else #if ((\@0=timer-(\@1=timer%@tick)), \@1 >= @tick/2) #(\@0+=@tick); #settimer (\@0)}
+#("put time into the prompt. works for MUME.")
+#("change to use appropriate patterns for other MUDs")
+    #prompt %+empty ^[o\\*]>={#isprompt -1; timeprompt}
+    #prompt %+full ^[o\\*] [^>]*>={#isprompt -1; timeprompt}
+    #alias timeprompt={#if ((\@1=timer%@tick*60/@tick) < 10) #(\$1=":0"); #else #(\$1=":");#($prompt=$prompt.1+" "+%(timer/@tick%24)+\$1+%\@1+$prompt.>2)}
+#("automatically print time at every tick. type `settick' to activate")
+#("or change #alias `now' and #action `clock' to run it")
+    #alias settick=set tick 0 time
+    #alias set=#exe ("#in $1 ("+%((-timer-1)%@tick+2)+") {"+\$0:>3+";#in $1 ((-timer-1)%@tick+2)}")
+
+#("Code to help mapping mazes -- keeps track of room number")
+#("using binary numbers -- 1 copper == 1, 2 coppers == 0")
+#("doesn't work anymore as you now get `six pile of coins' etc. tough luck.")
+#alias d1=drop 1 copper
+#alias d2=drop 2 copper
+#alias m=#for (\@1=$1; \@1; \@1/=2) #if (\@1&1) d1; #else d2
+#alias mapend={- copper-penny;- pile-of-coins;#(@map=0)}
+#alias mapstart={+ copper-penny;+ pile-of-coins;#(@map=0);#in map-timeout (-1) {#print ("Room: "+%@map);#(@map=0)}}
+#alias mapcount={#(@map*=2, @map+=$1);#in map-timeout (100)}
+#action >-pile-of-coins ^A pile of coins=mapcount 0
+#action >-copper-penny ^One miserable copper penny=mapcount 1
+
+#("Spells and fight")
+#($self = "Cosmos")
+#alias self=#($self=$(0))
+#alias k=kill $0
+#alias f=flee
+#alias ff=order followers assist ${self}
+#alias fw=order followers assist waran
+#alias of=order followers $0
+#alias ol=of k lord
+#alias on=of k noble
+#alias he={#if (!*$(0)) #($(0)=$self);#send ("cast 'heal' "+$(0))}
+#alias in={#if (!*$(0)) #($(0)=$self);#send ("cast 'invisibility' "+$(0))}
+#alias rp={#if (!*$(0)) #($(0)=$self);#send ("cast 'remove poison' "+$(0))}
+#alias sct={#if (!*$(0)) #($(0)=$self);#send ("cast 'sanctuary' "+$(0))}
+#alias str={#if (!*$(0)) #($(0)=$self);#send ("cast 'strength' "+$(0))}
+#alias ar={#if (!*$(0)) #($(0)=$self);#send ("cast 'armour' "+$(0))}
+#alias sspell=#exe ("#alias $1={#if (!*$(0)) #($(0)=$self);#send (\\"cast '"+\$0:>2+"' \\"+$(0))}")
+#alias sto=cast 'store' $0
+#alias stb=sto fireball
+#alias stl=sto call lightning
+#alias stp=sto teleport
+#alias stq=sto earthquake
+#alias sty=sto colour spray
+#alias bd=cast 'block door' $0
+#alias bl=cast 'blindness' $0
+#alias bob=cast 'breath of briskness'
+#alias ch=cast 'charm' $0
+#alias cwt=cast 'control weather' $0
+#alias b=cast 'fireball' $0
+#alias j=cast 'lightning bolt' $0
+#alias li=cast 'call lightning' $0
+#alias sl=cast 'sleep' $0
+#alias sle=sl $0
+
+#($target = "assassin")
+#alias .=$0 ${target}
+#alias bl.=bl ${target}
+#alias b.=b ${target}
+#alias j.=j ${target}
+#alias k.=k ${target}
+#alias li.=li ${target}
+#alias sl.=sl ${target}
+#alias blo=bl orc
+#alias blt=bl troll
+#alias jo=j orc
+#alias jt=j troll
+#alias ka=k assassin
+#alias kw=k wolf
+
+#alias tr=track $0
+#alias to=tr orc
+#alias tt=tr troll
+#alias tr.=tr ${target}
+
+#alias bs=backstab $0
+#alias bs.=bs ${target}
+#alias nn=$0 Necromancer
+
+#("Misc stuff")
+#($water = "skin")
+#alias dw=drink water
+#alias dk=drink ${water}
+#alias lk=look in ${water}
+#alias po=pour water ${water}
+#alias sk=sip ${water}
+#alias cv=cast 'create water' $0
+#alias cvk=cv ${water}
+
+#($pack = "backpack")
+#alias gp=get $0 ${pack}
+#alias pp=put $0 ${pack}
+#alias lp=look in ${pack}
+
+#($light = "lantern")
+#alias hl=wear ${light}
+#alias rl=remove ${light}
+#alias vl=cover ${light}
+#alias ul=uncover ${light}
+#alias cl=cast 'create light' $0
+#alias cll=cl ${light}
+
+#alias lg=look in moneybag
+#alias gg=get $1 gold moneybag
+#alias pg=put $1 gold moneybag
+#alias ggj=get ruby moneybag
+#alias pgj=put ruby moneybag
+
+#alias cf=cast 'create food'
+#alias gf=get food
+#alias ef=eat food
+#alias food={cf;gf;ef}
+
+#alias bc=#if (*$(1)) butcher $1.corpse; #else butcher corpse
+#alias lc=#if (*$(1)) look in $1.corpse; #else look in corpse
+#alias ga=#if (*$(1)) get all $1.corpse; #else get all corpse
+#alias gc=#if (*$(1)) get coins $1.corpse; #else get coins corpse
+#alias gx=#if (*$(2)) get $1 $2.corpse; #else get $1 corpse
+#alias xc={hl;gc $0;rl}
+#alias gl=get all
+#alias glc={get all.coins;get all.copper}
+#action >-greed is dead! R.I.P.={#print;gc}
+
+#alias ldh=#if (*($1)) lead $1.horse; #else lead horse
+#alias rdh=#if (*$(1)) ride $0.horse; #else ride horse
+#alias ldp=#if (*($1)) lead $1.pony; #else lead pony
+#alias rdp=#if (*$(1)) ride $1.pony; #else ride pony
+#alias ds=dismount
+#action >-Ct ^Clip-clop...the riding horse=
+#action >-Cp ^Clip-clop...a pony=
+#action >-Cb ^The Horse=
+#action >-At ^A riding horse=
+#action >-Ap ^A cute and docile pony=
+#action >-Ab ^A beautiful horse=
+
+#alias re=t Alsbreth $0
+#action >+reply ^$1 tells you '={#print;#alias re=t $1 \$0}
+#action >-xeval ^$1 tells you 'calc &2'={#print;#alias re=t $1 \$0;if (\$2?";" || \$2?"$" || \$2?"@") {tell $1 *grin*;#()}; #else #send ("t $1 "+%($2))}
+
+#alias rep={+ report;score}
+#action >-report $1 hit, $2 mana and $3 moves.={#print;, has $1 hit, $2 mana and $3 moves.;- report}
+#alias rd={#opt +speedwalk;4ensenwdnenne;#opt -speedwalk}
+#alias fd={#opt +speedwalk;wsswsuwwdww;#opt -speedwalk}
+
+#alias lr={look n;look s;look e;look w;look u;look d}
+#alias x=#alias $0
+#alias kk=#bind $0
+#alias l=examine $0
+#alias gr=group $0
+#alias le=group ${self}
+#alias mm=#mark $0
+#alias sa=#save
+#alias se=search $0
+#alias mo=help month
+#alias ng=, nods gravely.
+#alias nh=, nods happily.
+#alias ns=, nods sadly.
+#alias p=' open
+#alias rf=rem staff
+#alias rn=read next
+#alias rs=rem stone
+#alias rt=rem ticket
+#alias sms=, smiles sadly.
+#alias ss=spam
+#alias fade=emote quickly wraps in his cloak and vanishes.
+#alias matz=emote unwraps his cloak and materializes.
+#alias fun={fade;$0;matz}
+#alias tele={fade;tp $0;matz}
+#alias title=chan title the Hungry
+#alias tm=t Meryaten $0
+#alias wavall=, waves good-bye to you.
+#alias wf=weather fog
+#alias wg=weather global
+#alias wh=where human
+#alias wk={wake;st}
+#alias wl=weather local
+#alias wr={wake;rest}
+#alias grz=na --- === *** C O N G R A T U L A T I O N S !! *** === ---
+#alias lin={#lines $0;chan height $0}
+#alias lv=na --- === *** L  E  V  E  L  !! *** === ---
+#alias macintosh={#bind ~home ^[OH=eq;#bind ~~home ^[O@=eq;#bind ~F01 ^[OP=#key F01;#bind ~F02 ^[OQ=ww;#bind ~F03 ^[OR=wq;#bind ~F04 ^[OS=examine;#bind ~F05 ^[m=now;#bind ~+ ^[Ok=open patch;#bind ~~F05 ^[[16~=now}
+
+
+#alias listadd=#for (\@0=1; *$$1:\@0 && $$1:\@0!=*13; \@0++) #exe ("#mark "+$$1:\\@0+"="+$$2)}
+#alias listclear={#for (\@0=1; *$$1:\@0 && $$1:\@0!=*13; \@0++) #exe ("#mark "+$$1:\\@0+"=");#($$1="")}
+#alias elb={listclear Elbereth;#ac +elbereth;t elbereth list}
+#alias elblist=#print ("Elf Enemies: "+$Elbereth)
+#alias sauronclean={#for (\@0=1; *\$-1:\@0; \@0++) #($-1=$-1:<\\@0<.2+" "+$-1:>(\\@0+1))}
+#alias pk={listclear Sauron;#ac +sauron0;#ac +sauron1;t sauron list}
+#alias pklist=#print ("PKillers: "+$Sauron)
+#action >-elbereth ^Elbereth Gilthoniel tells you 'Elf Enemies: &1'={#($Elbereth=\$1);listadd -5 -6;#ac -elbereth;#print}
+#action >-sauron2 ^                             &1more to come.'={#($Sauron+=$-1=\$1<.3+",");sauronclean;#ac -sauron2;listadd -3 -4;#($Sauron+=$-1, $-1="");#print}
+#action >-sauron1 ^Sauron tells you 'My Envoys: &1={#($Sauron=$-1=\$1<.2+",");sauronclean;#ac -sauron0;#ac -sauron1;#ac +sauron2;listadd -3 -4;#($Sauron=$-1);#print}
+#action >-sauron0 ^Sauron tells you 'My Envoys: &1more to come.'={#($-1=\$1<.3+",");sauronclean;#ac -sauron0;#ac -sauron1;listadd -3 -4;#($Sauron=$-1);#print}
+
+#action >+disappear disappears into nothing.=
+#action >+exp ^Needed: $1 xp={#print;#if (\@1=-$1, !@oldxp) #(@oldxp=@xp=\@1);#print ("Exp: "+%(\@1-@xp)+" from last score, "+%(\@1-@oldxp)+" from start of session");#(@xp=\@1)}
+#action >+hunt *&1* leaves $2={#mark $2=bold;#print;#mark $2=}
+#action >+save Saving=#print ("---> "+\$0+" <---")
+#action >-someone ^Your blood freezes as you hear $1 =#if (\$1!="The" && \$1!="the" && \$1!="A" && \$1!="a" && \$1!="An" && \$1!="an") #print
+#action >+Willow A sudden drowsiness overcomes you, you yawn and...={#print;wk}
+
+#mark sitting=bold
+#mark resting=bold
+#mark sleeping=bold
+#mark Room: =bold
+#mark tells you=underline
+#mark  YOU=bold red
+#mark is dead! R.I.P.=bold
+#mark glows with a bright light!=bold
+#mark victim shocked=bold
+#mark You feel a watchful eye=bold
+
+#mark The corpse of *&*=bold 
+#mark *an Orc*=bold yellow on red
+#mark *$ the Orc*=bold yellow on red
+#mark *a Troll*=bold cyan on yellow
+#mark *$ the Troll*=bold cyan on yellow
+#mark *a Human*=blue on cyan
+#mark *$ the Human*=blue on cyan
+#mark *$ the Numenorean*=blue on cyan
+#mark *$ the Black Numenorean*=blue on cyan
+#mark *a Dwarf*=bold cyan on magenta
+#mark *$ the Dwarf*=bold cyan on magenta
+#mark *an Elf*=blue on green
+#mark *$ the Elf*=blue on green
+#mark *a Hobbit*=bold yellow on blue
+#mark *$ the Hobbit*=bold yellow on blue
+#alias mumecolor={change col all default;change col shout bold yellow;change col damage bold red;change col hit bold blue}
+#alias nocolors={#mark *an Orc*=inverse;#mark *$ the Orc*=inverse;#mark *a Troll*=inverse;#mark *$ the Troll*=inverse;#mark *a Human*=inverse;#mark *$ the Human*=inverse;#mark *$ the Numenorean*=inverse;#mark *$ the Black Numenorean*=inverse;#mark *a Dwarf*=inverse;#mark *$ the Dwarf*=inverse;#mark *an Elf*=inverse;#mark *$ the Elf*=inverse;#mark *a Hobbit*=inverse;#mark *$ the Hobbit*=inverse}
+#alias colors={#mark *an Orc*=bold yellow on red;#mark *$ the Orc*=bold yellow on red;#mark *a Troll*=bold cyan on yellow;#mark *$ the Troll*=bold cyan on yellow;#mark *a Human*=blue on cyan;#mark *$ the Human*=blue on cyan;#mark *$ the Numenorean*=blue on cyan;#mark *$ the Black Numenorean*=blue on cyan;#mark *a Dwarf*=bold cyan on magenta;#mark *$ the Dwarf*=bold cyan on magenta;#mark *an Elf*=blue on green;#mark *$ the Elf*=blue on green;#mark *a Hobbit*=bold yellow on blue;#mark *$ the Hobbit*=bold yellow on blue}
+
+#bind >del ^[[P=&del-char-right
+#bind A-bs ^[[071q=&clear-line
+#bind A-del ^[[M=&kill-to-eol
+#bind A-left ^[[160q=&begin-of-line
+#bind A-return ^[[100q=&to-history
+#bind A-right ^[[169q=&end-of-line
+#bind M-B ^[b=&prev-word
+#bind M-D ^[d=&del-word-right
+#bind M-F ^[f=&next-word
+#bind M-backsp ^[=&del-word-left
+#bind M-bs ^[^H=&del-word-left
+#bind M-tab ^[^I=&complete-line
+#bind ^2 ^[[186q={s;hide}
+#bind ^3 ^[[194q={d;hide}
+#bind ^4 ^[[174q={w;hide}
+#bind ^6 ^[[192q={e;hide}
+#bind ^8 ^[[182q={n;hide}
+#bind ^9 ^[[190q={u;hide}
+#bind ^A ^A=&begin-of-line
+#bind ^B ^B=&prev-char
+#bind ^D ^D=&del-char-right
+#bind ^E ^E=&end-of-line
+#bind ^F ^F=&next-char
+#bind ^K ^K=&kill-to-eol
+#bind ^L ^L=&redraw-line
+#bind ^N ^N=&next-line
+#bind ^P ^P=&prev-line
+#bind ^Q ^Q=&clear-line
+#bind ^S ^S=#capture
+#bind ^T ^T=&transpose
+#bind ^V ^V=#stop
+#bind ^W ^W=&to-history
+#bind ^X ^X=#exe ("#capture emergency"+%@emergency++)
+#bind ^Z ^Z=&suspend
+#bind ^bs ^[[085q=&del-word-left
+#bind ^del ^[[142q=&del-word-right
+#bind ^left ^[[159q=&prev-word
+#bind ^right ^[[168q=&next-word
+#bind ^tab ^[[072q=&complete-line
+#bind backsp =&del-char-left
+#bind bs ^H=&del-char-left
+#bind del ^[[3~=jo
+#bind down ^[OB=&next-line
+#bind end ^[[4~=jt
+#bind enter ^[OM=flee
+#bind home ^[[1~=stat
+#bind ins ^[[2~=time
+#bind left ^[OD=&prev-char
+#bind lf ^J=&enter-line
+#bind pgdwn ^[[6~=jh
+#bind pgup ^[[5~=score
+#bind return ^M=&enter-line
+#bind right ^[OC=&next-char
+#bind tab ^I=&complete-word
+#bind up ^[OA=&prev-line
+#bind ~^Q ^[~q=&clear-line
+#bind ~^S ^[~s=#capture

@@ -1,0 +1,746 @@
+2004-07-01 12:05  bpk
+
+	* main.c: Bug/enhancement fix, # followed by nothing is now
+	ignored, would be nice to kill to end of line though
+
+2004-07-01 10:54  bpk
+
+	* Makefile, configure.in, utils.c: Added multiline support for
+	reading from files, using \ at end of line
+
+2004-07-01 10:52  bpk
+
+	* Makefile, Makefile.am, cmd.c, cmd.h, main.c, plugtest.c: Added
+	#module support and a test plugin
+
+2004-07-01 10:46  bpk
+
+	* Makefile.am, aclocal.m4, configure.in, muc.c: Addec muc movie
+	player and autoconf support
+
+2004-07-01 10:42  bpk
+
+	* Initial import of stock powwow 1.2.5
+
+Changes from 1.2.4 to 1.2.5 (Massimiliano Ghilardi, ...) 21 Jan 2002
+ 	* Added append-mode to #capture: use #capture >file-name
+	* Cleaned #spawned commands interface: text they print on
+	  standard output *MUST* terminate with a newline ('\n')
+	  in order for powwow to execute it.
+ 	* Fixed missing #include <time.h> in main.h.
+ 	* Fixed broken matching of #mark patterns starting with $
+	* Added the following user-contributed patches:
+	  * Put also 1-char lines into history;
+	  * Do not capture/movie data coming from spawned commands;
+	  * Fixed a bug in command parser.
+	
+Changes from 1.2.3 to 1.2.4 (Massimiliano Ghilardi) 24 May 2000
+	* Added support for IAC GA as end-of-prompt marker.
+	* Added #request [prompt][editor][all]
+	* Fixed missing/slow prompt redrawing under some circumstances
+	  if #isprompt <number> was used.
+	
+Changes from 1.2.2 to 1.2.3 (Massimiliano Ghilardi) 18 Jan 2000
+	* Fixed `#spawn' command that was completely screwed up.
+	  Also fixed CTRL-C not to kill spawned commands.
+	* Sending/receiving data to/from spawned commands erased the prompt
+	  instead of reprinting it. Fixed.
+	  (If you don't like powwow to show the prompt before executing
+	  lines from spawned commands, set #option +compact)
+
+Changes from 1.2.1 to 1.2.2 (Massimiliano Ghilardi) 10 May 1999
+	* Fixed `#delim custom' to accept whatever character as delimiters.
+	  Previously stopped before the first word-delimiting char (argh!)
+	* Fixed screen corruption when doing some editing functions
+	  (&del-word-right, &del-word-left, &complete-word, &complete-line,
+	  parentheses flashing) while data comes from the MUD.
+	* Fixed a line redrawing bug when inserting chars on terminals
+	  with VT100-like wrapglitch.
+	* Fixed SEGFAULT on #send, #emulate, #exe of a numeric expression.
+	* Fixed stupid SEGFAULT when cancelling an editing session.
+	* Fixed sending/receiving latin-1 '\377' (ASCII char 255) as IAC IAC
+	  to conform telnet protocol, both directly and inside MPI messages.
+	* Fixed matching #actions, #prompts and #marks on MUD data splitted
+	  into multiple fragments.
+	* Fixed line length calculation when receiving '\r' in the middle
+	  of a line.
+	* Fixed extra prompt redrawing in #option +compact mode.
+	* Added #option sendsize and #option autoclear.
+	  Changed default not to send window size upon connecting.
+	  (if the MUD asks it, the window size is sent anyway)
+	  Use #option +sendsize to automatically send it when you connect.
+	* Added command #rawsend.
+	* Removed bits of ANSI code giving problems
+	  with really picky non-ANSI compilers
+	  
+Changes from 1.2.0 to 1.2.1 (Massimiliano Ghilardi) 20 Nov 1998
+	* Fixed a typo in Makefile.
+	* Reversed order of saved #history lines.
+	* Fixed out-of-bound array accesses in tcp_find() and tcp_show()
+	  which could give SEGFAULT on #connect, #snoop and #zap.
+	* Fixed buggy loop in saving #history in definition file that could
+	  create a huge temporary file, filling the filesystem.
+	* Fixed sporadic SEGFAULT when hitting backspace and some other
+	  editing keys.
+	* Math operator `?' could freeze due to buggy code.
+	  Systems providing GNU memmem() didn't experience the problem
+	  as it was used instead of my replacement code.
+	* Enhanced support for terminals with VT100-like wrapglitch:
+	  on them, the rightmost character of every line is used too.
+	* Fixed wrapping in #printing strings containing ASCII chars > 127
+	  when #option wrap is on.
+	* Fixed incorrect drawing of prompt and command line under some
+	  circumstances.
+	* Fixed wrong wrapping of lines immediately after the prompt
+	  in #option +wrap mode.
+	* Removed extra newlines sent after each line in `#send <filename'
+	  and `send !command'.
+	* Fixed a few off-by-one errors causing corruption in #movie/#capture
+	  and (reprint) buffers.
+	* Powwow now discards all \r received immediately before or after \n,
+	  to avoid troubles when strange data comes just before the prompt.
+	* Changed MPI key to `unsigned int' because MUME uses a 32 bit
+	  unsigned value for it.
+	* Cleaned up remote file editing not to leave stale files in /tmp.
+	* Cleaned up multiple connections support:
+	  Fixed spurious `#too many open connections' errors.
+	  Fixed prompt drawing glitches when getting data from subsidiary
+	  connections.
+
+Changes from 1.1.7 to 1.2.0 (Massimiliano Ghilardi) 05 Oct 1998
+	* Copyright change. Powwow is now GPL-ed.
+	* Version number bump. I hope there aren't many bugs left.
+	  If you are coming from 1.0.x versions, read this file and powwow.doc
+	  carefully, many things have changed!
+	* Fixed double-newline printing after each line if #option +wrap
+	  was set.
+	* Suppressed useless reprinting of files sent back to MUD
+	  using MUME remote editing protocol.
+	* Updated a few details in docs.
+	* Some old compilers choked on bits of ANSI code. Fixed.
+	* Fixed extra newline after prompt in #movie and #capture
+	  when #setvar buffer is not zero.
+	* Fixed extra \r at beginning of a line under rare circumstances.
+	* #delim now unescapes the custom delimeters.
+	* Added missing close() when remote host closes connection.
+	* Rewrote the code to merge lines received in two (or more) fragments.
+	* Added `#help warranty' and `#help copyright' to conform GPL :-/
+
+Changes from 1.1.6 to 1.1.7 (Massimiliano Ghilardi) 15 Sep 1998
+	* Changed meaning and effect of #prompt and #isprompt.
+	  If you used them, re-read their docs in powwow.doc!
+	* Alias names containing spaces are now rejected too.
+	  Relaxed rules a little, unbalanced () {} or ""
+	  now just print a warning instead of causing an error.
+	* Added #option reprint.
+	* Old #prompts were not removed on #load. fixed.
+	* Fixed SEGFAULT when chaining very long strings:
+	  #("foo..." + "bar...")
+	* Fixed small compiling problems on some platforms.
+	* Fixed an off-by-one error in math operator >:
+	* Fixed math operator `=' bug on copying empty strings.
+	* Fixed a crashy bug in #reset var.
+	* Fixed some quirks in unescaping strings:
+	  ending backslashes caused SEGFAULT,
+	  sequences like \\\``` were unescaped incorrectly.
+	* Fixed incorrect code in #mark and #action that
+	  mismatched patterns containing two or more wildcards.
+	
+Changes from 1.1.5 to 1.1.6 (Massimiliano Ghilardi) 03 Sep 1998
+	* Added circular backbuffer for #capture and #movie.
+	  Can be enabled/disabled/resized with #setvar buffer.
+	* Sanitized aliases: powwow now rejects alias names containing
+	  unbalanced special chars ""(){} . Example:
+	  #alias (=#print   is illegal, while
+	  #alias "("=#print is ok.
+	  #alias {}=#print  is ok,
+	  #alias \\{=#print is ok too as it matches \{ and _not_ {
+	* Removed a redundant alias unescaping. If #alias foo=\\bar
+	  then `foo' now sends `\bar' instead of `bar'.
+	* Fixed a compatibility problem when reading #binds of new savefiles
+	  using old versions of powwow.
+	* Fixed some problems with #var on numbered variables.
+	* Fixed #internal error, selflookup_sortednode() failed!
+	  that affected 1.1.5
+	* Fixed SEGFAULT upon #exe \; (introduced in 1.1.5).
+	* When getting data from the MUD after a prompt which set #isprompt
+	  the data is now printed as a separate line even if it doesn't start
+	  with a newline. Helps turning things like
+	      * HP:Fine>You hit the wolf's head hard.
+	  into
+	      * HP:Fine>
+	      You hit the wolf's head hard.
+	  Anyway, such data has _always_ been considered separate
+	  from the prompt if it set #isprompt, i.e. #action patterns like
+	  "^You hit the wolf" already worked in the above case.
+	  
+Changes from 1.1.4 to 1.1.5 (Massimiliano Ghilardi) 30 Aug 1998
+	* Massive code cleanup.
+	* Finished removing size limits on strings, text lines and variables.
+	* Renamed `#settimer' as `#setvar timer' and `#lines' as `#setvar lines'
+	  Added `#setvar mem' to set/edit/remove length limit on text/strings.
+	* Powwow now stops command execution after any error.
+	* #key now works also with editing keys.
+	* Added #keyedit command. "#keyedit &prev-line" runs
+	  the editing function `&prev-line' and so on.
+	* Added "&insert-string <string>" editing function.
+	* Added #mark ^pattern, which matches only at line start.
+	* Decreased CPU usage when/after a lot of variables, aliases or marks
+	  are created.
+	* Added `*' and `*=' math operator for strings.
+	* Fixed math operators ^^=, ||= and &&= to always return 0 or 1.
+	* Fixed SEGFAULT when creating more than 100 variables.
+	  (bug introduced in 1.1.0)
+	* Fixed SEGFAULT when realloc()ing very big strings.
+	* Fixed memory leaks when running out of memory.
+	* Fixed escaping/printing of nasty strings like
+	  backslash + control char.
+	* Fixed some redrawing glitches on very long input lines.
+	  Input lines bigger than the whole window are still not drawn
+	  correctly. Same problem on prompts longer than a line.
+	* Fixed #prompts to fully work also on prompts received inside
+	  a set of newline-terminated lines.
+	* Documented #prompt, #capture and #movie to work only for
+	  the main MUD connection
+	  
+Changes from 1.1.3 to 1.1.4 (Massimiliano Ghilardi) 23 Jul 1998
+	* Renamed `movie_play' to `movie'. Will do the replay if invoked as
+	  `movie_play' and will convert to ASCII if invoked as `movie2ascii'
+	* Fixed a 1.1.1 bug that could cause a lot of missed binds.
+	* Finished adding ANSI prototypes. Renamed some files and remixed
+	  some code in the process.
+	* Removed -DUSE_TERMIO. If you used it, no problem.
+	  If you didn't use it, you must now add -DUSE_SGTTY.
+	* Fixed a few compiling problems on OSF1 and other systems
+	  with really annoying compilers.
+	* Fixed missing sig_oneshot on systems without SA_ONESHOT
+	* Fixed input of chars with high bit set (again).
+	
+Changes from 1.1.2 to 1.1.3 (Massimiliano Ghilardi) 21 Jul 1998
+	* Variable names are now expressions too. This means that
+	  @("foo"+"bar") is the variable @foobar.
+	* Added `just in time' substitution: ${varname} @{varname} and #{expr}
+	  Not yet implemented for regexp patterns, sorry.
+	  This introduces a subtle incompatibility with older versions,
+	  as now also text coming from $n substitution gets unescaped.
+	  Sorry again. (see powwow.doc for details).
+	* #action and #prompt did not work when using an expression
+	  as pattern. Now fixed.
+	* Fixed small bug in anonymous actions. Someone still using them?
+	* powwow_help renamed powwow.help
+	* Fixed a bug in #alias: $1..$9 all contained the first word ($1)
+	* Fixed math operators . : .? :? .< .> <. >. :< :> <: >: which
+	  segfaulted on empty strings (bug introduced in 1.1.0)
+	* Made SIGINT signal handler non-permanent to allow interrupting
+	  system calls like connect(). Partially reverses the change in 0.9.3
+	* Undone a change Gustav made in 0.9.3: now #connect with no args
+	  always lists the open connections. To open a new connection you must
+	  give at least one argument, for example #connect main.
+	* Changed edit function &redraw-line not to clear prompt.
+	  Use &redraw-line-noprompt to get the old behaviour.
+	* Added #movie command to record all output from the MUD
+	  and local commands to a file, adding timestamps to allow replay
+	  at correct speed. Also added `movie_play' standalone program
+	  to actually do the replay.
+
+Changes from 1.1.1 to 1.1.2 (Massimiliano Ghilardi) 16 Jun 1998
+	* The wildcard `$' now correctly matches single words only
+	  both in #actions and in #marks.
+	  It was (again!) matching also multiple words like `&'
+	* Fixed up attr and noattr math operators, which broke in 1.1.0
+	* Added workaround for buggy terminals which create empty lines with 
+	  coloured background when using #hilite <whatever> on <colour>.
+	  Must compile with -DBUG_ANSI to enable it.
+
+Changes from 1.1.0 to 1.1.1 (Massimiliano Ghilardi) 11 Jun 1998
+	* Added some changes from 1.0.1 that didn't go in 1.1.0.
+	  The 1.0.x and the 1.1.x trees are indipendent...
+	* Wrote a memmem() replacement for systems that don't have it.
+	* Decreased CPU usage when receiving lots of text from the terminal
+	  (for example using cut-n-paste)
+	* Continued adding ANSI prototypes.	
+
+Changes from 1.0.0 to 1.1.0 (Massimiliano Ghilardi) 20 May 1998
+	* Splitted 1.0.x and 1.1.x source trees.
+	* Started adding ANSI function prototypes.
+	  Old K&R compilers still work.
+	* Removed all size limits in all strings, text lines and variables.
+	  Also allowed '\0' (ASCII zero) in strings.
+	  It was a _huge_ task! Probably messed up all and everything.
+	* Side effect of the above: lines of arbitrary length received from
+	  the MUD should now work perfectly (at least as long as you have
+	  enough memory)
+
+Changes from 1.0.0 to 1.0.1 (Massimiliano Ghilardi) 18 May 1998
+	* Changed name of some files (Changelog, Hacking, Compile.how,
+	  Config.demo)
+	* Fixed #capture and #record to save text from main connection only.
+	* Fixed a buffer overrun in $last_line when receiving lines longer
+	  than 1024 chars. Hopefully lines up to 4095 chars will now work.
+	* Fixed message "Creating %s" when creating a new definition file.
+	* Added `catrw' standalone mini-program for splitting powwow output
+	  in multiple windows (quick tutorial in powwow.doc, section #write)
+	* Added #rebindall and #rebindALL
+
+Changes from 0.9.9 to 1.0.0 (Massimiliano Ghilardi) 13 May 1998
+        * Disabled NAGLE for tcp connections (set TCP_NODELAY option)
+	  which should hopefully increase performance during lossy conditions
+	  (idea and code contributed by Finne Arne Gangstad)
+	* Cleaned up error handling. Powwow tries really hard to report
+	  any system call error, quitting only when there is really no hope.
+	  Anyway, if you get a '#system call error' message, you should
+	  seriously consider quitting as soon as possible since either
+	  the connection is messed up or your system is running
+	  out of resources.
+	* Removed extra newline after prompt bug when in #option -compact mode,
+	  introduced in 0.9.7
+	* Fixed $last_line to contain last non-empty line from the MUD.
+	* Updated config.demo with definitions for time-inside-prompt
+	  and other things.
+
+Changes from 0.9.8 to 0.9.9 (Massimiliano Ghilardi) 12 May 1998
+ 	* Changed rx.h to regex.h in includes
+	* Fixed behaviour on prompts and lines received in multiple packets:
+	  0.9.7 and 0.9.8 sometimes print garbage.
+	* Added some flush()es in the code to cope with the new
+	  terminal I/O buffering.
+
+Changes from 0.9.7 to 0.9.8 (Massimiliano Ghilardi) 11 May 1998
+	* Fixed compile problems on AIX (got out of sync).
+	* Fixed a stupid bug that caused all actions to be regexp
+	  (introduced in 0.9.7)
+	* Introduced a more efficient terminal I/O buffering.
+
+Changes from 0.9.6 to 0.9.7 (Massimiliano Ghilardi) 11 May 1998
+	* Increased stability when receiving extremely long lines (>1024 bytes)
+	  The fix is only partial, powwow can still crash on lines slightly
+	  shorter than 4096 bytes when a lot of #marks are used.
+	* Cleaned up the names of various #defines
+	  In particular, USETERMIO is now USE_TERMIO and
+	  TELNETBUG is now BUG_TELNET
+	* Added #option autoprint, to automatically print lines matched
+	  by #actions.
+	* Added #spawn command.
+	* Added #prompt command. Just like #action, but matches both on
+	  prompts and on normal text.
+	* #actions now work differently on prompts:
+	  prompts are not matched immediately against #actions,
+	  but only after a \n arrives from the MUD, just in case they are
+	  actually normal lines received in multiple packets and not prompts.
+	  
+	  Thanks to the this change, powwow behaves better on lines received
+	  in two (or more) packets.
+	  See the file powwow.doc, section `#prompt' for the gory details.
+
+Changes from 0.9.5 to 0.9.6
+                   (Gustav Hållberg, Massimiliano Ghilardi) 16 Oct 1997
+	* Fixed a nasty security hole in MPI messages
+	* Fixed handling of \; at the end of a command
+	* Fixed some other problems:
+	  short messages from MUD could interfere with remote editing,
+	  #bind escape sequences containing \0 were incorrectly printed/saved
+
+Changes from 0.9.4 to 0.9.5
+                   (Gustav Hållberg, Massimiliano Ghilardi) 18 Sep 1997
+	* Continued code cleanup
+	* Allowed aliases starting with `#'
+	* Removed #speedwalk, #info, #echo, #keyecho, #compact and #debug
+	  and turned them into #options: `#option echo' and so on.
+	  For compatibility, `#echo' is aliased to `#option echo' and so on.
+	* Fixed a dangerous bug making cursor jump to start of typed text
+	  when receiving a line that wraps. The bug appeared in 0.9.4,
+	  so blame Gustav ;)
+	* Fixed an old bug making powwow sometimes miss a bind
+        * Made the command from a bound key appear with `#hilite' setting
+        * Made a DEFAULT_HELP_DIR define in powwow.c
+	* Changed to from ' ' to ` ' in some messages
+
+Changes from 0.9.3 to 0.9.4 (Massimiliano Ghilardi) 04 Sep 1997
+	* Included all the huge changes made by Gustav Hållberg:
+	  I really have no time to double-check them all.
+	  If something works in 0.9.2 but is broken in 0.9.4,
+	  you know who to bother :)
+	* Small esthetic changes in the source, no effects on executable
+	* Changed identifier for regexp #actions from ']' to '%'
+
+Changes from 0.9.2 to 0.9.3 (Gustav Hållberg) 11 Aug 1997
+	* Fixed so packets ending with \r*\n\r* set promptstr to ""
+	* Made all signal handlers permanent (sig_permanent)
+	* Debugged and reinstalled #option (it was commented out for some
+	  obscure reason (Massimiliano: I never finished it...)),
+	  allowing storage of command history and word 
+	  completions in the savefile. Added the 'exit' option to allow
+	  powwow to autoexit when the last connection closes
+	* #echo, #info, #wrap and #debug now get saved in the savefile
+	* Made repetitive use of &complete-word and &complete-line cycle 
+	  through possible completions
+	* Made a memory-safe strdup (called str_dup)
+	* When starting a child viewer/editor, that process' TITLE 
+	  environment variable is set to something appropriate (?)
+	* Regular expressions (Extended POSIX regexp)
+	  available for actions; uses GNU rx.
+	* Actions with label "" forbidden
+	* Added the #delim command to change word delimeter mode
+	* Whenever main_conn changes permanently, linemode is set to 0 and
+	  promptstr to ""
+	* Fixed a crashy bug in the >: operator
+	* Fixed the notorious extra-space-on-insert bug (both 'ic' and 'im'
+	  shall NOT be sent if you want to insert something) and a VT100
+	  mode bug while I was feeling creative
+	* Made the local editing protocol respect prompts (i.e. they get
+	  rewritten after protocol messages are shown). After texts are sent
+	  back to the mud, the output buffer is flushed (no more pressing
+	  ENTER after you've stopped editing!)
+	* Fixed a few bugs in #mark; pattern "&" doesn't crash anymore.
+	  Patterns with consecutive wildcards never worked, so I forbade them.
+	  It could be implemented, but I hardly think it's worth it
+	* Added the ANSIBUG compiler directive to fix the bug in some terms
+	  that show new lines in the current output attrib (screws #mark e.g.)
+	* Made '#connect' without parameters try to open a connection
+	  titled 'main' to 'hostname' (if specified) if no conns are open.
+	  The initstr from #init will be used in this case
+	* Added &transpose-words, &upcase-word and &downcase-word (defaults
+	  to M-t, M-u and M-l). Repetition of the latter two changes case
+	  of the whole line
+	* Changed default key names to be more emacs-like (C-b, Ret etc)
+	* Made #host get written to the savefile iff *hostname != 0, and 
+	  if powwow is started as 'powwow filename', without any #host in
+	  the file, #init is ran immediately
+	* Fixed a bug in cmd_print() that didn't cope with $0 not being set
+	* Allowed \0 to be part of a bound key's escape sequence. New format
+	  for #bind allows octal \012 be part of the string representation
+	  of the esc seq (chars with high bit set get saved in octal now)
+	* Made permanent variables $last_line and $prompt
+	* Made "#var" without arguments list all defined named variables
+
+Changes from 0.9.1 to 0.9.2 (Massimiliano Ghilardi) 04 Jun 1997
+	* Added #keyecho command toggle echo of bound keys.
+	  Previously, this was controlled by the generic #echo command.
+	* CTRL-C can now safely interrupt blocking commands like
+	  #connect and #bind.
+	* POWWOWDIR is now used correctly in all cases:
+	  not only when starting powwow with a filename but also when using
+	  #load, #save or #file
+	* Changed #file syntax. Now you need = before the save-file.
+	  Putting = alone undefines the save-file and disables autosave
+	  when you quit.
+	* Cleaned up naming conventions: 'session' means editing session
+	  while 'connection' means remote host connection.
+	* Fixed handling of 8 bit chars typed from keyboard
+	* Fixed '#reset bind' which was not reloading cursor binds
+	* Fixed remote host name spelling in files generated by #save.
+	* Fixed a bug that caused powwow to crash when failing to
+	  connect to a mud.
+
+Changes from 0.9.0 to 0.9.1 (Massimiliano Ghilardi) 31 Apr 1997
+	* New connections opened with #connect are set as main connection.
+	  You will have to switch back manually if you need it.
+	* Cleaned up multiple connection support. Better error handling.
+	* Cleaned up TELNETBUG support. I did not use it recently,
+	  and was out of sync.
+	* Enhanced #bind syntax: now you can specify control codes
+	  sent by your keyboard directly from the command line.
+	  As a side effect, #exe <file now works also on files created
+	  with #save
+	* Added #rebind command. Changes the control codes associated
+	  to a key binding without changing its name or its effect.
+	* Added #quit command.
+
+Changes from 0.8.6 to 0.9.0 (Massimiliano Ghilardi) 29 Apr 1997
+        * Added FreeBSD support in make_it (thanks to Jaako Knuutila)
+        * Cleaned up terminal interface.
+	* #save and #load now accept a filename as argument
+	* Handle SIGQUIT as SIGINT: use to stop long or infinite loops
+	* Now can switch main connection on the fly with ##<connection-name>
+	* Allow powwow #commands also on subsidiary connections
+
+Changes from 0.8.5 to 0.8.6 (Paolo Gatti, Massimiliano Ghilardi) 28 Apr 1997
+        * Finally and definitively changed the name to powwow.
+	  Previously, sometimes the program was referred to as pow-wow
+	  and sometimes as powwow, generating confusion.
+        * Partial port of powwow to AmigaDOS. Incomplete, will NOT compile.
+	  Paolo abandoned the project, so maybe it will just never compile.
+	* Fixed a bug causing extra new-lines on screen when powwow received
+	  strange data sequences like ASCII codes 10 13
+	  (on DOS, new-line is 13 10, while on UN*X is 10 only)
+        * Fixed a bug in #mark not matching correctly the wildcard $
+        * Powwow crashed #loading files containing empty lines. Fixed
+
+Changes from 0.8.4 to 0.8.5 (Massimiliano Ghilardi)
+	* Fixed a bug introduced by updating files from cancan 2.6.0b sources
+	  (happened in version 0.8.3): powwow was sendind TWO new-line chars
+	  instead of one immediately after every password.
+
+Changes from 0.8.3 to 0.8.4 (Massimiliano Ghilardi)
+	* Fixed (I hope definitively) an ancient bug:
+	  some lines were sometimes printed twice or not printed at all.
+	  It is still the bug that appeared in version 0.4...
+	  The bug was almost fixed in version 0.8b but reintroduced in 0.8.3
+
+Changes from 0.8b to 0.8.3 (Massimiliano Ghilardi)
+	* Slightly changed version numbering (0.8.3 instead of 0.8c)
+	* #save and #load are now safe even in case of errors
+	  (example: `disk full')
+	* hitting a #bind-ed key now echoes the corresponding command
+	  only if #echo is on
+        * updated term.c (terminal handling code) and tel.c (telnet code)
+	  with files from cancan 2.6.0b (yes, I shamelessly copied them)
+	  No external changes anyway (unless I introduced some bugs)
+          note: beam.c NOT updated/copied
+        * 'follow' standalone mini-program added (see README.follow)
+        * #key is now explicitly stated not to support editing keys.
+	  They cannot be added cleanly without rewriting the line-editing code
+	  from scratch ('#key up' and '#key return' give the biggest problems)
+	  and I don't have the time for that right now
+        * blink attribute added
+        * Now can use multiple attributes in #mark, #hilite, #color
+	  example: #mark *An Orc*=inverse bold blue on red
+	  Note: bold, blink, underline and inverse must appear BEFORE colors
+	* fixed some bugs:
+	* changed "VERSION" to "POWWOW_VERSION" in powwow.c.
+	  It seems some compilers use VERSION for internal purposes...
+	* #wrap mode was discarding lines containing only escape sequences
+	  (example: color codes coming from the MUD)
+        * #hilite was restoring hilight attributes after EVERY line
+	  coming from the MUD
+	* self-recursive aliases were causing crash after 100 loops instead
+	  of trapping error and reporting '#error: stack overflow'
+	  (not always, and not on all OS). Now they are completely safe.
+	  Note: they still eat 1MB of memory (10K per loop - released
+	  immediately after)
+
+Changes from 0.8a to 0.8b (Massimiliano Ghilardi)
+	* hexadecimal numbers added (and in any other base)
+	  can be used only from calculator, prefix is #
+	* '#write' command added
+	* fixed a bug with #nice affecting #load
+	  now #load places actions/marks in memory in the same order as
+	  config file, indipendently from #nice value.
+	  Also, default #nice changes from 1 (top) to 0 (bottom)
+	* fixed a bug in #save that sometimes caused crashes and destroyed
+	  config file
+	* now word completion (issued with TAB key) checks
+	  word completion list _before_ built-in commands
+
+Changes from 0.8 to 0.8a (Massimiliano Ghilardi)
+	* remind me NEVER to work on Sunday, because I filled version 0.8 with
+	  these bugs (now fixed):
+	  - some debugging stuff was not deleted from official version
+	  - deleting a named variable could cause a crash
+	  - creating a named variable was giving a message even while reading
+	    a definition file
+	  - #settimer was not working due to a change in version 0.8
+	  - forgot to say that #map variable was added
+	* #rand, #map and #timer variables renamed rand, map and timer
+	  (removed the #) - sorry for the change but it was necessary.
+	* removed limit of 50 named variables of each kind (numeric and string)
+	  now the only limit is the memory available
+
+Changes from 0.7b to 0.8 (Massimiliano Ghilardi)
+	* #mark now accepts wildcards ($ for a single word, & for a string)
+	* named variables are now supported
+	* #assign renamed #var (I never liked the name 'assign' ...)
+	  also, #var can be used to delete variables from memory
+	* #nice command added. It sets/shows priority of new actions/marks
+
+Changes from 0.7a to 0.7b (Finn Arne Gangstad)
+        * make_it now also works for sunos 5.x, irix 5.x and hpux 9.x
+
+Changes from 0.7 to 0.7a (Massimiliano Ghilardi)
+	* fixed a _HUGE_ hole in security: $n in actions was matching also ;
+	  (but not spaces) so robotic actions gave a chance to other players
+	  to force you (*AAARGH*)
+	* startup changed: now powwow does not clear screen when executed,
+	  but jumps to the end of screen (this avoids mess in the first lines
+	  you get from the mud)
+
+Changes from 0.6d to 0.7 (Massimiliano Ghilardi)
+	* finally fixed the unpleasant bug of auto-wrap making confusion when
+	  receiving lines that contain escape sequences
+	  (the fix in 0.6d was far from satisfactory)
+	* high-intensity colours added (for the terminals that support them)
+	* #assign can be used to put the contents of a variable on input line
+	* number of global variables raised to 50, max lenght of string
+	  variables raised to 512 bytes
+	* #settimer command added, '#time' variable changed into '#timer'
+	* fixed a bug: math operator >= was wrong, worked as <=
+
+Changes from 0.6c to 0.6d (Massimiliano Ghilardi)
+	* break key now is also used to stop command-parsing. Useful to stop
+	  long or infinite loops without exiting from powwow.
+	* #stop command added. It disables all active delayed commands.
+	* #mark now works also with prompts (was not implemented before)
+	* fixed an ancient bug with #action not working on lines splitted into
+	  multiple data packets by telnet.
+	* fixed two other ancient bugs:
+	  #mark not working on auto-wrapped words
+	  and auto-wrap making confusion when receiving lines that contain
+	  escape sequences (only partially fixed to be honest)
+	* Now the unescaping is performed ALSO on quoted strings, when powwow
+	  evaluates them. Thus there might be to update your definition file
+	  if it contains escapes placed in strings.
+
+Changes from 0.6b to 0.6c (Massimiliano Ghilardi)
+	* If you have problems with #rand, random() and srandom() (typically
+	  your compiler is unable to find the functions) you can define
+	  NO_RANDOM at compile time. (temporary solution)
+	* Now also editing keys can be redefined
+	* #assign command added (same syntax of #print, #send and #exe)
+	* Now you can specify start and end line of a file or output of Bourne
+	  shell command when using #print, #send, #exe, #emulate or #assign
+	* #debug command added (try it in test mode...)
+	* Now #echo, #info, #speedwalk and #debug also accept 'on' or 'off'
+
+Changes from 0.6 to 0.6b (Massimiliano Ghilardi)
+	* #emulate command added (same syntax of #print, #send and #exe)
+	* now also prompts can be intercepted by #actions
+	  (but cannot be 'gagged')
+	* powwow can run in test-mode without being connected to a MUD
+
+Changes from 0.5 to 0.6 (Massimiliano Ghilardi)
+	* more debug work
+	* #exe, #send and #print extended to use shell commands and files
+	  Also, #send replaces #read
+	* #time variable added
+	* #rand function added
+	* #connect now supports a different remote host for each connection
+	  (i.e. you can now play on different MUDs with the same invocation
+	  of powwow)
+
+	Ideas coming from Cancan 2.5.1c and implemented on powwow 0.6:
+
+	* output to the remote host is buffered up and sent all at once in the
+	  main loop, to reduce the number of network packets. Long aliases
+	  might benefit from this, as would repeated commands (#10 buy bread).
+	* #help now works on commands. A help file is needed and provided.
+	* new command: #record, records lines you type in a file
+	* source changed so path for helpfile is taken from environment
+	  variable POWWOWHELP (if this variable is not defined, powwow looks
+	  in current directory)
+	* to print the message of the day, must define MOTDFILE in compiling
+	  with the name (and complete path) of the file containing the message
+	* Now compiles on BSD/386 as well, automatically detected by make_it
+
+Changes from 0.4 to 0.5 (Massimiliano Ghilardi)
+	* Heavy debug work, since 0.4 was an alpha version
+	  (it is not a good idea to place here the huge list of bugs fixed...)
+	* added #history to list/execute commands in history
+	  Note: #history commands are not placed in history...
+	* now internal commands can be abbreviated, for example #al can be used
+	  istead of #alias. However, internal commands are still completed
+	  using TAB
+
+Changes from Cancan 2.5.0b to powwow 0.4 (Massimiliano Ghilardi)
+	* Inline calculator, with both global and local variables, and C-like
+	  syntax
+	* added commands #(), #print, #send, #exe to use inline calculator
+	* added commands #if-#else, #for and #while.
+	* added #key, #save, #load, #save, #lines, #info, #echo, #compact, 
+	  #net, #clock, #time
+	* added #in and #at to define/edit delayed commands
+	* #mark and all attrib-related commands now accept also the attribute
+	  'none'
+	* #marks and #actions now are not automatically sorted (to sort them,
+	  define SORT in compiling). #aliases and #binds instead are always
+	  sorted.
+	* #aliases can be self-recursive now (it is potentially dangerous,
+	  powwow will not enter a very long - but not infinite - loop)
+	* Must not escape ';' anymore to place multiple commands in #alias,
+	  #action or #bind. Instead, multiple commands must be surrounded by
+	  braces, { and }
+	* #action changed syntax (not need double quotes anymore, but need one
+	  of > < + - = before label) See powwow.doc for details
+	  Lines matched with #action are not printed on screen automatically,
+	  must use a #print to echo them
+	* #gag is suppressed (not needed anymore), and #add is now a command
+	* Escaping technique changed. Now unescaping '\\\#' gives '\\#' (i.e.
+	  remove one \ each time), and you can also escape \, in this way:
+	  \` gives \ alone, \`` gives \` and so on. So for example, if you
+	  want to place a \ at the end of an #action pattern, you must write
+	  \` , to avoid escaping the = after the pattern
+	* Some bugs of Cancan fixed (small things, expecially wrapping)
+
+Changes from 2.5.0a to 2.5.0b (Finn Arne Gangstad)
+	* Fixed bug with client aborting when window was resized.
+
+Changes from 2.5.0 to 2.5.0a (Finn Arne Gangstad)
+	* Various tweaks to make it compile on most systems.
+
+Changes from 2.4.4 to 2.5.0 (Mattias Engdegard)
+	* the length of the prompt is now correctly calculated
+	  even if it contains escape sequences (for muds with coloured prompt).
+	* built-in commands are always completed with tab and aren't stored in
+	  the word list
+	* #hilite and #mark now accept general attributes: ansi colours and
+	  bold, underline, inverse.
+	* the #action command has changed syntax; now double quotes are
+	  required around the pattern, but they can be named. Actions can be
+	  turned on and off.
+	* the keydefs list contains all keyboard bindings. The #bind command
+	  can define new keys.
+	* the #alias, #action, #bind and #mark commands can now put a
+	  definition line in the input buffer for easy editing.
+	  The keys M-p and M-n are no longer used.
+	* some new files, new source module discipline with external
+	  declarations only in header files.
+	* added the file `Hacking' with some advice.
+	* mapping functions cleaned up. #map now displays ssss as 4s.
+	* the definition file is tagged with a file version, to make it easier
+	  to recognize older save formats.
+	* cancan now displays a motd file whose location is set at compile
+	  time (see Makefile).
+	* define TELNETBUG to work around an NCSA telnet 2.2 colour bug.
+	  #stdcolour can be used to set the background colour if TELNETBUG is
+	  defined.
+
+Changes from 2.4.3 to 2.4.4 (David Gay)
+	* telnet window size option supported
+
+Changes from 2.4.2 to 2.4.3
+        * added term support
+	* added #hilite to hilite user entered text
+	* added #mark and #unmark to mark special keywords...
+	* changed #identify to allow it to send alias' or commands to the
+	  mud when beginning/ending an editing session.
+	* changes the Makefile a bit to support termcancan
+	
+Changes from 2.4.1 to 2.4.2
+	* Added multiple-session support with following # commands:
+	  '#connect', '#zap', '#snoop', '##'
+	* Added numeric keypad movement, keypad sends commands
+	  n,e,s,w,u,d and exits.. (not on all systems)
+	* Easier editing of actions with meta-p and meta-n (not on all systems)
+	* Changed the 'make_it' script a bit, so that it echoes the make
+	  command it executes.
+
+Changes from 2.4.1 to 2.4.1b
+	* Improved modularity of source, new files cmd.c, cmd.h
+
+Changes from 2.4.0 to 2.4.1
+	* Changed & in actions to match a single word for backward
+	  compatibility.  &0..&9 still match multi-worded text.
+	* Now compiles on HP-UX (at least HP-UX 9.01A )
+	* Included a 'make_it' script that automatically compiles cancan for
+	  Linux, IRIX, AIX, ULTRIX, DolphinOS, SunOS and HP-UX sytems.
+
+Changes from 2.3.6 to 2.4.0
+	* Extended param substitution for & to &0..&9.
+	* Added '&&' syntax for delayed param substitution.
+	* Added '#init' command to send initialization string on connect.
+	* Added '#speedwalk' to toggle speedwalk on and off.
+	* Added '#map' with automapping.
+	* Added '#retrace' to retrace steps.
+	* Added sorting for alias and action lists, which is disabled if
+	  compiled with -DNOSORT.
+	* Added compile option -DNOSHELL to remove '#!' shell escape function.
+
+Changes from Cancan 2.3.5 to 2.3.6
+	* Fixed a bug with MUME's spinning delay bars and word wrap.
+	* & can now be escaped. This allows for aliases that create aliases,
+	  and other things.
+	* Added this change log (not too early)
+	* Checks the window size after being suspended, in case it was
+	  changed.
+	* Lines longer than screen width because of invisible spaces and/or
+	  trailing CR:s are not unnecessarily wrapped.
+

@@ -1,0 +1,140 @@
+
+			powwow 1.2.4 README
+
+Powwow is a client program intended mainly for playing MUD.
+It implements (a subset of) the telnet protocol.
+
+Files you should have received:
+
+	README		This text.
+	Changelog 	What has changed since the last release.
+	powwow.doc	Complete documentation. READ this!
+	make_it		A shell script that automatically compiles powwow on
+			many systems.
+        Compile.how     A hopefully detailed text file showing how to compile
+                        powwow on different systems.
+	Makefile	Makefile: tailor it for your system if make_it fails.
+	*.[ch]		Sources.
+	tools/*		Additional standalone utilities.
+	powwow.help	Online help file (in plain ASCII).
+	powwow.6	Man page.
+	Config.demo	A demonstrative definition file for powwow
+	Hacking		Read this if you want to improve/destroy powwow
+			yourself.
+	README.follow	Documentation for the 'follow' mini-program.
+	README.term     How to make termpowwow
+
+COMPILING
+
+	Try the shell-script 'make_it', ie type './make_it'.
+	If that doesn't	work, read the file 'Compile.how', try to edit
+	the 'Makefile' manually and either run './make_it' or 'make'.
+	If you have to edit the Makefile, or edit the source
+	code, to get it to work, pleae e-mail any changes you did to:
+	<max@Linuz.sns.it>. Also include info on what system you have
+	(type 'uname -a' to get the necessary info).
+
+	You may also want to edit the Makefile in order to fine-tune powwow
+	to your system (change optimizations, include regexp library, etc.)
+
+INSTALLING
+
+	If you want powwow's definition files to go in a specific directory,
+	set the environment variable POWWOWDIR to that directory. It will be
+	searched first for definition files at startup.
+	
+	Put the file powwow.6 in a suitable directory if you want users on
+	your system to be able to read the long and comprehensive man page ;)
+
+	Powwow supports the MUME editing protocol.  It enables you to edit
+	texts locally with your favourite editor.  So far, only MUME supports
+	this protocol, but this might change in the future.
+
+	Powwow looks for the editor in the POWWOWEDITOR enviroment variable,
+	and if it doesn't exist, in EDITOR, and uses "emacs" as default.  For
+	text viewing, powwow looks for POWWOWPAGER, then PAGER, then uses
+	"more" as default.
+
+	If you are on a multi-window terminal (such as an X terminal or NCSA
+	telnet from a Mac or PC), powwow will let you start the editor in
+	another window and remain active.  You will then also be able to edit
+	several texts at the same time.  To achieve this, let the first
+	character of your editor/pager be '&' (which is then skipped).
+
+	Example: (Bourne shell syntax)
+	
+	POWWOWEDITOR=vi		  Use vi as normal editor (same window as
+				  powwow)
+	POWWOWEDITOR='&emacs'	  Use emacs as editor in a separate window (if
+				  you are on an X terminal)
+	POWWOWEDITOR='&xterm -e vi'  Use vi in another X window
+	POWWOWPAGER='&xterm -e less' Use less as your file viewer in another
+				     X window
+
+	If you use a multi-window terminal and have emacsclient installed, it
+	is a good choice, since you only need one emacs window for all your
+	editing sessions and you don't have to start and exit emacs all the
+	time.  Set POWWOWEDITOR='&emacsclient' in that case, and make sure your
+	emacs has a running server (put (server-start) in your .emacs file or
+	type M-x server-start).
+
+	If you want to use the editing functions, you must execute the
+	`#identify' command to notify the server that the client supports the
+	protocol. This can also be done with an action; see the documentation
+	for details.
+
+	For editing Mudlle programs with emacs, there is a special mode that
+	helps you with indenting. To use it, put mudlle.el in a suitable
+	place, and add the two following lines to your .emacs file:
+
+	(setq load-path (append load-path '("mydirectory")))
+	(autoload 'mudlle-mode "mudlle.el" "Turns on mudlle editing mode" t)
+
+	where you replace mydirectory with the directory where mudlle.el can
+	be found. If you put the string -*-mudlle-*- in the first line of
+	a mudlle program (i.e. in a comment), then emacs will automatically
+	turn on mudlle mode for that file when you edit it.
+	The mudlle mode can be customized to some extent. See the source for
+	details.
+
+BUGS
+
+	If you have any problems with powwow, try to fix them yourself
+	(you have the source, right?) or at least isolate the bugs so
+	the maintainer has a fair change of fixing them. Don't expect
+	a bug to be fixed, unless you explain it in detail (expecially
+	how to reproduce it) and supply the powwow and OS version,
+	as well as the compilation options. 
+        Suggestions for improvements are also very welcome.
+
+AUTHORS OF CANCAN
+
+	Since powwow is based on cancan, we report also this.
+
+        Mattias Engdegard <f91-men@nada.kth.se> was the original author.
+	Many other people have contributed at least as much, including
+	Finn Arne Gangstad <finnag@pvv.unit.no>, David Gay <dgay@di.epfl.ch>,
+	Gary Dezern <gdezern@satelnet.org>
+	and Lai-Chang Woo <vivriel@scs.com.sg>.
+	It is unclear who the current maintainer is, but it seems to be
+	Finn Arne Gangstad. Ask around at MUME to find out more about cancan.
+
+AUTHORS OF POWWOW
+
+        Massimiliano Ghilardi <max@Linuz.sns.it>, alias Cosmos,
+	is the original author, and Gustav Hållberg <f92-gha@nada.kth.se>
+	contributed a lot of new features.
+        The powwow WWW page is: http://Linuz.sns.it/~max/powwow.html
+	
+	If you forgot where you downloaded powwow from, you can get it from
+	the above address, or from
+	ftp://Linuz.sns.it/pub/Linux/ext-pack/powwow/
+
+	To learn more about MUME, have a look at http://fire.pvv.org/mume/
+	which also explains how to connect.
+
+COPYRIGHT
+
+	Powwow is placed under the terms of GPL (GNU General Public License)
+	The GPL License can be found in the file COPYING.
+

@@ -1,0 +1,67 @@
+Some notices for you who would like to hack the source in order to
+improve powwow, fix bugs or just have fun:
+
+* Try not to run large chunks of existing code through your C
+  beautifier if the indentation style doesn't please you. This will
+  only greatly confuse the original author (if he can't recognize and
+  maintain his own code, who can?). If you write any new functions,
+  ok, use your own style as long as it's clear and consistent.
+
+* For portability, powwow is written using a few #defines that can
+  generate either K&R and ANSI function prototypes depending on the compiler,
+  so that it (should) compile fine in both cases.
+  If people convince me that non-ANSI compilers are rare enough these days,
+  we could switch to ANSI-only prototypes. Even then, please, do NOT
+  use any gcc-specific features (I've seen the char constant '\e' in some
+  places) even if gcc is very common. Our goal should be to let the
+  maximum number of people use powwow. (Most non-ANSI compilers grok
+  void and unsigned, so these are safe to use.)
+  
+* For the same reason, do NOT use C++ style comments //
+
+* To sum it up, assume that the user has:
+  - a non-ANSI C compiler (use the __P, __P0, __P1, ... defines!)
+  - an exotic non-VT100 terminal (use TERMCAP!), possibly on a slow line
+  - a slow workstation, or a larger computer shared by 100 users and
+    aggressive sysadmins who think that mudding doesn't justify 10% or
+    even 5% CPU load.
+
+* Document your changes! A brief report of changes in the Changelog file is
+  absolutely necessary. So is updating the doc files (powwow.doc, powwow_help
+  and README) Also, sending an e-mail to the code author/mantainer documenting
+  your changes will be appreciated.
+  
+Report from cancan's `Hacking':
+
+*******************************************************************************
+  Remember, that although I (Yorick) am the original author, I don't dictate
+  the code; it is explicitly in the public domain. I am merely trying to keep
+  some kind of order; if versions are permitted to diverge, they are very
+  painful to merge later. Also, different version branches are very confusing,
+  and makes it hard to define the "latest and best" version. Please try to
+  synchronize your hacks into one  - the latest - version!
+*******************************************************************************
+
+Well, Yorick refused to merge Powwow and Cancan, so now they both exist
+indipendently... Now I (Cosmos) say exactly the same thing Yorick said
+('do not let version diverge'), but I fear this will happen again :(
+Only difference is that powwow is now GPL-ed and not Public Domain.
+I hope this will help a little.
+
+* Rather than you just distributing your hacked version, I _really_ prefer you
+  to send back to me your changes, so that I can put them into the following
+  release. You lose nothing doing so, since even in case I refuse to include
+  your changes you can still distribute your version if you absolutely want :)
+
+  Even if you decide to distribute such a modified version, please
+  make it clear that it is not the original version, use a version number
+  which can't be confused with an original version, and put your name
+  in Changelog and in POWWOW_VERSION.
+
+* I've tried to make the code obey the following rules for modularity:
+	- All exported things from one .c file is declared in its .h file.
+	- Conversely, symbols are imported by #including .h files,
+	  not by local extern declarations.
+	- Everything that can be static should be (this is not quite true yet)
+
+  Please obey these rules (or improve them).
