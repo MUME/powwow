@@ -15,6 +15,7 @@
 @SET_MAKE@
 
 
+
 SOURCES = $(catrw_SOURCES) $(follow_SOURCES) $(movie_SOURCES) $(muc_SOURCES) $(powwow_SOURCES)
 
 srcdir = @srcdir@
@@ -54,7 +55,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man6dir)" \
-	"$(DESTDIR)$(powwowdir)"
+	"$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(powwowdir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_catrw_OBJECTS = catrw.$(OBJEXT)
@@ -95,6 +96,8 @@ am__vpath_adj = case $$p in \
     *) f=$$p;; \
   esac;
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
+pkgdataDATA_INSTALL = $(INSTALL_DATA)
+DATA = $(pkgdata_DATA)
 powwowHEADERS_INSTALL = $(INSTALL_HEADER)
 HEADERS = $(powwow_HEADERS)
 ETAGS = etags
@@ -164,6 +167,7 @@ am__untar = @am__untar@
 bindir = @bindir@
 build_alias = @build_alias@
 datadir = @datadir@
+dl_ldflags = @dl_ldflags@
 exec_prefix = @exec_prefix@
 host_alias = @host_alias@
 includedir = @includedir@
@@ -181,11 +185,14 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+
+# Default help file directory
+AM_CFLAGS = -DPOWWOW_DIR=$(pkgdatadir)
 powwow_SOURCES = beam.c cmd.c log.c edit.c cmd2.c eval.c \
 		 utils.c main.c tcp.c list.c map.c tty.c \
 		 ptr.c
 
-powwow_LDFLAGS = -rdynamic -ldl
+powwow_LDFLAGS = @dl_ldflags@
 powwowdir = $(pkgincludedir)
 powwow_HEADERS = beam.h cmd.h log.h edit.h cmd2.h eval.h \
 		 utils.h main.h tcp.h list.h map.h tty.h \
@@ -196,6 +203,7 @@ movie_SOURCES = movie.c
 follow_SOURCES = follow.c
 catrw_SOURCES = catrw.c
 man_MANS = powwow.6
+pkgdata_DATA = powwow.doc powwow.help
 EXTRA_DIST = README README.follow README.term TODO Hacking Config.demo \
 	     powwow.doc powwow.help powwow.6 plugtest.c debian/rules \
 	     debian/control debian/changelog
@@ -358,6 +366,23 @@ uninstall-man6:
 	  inst=`echo $$inst | sed '$(transform)'`.$$ext; \
 	  echo " rm -f '$(DESTDIR)$(man6dir)/$$inst'"; \
 	  rm -f "$(DESTDIR)$(man6dir)/$$inst"; \
+	done
+install-pkgdataDATA: $(pkgdata_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(pkgdatadir)" || $(mkdir_p) "$(DESTDIR)$(pkgdatadir)"
+	@list='$(pkgdata_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(pkgdataDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(pkgdatadir)/$$f'"; \
+	  $(pkgdataDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(pkgdatadir)/$$f"; \
+	done
+
+uninstall-pkgdataDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(pkgdata_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(pkgdatadir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(pkgdatadir)/$$f"; \
 	done
 install-powwowHEADERS: $(powwow_HEADERS)
 	@$(NORMAL_INSTALL)
@@ -554,9 +579,9 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(MANS) $(HEADERS)
+all-am: Makefile $(PROGRAMS) $(MANS) $(DATA) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man6dir)" "$(DESTDIR)$(powwowdir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man6dir)" "$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(powwowdir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -604,7 +629,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-man install-powwowHEADERS
+install-data-am: install-man install-pkgdataDATA install-powwowHEADERS
 
 install-exec-am: install-binPROGRAMS
 
@@ -634,7 +659,7 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-binPROGRAMS uninstall-info-am uninstall-man \
-	uninstall-powwowHEADERS
+	uninstall-pkgdataDATA uninstall-powwowHEADERS
 
 uninstall-man: uninstall-man6
 
@@ -646,12 +671,13 @@ uninstall-man: uninstall-man6
 	html-am info info-am install install-am install-binPROGRAMS \
 	install-data install-data-am install-exec install-exec-am \
 	install-info install-info-am install-man install-man6 \
-	install-powwowHEADERS install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
+	install-pkgdataDATA install-powwowHEADERS install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am uninstall-binPROGRAMS uninstall-info-am \
-	uninstall-man uninstall-man6 uninstall-powwowHEADERS
+	uninstall-man uninstall-man6 uninstall-pkgdataDATA \
+	uninstall-powwowHEADERS
 
 
 plugtest.so: plugtest.c
