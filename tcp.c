@@ -150,12 +150,12 @@ int tcp_connect __P2 (char *,addr, int,port)
 	address.sin_family = AF_INET;
     else
     {
-	if (echo_int)
+	if (opt_info)
 	    tty_printf("#looking up %s... ", addr);
 	tty_flush();
 	host_info = gethostbyname(addr);
 	if (host_info == 0) {
-	    if (!echo_int) {
+	    if (!opt_info) {
 		tty_printf("#looking up %s... ", addr);
 	    }
 	    tty_printf("unknown host!\n");
@@ -164,7 +164,7 @@ int tcp_connect __P2 (char *,addr, int,port)
 	memmove((char *)&address.sin_addr, host_info->h_addr,
 	      host_info->h_length);
 	address.sin_family = host_info->h_addrtype;
-	if (echo_int)
+	if (opt_info)
 	    tty_puts("found.\n");
     }
     address.sin_port = htons(port);
@@ -815,7 +815,7 @@ void tcp_open __P4 (char *,id, char *,initstring, char *,host, int,port)
     FD_SET(newtcp_fd, &fdset); 		/* add socket to select() set */
     tcp_count++;
 
-    if (echo_int && tcp_count) {
+    if (opt_info && tcp_count) {
 	PRINTF("#default connection is now \"%s\"\n", id);
     }
     tcp_set_main(tcp_fd = newtcp_fd);
@@ -926,7 +926,7 @@ void tcp_togglesnoop __P1 (char *,id)
     sfd = tcp_find(id);
     if (sfd>=0) {
         CONN_LIST(sfd).flags ^= ACTIVE;
-	if (echo_int) {
+	if (opt_info) {
 	    PRINTF("#connection %s is now %sactive.\n",
 		      CONN_LIST(sfd).id, CONN_LIST(sfd).flags & ACTIVE ? "" : "non");
 	}
@@ -1010,7 +1010,7 @@ void tcp_spawn __P2 (char *,id, char *,cmd)
     if (conn_max_index <= i)
 	conn_max_index = i+1;
     
-    if (echo_int) {
+    if (opt_info) {
 	PRINTF("#successfully spawned \"%s\" with pid %d\n", id, childpid);
     }
     

@@ -173,7 +173,7 @@ void parse_alias __P1 (char *,str)
         if (!*str) {
             /* delete alias */
             if (p) {
-                if (echo_int) {
+                if (opt_info) {
                     PRINTF("#deleting alias: %s=%s\n", left, p->subst);
                 }
                 delete_aliasnode(np);
@@ -200,7 +200,7 @@ void parse_alias __P1 (char *,str)
 	    	(*np)->group = my_strdup(group);
 	    }
 
-            if (echo_int) {
+            if (opt_info) {
                 PRINTF("#%s alias in group '%s': %s=%s\n", p ? "changed" : "new",
 			group == NULL ? "*" : group, left, right);
             }
@@ -231,7 +231,7 @@ void parse_alias __P1 (char *,str)
  */
 static void delete_action __P1 (actionnode **,nodep)
 {
-    if (echo_int) {
+    if (opt_info) {
         PRINTF("#deleting action: >%c%s %s\n", (*nodep)->active ?
 		   '+' : '-', (*nodep)->label, (*nodep)->pattern);
     }
@@ -243,7 +243,7 @@ static void delete_action __P1 (actionnode **,nodep)
  */
 static void delete_prompt __P1 (actionnode **,nodep)
 {
-    if (echo_int) {
+    if (opt_info) {
         PRINTF("#deleting prompt: >%c%s %s\n", (*nodep)->active ?
 		   '+' : '-', (*nodep)->label, (*nodep)->pattern);
     }
@@ -256,7 +256,7 @@ static void delete_prompt __P1 (actionnode **,nodep)
 static void add_new_action __P6 (char *,label, char *,pattern, char *,command, int,active, int,type, void *,q)
 {
     add_actionnode(pattern, command, label, active, type, q);
-    if (echo_int) {
+    if (opt_info) {
         PRINTF("#new action: %c%c%s %s=%s\n", 
 		   action_chars[type],
 		   active ? '+' : '-', label,
@@ -270,7 +270,7 @@ static void add_new_action __P6 (char *,label, char *,pattern, char *,command, i
 static void add_new_prompt __P6 (char *,label, char *,pattern, char *,command, int,active, int,type, void *,q)
 {
     add_promptnode(pattern, command, label, active, type, q);
-    if (echo_int) {
+    if (opt_info) {
         PRINTF("#new prompt: %c%c%s %s=%s\n", 
 		   action_chars[type],
 		   active ? '+' : '-', label,
@@ -316,7 +316,7 @@ static void change_actionorprompt __P6 (actionnode *,node, char *,pattern, char 
         node->command = my_strdup(command);
     }
     
-    if (echo_int) {
+    if (opt_info) {
         PRINTF("#changed %s %c%c%s %s=%s\n", ONPROMPT,
 		   action_chars[node->type],
 		   node->active ? '+' : '-',
@@ -593,7 +593,7 @@ void parse_action __P2 (char *,str, int,onprompt)
         } else {
             if (np && *np) {
                 (*np)->active = (sign == '+');
-                if (echo_int) {
+                if (opt_info) {
                     PRINTF("#%s %c%s %s is now o%s.\n", ONPROMPT,
 			   action_chars[(*np)->type],
 			   label,
@@ -939,10 +939,10 @@ void parse_mark __P1 (char *,str)
         if (attrcode == -1) {
             PRINTF("#invalid attribute syntax.\n");
 	    error=SYNTAX_ERROR;
-            if (echo_int) show_attr_syntax();
+            if (opt_info) show_attr_syntax();
         } else if (!*p)
 	    if ((n = *np)) {
-		if (echo_int) {
+		if (opt_info) {
 		    PRINTF("#deleting mark: %s%s=%s\n", n->mbeg ? "^" : "",
 			   n->pattern, attr_name(n->attrcode));
 		}
@@ -954,16 +954,16 @@ void parse_mark __P1 (char *,str)
         else {
             if (*np) {
                 (*np)->attrcode = attrcode;
-                if (echo_int) {
+                if (opt_info) {
                     PRINTF("#changed");
                 }
             } else {
                 add_marknode(pattern, attrcode, mbeg, wild);
-                if (echo_int) {
+                if (opt_info) {
                     PRINTF("#new");
                 }
             }
-            if (echo_int)
+            if (opt_info)
 		tty_printf(" mark: %s%s=%s\n", mbeg ? "^" : "",
 			   pattern, attr_name(attrcode));
         }
@@ -1238,7 +1238,7 @@ static void define_new_key __P2 (char *,name, char *,command)
     else
 	add_keynode(name, seq, seqlen, key_run_command, command);
     
-    if (echo_int) {
+    if (opt_info) {
 	PRINTF("#new key binding: %s %s=%s\n",
 	       name, seq_name(seq, seqlen), command);
     }
@@ -1278,7 +1278,7 @@ static void parse_bind_noninteractive __P1 (char *,arg)
     else
 	add_keynode(arg, rawseq, seqlen, key_run_command, p);
     
-    if (echo_int) {
+    if (opt_info) {
 	PRINTF("#%s: %s %s=%s\n", (kp && *kp) ?
 		   "redefined key" : "new key binding", arg, seq, p);
     }
@@ -1318,7 +1318,7 @@ void parse_bind __P1 (char *,arg)
                     np->call_data = my_strdup(command);
 		    np->funct = key_run_command;
 		}
-                if (echo_int) {
+                if (opt_info) {
                     PRINTF("#redefined key: %s %s=%s\n", name,
 			       seq_name(np->sequence, np->seqlen),
 			       command);
@@ -1327,7 +1327,7 @@ void parse_bind __P1 (char *,arg)
 		define_new_key(name, command);
         } else {
             if (np) {
-                if (echo_int)
+                if (opt_info)
 		    show_single_bind("deleting key binding:", np);
 		delete_keynode(npp);
             } else {
@@ -1409,7 +1409,7 @@ void parse_rebind __P1 (char *,arg)
     *old = (char *)malloc((*kp)->seqlen = seqlen);
     memmove(*old, seq, seqlen);
 
-    if (echo_int)
+    if (opt_info)
 	show_single_bind("redefined key:", *kp);
 }
 
@@ -1607,7 +1607,7 @@ void change_delaynode __P3 (delaynode **,p, char *,command, long,millisec)
 	add_node((defnode*)m, (defnode**)&dead_delays, rev_time_sort);
     else
 	add_node((defnode*)m, (defnode**)&delays, time_sort);
-    if (echo_int) {
+    if (opt_info) {
 	PRINTF("#changed ");
 	show_delaynode(m, 0);
     }
@@ -1623,7 +1623,7 @@ void new_delaynode __P3 (char *,name, char *,command, long,millisec)
     update_now();
     add_vtime(&t, &now);
     node = add_delaynode(name, command, &t, millisec < 0);
-    if (echo_int && node) {
+    if (opt_info && node) {
 	PRINTF("#new ");
 	show_delaynode(node, 0);
     }

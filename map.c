@@ -59,7 +59,7 @@ void map_retrace __P2 (int,steps, int,walk_back)
     else {
 	if (!steps)
 	    steps = -1;
-	if (walk_back && echo_ext) {
+	if (walk_back && opt_echo) {
 	    status(1);
 	    tty_putc('[');
 	}
@@ -68,12 +68,12 @@ void map_retrace __P2 (int,steps, int,walk_back)
 	    mapend = MAPINDEX(mapend - 1);
 	    if (walk_back) {
 		cmd[0] = reverse_dir(mappath[mapend]);
-		if (echo_ext)
+		if (opt_echo)
 		    tty_putc(cmd[0]);
 		tcp_write(tcp_fd, cmd);
 	    }
 	}
-	if (walk_back && echo_ext)
+	if (walk_back && opt_echo)
 	    tty_puts("]\n");
     }
 }

@@ -151,7 +151,7 @@ void log_resize __P1 (int,newsize)
 	datasize = newsize;
 	logsize = newsize / 16;
     }
-    if (echo_int) {
+    if (opt_info) {
 	PRINTF("#buffer resized to %d bytes%s\n", newsize, newsize ? "" : " (disabled)");
     }
 }

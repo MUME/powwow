@@ -464,7 +464,7 @@ static void cmd_clear __P1 (char *,arg)
 static void cmd_shell __P1 (char *,arg)
 {
     if (!*arg) {
-        if (echo_int) {
+        if (opt_info) {
 	    PRINTF("#that's easy.\n");
         }
     } else {
@@ -606,7 +606,7 @@ static void cmd_hilite __P1 (char *,arg)
     attr = parse_attributes(arg);
     if (attr == -1) {
 	PRINTF("#attribute syntax error.\n");
-	if (echo_int)
+	if (opt_info)
 	  show_attr_syntax();
     } else {
 	attr_string(attr, edattrbeg, edattrend);
@@ -614,7 +614,7 @@ static void cmd_hilite __P1 (char *,arg)
 	edattrbg = ATTR(attr) & ATTR_INVERSE ? 1
 	    : BACKGROUND(attr) != NO_COLOR || ATTR(attr) & ATTR_BLINK;
 	
-	if (echo_int) {
+	if (opt_info) {
 	    PRINTF("#input highlighting is now %so%s%s.\n",
 		       edattrbeg, (attr == NOATTRCODE) ? "ff" : "n",
 		       edattrend);
@@ -665,7 +665,7 @@ static void cmd_host __P1 (char *,arg)
 	if (*arg) {
 	    my_strncpy(hostname, newhost, BUFSIZE-1);
 	    portnumber = atoi(arg);
-	    if (echo_int) {
+	    if (opt_info) {
 		PRINTF("#host set to: %s %d\n", hostname, portnumber);
 	    }
 	} else {
@@ -698,14 +698,14 @@ static void cmd_request __P1 (char *,arg)
 	    if ((all || !strncmp(buf, "editor", len))) {
 		tcp_raw_write(tcp_fd, ideditor, strlen(ideditor));
 		CONN_LIST(tcp_fd).flags |= IDEDITOR;
-		if (echo_int) {
+		if (opt_info) {
 		    PRINTF("#request editor: %s done!\n", ideditor);
 		}
 	    }
 	    if ((all || !strncmp(buf, "prompt", len))) {
 		tcp_raw_write(tcp_fd, idprompt, strlen(idprompt));
 		CONN_LIST(tcp_fd).flags |= IDPROMPT;
-		if (echo_int) {
+		if (opt_info) {
 		    PRINTF("#request prompt: %s done!\n", idprompt);
 		}
 	    }
@@ -789,7 +789,7 @@ static void cmd_in __P1 (char *,arg)
 	    PRINTF("#cannot create delay label without a command.\n");
 	}
     } else if (*p && !millisec) {
-	if (echo_int) {
+	if (opt_info) {
 	    PRINTF("#deleting delay label: %s %s\n", name, (*p)->command);
 	}
 	delete_delaynode(p);
@@ -918,12 +918,12 @@ static void cmd_init __P1 (char *,arg)
     if (*arg == '=') {
 	if (*++arg) {
 	    my_strncpy(initstr, arg, BUFSIZE-1);
-	    if (echo_int) {
+	    if (opt_info) {
 		PRINTF("#init: %s\n", initstr);
 	    }
 	} else {
 	    *initstr = '\0';
-	    if (echo_int) {
+	    if (opt_info) {
 		PRINTF("#init cleared.\n");
 	    }
 	}
@@ -1063,7 +1063,7 @@ static void cmd_nice __P1 (char *,arg)
 static void cmd_prefix __P1 (char *,arg)
 {
     strcpy(prefixstr, arg);
-    if (echo_int) {
+    if (opt_info) {
 	PRINTF("#prefix %s.\n", *arg ? "set" : "cleared");
     }
 }
@@ -1077,7 +1077,7 @@ static void cmd_quote __P1 (char *,arg)
 	verbatim = 1;
     else if (!strcmp(arg, "off"))
 	verbatim = 0;
-    if (echo_int) {
+    if (opt_info) {
         PRINTF("#%s mode.\n", verbatim ? "verbatim" : "normal");
     }
 }
@@ -1222,7 +1222,7 @@ static void cmd_stop __P1 (char *,arg)
 	dying->next = dead_delays;
 	dead_delays = dying;
     }
-    if (echo_int) {
+    if (opt_info) {
 	PRINTF("#all delayed labels are now disabled.\n");
     }
 }
@@ -1394,7 +1394,7 @@ static void cmd_send __P1 (char *,arg)
 		*newline = '\0';
 	    
 	    if (!start || i++>=start) {
-		if (echo_ext) {
+		if (opt_echo) {
 		    PRINTF("[%s]\n", buf);
 		}
 		tcp_write(tcp_fd, buf);
@@ -1402,7 +1402,7 @@ static void cmd_send __P1 (char *,arg)
 	}
 	if (kind == '!') pclose(fp); else fclose(fp);
     } else {
-	if (echo_ext) {
+	if (opt_echo) {
 	    PRINTF("[%s]\n", arg);
 	}
 	tcp_write(tcp_fd, arg);
@@ -1564,7 +1564,7 @@ static void cmd_var __P1 (char *,arg)
 		named_var = add_varnode(arg, kind);
 		if (REAL_ERROR)
 		    return;
-		if (echo_int) {
+		if (opt_info) {
 		    PRINTF("#new variable: \"%s\"\n", arg - 1);
 		}
 	    } else {
@@ -1613,7 +1613,7 @@ static void cmd_var __P1 (char *,arg)
 			    ptrdel(pbuf);
 			    return;
 			}
-			if (echo_int) {
+			if (opt_info) {
 			    PRINTF("#new variable: %c%s\n", kind
 				       ? '$' : '@', buf);
 			}
@@ -1664,7 +1664,7 @@ static void cmd_var __P1 (char *,arg)
 		PRINTF("#cannot delete variable: \"%s\"\n", arg - 1);
 	    } else {
 		delete_varnode(p_named_var, kind);
-		if (echo_int) {
+		if (opt_info) {
 		    PRINTF("#deleted variable: \"%s\"\n", arg - 1);
 		}
 	    }
@@ -1823,7 +1823,7 @@ static void cmd_setvar __P1 (char *,arg)
 	else {
 	    if (buf > 0)
 		lines = (int)buf;
-	    if (echo_int) {
+	    if (opt_info) {
 		PRINTF("#setvar: lines=%d\n", lines);
 	    }
 	}
@@ -1834,7 +1834,7 @@ static void cmd_setvar __P1 (char *,arg)
 	else {
 	    if (buf == 0 || buf >= PARAMLEN)
 		limit_mem = buf <= INT_MAX ? (int)buf : INT_MAX;
-	    if (echo_int) {
+	    if (opt_info) {
 		PRINTF("#setvar: mem=%d%s\n", limit_mem,
 		       limit_mem ? "" : " (unlimited)");
 	    }
@@ -2005,7 +2005,7 @@ static void cmd_capture __P1 (char *,arg)
 	    log_flush();
             fclose(capturefile);
             capturefile = NULL;
-            if (echo_int) {
+            if (opt_info) {
 		PRINTF("#end of capture to file.\n");
             }
         } else {
@@ -2023,7 +2023,7 @@ static void cmd_capture __P1 (char *,arg)
 	    }
             if ((capturefile = fopen(arg, (append) ? "a" : "w")) == NULL) {
                 PRINTF("#error writing file \"%s\"\n", arg);
-            } else if (echo_int) {
+            } else if (opt_info) {
                 PRINTF("#capture to \"%s\" active, \"#capture\" ends.\n", arg);
             }
         }
@@ -2039,7 +2039,7 @@ static void cmd_movie __P1 (char *,arg)
 	    log_flush();
             fclose(moviefile);
             moviefile = NULL;
-            if (echo_int) {
+            if (opt_info) {
 		PRINTF("#end of movie to file.\n");
             }
         } else {
@@ -2052,7 +2052,7 @@ static void cmd_movie __P1 (char *,arg)
             if ((moviefile = fopen(arg, "w")) == NULL) {
                 PRINTF("#error writing file \"%s\"\n", arg);
             } else {
-		if (echo_int) {
+		if (opt_info) {
 		    PRINTF("#movie to \"%s\" active, \"#movie\" ends.\n", arg);
 		}
 		update_now();
@@ -2071,7 +2071,7 @@ static void cmd_record __P1 (char *,arg)
         if (recordfile) {
             fclose(recordfile);
             recordfile = NULL;
-            if (echo_int) {
+            if (opt_info) {
 		PRINTF("#end of record to file.\n");
             }
         } else {
@@ -2083,7 +2083,7 @@ static void cmd_record __P1 (char *,arg)
         } else {
             if ((recordfile = fopen(arg, "w")) == NULL) {
                 PRINTF("#error writing file \"%s\"\n", arg);
-            } else if (echo_int) {
+            } else if (opt_info) {
                 PRINTF("#record to \"%s\" active, \"#record\" ends.\n", arg);
             }
         }
@@ -2165,7 +2165,7 @@ static void cmd_color __P1 (char *,arg)
     if (!*arg) {
         strcpy(tty_modenorm, tty_modenormbackup);
 	tty_puts(tty_modenorm);	
-	if (echo_int) {
+	if (opt_info) {
 	    PRINTF("#standard color cleared.\n");
 	}
 	return;
@@ -2174,7 +2174,7 @@ static void cmd_color __P1 (char *,arg)
     attrcode = parse_attributes(arg);
     if (attrcode == -1) {
         PRINTF("#invalid attribute syntax.\n");
-	if (echo_int)
+	if (opt_info)
 	    show_attr_syntax();
     } else {
         int bg = BACKGROUND(attrcode), fg = FOREGROUND(attrcode);
@@ -2185,7 +2185,7 @@ static void cmd_color __P1 (char *,arg)
 		    fg<LOWCOLORS ? '3' : '9', fg % LOWCOLORS,
 		    bg<LOWCOLORS ? "4" :"10", bg % LOWCOLORS);
 	    tty_puts(tty_modenorm);
-	    if (echo_int) {
+	    if (opt_info) {
 	        PRINTF("#standard colour set.\n");
 	    }
         }
@@ -2288,7 +2288,7 @@ static void cmd_option __P1 (char *,arg)
 		"speedwalk", "wrap", "autoprint", "reprint",
 		"sendsize", "autoclear", 0 };
 	static char *varptr[] = { &opt_exit, &opt_history, &opt_words,
-		&opt_compact, &opt_debug, &echo_ext, &echo_int, &echo_key,
+		&opt_compact, &opt_debug, &opt_echo, &opt_info, &opt_keyecho,
 		&opt_speedwalk, &opt_wrap, &opt_autoprint, &opt_reprint,
 		&opt_sendsize, &opt_autoclear, 0 };
 	enum { MODE_ON, MODE_OFF, MODE_TOGGLE, MODE_REP } mode;
@@ -2339,7 +2339,7 @@ keyecho speedwalk wrap autoprint reprint sendsize autoclear\n");
 		/* as above, but always print status if
 		 * "#option info" alone was typed */
 		if (mode != MODE_REP && !*arg && count==1 &&
-		    (echo_int || (mode == MODE_TOGGLE && varp==&echo_int))) {
+		    (opt_info || (mode == MODE_TOGGLE && varp==&opt_info))) {
 		    PRINTF("#option %s is now o%s.\n", str[i],
 			      *varp ? "n" : "ff");
 		}
@@ -2352,9 +2352,9 @@ keyecho speedwalk wrap autoprint reprint sendsize autoclear\n");
 		opt_words ? '+' : '-',
 		opt_compact ? '+' : '-',
 		opt_debug ? '+' : '-',
-		echo_ext  ? '+' : '-',
-		echo_int  ? '+' : '-',
-		echo_key  ? '+' : '-',
+		opt_echo  ? '+' : '-',
+		opt_info  ? '+' : '-',
+		opt_keyecho  ? '+' : '-',
 		opt_speedwalk ? '+' : '-',
 		opt_wrap  ? '+' : '-',
 		opt_autoprint ? '+' : '-',
@@ -2370,7 +2370,7 @@ static void cmd_file __P1 (char *,arg)
     arg = skipspace(arg);
     if (*arg == '=') {
 	set_deffile(++arg);
-	if (echo_int) {
+	if (opt_info) {
 	    if (*arg) {
 		PRINTF("#save-file set to \"%s\"\n", deffile);
 	    } else {
@@ -2389,7 +2389,7 @@ static void cmd_save __P1 (char *,arg)
     arg = skipspace(arg);
     if (*arg) {
 	set_deffile(arg);
-	if (echo_int) {
+	if (opt_info) {
 	    PRINTF("#save-file set to \"%s\"\n", deffile);
 	}
     } else if (!*deffile) {
@@ -2397,7 +2397,7 @@ static void cmd_save __P1 (char *,arg)
 	return;
     }
     
-    if (*deffile && save_settings() > 0 && echo_int) {
+    if (*deffile && save_settings() > 0 && opt_info) {
 	PRINTF("#settings saved to file.\n");
     }
 }
@@ -2409,7 +2409,7 @@ static void cmd_load __P1 (char *,arg)
     arg = skipspace(arg);
     if (*arg) {
 	set_deffile(arg);
-	if (echo_int) {
+	if (opt_info) {
 	    PRINTF("#save-file set to \"%s\"\n", deffile);
 	}
     }
@@ -2422,7 +2422,7 @@ static void cmd_load __P1 (char *,arg)
     
     if (res > 0) {
 	/* success */
-	if (echo_int) {
+	if (opt_info) {
 	    PRINTF("#settings loaded from file.\n");
 	}
     } else if (res < 0) {

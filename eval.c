@@ -407,7 +407,7 @@ static int check_object __P1 (object *,obj)
 	    named_var = add_varnode(line, i);
 	    if (REAL_ERROR)
 		return 0;
-	    if (echo_int) {
+	    if (opt_info) {
 		PRINTF("#new variable: %s\n", line - 1);
 	    }
 	}
@@ -1212,7 +1212,7 @@ static int exe_op __P1 (operator *,op)
 		named_var = add_varnode(ptrdata(o1.txt), delta);
 		if (REAL_ERROR)
 		    break;
-		if (echo_int) {
+		if (opt_info) {
 		    PRINTF("#new variable: %c%s\n", delta
 			   ? '$' : '@', ptrdata(o1.txt));
 		}

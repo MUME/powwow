@@ -119,9 +119,9 @@ int  line_status = 0;	/* input line status: 0 = ready -> nothing to do;
 
 int limit_mem = 0;	/* if !=0, max len of a string or text */
 
-char echo_ext = 1;	/* 1 if text sent to MUD must be echoed */
-char echo_key = 1;	/* 1 if binds must be echoed */
-char echo_int = 1;	/* 0 if internal messages are suppressed */
+char opt_echo = 1;	/* 1 if text sent to MUD must be echoed */
+char opt_keyecho = 1;	/* 1 if binds must be echoed */
+char opt_info = 1;	/* 0 if internal messages are suppressed */
 char opt_exit = 0;	/* 1 to autoquit when closing last conn. */
 char opt_history;	/* 1 if to save also history */
 char opt_words = 0;	/* 1 if to save also word completion list */
@@ -583,8 +583,8 @@ static void exec_delays __P0 (void)
     
     /* remember delayed command may modify the prompt and/or input line! */
     if (prompt_status == 0) {
-	clear_input_line(opt_compact || !echo_int);
-	if (!opt_compact && echo_int && prompt_status == 0 && promptlen) {
+	clear_input_line(opt_compact || !opt_info);
+	if (!opt_compact && opt_info && prompt_status == 0 && promptlen) {
 	    tty_putc('\n');
 	    col0 = 0;
 	    status(1);
@@ -604,7 +604,7 @@ static void exec_delays __P0 (void)
 	 * (can't you imagine why? The command may edit itself...)
 	 */
 	
-	if (echo_int)
+	if (opt_info)
 	    tty_printf("#now [%s]\n", dying->command);
 	
 	if (*dying->command) {
@@ -994,7 +994,7 @@ static void get_remote_input __P0 (void)
 		common_clear(!opt_compact);
 	    }
 	    do {
-		if (echo_int) {
+		if (opt_info) {
 		    if (line_status == 0) {
 			common_clear(!opt_compact);
 		    }
@@ -1024,7 +1024,7 @@ static void get_remote_input __P0 (void)
 	     */
 	    CONN_LIST(otcp_fd).fragment = my_strdup(buf);
 
-	    if (echo_int) {
+	    if (opt_info) {
 		if (line_status == 0) {
 		    common_clear(!opt_compact);
 		}
@@ -1515,7 +1515,7 @@ char *get_next_instr __P1 (char *,p)
 
 static void send_line __P2 (char *,line, char,silent)
 {
-    if (!silent && echo_ext) { PRINTF("[%s]\n", line); }
+    if (!silent && opt_echo) { PRINTF("[%s]\n", line); }
     tcp_write(tcp_fd, line);
 }
 

@@ -863,8 +863,8 @@ static void insert_string __P1 (char *,arg)
  */
 void key_run_command __P1 (char *,cmd)
 {
-    clear_input_line(opt_compact && !echo_key);
-    if (echo_key) {
+    clear_input_line(opt_compact && !opt_keyecho);
+    if (opt_keyecho) {
 	tty_printf("%s%s%s\n", edattrbeg, cmd, edattrend);
     } else if (!opt_compact)
         tty_putc('\n');

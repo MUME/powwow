@@ -893,7 +893,7 @@ int read_settings __P0 (void)
     left = ptrmax(ptrbuf);
     len = 0;
     
-    echo_int = a_nice = 0;
+    opt_info = a_nice = 0;
     
     for (n = 0; n < MAX_HASH; n++) {
 	while (aliases[n])
@@ -1220,9 +1220,9 @@ int save_settings __P0 (void)
 		opt_words   ? '+' : '-',
 		opt_compact ? '+' : '-',
 		opt_debug   ? '+' : '-',
-		echo_ext    ? '+' : '-',
-		echo_int    ? '+' : '-',
-		echo_key    ? '+' : '-',
+		opt_echo    ? '+' : '-',
+		opt_info    ? '+' : '-',
+		opt_keyecho    ? '+' : '-',
 		opt_speedwalk ? '+' : '-',
 		opt_wrap      ? '+' : '-',
 		opt_autoprint ? '+' : '-',
