@@ -287,7 +287,7 @@ int main __P2 (int,argc, char **,argv)
 	strcpy(copyfile, powwow_dir);
     else
 	strcpy(copyfile, POWWOW_DIR);
-    if (helpfile[strlen(helpfile) - 1] != '/')
+    if (copyfile[strlen(copyfile) - 1] != '/')
 	strcat(copyfile, "/");
     strcat(copyfile, copyname);
     if (access(copyfile, R_OK) == -1 && !access(copyname, R_OK))
