@@ -529,7 +529,8 @@ static void default_completions __P0 (void)
     char buf[BUFSIZE];
     cmdstruct *p;
     int i;
-    for (i = 0, buf[0] = '#', p = commands; p->name; p++)
+    /* TODO: add some way to handle new commands going in the default completions list */
+    for (i = 0, buf[0] = '#', p = commands; p != NULL; p = p -> next)
 	if (p->funct /*&& strlen(p->name) >= 3*/ ) {
 	    if (++i >= MAX_WORDS) break;
 	    strcpy(buf + 1, p->name);
