@@ -1,5 +1,7 @@
+#include <stdlib.h>
 #include <curses.h>
 #include <stdio.h>
+#include <string.h>
 
 /* Curses based powwow movie player.
  * Author: Steve Slaven - http://hoopajoo.net
