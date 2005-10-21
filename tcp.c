@@ -377,7 +377,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 			/* no MPI messages after \n\r */
 			PRINTF("#warning: MPI attack?\n");
 		    } else {
-			subchars = process_message(s+1, i-1);
+			subchars = process_message((char*)s+1, i-1);
 			/* no +MPILEN here, as it was already processed. */
 			s += subchars; i-= subchars;
 			p = linestart;
@@ -411,7 +411,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 	     case GA:
 		/* I should handle GA as end-of-prompt marker one day */
 		/* one day has come ;) - Max */
-		prompt_set_iac(p);
+		prompt_set_iac((char*)p);
 		state = NORMAL;
 		break;
 	     default:
