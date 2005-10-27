@@ -672,6 +672,7 @@ static int exe_op __P1 (operator *,op)
 	    
 	    if (o1.type==TYPE_TXT_VAR) {
 		o1.txt = ptrdup(*VAR[o1.num].str);
+        o1.type = TYPE_TXT; /* not a var anymore */
 		if (REAL_ERROR) break;
 	    }
 	    dst = o1.txt;
@@ -684,7 +685,6 @@ static int exe_op __P1 (operator *,op)
 		dst = ptrcat(dst, src);
 		o1.type = TYPE_TXT;
 	    } else {
-		o1.type = TYPE_NUM;
 		o1.num = ptrcmp(dst, src);
 		switch ((int)*op) {
 		  case (int)minus:			      break;
@@ -699,6 +699,9 @@ static int exe_op __P1 (operator *,op)
 		    p=NULL; ret=0; break;
 		}
 		check_delete(&o1);
+        /* moved here because it interfered with allowing the dst ptr from
+         * being freed, casing a very tiny memory leak */
+		o1.type = TYPE_NUM;
 	    }
 	    check_delete(&o2);
 	    if (!REAL_ERROR) {
