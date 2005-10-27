@@ -16,7 +16,7 @@ follow_SOURCES = follow.c
 catrw_SOURCES = catrw.c
 
 man_MANS = powwow.6
-pkgdata_DATA = powwow.doc powwow.help
+pkgdata_DATA = powwow.doc powwow.help COPYING
 EXTRA_DIST = README README.follow README.term README.modules \
 		TODO Hacking Config.demo \
 		powwow.doc powwow.help powwow.6 plugtest.c debian/rules \
