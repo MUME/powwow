@@ -62,7 +62,7 @@ static void cmd_help _, cmd_shell _,
   cmd_record _, cmd_request _, cmd_reset _, cmd_retrace _,
   cmd_save _, cmd_send _, cmd_setvar _, cmd_snoop _, cmd_spawn _, cmd_stop _,
   cmd_time _, cmd_var _, cmd_ver _, cmd_while _, cmd_write _,
-  cmd_eval _, cmd_zap _, cmd_module _, cmd_group _;
+  cmd_eval _, cmd_zap _, cmd_module _, cmd_group _, cmd_speedwalk _;
 
 #ifdef BUG_TELNET
 static void cmd_color _;
@@ -145,6 +145,7 @@ cmdstruct default_commands[] =
     {NULL,"setvar", "name[=text|(expr)]\tset/show internal limits and variables", cmd_setvar,NULL},
     {NULL,"snoop", "connect-id\t\ttoggle output display for connections", cmd_snoop,NULL},
     {NULL,"spawn", "connect-id command\ttalk with a shell command", cmd_spawn,NULL},
+    {NULL,"speedwalk", "[speedwalk sequence]\texecute a speedwalk sequence explicitly", cmd_speedwalk,NULL},
     {NULL,"stop", "\t\t\t\tremove all delayed commands from active list", cmd_stop,NULL},
     {NULL,"time", "\t\t\t\tprint current time and date", cmd_time,NULL},
     {NULL,"var", "variable [= [<|!]{string|(expr)} ]\twrite result into the variable", cmd_var,NULL},
@@ -2270,6 +2271,19 @@ static void cmd_spawn __P1 (char *,arg)
 	}
     }
     PRINTF("#syntax: #spawn connect-id command\n");
+}
+
+/* If you have speedwalk off but still want to use a speedwalk sequence,
+ * you can manually trigger a speedwalk this way */
+static void cmd_speedwalk __P1 (char *,arg)
+{
+    char save_speedwalk = opt_speedwalk;
+    PRINTF( "Executing speedwalk '%s'\n", arg );
+    opt_speedwalk = 1;
+    if( ! map_walk( skipspace(arg), 0, 0 ) ) {
+        PRINTF( "Error executing speedwalk\n" );
+    }
+    opt_speedwalk = save_speedwalk;
 }
 
 static void cmd_zap __P1 (char *,arg)
