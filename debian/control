@@ -4,6 +4,8 @@ Priority: optional
 Standards-Version: 3.0.1
 
 Package: powwow
+Maintainer: Steve Slaven <bpk@hoopajoo.net>
+Architecture: i386
 Version: 1.2.9
 Depends: libncurses5
 Description: a powerful and extensible curses based mud client
