@@ -802,6 +802,14 @@ SPECIAL COMMANDS: ALL OTHERS
 	number of steps.  If number is 0 or left blank, you walk all
 	the way back to where automapping started.
 	-----------------------------------------------------------
+	Explicitly execute a speedwalk
+	#speedwalk [walksequence]
+
+    This command can be used to execute a speedwalk sequence even
+    if you have the speedwalk option disabled.  This is useful if you
+    do not like to have typos evaluated as speedwalk commands but still
+    want to be able to easily execute a speedwalk.
+	-----------------------------------------------------------
 	Connect initialization string
 	#init [=[command]]
 
