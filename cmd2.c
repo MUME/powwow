@@ -216,10 +216,10 @@ void parse_alias __P1 (char *,str)
         if (*np) {
 	    char buf[BUFSIZE];
             escape_specials(buf, left);
-            sprintf(inserted_next, "#alias %s%.*s@%s=%.*s",
-		    BUFSIZE-9, buf,
-		    (*np)->group == NULL ? "*" : (*np)->group,
-		    BUFSIZE-(int)strlen(buf)-9, (*np)->subst);
+            snprintf(inserted_next, BUFSIZE, "#alias %s@%s=%s",
+                buf, 
+                (*np)->group == NULL ? "*" : (*np)->group,
+		        (*np)->subst);
         } else {
             PRINTF("#unknown alias, cannot show: \"%s\"\n", left);
         }
