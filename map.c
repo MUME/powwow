@@ -24,6 +24,7 @@
 #include "tty.h"
 #include "edit.h"
 #include "tcp.h"
+#include "list.h"
 
 /*
  * mapping variables
@@ -177,7 +178,9 @@ int map_walk __P3 (char *,word, int,silent, int,maponly)
         while (n--) {
             *buf = *word;
             if (!maponly) {
-	        tcp_write(tcp_fd, buf);
+                if (*lookup_alias(buf))
+                    parse_instruction(buf, 1, 0, 0); // we want to execute aliases n,e,s,w,u,d
+                else tcp_write(tcp_fd, buf);
 	    }
             if (is_main || maponly)
 		map_add_dir(*word);
