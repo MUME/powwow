@@ -64,9 +64,9 @@ void show_aliases __P0 (void)
     reverse_sortedlist((sortednode **)&sortedaliases);
     for (p = sortedaliases; p; p = p->snext) {
 	escape_specials(buf, p->name);
-	tty_printf("#alias %s%s@%s=%s\n", 
+	tty_printf("#alias %s%s%s%s=%s\n", 
 			p->active ? "" : "(disabled) ",
-			buf,p->group == NULL ? "*" : p->group, p->subst);
+			buf, group_delim, p->group == NULL ? "*" : p->group, p->subst);
     }
     reverse_sortedlist((sortednode **)&sortedaliases);
 }
@@ -161,10 +161,10 @@ void parse_alias __P1 (char *,str)
         unescape(left);
 
     	/* break out group name (if present) */
-        group = strchr( left, '@' );
+        group = strstr( left, group_delim );
 	if( group ) {
 	    *group = 0;
-	    group++;
+	    group += strlen( group_delim );
 	}
 
 	if (check_alias(left))
@@ -216,8 +216,9 @@ void parse_alias __P1 (char *,str)
         if (*np) {
 	    char buf[BUFSIZE];
             escape_specials(buf, left);
-            snprintf(inserted_next, BUFSIZE, "#alias %s@%s=%s",
+            snprintf(inserted_next, BUFSIZE, "#alias %s%s%s=%s",
                 buf, 
+                group_delim,
                 (*np)->group == NULL ? "*" : (*np)->group,
 		        (*np)->subst);
         } else {
@@ -334,9 +335,10 @@ void show_actions __P0 (void)
     PRINTF("#%s action%s defined%c\n", actions ? "the following" : "no",
 	       (actions && !actions->next) ? " is" : "s are", actions ? ':' : '.');
     for (p = actions; p; p = p->next)
-	tty_printf("#action %c%c%s@%s %s=%s\n",
+	tty_printf("#action %c%c%s%s%s %s=%s\n",
 		   action_chars[p->type],
 		   p->active ? '+' : '-', p->label,
+           group_delim,
 		   p->group == NULL ? "*" : p->group, 
 		   p->pattern,
 		   p->command);
@@ -415,10 +417,10 @@ void parse_action __P2 (char *,str, int,onprompt)
 	    *p = '\0';
 
         /* break out group name (if present) */
-	group = strchr( str, '@' );
+	group = strstr( str, group_delim );
 	if( group ) {
 		*group = 0;
-		group++;
+		group += strlen( group_delim );
 	}
 	
 	my_strncpy(label, str, BUFSIZE-1);

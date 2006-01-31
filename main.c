@@ -235,6 +235,8 @@ int   delim_len [] = {   2 ,                     21 , 0 };
 char *delim_name[] = { "normal",    "program", "custom" };
 int   delim_mode = DELIM_NORMAL;
 
+/* Group delimiter */
+char *group_delim;
 
 int main __P2 (int,argc, char **,argv)
 {
@@ -252,7 +254,8 @@ int main __P2 (int,argc, char **,argv)
     /* initializations */
     initstr[0] = 0;
     memzero(conn_list, sizeof(conn_list));
-    
+    group_delim = my_strdup( "@" );
+
     update_now();
     ref_time = start_time = movie_last = now;
     

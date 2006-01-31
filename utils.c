@@ -1074,6 +1074,9 @@ int save_settings __P0 (void)
 			     delim_mode == DELIM_CUSTOM ? ptrdata(pp) : "" );
     }
 
+	if (failed > 0)
+	    failed = fprintf(f, "#groupdelim %s\n", group_delim);
+
     if (failed > 0 && *initstr)
 	failed = fprintf(f, "#init =%s\n", initstr);
     
@@ -1089,7 +1092,7 @@ int save_settings __P0 (void)
 	    pp = ptrmescape(pp, alp->name, strlen(alp->name), 0);
 	    if (MEM_ERROR) { failed = -1; break; }
 	    failed = fprintf(f, "#alias %s%s%s=%s\n", ptrdata(pp),
-		alp -> group == NULL ? "" : "@",
+		alp -> group == NULL ? "" : group_delim,
 		alp -> group == NULL ? "" : alp -> group, 
 		alp->subst);
 	}
@@ -1100,7 +1103,7 @@ int save_settings __P0 (void)
 	failed = fprintf(f, "#action %c%c%s%s%s %s=%s\n",
 			 action_chars[acp->type], acp->active ? '+' : '-',
 			 acp->label, 
-		acp -> group == NULL ? "" : "@",
+		acp -> group == NULL ? "" : group_delim,
 		acp -> group == NULL ? "" : acp -> group, 
 			 acp->pattern, acp->command);
     }

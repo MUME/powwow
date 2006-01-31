@@ -62,7 +62,7 @@ static void cmd_help _, cmd_shell _,
   cmd_record _, cmd_request _, cmd_reset _, cmd_retrace _,
   cmd_save _, cmd_send _, cmd_setvar _, cmd_snoop _, cmd_spawn _, cmd_stop _,
   cmd_time _, cmd_var _, cmd_ver _, cmd_while _, cmd_write _,
-  cmd_eval _, cmd_zap _, cmd_module _, cmd_group _, cmd_speedwalk _;
+  cmd_eval _, cmd_zap _, cmd_module _, cmd_group _, cmd_speedwalk _, cmd_groupdelim _;
 
 #ifdef BUG_TELNET
 static void cmd_color _;
@@ -103,6 +103,7 @@ cmdstruct default_commands[] =
     {NULL,"file", "[=[filename]]\t\tset/show powwow definition file", cmd_file,NULL},
     {NULL,"for", "([init];check;[loop]) command\twhile \"check\" is true exec \"command\"", cmd_for,NULL},
     {NULL,"group", "[name] [on|off|list]\tgroup alias/action manipulation", cmd_group,NULL},
+    {NULL,"groupdelim", "[delimiter]\tchange delimiter for action/alias groups", cmd_groupdelim,NULL},
     {NULL,"hilite", "[attr]\t\t\thighlight your input line", cmd_hilite,NULL},
     {NULL,"history", "[{number|(expr)}]\tlist/execute commands in history", cmd_history,NULL},
     {NULL,"host", "[hostname port]]\tset/show address of default host", cmd_host,NULL},
@@ -321,6 +322,14 @@ static void cmd_group __P1 (char *,arg) {
 	}
     }else{
 	PRINTF( "#group name required\n" );
+    }
+}
+
+static void cmd_groupdelim __P1 (char *,arg) {
+    if( *arg != 0 ) {
+        free( group_delim );
+        group_delim = my_strdup( arg );
+	    PRINTF( "#group delimiter is now '%s'\n", group_delim );
     }
 }
 
