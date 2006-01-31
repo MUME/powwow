@@ -144,6 +144,7 @@ static int wrapglitch = 0;
 
 #ifdef USE_LOCALE
 FILE *tty_read_stream, *tty_write_stream;
+static int orig_read_fd_fl;
 #endif
 
 #ifdef USE_SGTTY
@@ -190,6 +191,11 @@ void tty_start __P0 (void)
     ioctl(tty_read_fd, TCSETS, &ttyb);
 #endif /* USE_SGTTY */
 
+#ifdef USE_LOCALE
+    orig_read_fd_fl = fcntl(tty_read_fd, F_GETFL);
+    fcntl(tty_read_fd, F_SETFL, O_NONBLOCK | orig_read_fd_fl);
+#endif
+
     tty_puts(kpadstart);
     tty_flush();
     
@@ -214,6 +220,9 @@ void tty_quit __P0 (void)
 #endif /* USE_SGTTY */
     tty_puts(kpadend);
     tty_flush();
+#ifdef USE_LOCALE
+    fcntl(tty_read_fd, F_SETFL, orig_read_fd_fl);
+#endif
 }
 
 /*
@@ -304,7 +313,6 @@ void tty_bootstrap __P0 (void)
 #ifdef USE_LOCALE
     tty_read_stream = stdin;
     tty_write_stream = stdout;
-    fcntl(tty_read_fd, F_SETFL, O_NONBLOCK | fcntl(tty_read_fd, F_GETFL));
 #endif
 
 #ifndef USE_VT100
