@@ -811,7 +811,7 @@ static void process_singleline __P2 (char **,pbuf, int *,psize)
 		    size = len;
 	    }
 	}
-	if (!len && (!*linestart || (!search_action(linestart, 0) || opt_autoprint))) {
+	if (!len && ((!search_action(linestart, 0) || opt_autoprint))) {
 	    if (line0 < lines - 1)
 		line0++;
 	    if (tcp_fd != tcp_main_fd)        /* sub connection */
@@ -1104,7 +1104,8 @@ static int match_regexp_action __P4 (void *,regexp, char *,line, int *,match_s, 
 	for (n = 1; n < NUMPARAM; n++)
 	    match_s[n] = match_e[n] = 0;
 	for (n = 0; n <= (int)((regex_t *)regexp)->re_nsub &&
-	     reg_match[n].rm_so != -1 && n < NUMPARAM - 1; n++) {
+	     n < NUMPARAM - 1; n++) {
+	    if (reg_match[n].rm_so == -1) continue;
 	    match_s[n+1] = reg_match[n].rm_so;
 	    match_e[n+1] = reg_match[n].rm_eo;
 	}
