@@ -1619,17 +1619,35 @@ static void cmd_var __P1 (char *,arg)
 	    }
 	    if (pbuf)
 		buf = ptrdata(pbuf);
-	    else
-		buf = "";
-	    if (isdigit(*buf)) {
-		idx = atoi(buf);
-		if (idx < -NUMVAR || idx >= NUMPARAM) {
-		    print_error(error=OUT_RANGE_ERROR);
-		    ptrdel(pbuf);
-		    return;
+	    else {
+		print_error(error=INVALID_NAME_ERROR);
+		return;
+	    }
+	    char err_det;
+	    if (isdigit(*buf) || *buf=='-' || *buf=='+') {
+		if (sscanf(buf, "%d%c", &idx, &err_det)==1) {
+		    if (idx < -NUMVAR || idx >= NUMPARAM) {
+			print_error(error=OUT_RANGE_ERROR);
+			ptrdel(pbuf);
+			return;
+		    }
+		} else {
+		    print_error(error=INVALID_NAME_ERROR);
+		    return;		
 		}
 	    } else {
-		if (!(named_var = *lookup_varnode(buf, kind))) {
+		if (!isalpha(*buf) && *buf!='_') {
+		    print_error(error=INVALID_NAME_ERROR);
+		    return;
+		}
+		tmp = buf + 1;
+	        while (*tmp && (isalnum(*tmp) || *tmp=='_'))
+		    tmp++;		
+		if (*tmp) {
+		    print_error(error=INVALID_NAME_ERROR);
+		    return;
+		}
+		if (!(named_var = *(p_named_var = lookup_varnode(buf, kind)))) {
 		    if (!deleting) {
 			named_var = add_varnode(buf, kind);
 			if (REAL_ERROR) {
