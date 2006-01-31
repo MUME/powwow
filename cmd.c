@@ -1336,15 +1336,13 @@ static void cmd_exe __P1 (char *,arg)
 	while (!error && (!start || i<=end) && fgets(buf + offset, BUFSIZE - offset, fp))
 	    /* If it ends with \\\n then it's a line continuation, so clear
 	     * the \\\n and do another fgets */
-	    if( buf[ strlen( buf ) - 2 ] == '\\' ) {
-		/* Clear all \n prefixed with a literal backslash '\\' */
-		while( clear = strstr( buf, "\\\n" ) ) {
-		    clear[ 0 ] = ' ';
-		    clear[ 1 ] = ' ';
-		}
-		offset = strlen( buf );
-	    }else{
-	        if (!start || i++>=start) {
+	    if (buf[offset + strlen(buf + offset) - 2] == '\\') {
+		/* Clear \n prefixed with a literal backslash '\\' */
+		if (clear = strstr(buf + offset, "\\\n"))
+		    *clear = '\0';
+		offset += strlen(buf + offset);
+	    } else {
+	        if (!start || i++ >= start) {
 		    buf[strlen(buf)-1] = '\0';
 		    parse_user_input(buf, 0);
 		    offset = 0;
