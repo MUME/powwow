@@ -881,7 +881,8 @@ static int exe_op __P1 (operator *,op)
 			      ptrlen(start) - (ssrc+srclen+1 - ptrdata(start)));
 	    break;
 	  case (int)point:
-	    dst = ptrmcpy(dst, ssrc+o2.num-1, 1);
+	    j = o2.num <= srclen ? o2.num-1 : srclen;
+	    dst = ptrmcpy(dst, ssrc+j, 1);
 	    break;
 	  case (int)point_less:
 	    j = o2.num < srclen ? o2.num : srclen;
