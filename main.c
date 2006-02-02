@@ -33,15 +33,15 @@
 
 #ifdef USE_LOCALE
   #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fr\363r, D\341in"
-  #define COPYRIGHT      "\251 "
+  #define COPYRIGHT      "\251"
 #else
   #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fror, Dain"
-  #define COPYRIGHT      ""
+  #define COPYRIGHT      "Copyright"
 #endif
 
-#define POWWOW_VERSION VERSION                       \
-    ", Copyright 2000-2005 by Cosmos\n"              \
-    "Copyright 2005 by bpk - http://hoopajoo.net\n" \
+#define POWWOW_VERSION VERSION                          \
+    ", " COPYRIGHT " 2000-2005 by Cosmos\n"             \
+    COPYRIGHT " 2005 by bpk - http://hoopajoo.net\n"    \
     "(contributions by " POWWOW_HACKERS ")\n"
 
 #define HELPNAME "powwow.help"
