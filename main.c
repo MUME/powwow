@@ -1316,7 +1316,10 @@ static void get_user_input __P0 (void)
     
     while ((j = tty_read(c, chunk)) < 0 && errno == EINTR)
 	;
-    if (j <= 0 || (chunk == 1 && j != chunk))
+    if (j == 0)
+        return;
+
+    if (j < 0 || (chunk == 1 && j != chunk))
 	syserr("read from tty");
     
     c[chunk] = '\0';
