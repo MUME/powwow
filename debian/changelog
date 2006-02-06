@@ -1,3 +1,9 @@
+powwow (1.2.10) unstable; urgency=low
+
+  * Bugfixes
+
+ -- Steve Slaven <bpk@hoopajoo.net>  Mon,  06 Feb 2006 17:58:49 +0000
+
 powwow (1.2.9) unstable; urgency=low
 
   * Fixed the dependancy list, minor feature enhancements

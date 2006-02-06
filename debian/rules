@@ -26,6 +26,7 @@ clean:
 	# Add here commands to clean up after the build process.
 	#$(MAKE) clean
 	#$(MAKE) distclean
+	if test -e Makefile; then $(MAKE) distclean; fi
 
 	dh_clean
 
