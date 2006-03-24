@@ -76,7 +76,6 @@ extern int errno;
 extern int select();
 
 #ifdef USE_REGEXP
-# include "malloc.h"
 # include <regex.h>
 #endif
 

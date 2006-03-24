@@ -19,7 +19,6 @@
 #include <sys/time.h>
 
 #ifdef USE_REGEXP
-# include "malloc.h"
 # include <regex.h>
 #endif
 
