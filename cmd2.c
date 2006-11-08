@@ -1054,7 +1054,7 @@ static int get_one_char __P1 (int,timeout)
     timeoutbuf.tv_usec = timeout * uSEC_PER_mSEC;
     err = select(tty_read_fd+1, &fds, NULL, NULL,
 		 timeout ? &timeoutbuf : NULL);
-    if (err == 0 || (err == -1 && errno == EINTR))
+    if (err == -1 && errno == EINTR)
 	return -1;
     if (err == -1) {
 	errmsg("select");
@@ -1062,6 +1062,9 @@ static int get_one_char __P1 (int,timeout)
     }
     while ((err = tty_read(&c, 1)) < 0 && errno == EINTR)
 	;
+    if (err != 1 && errno == EAGAIN) {
+        return -1;
+    }
     if (err != 1) {
 	errmsg("read from tty");
 	return -1;
