@@ -37,6 +37,7 @@ ptr ptrnew __P1 (int,max)
     else if (max < 0 || max + sizeofptr < max) /* overflow! */
 	error = NO_MEM_ERROR;
     else if ((p = (ptr)malloc(max + sizeofptr))) {
+	p->signature = PTR_SIG;
 	p->max = max;
 	ptrdata(p)[p->len = 0] = '\0';
     } else
@@ -81,10 +82,12 @@ ptr ptrdup __P1 (ptr,src)
 }
 
 /* delete (free) a ptr */
-void ptrdel __P1 (ptr,p)
+void _ptrdel __P1 (ptr,p)
 {
-    if (p)
+    if (p && p->signature == PTR_SIG)
 	free((void *)p);
+    //else
+	//fprintf( stderr, "Tried to free non ptr @%x\n", p );
 }
 
 /* clear a ptr */

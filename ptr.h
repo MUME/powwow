@@ -9,6 +9,7 @@
 typedef struct s_ptr {
     int len;
     int max;
+    int signature;
 } _ptr;
 
 typedef _ptr * ptr;
@@ -24,7 +25,10 @@ typedef _ptr * ptr;
 ptr   ptrnew    __P ((int max));
 ptr   ptrdup2   __P ((ptr src, int newmax));
 ptr   ptrdup    __P ((ptr src));
-void  ptrdel    __P ((ptr p));
+
+#define PTR_SIG 91887
+#define ptrdel(x) _ptrdel(x);x=(ptr)0;
+void  _ptrdel    __P ((ptr p));
 
 void  ptrzero   __P ((ptr p));
 void  ptrshrink __P ((ptr p, int len));
