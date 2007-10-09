@@ -497,64 +497,87 @@ ptr ptraddmarks __P2 (ptr,dst, ptr,line)
 }
 
 /*
- * write string to tty, wrapping to next line if needed.
+ * write string to tty, word wrapping to next line if needed.
  * don't print a final \n
  */
 static void wrap_print __P1 (char *,s)
 {
     char *p, c, follow = 1;
     char buf[BUFSIZE]; /* ASSERT(cols<BUFSIZE) */
-    int l, m;
+
+    /* l = left, m = current offset, ls = last space */
+    int l, m, ls;
     enum { NORM, ESCAPE, BRACKET } state;
 #ifdef BUG_ANSI
     int ansibug = 0;
 #endif
-    
+
     l = printstrlen(s);
 #ifdef BUG_ANSI
     if (l > cols_1 && l < (int)strlen(s))
-	ansibug = 1;
+        ansibug = 1;
 #endif
-    
+
     while (l >= cols_1 - col0) {
-        p = buf; m = 0; state = NORM;
+        p = buf; m = 0; state = NORM; ls = 0;
 
-	while (m < cols_1 - col0 && *s && *s != '\n') {
-	    *p++ = c = *s++;
-	    switch (state) {
-	    case NORM:
-		if (c == '\033')
-		    state = ESCAPE;
-		else if ((c & 0x80) || (c >= ' ' && c <= '~'))
-		    m++, l--;
-		else if (c == '\r')
-		    m = 0;  
-		break;
-	    case ESCAPE:
-		state = (c == '[') ? BRACKET : NORM;
-		break;
-	    case BRACKET:
-		if (isalpha(c))
-		    state = NORM;
-		break;
-	    }
-	}
-	
-	follow = *s;
+        /* this scans over the remaining part of the line adding stuff to
+         * print to the buffer and tallying the length of displayed
+         * characters */
+        while (m < cols_1 - col0 && *s && *s != '\n') {
+            *p++ = c = *s++;
+            switch (state) {
+                case NORM:
+                    if (c == ' ') {
+                        ls = m;
+                    }
 
-	*p = '\0';
-	tty_printf("%s%s", buf, follow ? "\n" : "");
-	if (follow)
-	    col0 = 0;
+                    if (c == '\033') {
+                        state = ESCAPE;
+                    }else if ((c & 0x80) || (c >= ' ' && c <= '~')) {
+                        /* if char is hi (128+) or printable */
+                        m++, l--;
+                    }else if (c == '\r') {
+                        ls = 0;
+                        m = 0;  
+                    }
+
+                    break;
+
+                case ESCAPE:
+                    state = (c == '[') ? BRACKET : NORM;
+                    break;
+
+                case BRACKET:
+                    if (isalpha(c))
+                        state = NORM;
+                    break;
+            }
+        }
+
+        /* Adjust offsets and stuff to last space */
+        if( ls != m && ls > 0 ) {
+            s -= (m - ls);
+            s++;
+            buf[ ls ] = 0;
+        }
+
+        follow = *s;
+
+        *p = '\0';
+        tty_printf("%s%s", buf, follow ? "\n" : "");
+        if (follow)
+            col0 = 0;
     }
+
 #ifdef BUG_ANSI
     if (ansibug)
-	tty_printf("%s%s%s", follow ? s : "" ,
-		   tty_modenorm, tty_clreoln);
+        tty_printf("%s%s%s", follow ? s : "" ,
+                tty_modenorm, tty_clreoln);
     else	
 #endif
-	if (follow)
-	    tty_puts(s);
+        if (follow)
+            tty_puts(s);
 }
 
 /*
