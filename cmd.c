@@ -253,10 +253,14 @@ static void cmd_module __P1 (char *,arg) {
 	for( pindex = 0; pindex < 4; pindex++ ) {
 		bzero( libname, 1024 );
 
+        /* don't look for name without .so, it breaks if you have a file
+         * with the same name in the current dir and making it .so for sure
+         * will skip these files since they are probably not libs to load
 		snprintf( libname, 1024, "%s/%s", prefixes[ pindex ], arg );
 		if( stat( libname, &junk ) == 0 ) {
 			break;
 		}
+        */
 
 		snprintf( libname, 1024, "%s/%s.so", prefixes[ pindex ], arg );
 		if( stat( libname, &junk ) == 0 ) {
