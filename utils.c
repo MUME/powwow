@@ -502,11 +502,12 @@ ptr ptraddmarks __P2 (ptr,dst, ptr,line)
  */
 static void wrap_print __P1 (char *,s)
 {
-    char *p, c, follow = 1;
+    /* ls = last space in *s, lp = last space in *p */
+    char *ls, *lp, *p, c, follow = 1;
     char buf[BUFSIZE]; /* ASSERT(cols<BUFSIZE) */
 
-    /* l = left, m = current offset, ls = last space */
-    int l, m, ls;
+    /* l = left, m = current offset */
+    int l, m;
     enum { NORM, ESCAPE, BRACKET } state;
 #ifdef BUG_ANSI
     int ansibug = 0;
@@ -519,7 +520,8 @@ static void wrap_print __P1 (char *,s)
 #endif
 
     while (l >= cols_1 - col0) {
-        p = buf; m = 0; state = NORM; ls = 0;
+        p = buf; m = 0; state = NORM; 
+        lp = ls = NULL;
 
         /* this scans over the remaining part of the line adding stuff to
          * print to the buffer and tallying the length of displayed
@@ -529,7 +531,8 @@ static void wrap_print __P1 (char *,s)
             switch (state) {
                 case NORM:
                     if (c == ' ') {
-                        ls = m;
+                        ls = s;
+                        lp = p;
                     }
 
                     if (c == '\033') {
@@ -538,7 +541,7 @@ static void wrap_print __P1 (char *,s)
                         /* if char is hi (128+) or printable */
                         m++, l--;
                     }else if (c == '\r') {
-                        ls = 0;
+                        ls = lp = NULL;
                         m = 0;  
                     }
 
@@ -556,10 +559,11 @@ static void wrap_print __P1 (char *,s)
         }
 
         /* Adjust offsets and stuff to last space */
-        if( ls != m && ls > 0 ) {
-            s -= (m - ls);
-            s++;
-            buf[ ls ] = 0;
+        if( ls != NULL && ls != s ) {
+            /* move s back to the last space */
+            s = ls;
+            /* null term buf[] at last space */
+            lp[ 0 ] = 0;
         }
 
         follow = *s;
