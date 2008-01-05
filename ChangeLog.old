@@ -333,7 +333,7 @@ Changes from 0.9.6 to 0.9.7 (Massimiliano Ghilardi) 11 May 1998
 	  See the file powwow.doc, section `#prompt' for the gory details.
 
 Changes from 0.9.5 to 0.9.6
-                   (Gustav Hållberg, Massimiliano Ghilardi) 16 Oct 1997
+                   (Gustav HÃ¥llberg, Massimiliano Ghilardi) 16 Oct 1997
 	* Fixed a nasty security hole in MPI messages
 	* Fixed handling of \; at the end of a command
 	* Fixed some other problems:
@@ -341,7 +341,7 @@ Changes from 0.9.5 to 0.9.6
 	  #bind escape sequences containing \0 were incorrectly printed/saved
 
 Changes from 0.9.4 to 0.9.5
-                   (Gustav Hållberg, Massimiliano Ghilardi) 18 Sep 1997
+                   (Gustav HÃ¥llberg, Massimiliano Ghilardi) 18 Sep 1997
 	* Continued code cleanup
 	* Allowed aliases starting with `#'
 	* Removed #speedwalk, #info, #echo, #keyecho, #compact and #debug
@@ -356,14 +356,14 @@ Changes from 0.9.4 to 0.9.5
 	* Changed to from ' ' to ` ' in some messages
 
 Changes from 0.9.3 to 0.9.4 (Massimiliano Ghilardi) 04 Sep 1997
-	* Included all the huge changes made by Gustav Hållberg:
+	* Included all the huge changes made by Gustav HÃ¥llberg:
 	  I really have no time to double-check them all.
 	  If something works in 0.9.2 but is broken in 0.9.4,
 	  you know who to bother :)
 	* Small esthetic changes in the source, no effects on executable
 	* Changed identifier for regexp #actions from ']' to '%'
 
-Changes from 0.9.2 to 0.9.3 (Gustav Hållberg) 11 Aug 1997
+Changes from 0.9.2 to 0.9.3 (Gustav HÃ¥llberg) 11 Aug 1997
 	* Fixed so packets ending with \r*\n\r* set promptstr to ""
 	* Made all signal handlers permanent (sig_permanent)
 	* Debugged and reinstalled #option (it was commented out for some
