@@ -438,9 +438,11 @@ SPECIAL COMMANDS: ALL OTHERS
 	#bind f1=cast 'sanctuary'	(change existing definition)
 	#bind f1			(lets you edit the definition)
 	#bind f1=			(removes the key)
-	#bind f1 [[A=cast 'heal'	(also tell powwow that f1 on your
-					 keyboard sends ESC [ [ A, so you
-					 do not have to press it)
+	#bind f1 <esc>[[A=cast 'heal'   (also tell powwow that f1 on your
+					 keyboard sends ESC [ [ A, so you do
+					 not have to press it; note that <esc>
+					 needs to be replaced by an actual
+					 escape character)
 
 	NOTE: if there is already something on your input line, powwow
 	does not ruin it when you press f1 (or any other #bind), but executes
@@ -1847,8 +1849,8 @@ COMMAND LINE EDITING
 	Another possible use is to enter strange characters or strings:
 	
 	#bind F10=&insert-string Ro\353ntgen
-	does exactly what you expect: insert "Roëntgen" on the input line
-	( ë is the ASCII char (octal)353 or (decimal)234 )
+	does exactly what you expect: insert "RoÃ«ntgen" on the input line
+	( Ã« is the ASCII char (octal)353 or (decimal)234 )
 	as if you typed it (of course you could also type the first few chars
 	of the name then hit TAB if that name is already in the word completion
 	list...).

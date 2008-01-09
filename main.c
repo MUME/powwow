@@ -13,7 +13,7 @@
  * 
  * Initially inspired to the Tintin client by Peter Unold, 
  * Powwow contains no Tintin code.
- * The original program Cancan, written by Mattias Engdegård (Yorick)
+ * The original program Cancan, written by Mattias EngdegÃ¥rd (Yorick)
  * (f91-men@nada.kth.se) 1992-94,
  * was greatly improved upon by Vivriel, Thuzzle and Ilie and then
  * transformed from Cancan into Powwow by Cosmos who worked
