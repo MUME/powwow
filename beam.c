@@ -243,6 +243,39 @@ cleanup_file: if (unlink(sp->file) < 0)
 		errmsg("unlink edit file");
 }
 
+/* converts latin-1 string 's' to a multi-byte string according to
+   locale */
+const char *locale_conv(char *s)
+{
+#ifdef USE_LOCALE
+    static char *result;
+    wchar_t *ws = alloca(sizeof *ws * (strlen(s) + 1));
+    int i = 0;
+    size_t sz;
+
+    do {
+        ws[i++] = (unsigned char)*s;
+    } while (*s++);
+    
+    sz = wcstombs(NULL, ws, 0);
+    if (sz == (size_t)-1) {
+        /* desperate attempt to create a convertible string */
+        for (i = 0; ws[i]; ++i)
+            if (!isprint((unsigned char)ws[i]))
+                ws[i] = '?';
+        sz = wcstombs(NULL, ws, 0);
+        if (sz == (size_t)-1)
+            return "?";
+    }
+    result = realloc(result, sz + 1);
+    sz = wcstombs(result, ws, sz + 1);
+    result[sz] = 0;                          /* just in case... */
+    return result;
+#else
+    return s;
+#endif
+}
+
 /*
  * start an editing session: process the EDIT/VIEW message
  * if view == 1, text will be viewed, else edited
@@ -350,9 +383,8 @@ void message_edit __P4 (char *,text, int,msglen, char,view, char,builtin)
     switch(childpid = fork()) {		/* let's get schizophrenic */
       case 0:
 	sprintf(command_str, "%s %s", editor, s->file);
-	sprintf(buf, "TITLE=%s", s->descr);
+	sprintf(buf, "TITLE=%s", locale_conv(s->descr));
 	putenv(buf);
-	/*	   setenv("TITLE", s->descr, 1);*/
 	execvp((char *)args[0], (char **)args);
 	syserr("execve");
 	break;
