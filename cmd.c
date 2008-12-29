@@ -1342,7 +1342,7 @@ static void cmd_exe __P1 (char *,arg)
 	     * the \\\n and do another fgets */
 	    if (buf[offset + strlen(buf + offset) - 2] == '\\') {
 		/* Clear \n prefixed with a literal backslash '\\' */
-		if (clear = strstr(buf + offset, "\\\n"))
+		if ((clear = strstr(buf + offset, "\\\n")))
 		    *clear = '\0';
 		offset += strlen(buf + offset);
 	    } else {

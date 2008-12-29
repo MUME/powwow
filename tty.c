@@ -478,10 +478,10 @@ void tty_add_initial_binds __P0 (void)
 	add_keynode(p->label, p->seq, 0, p->funct, NULL);
     } while((++p)->seq[0]);
     
-    if (cursor_left ) add_keynode("Left" , cursor_left , 0, prev_char, NULL);
-    if (cursor_right) add_keynode("Right", cursor_right, 0, next_char, NULL);
-    if (cursor_up   ) add_keynode("Up"   , cursor_up   , 0, prev_line, NULL);
-    if (cursor_down ) add_keynode("Down" , cursor_down , 0, next_line, NULL);
+    if (*cursor_left ) add_keynode("Left" , cursor_left , 0, prev_char, NULL);
+    if (*cursor_right) add_keynode("Right", cursor_right, 0, next_char, NULL);
+    if (*cursor_up   ) add_keynode("Up"   , cursor_up   , 0, prev_line, NULL);
+    if (*cursor_down ) add_keynode("Down" , cursor_down , 0, next_line, NULL);
 }
 
 #ifndef USE_VT100
@@ -853,7 +853,8 @@ int tty_read __P ((char *buf, size_t count))
     int result = 0;
     int converted;
     wchar_t wc;
-
+    int did_read = 0, should_read = 0;
+    
     if (count && tty_in_buf_used) {
 	converted = mbtowc(&wc, tty_in_buf, tty_in_buf_used);
 	if (converted >= 0)
@@ -861,9 +862,9 @@ int tty_read __P ((char *buf, size_t count))
     }
 
     while (count) {
-	int should_read = sizeof tty_in_buf - tty_in_buf_used;
-	int did_read = read(tty_read_fd, tty_in_buf + tty_in_buf_used,
-			    should_read);
+	should_read = sizeof tty_in_buf - tty_in_buf_used;
+	did_read = read(tty_read_fd, tty_in_buf + tty_in_buf_used,
+                        should_read);
 
 	if (did_read < 0 && errno == EINTR)
 	    continue;
