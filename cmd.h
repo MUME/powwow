@@ -17,5 +17,7 @@ void show_stat		__P ((void));
 
 void cmd_add_command( cmdstruct *cmd );
 
+void initialize_cmd(void);
+
 #endif /* _CMD_H_ */
 
