@@ -107,6 +107,21 @@ int lookup_edit_function __P1 (function_str,funct)
     return 0;
 }
 
+/* return pointer to any unterminated escape code at the end of s */
+static char *find_partial_esc __P1 (char *,s)
+{
+    size_t len = strlen(s);
+    char *end = s + len;
+    while (end > s) {
+        char c = *--end;
+        if (c == '\033')
+            return end;
+        if (isalpha(c))
+            return NULL;
+    }
+    return NULL;
+}
+
 /*
  * redisplay the prompt
  * assume cursor is at beginning of line
@@ -114,12 +129,23 @@ int lookup_edit_function __P1 (function_str,funct)
 void draw_prompt __P0 (void)
 {
     if (promptlen && prompt_status == 1) {
+        char *esc, *pstr;
 	int e = error;
 	error = 0;
 	marked_prompt = ptraddmarks(marked_prompt, prompt->str);
 	if (MEM_ERROR) { promptzero(); errmsg("malloc(prompt)"); return; }
-	tty_puts(ptrdata(marked_prompt));
-	col0 = printstrlen(promptstr); /* same as printstrlen(marked_prompt) */
+
+        /* if prompt ends in unterminated escape code, do not print
+         * that part */
+        pstr = ptrdata(marked_prompt);
+        esc = find_partial_esc(pstr);
+        if (esc)
+            *esc = 0;
+        tty_puts(pstr);
+	col0 = printstrlen(pstr);
+        if (esc)
+            *esc = '\033';
+
 	error = e;
     }
     prompt_status = 0;
