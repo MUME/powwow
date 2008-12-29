@@ -959,7 +959,7 @@ int read_settings __P0 (void)
 	left -= n;
 
 	/* Clear all \n prefixed with a literal backslash '\\' */ 
-	while( cmd = strstr( buf, "\\\n" ) ) {
+	while ((cmd = strstr(buf, "\\\n"))) {
 		cmd[ 0 ] = ' ';
 		cmd[ 1 ] = ' ';
 	}
