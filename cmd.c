@@ -222,7 +222,7 @@ void cmd_add_command( cmdstruct *cmd ) {
 }
 
 /* Init the command listing, called from main */
-void _cmd_init() {
+void initialize_cmd(void) {
 	int i;
 
 	/* Now add the default command list */

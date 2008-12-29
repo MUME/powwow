@@ -263,7 +263,7 @@ int main __P2 (int,argc, char **,argv)
     init_random((int)now.tv_sec);
 #endif
    
-    _cmd_init();
+    initialize_cmd();
 
     if ((p = getenv("POWWOWDIR"))) {
 	strcpy(powwow_dir, p);
