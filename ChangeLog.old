@@ -1,5 +1,7 @@
 2008-12-29        dain
 
+	* tty.c: Manually buffer tty output to fix output problems on some
+	  platforms with USE_LOCALE.
 	* edit.c: Fixed display bug when a partial ANSI code was received
 	  in one TCP packet
 
