@@ -9,6 +9,7 @@
  *  (at your option) any later version.
  *
  */
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -143,9 +144,15 @@ int tty_read_fd = 0;
 static int wrapglitch = 0;
 
 #ifdef USE_LOCALE
-FILE *tty_read_stream, *tty_write_stream;
+FILE *tty_read_stream;
 static int orig_read_fd_fl;
-#endif
+static struct {
+    mbstate_t mbstate;              /* multibyte output shift state */
+    char      data[4096];           /* buffer for pending data */
+    size_t    used;                 /* bytes used of data */
+    int       fd;                   /* file descriptor to write to */
+} tty_write_state;
+#endif  /* USE_LOCALE */
 
 #ifdef USE_SGTTY
 static struct sgttyb ttybsave;
@@ -198,12 +205,17 @@ void tty_start __P0 (void)
 
     tty_puts(kpadstart);
     tty_flush();
-    
-#ifdef DEBUG_TTY
+
+#ifdef USE_LOCALE
+    tty_write_state.fd = 1;
+    wcrtomb(NULL, L'\0', &tty_write_state.mbstate);
+#else  /* ! USE_LOCALE */
+ #ifdef DEBUG_TTY
     setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-#else
+ #else
     setvbuf(stdout, NULL, _IOFBF, BUFSIZ);
-#endif
+ #endif
+#endif  /* ! USE_LOCALE */
 }
 
 /*
@@ -312,7 +324,6 @@ void tty_bootstrap __P0 (void)
 {
 #ifdef USE_LOCALE
     tty_read_stream = stdin;
-    tty_write_stream = stdout;
 #endif
 
 #ifndef USE_VT100
@@ -804,14 +815,34 @@ void input_insert_follow_chars __P2 (char *,str, int,n)
 void tty_puts __P ((const char *s))
 {
     while (*s)
-	putwc((unsigned char)*s++, tty_write_stream);
+        tty_putc(*s++);
 }
 
 void tty_putc __P ((char c))
 {
-    putwc((unsigned char)c, tty_write_stream);
+    size_t r;
+    int ignore_error = 0;
+    if (tty_write_state.used + MB_LEN_MAX > sizeof tty_write_state.data)
+        tty_flush();
+again:
+    r = wcrtomb(tty_write_state.data + tty_write_state.used, (unsigned char)c,
+                &tty_write_state.mbstate);
+    if (r == (size_t)-1) {
+        if (ignore_error)
+            return;
+        if (errno != EILSEQ) {
+            perror("mcrtomb()");
+            abort();
+        }
+        /* character cannot be represented; try to write a question
+         * mark instead, but ignore any errors */
+        ignore_error = 1;
+        c = '?';
+        goto again;
+    }
+    assert(r <= MB_LEN_MAX);
+    tty_write_state.used += r;
 }
-
 
 void tty_printf __P ((const char *format, ...))
 {
@@ -831,6 +862,7 @@ void tty_printf __P ((const char *format, ...))
 	bufp = alloca(res + 1);
 	va_start(va, format);
 	vsprintf(bufp, format, va);
+        assert(strlen(bufp) == res);
 	va_end(va);
     }
 
@@ -921,13 +953,40 @@ void tty_gets __P ((char *s, int size))
 
 void tty_flush __P ((void))
 {
-    fflush(tty_write_stream);
+    size_t n = tty_write_state.used;
+    char *data = tty_write_state.data;
+    while (n > 0) {
+        ssize_t r;
+        do {
+            r = write(tty_write_state.fd, data, n);
+        } while (r < 0 && (errno == EAGAIN || errno == EINTR));
+        if (r < 0) {
+            fprintf(stderr, "Cannot write to tty: %s\n", strerror(errno));
+            abort();
+        }
+        n -= r;
+        data += r;
+    }
+    tty_write_state.used = 0;
 }
 
 void tty_raw_write __P ((char *data, int len))
 {
-    tty_flush();
-    write(1, data, len);
+    assert(len >= 0);
+
+    if (len == 0) return;
+
+    for (;;) {
+        size_t s = sizeof tty_write_state.data - tty_write_state.used;
+        if (s > len) s = len;
+        memcpy(tty_write_state.data + tty_write_state.used, data, s);
+        len -= s;
+        tty_write_state.used += s;
+        if (len == 0)
+            break;
+        data += s;
+        tty_flush();
+    }
 }
 
 #endif /* USE_LOCALE */
