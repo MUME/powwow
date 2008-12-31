@@ -642,7 +642,7 @@ void parse_action __P2 (char *,str, int,onprompt)
 			BUFSIZE - (int)strlen((*np)->pattern) - 10,
 			(*np)->command);
             } else {
-                PRINTF("#no action, cannot show pattern: \"%s\"\n", pattern);
+                PRINTF("#no action, cannot show pattern: \"%s\"\n", str);
             }
         }
     }
