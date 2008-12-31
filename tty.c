@@ -970,10 +970,8 @@ void tty_flush __P ((void))
     tty_write_state.used = 0;
 }
 
-void tty_raw_write __P ((char *data, int len))
+void tty_raw_write __P ((char *data, size_t len))
 {
-    assert(len >= 0);
-
     if (len == 0) return;
 
     for (;;) {

@@ -53,7 +53,7 @@ void tty_printf         __P ((const char *format, ...)) PRINTF_FUNCTION(1, 2);
 int  tty_read           __P ((char *buf, size_t count));
 void tty_gets           __P ((char *s, int size));
 void tty_flush          __P ((void));
-void tty_raw_write      __P ((char *data, int len));
+void tty_raw_write      __P ((char *data, size_t len));
 int  tty_has_chars      __P ((void));
 
 #endif /* USE_LOCALE */
