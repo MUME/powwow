@@ -432,11 +432,14 @@ static void cmd_help __P1 (char *,arg)
 	fclose(f);
 	return;
     }
-    
-    memcpy(text, line, i = strlen(line));
 
-    while (fgets(line, BUFSIZE, f) && line[0] == '@')
-	;     /* allow multiple commands to share the same help */
+    /* the first line becomes $TITLE */
+    tmp = strchr(line, '\n');
+    if (tmp) *tmp = '\0';
+    i = sprintf(text, "Help on '%s'\n", line + 1);
+
+    /* allow multiple commands to share the same help */
+    while (fgets(line, BUFSIZE, f) && line[0] == '@') ;
 
     do {
 	if ((len = strlen(line)) >= size - i) {
