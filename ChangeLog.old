@@ -1,5 +1,9 @@
 2008-12-31        dain
 
+	* powwow.6: Supprt automatically converting man page to different
+	  encodings by setting MAN_PAGE_ENCODING when running
+	  configure. Defaults to UTF-8 on all hosts except OS X (darwin),
+	  where it is ISO-8859-1.
 	* build: Fixed build out of the box on OS X by turning on
 	  --enable-bsd by default on darwin hosts.
 	* cmd2.c: Fixed some problems related to binding keys with the
