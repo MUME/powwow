@@ -188,6 +188,8 @@ ptr __ptrmcat __P4 (ptr,dst, char *,src, int,len, int,shrink)
 	    newmax = limit_mem;
 	}
 	if ((p = (ptr)realloc((void *)dst, newmax + sizeofptr))) {
+            if (dst == NULL)
+                p->signature = PTR_SIG;
 	    if (overlap)
 	        src = ptrdata(p) + (src - ptrdata(dst));
 	    if (!dst)
@@ -281,6 +283,8 @@ ptr __ptrmcpy __P4(ptr,dst, char *,src, int,len, int,shrink)
 	}
 
 	if ((p = (ptr)realloc((void *)dst, newmax + sizeofptr))) {
+            if (dst == NULL)
+                p->signature = PTR_SIG;
 	    if (overlap)
 	        src = ptrdata(p) + (src - ptrdata(dst));
 	    if (!dst)
