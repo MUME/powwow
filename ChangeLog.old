@@ -248,7 +248,7 @@
 2005-03-22 00:17  bpk
 
 	* NEWS: Updated news
-	* NEWS, edit.c: Added 1.2.8 news, fixed but in upcase/downcase
+	* NEWS, edit.c: Added 1.2.8 news, fixed bug in upcase/downcase
 	  word (Dain)
 
 2005-03-21 22:55  bpk
@@ -319,7 +319,7 @@
 
 	* Makefile.am, Makefile.in, aclocal.m4: Updated to include the
 	  debian build files in the make dist, also regenerated some of
-	  teh automake/conf stuff
+	  the automake/conf stuff
 
 2005-03-12 05:05  bpk
 

@@ -246,7 +246,7 @@ int main __P2 (int,argc, char **,argv)
 
 #ifdef USE_LOCALE
     if (!setlocale(LC_ALL, "")) {
-        fprintf(stderr, "Failed setlocale(LC_ALL, \"C\")\n");
+        fprintf(stderr, "Failed setlocale(LC_ALL, \"\")\n");
     }
 #endif
 
