@@ -1401,7 +1401,7 @@ void parse_rebind __P1 (char *,arg)
     for (p = keydefs; p; p = p->next) {
 	if (p == *kp)
 	    continue;
-	if (seqlen == p->seqlen && !memcmp(p->sequence, seq, seqlen)) {
+	if (!memcmp(p->sequence, seq, MIN2(seqlen, p->seqlen))) {
 	    show_single_bind("key already bound as:", p);
 	    return;
 	}
