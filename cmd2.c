@@ -1042,34 +1042,38 @@ static char *unescape_seq __P3 (char *,buf, char *,seq, int *,seqlen)
  */
 static int get_one_char __P1 (int,timeout)
 {
-    extern int errno;
-    int err;
-    fd_set fds;
-    char c;
     struct timeval timeoutbuf;
+    fd_set fds;
+    int n;
+    char c;
     
+ again:
     FD_ZERO(&fds);
     FD_SET(tty_read_fd, &fds);
     timeoutbuf.tv_sec = 0;
     timeoutbuf.tv_usec = timeout * uSEC_PER_mSEC;
-    err = select(tty_read_fd+1, &fds, NULL, NULL,
-		 timeout ? &timeoutbuf : NULL);
-    if (err == -1 && errno == EINTR)
+    n = select(tty_read_fd + 1, &fds, NULL, NULL,
+               timeout ? &timeoutbuf : NULL);
+    if (n == -1 && errno == EINTR)
 	return -1;
-    if (err == -1) {
+    if (n == -1) {
 	errmsg("select");
 	return -1;
     }
-    while ((err = tty_read(&c, 1)) < 0 && errno == EINTR)
-	;
-    if (err != 1 && errno == EAGAIN) {
+    do {
+        n = tty_read(&c, 1);
+    } while (n < 0 && errno == EINTR);
+    if (n == 1)
+        return (unsigned char)c;
+    if (n < 0) {
+        if (errno != EAGAIN)
+	    errmsg("read from tty");
         return -1;
     }
-    if (err != 1) {
-	errmsg("read from tty");
-	return -1;
-    }
-    return (int)c;
+    /* n == 0 */
+    if (timeout == 0)
+	goto again;
+    return -1;
 }
 
 /*
@@ -1077,10 +1081,8 @@ static int get_one_char __P1 (int,timeout)
  */
 void print_seq __P2 (char *,seq, int,len)
 {
-    char ch;
-
     while (len--) {
-	ch = *(seq++);
+	unsigned char ch = *(seq++);
         if (ch == '\033') {
             tty_puts("esc ");
             continue;
@@ -1108,7 +1110,6 @@ char *seq_name __P2 (char *,seq, int,len)
 {
     static char buf[CAPLEN*4];
     char *p = buf;
-    char c;
     /*
      * rules: control chars are written as ^X, where
      * X is char | 64
@@ -1118,7 +1119,7 @@ char *seq_name __P2 (char *,seq, int,len)
      * special case: 0x7f is written ^?
      */
     while (len--) {
-	c = *seq++;
+        unsigned char c = *seq++;
         if (c == '^' || (c && strchr(SPECIAL_CHARS, c)))
 	    *(p++) = ESC;
 	
@@ -1283,8 +1284,9 @@ static void parse_bind_noninteractive __P1 (char *,arg)
 	add_keynode(arg, rawseq, seqlen, key_run_command, p);
     
     if (opt_info) {
-	PRINTF("#%s: %s %s=%s\n", (kp && *kp) ?
-		   "redefined key" : "new key binding", arg, seq, p);
+	PRINTF("#%s: %s %s=%s\n",
+               (kp && *kp) ? "redefined key" : "new key binding",
+               arg, seq, p);
     }
 }
 
