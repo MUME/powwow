@@ -298,14 +298,17 @@ expression) to the word completion list. Example:
 #action >reply ^$1 tells you={#print;#add $1}
 			(from now on, you can use TAB to complete that name)
 @option
-#option [none|[history][words][exit]]
+#option [+-=]<option> | list
 
-This command sets a number of options for powwow.
+This command lets you list or change various options of powwow.
 
-	history		write history lines to the savefiles
-	words		write words in completion buffer to the savefile
-	exit		close powwow when the last connection is closes
-	none		go figure (DEFAULT)
+     #option 	      	lists all current option settings
+     #option list	long list of current options
+     #option =<option>	edit current setting of <option>
+     #option +<option>	enable <option>
+     #option -<option>	disable <option>
+     #option <option>   toggle <option>
+
 @put
 #put {text|(expression)}
 
