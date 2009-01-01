@@ -1,5 +1,7 @@
 2008-12-31        dain
 
+	* build: Fixed build out of the box on OS X by turning on
+	  --enable-bsd by default on darwin hosts.
 	* cmd2.c: Fixed some problems related to binding keys with the
 	  high bit set.
 

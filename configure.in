@@ -2,6 +2,8 @@
 AC_INIT
 AM_INIT_AUTOMAKE(powwow, 1.2.13)
 
+AC_CANONICAL_HOST
+
 AC_ARG_ENABLE(vt100,
 	AC_HELP_STRING([--enable-vt100],
 			[Hard code VT100 escape sequences; use if you have no termcap ]),
@@ -36,12 +38,15 @@ AC_ARG_ENABLE(ansibug,
 
 AC_ARG_ENABLE(bsd,
 	AC_HELP_STRING([--enable-bsd],
-		       [Needed for BSD systems, in powwow this was USE_SGTTY and BSD_LIKE]),
-	[case "${enableval}" in
-             yes) AC_DEFINE(USE_SGTTY)
-                  AC_DEFINE(BSD_LIKE) ;;
-             no) ;;
-         esac])
+		       [Needed for BSD systems, in powwow this was USE_SGTTY and BSD_LIKE. Default on Darwin (OS X) systems.]))
+AS_IF([ test -z "${enable_bsd}" ],
+      [ case "${host_os}" in
+            darwin*) enable_bsd=yes ;;
+            *)       enable_bsd=no ;;
+        esac])
+AS_IF([ test "${enable_bsd}" = yes ],
+      [ AC_DEFINE(USE_SGTTY)
+        AC_DEFINE(BSD_LIKE) ])
 
 # Checks for programs.
 AC_PROG_CC
