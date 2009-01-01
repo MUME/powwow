@@ -48,6 +48,27 @@ AS_IF([ test "${enable_bsd}" = yes ],
       [ AC_DEFINE(USE_SGTTY)
         AC_DEFINE(BSD_LIKE) ])
 
+AC_MSG_CHECKING([man page encoding])
+if test -z "${MAN_PAGE_ENCODING}"; then
+   case "${host_os}" in
+       darwin*) MAN_PAGE_ENCODING=ISO-8859-1 ;;
+       *)       MAN_PAGE_ENCODING=UTF-8 ;;
+   esac
+fi
+AC_SUBST([MAN_PAGE_ENCODING])
+AC_MSG_RESULT([${MAN_PAGE_ENCODING}])
+
+if test "${MAN_PAGE_ENCODING}" != UTF-8; then
+   AC_CHECK_PROG([ICONV], [iconv], [iconv], [])
+   if test -z "${ICONV}" -a "${MAN_PAGE_ENCODING}" != UTF-8; then
+      AC_MSG_WARN([Forcing man page encoding to UTF-8])
+      MAN_PAGE_ENCODING=UTF-8
+   fi
+fi
+
+AM_CONDITIONAL([MAN_PAGE_ENCODING_IS_UTF_8],
+               [test "${MAN_PAGE_ENCODING}" = UTF-8 ])
+
 # Checks for programs.
 AC_PROG_CC
 
