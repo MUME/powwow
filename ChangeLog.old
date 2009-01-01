@@ -1,3 +1,8 @@
+2008-12-31        dain
+
+	* cmd2.c: Fixed some problems related to binding keys with the
+	  high bit set.
+
 2008-12-29        dain
 
 	* tty.c: Manually buffer tty output to fix output problems on some
