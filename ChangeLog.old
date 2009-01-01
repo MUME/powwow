@@ -1022,7 +1022,7 @@ Changes from 2.5.0a to 2.5.0b (Finn Arne Gangstad)
 Changes from 2.5.0 to 2.5.0a (Finn Arne Gangstad)
 	* Various tweaks to make it compile on most systems.
 
-Changes from 2.4.4 to 2.5.0 (Mattias Engdegard)
+Changes from 2.4.4 to 2.5.0 (Mattias Engdegård)
 	* the length of the prompt is now correctly calculated
 	  even if it contains escape sequences (for muds with coloured prompt).
 	* built-in commands are always completed with tab and aren't stored in
