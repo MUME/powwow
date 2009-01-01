@@ -4,29 +4,44 @@ AM_INIT_AUTOMAKE(powwow, 1.2.13)
 
 AC_ARG_ENABLE(vt100,
 	AC_HELP_STRING([--enable-vt100],
-			[Hard code vt100 escape sequences, use if you have no termcap ]),
-        AC_DEFINE(USE_VT100))
+			[Hard code VT100 escape sequences; use if you have no termcap ]),
+        [case "${enableval}" in
+             yes) AC_DEFINE(USE_VT100) ;;
+             no) ;;
+         esac])
 
 AC_ARG_ENABLE(sort,
 	AC_HELP_STRING([--enable-sort],
 			[Sort aliases and actions]),
-	AC_DEFINE(DO_SORT))
+        [case "${enableval}" in
+             yes) AC_DEFINE(DO_SORT) ;;
+             no) ;;
+         esac])
 
 AC_ARG_ENABLE(noshell,
 	AC_HELP_STRING([--enable-noshell],
 			[Disables the "#!" command]),
-	AC_DEFINE(NO_SHELL))
+	[case "${enableval}" in
+             yes) AC_DEFINE(NO_SHELL) ;;
+             no) ;;
+         esac])
 
 AC_ARG_ENABLE(ansibug,
 	AC_HELP_STRING([--enable-ansibug],
-		       [enables fixes for "#mark" ansi bugs on some terminals]),
-	AC_DEFINE(BUG_ANSI))
+		       [Enables fixes for "#mark" ansi bugs on some terminals]),
+	[case "${enableval}" in
+             yes) AC_DEFINE(BUG_ANSI) ;;
+             no) ;;
+         esac])
 
 AC_ARG_ENABLE(bsd,
 	AC_HELP_STRING([--enable-bsd],
 		       [Needed for BSD systems, in powwow this was USE_SGTTY and BSD_LIKE]),
-	AC_DEFINE(USE_SGTTY)
-	AC_DEFINE(BSD_LIKE))
+	[case "${enableval}" in
+             yes) AC_DEFINE(USE_SGTTY)
+                  AC_DEFINE(BSD_LIKE) ;;
+             no) ;;
+         esac])
 
 # Checks for programs.
 AC_PROG_CC
