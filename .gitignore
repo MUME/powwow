@@ -1,0 +1,14 @@
+*.o
+*~
+ChangeLog
+Makefile
+catrw
+config.log
+config.status
+follow
+movie
+muc
+powwow
+powwow.6
+configure
+aclocal.m4
