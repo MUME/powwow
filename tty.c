@@ -959,9 +959,28 @@ void tty_flush __P ((void))
     char *data = tty_write_state.data;
     while (n > 0) {
         ssize_t r;
-        do {
+        for (;;) {
             r = write(tty_write_state.fd, data, n);
-        } while (r < 0 && (errno == EAGAIN || errno == EINTR));
+            if (r >= 0)
+                break;
+            if (errno == EINTR)
+                continue;
+            if (errno != EAGAIN) {
+                fprintf(stderr, "Cannot write to tty: %s\n", strerror(errno));
+                abort();
+            }
+            fd_set wfds;
+            FD_ZERO(&wfds);
+            FD_SET(tty_write_state.fd, &wfds);
+            do {
+                r = select(tty_write_state.fd + 1, NULL, &wfds, NULL, NULL);
+            } while (r < 0 && errno == EINTR);
+            if (r <= 0) {
+                fprintf(stderr, "Cannot write to tty; select failed: %s\n",
+                        r == 0 ? "returned zero" : strerror(errno));
+                abort();
+            }
+        }
         if (r < 0) {
             fprintf(stderr, "Cannot write to tty: %s\n", strerror(errno));
             abort();
