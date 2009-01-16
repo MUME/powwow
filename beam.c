@@ -78,7 +78,7 @@ int process_message __P2 (char *,buf, int,len)
     text = (char *)malloc(msglen);
     if (!text) {
 	errmsg("malloc");
-	return used > len ? len : used;
+	return i;
     }
 
     /* only doing trivial (IAC IAC) processing; this should all be
