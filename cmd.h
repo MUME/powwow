@@ -4,7 +4,8 @@
 #define _CMD_H_
 
 typedef struct cmdstruct {
-    char *sortname;             /* set to NULL if you want to sort by command name */
+    char *sortname;             /* set to NULL if you want to sort by
+                                 * command name */
     char *name;			/* command name */
     char *help;			/* short help */
     function_str funct;		/* function to call */

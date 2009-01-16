@@ -2,10 +2,11 @@
 
 #include "defines.h"
 #include "cmd.h"
+#include "tty.h"
 
 void plugtest( char *arg );
 
-cmdstruct mycommand = { NULL, "plugtest", "test command", plugtest, NULL };
+cmdstruct mycommand = { NULL, NULL, "plugtest", plugtest, "test command" };
 
 void powwow_init() {
 	tty_printf( "Init plugtest.so!\n" );
