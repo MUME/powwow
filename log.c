@@ -207,11 +207,14 @@ void log_write __P3 (char *,str, int,len, int,newline)
     movie_last = now;
 
     do {
-	if ((next = memchr(str, '\n', len)))
+	if ((next = memchr(str, '\n', len))) {
 	    i = next - str;
-	else
-	    i = len, last = 1;
-	
+            newline = 1;
+        } else {
+	    i = len;
+            last = 1;
+	}
+
 	if (datasize)
 	    log_writeline(str, i, last && !newline ? PROMPT : LINE, diff);
 	else {
@@ -222,9 +225,13 @@ void log_write __P3 (char *,str, int,len, int,newline)
 		fprintf(moviefile, "%s %.*s\n", 
 			names[last && !newline ? PROMPT : LINE], i, str);
 	    }
-	    if (capturefile)
-		fprintf(capturefile, "%.*s%s",
-			i, str, last && !newline ? "" : "\n");
+	    if (capturefile) {
+                fwrite(str, 1, i, capturefile);
+                if (newline) {
+                    const char nl[1] = "\n";
+                    fwrite(nl, 1, 1, capturefile);
+                }
+            }
 	}
 	diff = 0;
 	if (next) {

@@ -1,5 +1,7 @@
 2009-01-06        dain
 
+	* log.c: Bugfixed #capture together with multi-byte locales such
+  	  as UTF-8.
 	* beam.c, tcp.c, tcp.h: Fixed IAC handling inside MPI
 	  messages. Still not done properly, but double IACs are converted
 	  to one ASCII 255, and message length is correctly computed.
