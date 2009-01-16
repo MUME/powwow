@@ -1053,7 +1053,6 @@ int save_settings __P0 (void)
     keynode *kp;
     varnode *vp;
     ptr pp = (ptr)0;
-    extern char *full_options_string;
     int i, flag, failed = 1;
 
     if (REAL_ERROR) {
@@ -1243,23 +1242,7 @@ int save_settings __P0 (void)
     }
     
     if (failed > 0)
-	failed =
-	fprintf(f, full_options_string,
-		opt_exit    ? '+' : '-',
-		opt_history ? '+' : '-',
-		opt_words   ? '+' : '-',
-		opt_compact ? '+' : '-',
-		opt_debug   ? '+' : '-',
-		opt_echo    ? '+' : '-',
-		opt_info    ? '+' : '-',
-		opt_keyecho    ? '+' : '-',
-		opt_speedwalk ? '+' : '-',
-		opt_wrap      ? '+' : '-',
-		opt_autoprint ? '+' : '-',
-		opt_reprint   ? '+' : '-',
-		opt_sendsize  ? '+' : '-',
-		opt_autoclear ? '+' : '-',
-		"\n");
+        failed = print_all_options(f);
 
     fclose(f);
     

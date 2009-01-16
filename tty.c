@@ -844,7 +844,7 @@ again:
     tty_write_state.used += r;
 }
 
-void tty_printf __P ((const char *format, ...))
+int tty_printf __P ((const char *format, ...))
 {
     char buf[1024], *bufp = buf;
     va_list va;
@@ -870,6 +870,8 @@ void tty_printf __P ((const char *format, ...))
     free(old_locale);
 
     tty_puts(bufp);
+
+    return res;
 }
 
 static char tty_in_buf[MB_LEN_MAX + 1];

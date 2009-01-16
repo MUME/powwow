@@ -20,5 +20,7 @@ void cmd_add_command( cmdstruct *cmd );
 
 void initialize_cmd(void);
 
+int print_all_options __P1 (FILE *,file);
+
 #endif /* _CMD_H_ */
 

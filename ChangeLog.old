@@ -1,5 +1,7 @@
 2008-12-31        dain
 
+	* cmd.c: Added '#option list' to print all options and explanatory
+	  text.
 	* powwow.6: Supprt automatically converting man page to different
 	  encodings by setting MAN_PAGE_ENCODING when running
 	  configure. Defaults to UTF-8 on all hosts except OS X (darwin),

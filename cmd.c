@@ -2424,91 +2424,150 @@ static void cmd_quit __P1 (char *,arg)
 	exit_powwow();
 }
 
-char *full_options_string = "#option %cexit %chistory %cwords %ccompact %cdebug %cecho %cinfo %ckeyecho %cspeedwalk\n#option %cwrap %cautoprint %creprint %csendsize %cautoclear%s";
+static const struct {
+    const char *name;
+    char *option;
+    const char *doc;
+} options[] = {
+    { "autoclear", &opt_autoclear,
+      "clear input line before executing commands" },
+    { "autoprint", &opt_autoprint,
+      "#print lines matched by actions" },
+    { "compact",   &opt_compact,
+      "remove prompt when receiving new messages from mud" },
+    { "debug",     &opt_debug,
+      "print commands before executing" },
+    { "echo",      &opt_echo,
+      "print command action commands when executed" },
+    { "exit",      &opt_exit,
+      "automatically exit powwow when mud connection closes" },
+    { "history",   &opt_history,
+      "also save command history" },
+    { "info",      &opt_info,
+      "print information about command effects" },
+    { "keyecho",   &opt_keyecho,
+      "print command bound to key when executed" },
+    { "reprint",   &opt_reprint,
+      "reprint sent commands when getting new prompt" },
+    { "sendsize",  &opt_sendsize,
+      "send terminal size when opening connection" },
+    { "speedwalk", &opt_speedwalk,
+      "enable speed walking (ness3ew...)" },
+    { "words",     &opt_words,
+      "also save word history" },
+    { "wrap",      &opt_wrap,
+      "enable word wrapping" },
+    { NULL }
+};
+
+/* print all options to 'file', or tty if file is NULL; return -1 on
+ * error, 1 on success */
+int print_all_options __P1 (FILE *,file)
+{
+    const char *prefix = "#option";
+    int width = (file ? 80 : cols) - 16;
+    int len = 0, i;
+    for (i = 0; options[i].name; ++i) {
+        int res;
+        if (file)
+            res = fprintf(file, "%s %c%s", prefix,
+                          *options[i].option ? '+' : '-',
+                          options[i].name);
+        else
+            res = tty_printf("%s %c%s", prefix,
+                             *options[i].option ? '+' : '-',
+                             options[i].name);
+        if (res < 0)
+            return -1;
+        /* don't rely on printf() return value */
+        len += strlen(prefix) + strlen(options[i].name) + 2;
+        if (len >= width) {
+            prefix = "\n#option";
+            len = -1;
+        } else {
+            prefix = "";
+        }
+    }
+    if (file) {
+        fputc('\n', file);
+    } else {
+        tty_putc('\n');
+        status(1);
+    }
+    return 1;
+}
 
 static void cmd_option __P1 (char *,arg)
 {
-    if (*(arg = skipspace(arg))) {
-	int len, i, count = 0;
-	static char *str[] = { "exit", "history", "words",
-		"compact", "debug", "echo", "info", "keyecho",
-		"speedwalk", "wrap", "autoprint", "reprint",
-		"sendsize", "autoclear", 0 };
-	static char *varptr[] = { &opt_exit, &opt_history, &opt_words,
-		&opt_compact, &opt_debug, &opt_echo, &opt_info, &opt_keyecho,
-		&opt_speedwalk, &opt_wrap, &opt_autoprint, &opt_reprint,
-		&opt_sendsize, &opt_autoclear, 0 };
-	enum { MODE_ON, MODE_OFF, MODE_TOGGLE, MODE_REP } mode;
-	char buf[BUFSIZE], *p, *varp, c;
-	while ((arg = skipspace(split_first_word(buf, BUFSIZE, arg))), *buf) {
-	    c = *(p = buf);
-	    switch (c) {
-	     case '=': mode = MODE_REP; p++; break;
-	     case '+': mode = MODE_ON;  p++; break;
-	     case '-': mode = MODE_OFF; p++; break;
-	     default:  mode = MODE_TOGGLE;     break;
-	    }
-	    len = strlen(p);
-	    varp = 0;
-	    count++;
-	    for (i=0; str[i]; i++) {
-		if (strncmp(str[i], p, len) == 0) {
-		    varp = varptr[i];
-		    break;
-		}
-	    }
-	    if (!str[i]) {
-		if (strncmp("none", p, len) == 0)
-		    continue;
-		else {
-		    PRINTF("#syntax: #option [[+|-|=]<name>]\t\twhere <name> is one of:\n\
-exit history words compact debug echo info\n\
-keyecho speedwalk wrap autoprint reprint sendsize autoclear\n");
-		    return;
-		}
-	    }
-	    if (varp) {		
-		switch (mode) {
-		 case MODE_REP:
-		    sprintf(inserted_next, "#option  %c", *varp ? '+' : '-');
-		    strcat(inserted_next, p);
-		    break;
-		 case MODE_ON:  *varp  = 1; break;
-		 case MODE_OFF: *varp  = 0; break;
-		 default:       *varp ^= 1; break;
-		}
-		/*
-		 * reset the reprint buffer if changing its status
-		 */
-		if (varp == &opt_reprint)
-		    reprint_clear();
+    char buf[BUFSIZE];
+    int count = 0;
 
-		/* as above, but always print status if
-		 * "#option info" alone was typed */
-		if (mode != MODE_REP && !*arg && count==1 &&
-		    (opt_info || (mode == MODE_TOGGLE && varp==&opt_info))) {
-		    PRINTF("#option %s is now o%s.\n", str[i],
-			      *varp ? "n" : "ff");
-		}
-	    }
-	}
-    } else {
-	PRINTF(full_options_string,
-		opt_exit  ? '+' : '-',
-		opt_history ? '+' : '-',
-		opt_words ? '+' : '-',
-		opt_compact ? '+' : '-',
-		opt_debug ? '+' : '-',
-		opt_echo  ? '+' : '-',
-		opt_info  ? '+' : '-',
-		opt_keyecho  ? '+' : '-',
-		opt_speedwalk ? '+' : '-',
-		opt_wrap  ? '+' : '-',
-		opt_autoprint ? '+' : '-',
-		opt_reprint ? '+' : '-',
-		opt_sendsize ? '+' : '-',
-		opt_autoclear ? '+' : '-',
-		"\n");
+    arg = skipspace(arg);
+    if (!*arg) {
+        print_all_options(NULL);
+        return;
+    }
+
+    while ((arg = skipspace(split_first_word(buf, BUFSIZE, arg))), *buf) {
+        enum { MODE_ON, MODE_OFF, MODE_TOGGLE, MODE_REP } mode;
+        char *varp = NULL;
+        char *p = buf;
+        char c = *p;
+        int len = strlen(p);
+        int i;
+
+        switch (c) {
+        case '=': mode = MODE_REP; p++; break;
+        case '+': mode = MODE_ON;  p++; break;
+        case '-': mode = MODE_OFF; p++; break;
+        default:  mode = MODE_TOGGLE;     break;
+        }
+        count++;
+        for (i = 0; options[i].name; i++) {
+            if (strncmp(options[i].name, p, len) == 0) {
+                varp = options[i].option;
+                break;
+            }
+        }
+        if (varp == NULL) {
+            if (strncmp("list", p, len) == 0) {
+                tty_puts("#list of options:\n");
+                for (i = 0; options[i].name; ++i) {
+                    tty_printf("#option %c%-12s    %s\n",
+                               *options[i].option ? '+' : '-',
+                               options[i].name,
+                               options[i].doc);
+                }
+            } else {
+                tty_puts("#syntax: #option [[+|-|=]<name>] | list\n");
+            }
+            status(1);
+            return;
+        }
+
+        switch (mode) {
+        case MODE_REP:
+            sprintf(inserted_next, "#option %c%s", *varp ? '+' : '-',
+                    p);
+            break;
+        case MODE_ON:     *varp  = 1; break;
+        case MODE_OFF:    *varp  = 0; break;
+        case MODE_TOGGLE: *varp ^= 1; break;
+        }
+        /*
+         * reset the reprint buffer if changing its status
+         */
+        if (varp == &opt_reprint)
+            reprint_clear();
+
+        /* as above, but always print status if
+         * "#option info" alone was typed */
+        if (mode != MODE_REP && !*arg && count==1 &&
+            (opt_info || (mode == MODE_TOGGLE && varp==&opt_info))) {
+            PRINTF("#option %s is now o%s.\n",
+                   options[i].name,
+                   *varp ? "n" : "ff");
+        }
     }
 }
 
