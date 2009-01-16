@@ -538,11 +538,10 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
     return (char *)p - buffer;
 }
 
-void tcp_raw_write __P3 (int,fd, char *,data, int,len)
+static void internal_tcp_raw_write __P3 (int,fd, const char *,data, int,len)
 {
-    int i;
-    tcp_flush();
     while (len > 0) {
+        int i;
 	while ((i = write(fd, data, len)) < 0 && errno == EINTR)
 	    ;
 	if (i < 0) {
@@ -551,6 +550,29 @@ void tcp_raw_write __P3 (int,fd, char *,data, int,len)
 	}
 	data += i;
 	len -= i;
+    }
+}
+
+void tcp_raw_write __P3 (int,fd, const char *,data, int,len)
+{
+    tcp_flush();
+    internal_tcp_raw_write(fd, data, len);
+}
+
+/* write data, escape any IACs */
+void tcp_write_escape_iac __P3 (int,fd, const char *,data, int,len)
+{
+    tcp_flush();
+
+    for (;;) {
+        const char *iac = memchr(data, IAC, len);
+        size_t l = iac ? (iac - data) + 1 : len;
+        internal_tcp_raw_write(fd, data, l);
+        if (iac == NULL)
+            return;
+        internal_tcp_raw_write(fd, iac, 1);
+        len -= l;
+        data = iac + 1;
     }
 }
 

@@ -59,7 +59,8 @@ extern fd_set fdset;               /* set of descriptors to select() on */
 
 int  tcp_connect	__P ((char *addr, int port));
 int  tcp_read		__P ((int fd, char *buffer, int maxsize));
-void tcp_raw_write	__P ((int fd, char *data, int len));
+void tcp_raw_write	__P ((int fd, const char *data, int len));
+void tcp_write_escape_iac __P3 (int,fd, const char *,data, int,len);
 void tcp_write_tty_size __P ((void));
 void tcp_write		__P ((int fd, char *data));
 void tcp_main_write	__P ((char *data));

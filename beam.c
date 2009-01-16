@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <arpa/telnet.h>
 
 #include "defines.h"
 #include "main.h"
@@ -56,8 +57,9 @@ static void write_message __P1 (char *,s)
 int process_message __P2 (char *,buf, int,len)
 {
     int msglen, i, l, used;
-    char *text;
+    char *text, *from, *to;
     char msg[BUFSIZE];
+    int got_iac;
 
     status(1);
     
@@ -72,52 +74,72 @@ int process_message __P2 (char *,buf, int,len)
     }
     
     l = len - ++i;
-    if (msglen < l) {
-	l = msglen;
-	used = msglen + i;
-    } else
-	used = len;
-    
+
     text = (char *)malloc(msglen);
     if (!text) {
 	errmsg("malloc");
 	return used > len ? len : used;
     }
-    
-    memmove(text, buf + i, l);
-    i = l;
-    while(i < msglen) {
-	/*
-	 * read() might block here, but it should't be long. I should also
-	 * process any telnet protocol commands, but I don't care right now.
-	 */
+
+    /* only doing trivial (IAC IAC) processing; this should all be
+     * rewritten */
+    got_iac = 0;
+    from = buf + i;
+    to = text;
+    for (i = 0; i < l && (to - text) < msglen; ++i) {
+        if (got_iac) {
+            if (*from != (char)IAC)
+                errmsg("got IAC in MPI message; treating as IAC IAC");
+            else
+                ++from;
+            got_iac = 0;
+        } else {
+            got_iac = (*to++ = *from++) == (char)IAC;
+        }
+    }
+    i = to - text;
+    used = from - buf;
+
+    while (i < msglen) {
+	/* read() might block here, but it should't be long */
 	while ((l = read(tcp_fd, text + i, msglen - i)) == -1 && errno == EINTR)
 	    ;
 	if (l == -1) {
 	    errmsg("read message from socket");
 	    return used > len ? len : used;
 	}
+        from = to = text + i;
+        for (i = 0; i < l; ++i) {
+            if (got_iac) {
+                if (*from != (char)IAC)
+                    errmsg("got IAC in MPI message; treating as IAC IAC");
+                else
+                    ++from;
+                got_iac = 0;
+            } else {
+                got_iac = (*to++ = *from++) == (char)IAC;
+            }
+        }
+        i = to - text;
 	tty_printf("\rgot %d chars out of %d", i, msglen);
 	tty_flush();
-	i += l;
     }
     tty_printf("\rread all %d chars.%s\n", msglen, tty_clreoln);
     
-    if ((msglen = tcp_unIAC(text, msglen)))
-	switch(*buf) {
-	  case 'E':
-	    message_edit(text, msglen, 0, 0);
-	    break;
-	  case 'V':
-	    message_edit(text, msglen, 1, 0);
-	    break;
-	  default:
-	    sprintf(msg, "#warning: received a funny message (0x%x)\n", *buf);
-	    write_message(msg);
-	    free(text);
-	    break;
-	}
-    
+    switch(*buf) {
+    case 'E':
+        message_edit(text, msglen, 0, 0);
+        break;
+    case 'V':
+        message_edit(text, msglen, 1, 0);
+        break;
+    default:
+        sprintf(msg, "#warning: received a funny message (0x%x)\n", *buf);
+        write_message(msg);
+        free(text);
+        break;
+    }
+
     return used;
 }
 
@@ -167,6 +189,25 @@ void cancel_edit __P1 (editsess *,sp)
     sp->cancel = 1;
 }
 
+static ssize_t read_file(int fd, void *buf, size_t count)
+{
+    size_t result = 0;
+    while (count > 0) {
+        int r;
+        do {
+            r = read(fd, buf, count);
+        } while (r < 0 && errno == EINTR);
+        if (r < 0)
+            return -1;
+        if (r == 0)
+            break;
+        result += r;
+        buf += r;
+        count -= r;
+    }
+    return result;
+}
+
 /*
  * send back edited text to server, or cancel the editing session if the
  * file was not changed.
@@ -196,17 +237,18 @@ static void finish_edit __P1 (editsess *,sp)
     if (!sp->cancel && (sbuf.st_mtime > sp->ctime || txtlen != sp->oldsize)) {
 	/* file was changed by editor: send back result to server */
 	
-	realtext = (char *)malloc(2*txtlen + 65);
-	/* *2 to protect IACs, +1 is for possible LF, +64 for header */
+	realtext = (char *)malloc(txtlen + 65);
+	/* +1 is for possible LF, +64 for header */
 	if (!realtext) {
 	    errmsg("malloc");
 	    goto cleanup_fd;
 	}
 	
 	text = realtext + 64;
-	if ((txtlen = tcp_read_addIAC(fd, text, txtlen)) == -1)
+        txtlen = read_file(fd, text, txtlen);
+        if (txtlen < 0)
 	    goto cleanup_text;
-	
+
 	if (txtlen && text[txtlen - 1] != '\n') {
 	    /* If the last line isn't LF-terminated, add an LF;
 	     * however, empty files must remain empty */
@@ -222,7 +264,7 @@ static void finish_edit __P1 (editsess *,sp)
 	memcpy(text, hdr, hdrlen);
 	
 	/* text[hdrlen + txtlen] = '\0'; */
-	tcp_raw_write(sp->fd, text, hdrlen + txtlen);
+	tcp_write_escape_iac(sp->fd, text, hdrlen + txtlen);
 	
 	sprintf(buf, "#completed session %s (%u)\n", sp->descr, sp->key);
 	write_message(buf);
