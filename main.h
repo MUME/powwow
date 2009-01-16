@@ -21,7 +21,6 @@ int  is_permanent_variable __P ((varnode *v));
 
 
 /* shared vars from main.c */
-extern char identified;
 extern int  prompt_status, line_status;
 extern int  limit_mem;
 extern char ready;

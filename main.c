@@ -120,7 +120,6 @@ static char *copyname = COPYNAME;
 long received = 0;	/* amount of data received from remote host */
 long sent = 0;		/* amount of data sent to remote host */
 
-char identified = 0;	/* 1 after #identify */
 VOLATILE char confirm = 0; /* 1 if just tried to quit */
 int  history_done = 0;	/* number of recursive #history commands */   
 int  prompt_status = 0;	/* prompt status: 0 = ready -> nothing to do;
