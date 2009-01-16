@@ -297,6 +297,25 @@ expression) to the word completion list. Example:
 
 #action >reply ^$1 tells you={#print;#add $1}
 			(from now on, you can use TAB to complete that name)
+@addstatic
+#addstatic {text|(expression)}
+
+Add the text or result of expression (calculator is used to evaluate the
+expression) to the static word completion list. Example:
+
+#addstatic Tintin Milou     (from now on you can always use Tab to complete
+                             these two names)
+
+Note that the static list is not saved when you run #save, and its
+words will never be overwritten as new words are added.
+
+It is best used from your #init command, for example:
+
+#init ={#identify;#exe <static-completions}
+
+If the 'static-completions' file contains a number of #addstatic
+commands, all those words will always be possible to Tab-complete on.
+
 @option
 #option [+-=]<option> | list
 

@@ -442,13 +442,41 @@ static void demote_word __P1 (int,i)
     words[wordindex].prev = words[words[wordindex].prev].next = i;
 }
 
+static struct {
+    int size, used;
+    char **words;
+} static_words;
+
+static int compl_next_word __P1 (int,i)
+{
+    if (i < 0) {
+    go_static:
+        --i;
+        if (-i - 1 >= static_words.used)
+            i = wordindex;
+    } else {
+        i = words[i].next;
+        if (i == wordindex || words[i].word == NULL) {
+            i = 0;
+            goto go_static;
+        }
+    }
+    return i;
+}
+
+static char *compl_get_word __P1 (int,i)
+{
+    return i < 0 ? static_words.words[-i - 1] : words[i].word;
+}
+
 /*
  * match and complete a word referring to the word list
  */
 void complete_word __P1 (char *,dummy)
 {
     /*
-     * GH: rewritten to allow circulating through history with repetitive command
+     * GH: rewritten to allow circulating through history with
+     * repetitive command
      *     code stolen from cancan 2.6.3a
      *        curr_word:   index into words[]
      *        comp_len     length of current completition
@@ -477,7 +505,7 @@ void complete_word __P1 (char *,dummy)
     /* k = chars to delete,  n = position of starting word */
     
     /* scan word list for next match */
-    while ((p = words[curr_word = words[curr_word].next].word)) {
+    while ((p = compl_get_word(curr_word = compl_next_word(curr_word)))) {
 	if (!strncasecmp(p, root, root_len) &&
 	    *(p += root_len) &&
 	    (n = strlen(p)) + edlen < BUFSIZE) {
@@ -493,7 +521,8 @@ void complete_word __P1 (char *,dummy)
 	input_delete_nofollow_chars(k);
     
     /* delete duplicate instances of the word */
-    if (p && !(words[k = curr_word].flags & WORD_UNIQUE)) {
+    if (p && curr_word >= 0
+        && !(words[k = curr_word].flags & WORD_UNIQUE)) {
 	words[k].flags |= WORD_UNIQUE;
 	p = words[k].word;  
 	n = words[k].next;
@@ -555,19 +584,36 @@ static void default_completions __P0 (void)
     char buf[BUFSIZE];
     cmdstruct *p;
     int i;
-    /* TODO: add some way to handle new commands going in the default completions list */
+    /* TODO: add some way to handle new commands going in the default
+     * completions list */
     for (i = 0, buf[0] = '#', p = commands; p != NULL; p = p -> next)
-	if (p->funct /*&& strlen(p->name) >= 3*/ ) {
-	    if (++i >= MAX_WORDS) break;
+	if (p->funct) {
 	    strcpy(buf + 1, p->name);
-	    if (!(words[i].word = my_strdup(buf)))
-		syserr("malloc");
-	    words[i].flags = WORD_UNIQUE | WORD_RETAIN;
+            put_static_word(buf);
 	}
+    /* init 'words' double-linked list */
     for (i = MAX_WORDS; i--; words[i].prev = i - 1, words[i].next = i + 1)
 	;
     words[0].prev = MAX_WORDS - 1;
     words[MAX_WORDS - 1].next = 0;
+}
+
+void put_static_word __P1 (char *,s)
+{
+    if (static_words.used >= static_words.size) {
+        do {
+            static_words.size = static_words.size ? static_words.size * 2 : 16;
+        } while (static_words.used >= static_words.size);
+        static_words.words = realloc(static_words.words,
+                                     sizeof static_words.words[0]
+                                     * static_words.size);
+    }
+
+    if ((s = my_strdup(s)) == NULL) {
+        errmsg("malloc");
+        return;
+    }
+    static_words.words[static_words.used++] = s;
 }
 
 /*
@@ -581,8 +627,7 @@ void put_word __P1 (char *,s)
 	return;
     }
     words[r].flags = 0;
-    while (words[r = words[r].prev].flags & WORD_RETAIN)
-	;
+    r = words[r].prev;
     demote_word(r);
     wordindex = r;
     if (words[r].word) { 

@@ -1,3 +1,9 @@
+2009-01-05        dain
+
+	* cmd.c, edit.c, edit.h, powwow.help, utils.c: Added an
+	  '#addstatic' command to add permanent entries into the word
+	  Tab-completion list. These words are not saved by #save.
+
 2008-12-31        dain
 
 	* cmd.c: Added '#option list' to print all options and explanatory

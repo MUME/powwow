@@ -18,7 +18,6 @@ extern edit_function internal_functions[];
  *     words[wordindex].next is 2nd (first to search for completion)
  */
 #define WORD_UNIQUE	1		/* word is unique in list */
-#define	WORD_RETAIN	2		/* permanent (#command) */
 typedef struct {
     char *word;
     int  next, prev;
@@ -54,6 +53,7 @@ void put_history	__P ((char *str));
 void complete_word	__P ((char *dummy));
 void complete_line	__P ((char *dummy));
 void put_word		__P ((char *s));
+void put_static_word	__P ((char *s));
 void set_custom_delimeters __P ((char *s));
 void to_input_line	__P ((char *str));
 void clear_line		__P ((char *dummy));

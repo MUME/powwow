@@ -47,8 +47,8 @@
 /*           local function declarations            */
 #define _  __P ((char *arg))
 
-static void cmd_help _, cmd_shell _,
-  cmd_action _, cmd_add _, cmd_alias _, cmd_at _, cmd_beep _, cmd_bind _,
+static void cmd_help _, cmd_shell _, cmd_action _, cmd_add _,
+  cmd_addstatic _, cmd_alias _, cmd_at _, cmd_beep _, cmd_bind _,
   cmd_cancel _, cmd_capture _, cmd_clear _, cmd_connect _, cmd_cpu _,
   cmd_do _, cmd_delim _, cmd_edit _, cmd_emulate _, cmd_exe _,
   cmd_file _, cmd_for _, cmd_hilite _, cmd_history _, cmd_host _,
@@ -91,6 +91,8 @@ cmdstruct default_commands[] =
       "\t\t\t\tdelete/list/define actions"),
     C("add",        cmd_add,
       "{string|(expr)}\t\tadd the string to word completion list"),
+    C("addstatic",  cmd_addstatic,
+      "{string|(expr)}\t\tadd the string to the static word completion list"),
     C("alias",      cmd_alias,
       "[name[=[text]]]\t\tdelete/list/define aliases"),
     C("at",         cmd_at,
@@ -2670,7 +2672,7 @@ static char *trivial_eval __P3 (ptr *,pbuf, char *,arg, char *,name)
     return arg;
 }
 
-static void cmd_add __P1 (char *,arg)
+static void do_cmd_add __P2(char *,arg, int,is_static)
 {
     ptr pbuf = (ptr)0;
     char buf[BUFSIZE];
@@ -2680,9 +2682,19 @@ static void cmd_add __P1 (char *,arg)
 	while (*arg) {
 	    arg = split_first_word(buf, BUFSIZE, arg);
 	    if (strlen(buf) >= MIN_WORDLEN)
-		put_word(buf);
+		(is_static ? put_static_word : put_word)(buf);
 	}
     ptrdel(pbuf);
+}
+
+static void cmd_add __P1 (char *,arg)
+{
+    do_cmd_add(arg, 0);
+}
+
+static void cmd_addstatic __P1 (char *,arg)
+{
+    do_cmd_add(arg, 1);
 }
 
 static void cmd_put __P1 (char *,arg)

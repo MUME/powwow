@@ -1211,19 +1211,17 @@ int save_settings __P0 (void)
 	while (words[l = words[l].next].word)
 	    ;
 	while (words[l = words[l].prev].word && failed > 0) {
-	    if (~words[l].flags & WORD_RETAIN) {
-		pp = ptrmescape(pp, words[l].word, strlen(words[l].word), 0);
-		len = ptrlen(pp) + 1;
-		if (cl > 4 && cl + len >= 80) {
-		    cl = 4;
-		    failed = fprintf(f, "\n");
-		    flag = 0;
-		}
-		if (failed > 0)
-		    failed = fprintf(f, "%s %s", flag ? "" : "#add", ptrdata(pp));
-		cl += len;
-		flag = 1;
-	    }
+            pp = ptrmescape(pp, words[l].word, strlen(words[l].word), 0);
+            len = ptrlen(pp) + 1;
+            if (cl > 4 && cl + len >= 80) {
+                cl = 4;
+                failed = fprintf(f, "\n");
+                flag = 0;
+            }
+            if (failed > 0)
+                failed = fprintf(f, "%s %s", flag ? "" : "#add", ptrdata(pp));
+            cl += len;
+            flag = 1;
 	}
 	if (failed > 0 && flag)
 	    failed = fprintf(f, "\n");
