@@ -1,3 +1,9 @@
+2009-03-04        kalev
+
+	* powwow.doc: Update IAC GA related documentation.
+	  Replaced #idprompt with #request prompt as the former command does
+	  not exist.
+
 2009-01-06        dain
 
 	* log.c: Bugfixed #capture together with multi-byte locales such

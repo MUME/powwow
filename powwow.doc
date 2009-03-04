@@ -840,7 +840,7 @@ SPECIAL COMMANDS: ALL OTHERS
 	(where foo and bar are aliases that do something useful)
 	-----------------------------------------------------------
 	Identify as a IAC GA compliant client
-	#idprompt
+	#request prompt
 
 	This command sends an identification string to the server, to
 	indicate that the client supports (and wants) the special sequence
@@ -851,12 +851,11 @@ SPECIAL COMMANDS: ALL OTHERS
 
 	BIG WARNING:
 		this is experimental and not tested!
-		last time I checked, MUME used to kill the link on #idprompt
-		
+
 	Example:
 
-	#action >mume ***  MUME={#print;#identify;#idprompt}
-	#idprompt
+	#action >mume ***  MUME={#print;#identify;#request prompt}
+	#request prompt
 	-----------------------------------------------------------
 	List all editing sessions
 	#edit
