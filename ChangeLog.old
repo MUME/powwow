@@ -1,3 +1,7 @@
+2009-03-25        kalev
+
+	* autogen.sh: New script to regenerate autotools files.
+
 2009-03-04        kalev
 
 	* powwow.doc: Update IAC GA related documentation.
