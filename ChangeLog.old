@@ -1,3 +1,7 @@
+2009-04-07        jahara
+
+	* cmd2.c: Fixed setting alias/action groups back to default.
+
 2009-03-25        kalev
 
 	* autogen.sh: New script to regenerate autotools files.

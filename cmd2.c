@@ -191,10 +191,13 @@ void parse_alias __P1 (char *,str)
 
 	    /* get alias again to add group (if needed)
 	     * don't take the lookup penalty though if not changing groups */
-	    if( group != NULL && *group != '\0' ) {
+	    if( group != NULL ) {
                 np = lookup_alias(left);
 		if( (*np)->group != NULL )
 			free((*np)->group);
+
+		if (*group == '\0')
+			group = NULL;
 
 	    	(*np)->group = my_strdup(group);
 	    }
@@ -563,7 +566,7 @@ void parse_action __P2 (char *,str, int,onprompt)
 				       type, regexp);
 		}
 
-	        if( group != NULL && *group != '\0' ) {
+		if( group != NULL ) {
 			/* I don't know why but we need to clip this because somehow
 			 * the original string is restored to *p at some point instead
 			 * of the null-clipped one we used waaaay at the top. */
@@ -572,6 +575,10 @@ void parse_action __P2 (char *,str, int,onprompt)
 	    		np = lookup_action(label);
 			if( (*np)->group != NULL )
 				free( (*np)->group );
+
+			if (*group == '\0')
+				group = NULL;
+
 			(*np) -> group = my_strdup( group );
 		}
             }
