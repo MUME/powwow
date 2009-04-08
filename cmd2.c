@@ -196,7 +196,7 @@ void parse_alias __P1 (char *,str)
 		if( (*np)->group != NULL )
 			free((*np)->group);
 
-		if (*group == '\0')
+		if ( *group == '\0' || strcmp(group,"*") == 0 )
 			group = NULL;
 
 	    	(*np)->group = my_strdup(group);
@@ -576,7 +576,7 @@ void parse_action __P2 (char *,str, int,onprompt)
 			if( (*np)->group != NULL )
 				free( (*np)->group );
 
-			if (*group == '\0')
+			if ( *group == '\0' || strcmp(group,"*") == 0 )
 				group = NULL;
 
 			(*np) -> group = my_strdup( group );

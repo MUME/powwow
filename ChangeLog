@@ -1,3 +1,8 @@
+2009-04-08        kalev
+
+	* cmd2.c: Move aliases/actions back to default group if it was
+	specified as '*'.
+
 2009-04-07        jahara
 
 	* cmd2.c: Fixed setting alias/action groups back to default.
