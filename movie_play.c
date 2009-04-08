@@ -1,5 +1,5 @@
 /*
- *  movie.c  --  replay powwow movies or convert them into ASCII
+ *  movie_play.c  --  replay powwow movies or convert them into ASCII
  * 
  *  This file is placed in the public domain.
  */
