@@ -93,6 +93,14 @@ AC_CHECK_HEADERS([stdlib.h unistd.h])
 AC_CHECK_HEADER([locale.h],
     [AC_CHECK_FUNC([putwc],[AC_DEFINE(USE_LOCALE)])])
 
+AC_ARG_WITH([plugindir],
+            AC_HELP_STRING([--with-plugindir=DIR],
+                           [Plugin installation directory [[default=LIBDIR/powwow]]])],
+            [plugindir="${withval}"],
+            [plugindir="\${libdir}/powwow"])
+
+AC_SUBST(plugindir)
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 
@@ -112,6 +120,7 @@ Powwow has been configured with the following options:
 Version:            ${VERSION}
 User binaries:      $(eval eval eval echo "${bindir}")
 Data directory:     $(eval eval eval echo "${datadir}/${PACKAGE}")
+Plugin directory:   $(eval eval eval echo "${plugindir}")
 
 enable-vt100:       ${enable_vt100}
 enable-sort:        ${enable_sort}

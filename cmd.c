@@ -326,6 +326,7 @@ static void cmd_module __P1 (char *,arg) {
 	int pindex;
 	struct stat junk;
 	char *prefixes[] = {
+		PLUGIN_DIR,
 		".",
 		"/lib/powwow",
 		"/usr/lib/powwow",
@@ -337,7 +338,7 @@ static void cmd_module __P1 (char *,arg) {
 
 	/* I changed it to work this way so that you can have libs in multiple places and
 	 * also eventually to allow it to use .dll instead of .so under the cygwin environment */
-	for( pindex = 0; pindex < 4; pindex++ ) {
+	for( pindex = 0; pindex < 5; pindex++ ) {
 		bzero( libname, 1024 );
 
         /* don't look for name without .so, it breaks if you have a file

@@ -1,5 +1,6 @@
 2009-04-08        kalev
 
+	* Add a configure option to select plugin directory.
 	* configure.in: Display summary at the end of configure run.
 	* cmd2.c: Move aliases/actions back to default group if it was
 	specified as '*'.
