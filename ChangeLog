@@ -1,3 +1,7 @@
+2009-04-11        kalev
+
+	* cmd.c: Fix a small memory leak in ptrdup2.
+
 2009-04-08        kalev
 
 	* Rename movie.c -> movie_play.c

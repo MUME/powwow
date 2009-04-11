@@ -64,6 +64,7 @@ ptr ptrdup2 __P2 (ptr,src, int,newmax)
     else if (!src)
 	p = ptrnew(newmax);
     else if ((p = malloc(newmax + sizeofptr))) {
+	p->signature = PTR_SIG;
 	p->max = newmax;
 	if (newmax > ptrlen(src))
 	    newmax = ptrlen(src);
