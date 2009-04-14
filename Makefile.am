@@ -20,7 +20,7 @@ pkgdata_DATA = powwow.doc powwow.help COPYING
 EXTRA_DIST = README README.follow README.term README.modules \
 		TODO Hacking Config.demo \
 		powwow.doc powwow.help powwow.6 plugtest.c debian/rules \
-		debian/control debian/changelog
+		debian/control debian/changelog powwow.6.utf-8
 
 CLEANFILES = powwow.6
 
