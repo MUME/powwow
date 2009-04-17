@@ -22,10 +22,10 @@ int main( int argc, char *argv[] ) {
 
 	if( argc < 2 ) {
 		fprintf( stderr,
-			"mud cinema v%s\n"
+			"powwow mud cinema v%s\n"
 			"Author: Steve Slaven - http://hoopajoo.net\n"
 			"\n"
-			"Usage: muc file\n"
+			"Usage: powwow-muc file\n"
 			"\n"
 			"file should be a #movie file generated in powwow\n",
 			VERSION );

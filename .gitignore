@@ -15,7 +15,7 @@ depcomp
 follow
 install-sh
 missing
-muc
 powwow
 powwow.6
 powwow-movieplay
+powwow-muc
