@@ -1,7 +1,7 @@
 # Default help file directory
 AM_CFLAGS=-DPOWWOW_DIR=\"$(pkgdatadir)\" -DPLUGIN_DIR=\"$(plugindir)\"
 
-bin_PROGRAMS = powwow muc catrw follow movie_play
+bin_PROGRAMS = powwow muc movie_play
 powwow_SOURCES = beam.c cmd.c log.c edit.c cmd2.c eval.c \
 		 utils.c main.c tcp.c list.c map.c tty.c \
 		 ptr.c
@@ -12,6 +12,8 @@ powwow_HEADERS = beam.h cmd.h log.h edit.h cmd2.h eval.h \
 		 ptr.h defines.h
 muc_SOURCES = muc.c
 movie_play_SOURCES = movie_play.c
+
+noinst_PROGRAMS = catrw follow
 follow_SOURCES = follow.c
 catrw_SOURCES = catrw.c
 
