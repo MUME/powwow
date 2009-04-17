@@ -671,11 +671,11 @@ SPECIAL COMMANDS: ALL OTHERS
 	This is similar to #capture, but adds timestamps to each line
 	received from the main MUD connection or typed from the keyboard,
 	to allow replay at correct speed.
-	The program `movie_play' for replay is included with powwow sources.
-	Usage: `movie_play <filename>'
-	To convert a movie to plain ASCII, the program `movie2ascii'
+	The program `powwow-movieplay' for replay is included with powwow sources.
+	Usage: `powwow-movieplay <filename>'
+	To convert a movie to plain ASCII, the program `powwow-movie2ascii'
 	is included too.
-	Usage: `movie2ascii <infile> <outfile>'.
+	Usage: `powwow-movie2ascii <infile> <outfile>'.
 
 	It is possible to capture in the #movie file even text that you have
 	_already_ received: see #setvar buffer.

@@ -1,5 +1,5 @@
 /*
- *  movie_play.c  --  replay powwow movies or convert them into ASCII
+ *  powwow-movieplay.c  --  replay powwow movies or convert them into ASCII
  * 
  *  This file is placed in the public domain.
  */
@@ -27,10 +27,10 @@ int argc; char *argv[];
     char buf[4096];
     int i, play = 0;
 
-    if (strstr(argv[0], "movie_play"))
+    if (strstr(argv[0], "powwow-movieplay"))
 	play = 1;
-    else if (!strstr(argv[0], "movie2ascii")) {
-	fprintf(stderr, "Please run this program as \"movie_play\" or \"movie2ascii\"\n");
+    else if (!strstr(argv[0], "powwow-movie2ascii")) {
+	fprintf(stderr, "Please run this program as \"powwow-movieplay\" or \"powwow-movie2ascii\"\n");
 	return 1;
     }
     
