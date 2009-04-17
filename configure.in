@@ -75,6 +75,7 @@ AM_CONDITIONAL([MAN_PAGE_ENCODING_IS_UTF_8],
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_LN_S
 
 # Checks for libraries.
 AC_SEARCH_LIBS(initscr,[ncurses curses])

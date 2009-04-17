@@ -13,6 +13,11 @@ powwow_HEADERS = beam.h cmd.h log.h edit.h cmd2.h eval.h \
 powwow_muc_SOURCES = powwow-muc.c
 powwow_movieplay_SOURCES = powwow-movieplay.c
 
+install-exec-hook:
+	(cd $(DESTDIR)$(bindir) && \
+	 rm -f powwow-movie2ascii$(EXEEXT) && \
+	 $(LN_S) powwow-movieplay$(EXEEXT) powwow-movie2ascii$(EXEEXT))
+
 noinst_PROGRAMS = catrw follow
 follow_SOURCES = follow.c
 catrw_SOURCES = catrw.c
