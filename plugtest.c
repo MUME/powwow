@@ -16,7 +16,7 @@
 
 void plugtest( char *arg );
 
-cmdstruct mycommand = { NULL, NULL, "plugtest", plugtest, "test command" };
+cmdstruct mycommand = { NULL, "plugtest", "test command", plugtest, NULL };
 
 void powwow_init() {
 	tty_printf( "Init plugtest.so!\n" );
