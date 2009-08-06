@@ -783,7 +783,7 @@ static void process_singleline __P2 (char **,pbuf, int *,psize)
      * if a #prompt matches and sets #isprompt, then it is REALLY a prompt
      *     so never match #actions on it.
      */
-    if (lineend == end && tcp_fd == tcp_main_fd && printstrlen(linestart) < cols) {
+    if (lineend == end && tcp_fd == tcp_main_fd) {
 	/*
 	 * The last line in the chunk we received has no trailing \n
 	 * Assume it is a prompt.
