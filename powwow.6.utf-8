@@ -1,5 +1,5 @@
 .\" -*-nroff-*-
-.TH POWWOW 6 "2008 Dec 30" "powwow 1.2.15"
+.TH POWWOW 6 "2008 Dec 30" "powwow 1.2.16"
 .SH NAME
 powwow \- telnet protocol client for MUD playing
 .SH SYNOPSIS
