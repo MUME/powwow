@@ -78,9 +78,15 @@ AC_PROG_CC
 AC_PROG_LN_S
 
 # Checks for libraries.
-AC_SEARCH_LIBS(initscr,[ncurses curses])
 AC_CHECK_FUNC(regcomp,AC_DEFINE(USE_REGEXP))
 AC_CHECK_FUNC(lrand48,,AC_DEFINE(USE_RANDOM))
+
+if test "x${enable_vt100}" != "xyes"; then
+    AC_SEARCH_LIBS(initscr,[ncurses curses], [], [
+                   if test "x${enable_vt100}" = "xno" ; then
+                       AC_MSG_ERROR([*** curses libraries not found])
+                   fi])
+fi
 
 # Dynamic modules
 AC_SEARCH_LIBS(dlopen,[dl],[
