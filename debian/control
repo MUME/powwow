@@ -5,7 +5,7 @@ Maintainer: Steve Slaven <bpk@hoopajoo.net>
 Standards-Version: 3.0.1
 
 Package: powwow
-Architecture: i386
+Architecture: i386 amd64
 Depends: libncurses5
 Description: a powerful and extensible curses based mud client
  powwow is a powerful mud client that supports triggers, aliases,
