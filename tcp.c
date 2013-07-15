@@ -226,6 +226,10 @@ int tcp_connect __P2 (char *,addr, int,port)
 	if (setsockopt(newtcp_fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt)))
 	    errmsg("setsockopt(TCP_NODELAY) failed");
 	
+	/* TCP keep-alive */
+	if (setsockopt(newtcp_fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)))
+	    errmsg("setsockopt(SO_KEEPALIVE) failed");
+
 	/*
 	 * Then, close-on-exec:
 	 * we don't want children to inherit the socket!

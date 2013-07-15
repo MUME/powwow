@@ -519,7 +519,7 @@ static void wrap_print __P1 (char *,s)
         ansibug = 1;
 #endif
 
-    while (l >= cols_1 - col0) {
+    while (l >= cols_1 - col0 && *s) {
         p = buf; m = 0; state = NORM; 
         lp = ls = NULL;
 

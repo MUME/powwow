@@ -78,16 +78,21 @@ AC_PROG_CC
 AC_PROG_LN_S
 
 # Checks for libraries.
-AC_SEARCH_LIBS(initscr,[ncurses curses])
 AC_CHECK_FUNC(regcomp,AC_DEFINE(USE_REGEXP))
 AC_CHECK_FUNC(lrand48,,AC_DEFINE(USE_RANDOM))
 
+if test "x${enable_vt100}" != "xyes"; then
+    AC_SEARCH_LIBS(initscr,[ncurses curses], [], [
+                   if test "x${enable_vt100}" = "xno" ; then
+                       AC_MSG_ERROR([*** curses libraries not found])
+                   fi])
+fi
+
 # Dynamic modules
-dl_ldflags=
+AC_SEARCH_LIBS(dlopen,[dl],[
+               AC_DEFINE(HAVE_LIBDL)
+               dl_ldflags="-rdynamic"])
 AC_SUBST(dl_ldflags)
-AC_CHECK_LIB(dl,dlopen, 
-	AC_DEFINE(HAVE_LIBDL)
-	AC_SUBST(dl_ldflags,"-rdynamic -ldl"))
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h unistd.h])
@@ -107,7 +112,6 @@ AC_C_CONST
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([bzero])
 
 AC_OUTPUT(Makefile)
 

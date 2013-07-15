@@ -339,7 +339,7 @@ static void cmd_module __P1 (char *,arg) {
 	/* I changed it to work this way so that you can have libs in multiple places and
 	 * also eventually to allow it to use .dll instead of .so under the cygwin environment */
 	for( pindex = 0; pindex < 5; pindex++ ) {
-		bzero( libname, 1024 );
+		memset( libname, 0, sizeof libname );
 
         /* don't look for name without .so, it breaks if you have a file
          * with the same name in the current dir and making it .so for sure
@@ -574,9 +574,11 @@ static void cmd_shell __P1 (char *,arg)
         }
     } else {
         tty_quit();
-	
-        system(arg);
-	
+
+        if (system(arg) == -1) {
+            perror("system()");
+        }
+
         tty_start();
         tty_gotoxy(col0 = 0, line0 = lines -1);
         tty_puts(tty_clreoln);
