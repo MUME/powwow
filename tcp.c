@@ -280,30 +280,6 @@ static int tcp_addIAC __P3 (char *,dest, char *,txt, int,len)
 }
 
 /*
- * read from an fd, protecting ASCII 255 as IAC IAC while we read.
- * the buffer is assumed to be big enough to hold the whole file
- */
-int tcp_read_addIAC __P3 (int,fd, char *,data, int,len)
-{
-    char *s = data;
-    char buf[BUFSIZE];
-    int i;
-    
-    while (len > 0) {
-	while ((i = read(fd, buf, MIN2(len, BUFSIZE))) < 0 && errno == EINTR)
-	    ;
-	if (i < 0) {
-	    errmsg("read from file");
-	    return -1;
-	} else if (i == 0)
-	    break;
-	s += tcp_addIAC(s, buf, i);
-	len -= i;
-    }
-    return s - data;
-}
-
-/*
  * read a maximum of size chars from remote host
  * using the telnet protocol. return chars read.
  */

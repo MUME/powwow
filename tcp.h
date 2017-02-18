@@ -73,7 +73,6 @@ void tcp_close		__P ((char *id));
 void tcp_togglesnoop	__P ((char *id));
 void tcp_spawn		__P ((char *id, char *cmd));
 int  tcp_unIAC		__P ((char *data, int len));
-int  tcp_read_addIAC	__P ((int fd, char *data, int len));
 
 #endif /* _TCP_H_ */
 
