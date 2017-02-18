@@ -875,11 +875,37 @@ int tty_printf __P ((const char *format, ...))
 }
 
 static char tty_in_buf[MB_LEN_MAX + 1];
-static int tty_in_buf_used = 0;
+static size_t tty_in_buf_used = 0;
 
 int tty_has_chars __P ((void))
 {
-    return !!tty_in_buf_used;
+    return tty_in_buf_used != 0;
+}
+
+static int safe_mbtowc __P3 (wchar_t *,pwc, char *,s, size_t *,n)
+{
+    static mbstate_t ps;
+
+    size_t r;
+
+again:
+    r = mbrtowc(pwc, s, *n, &ps);
+    if (r == (size_t)-2) {
+        /* incomplete character */
+        *n = 0;
+        return -1;
+    }
+    if (r == (size_t)-1 && errno == EILSEQ) {
+        /* invalid character */
+        --*n;
+        memmove(s, s + 1, *n);
+        goto again;
+    }
+    if (r == 0 && n > 0 && s[0] == 0) {
+        *pwc = L'\0';
+        r = 1;
+    }
+    return r;
 }
 
 int tty_read __P ((char *buf, size_t count))
@@ -888,9 +914,9 @@ int tty_read __P ((char *buf, size_t count))
     int converted;
     wchar_t wc;
     int did_read = 0, should_read = 0;
-    
+
     if (count && tty_in_buf_used) {
-	converted = mbtowc(&wc, tty_in_buf, tty_in_buf_used);
+	converted = safe_mbtowc(&wc, tty_in_buf, &tty_in_buf_used);
 	if (converted >= 0)
 	    goto another;
     }
@@ -907,7 +933,7 @@ int tty_read __P ((char *buf, size_t count))
 
 	tty_in_buf_used += did_read;
 
-	converted = mbtowc(&wc, tty_in_buf, tty_in_buf_used);
+	converted = safe_mbtowc(&wc, tty_in_buf, &tty_in_buf_used);
 	if (converted < 0)
 	    break;
 
@@ -927,7 +953,7 @@ int tty_read __P ((char *buf, size_t count))
 	if (count == 0)
 	    break;
 
-	converted = mbtowc(&wc, tty_in_buf, tty_in_buf_used);
+	converted = safe_mbtowc(&wc, tty_in_buf, &tty_in_buf_used);
 	if (converted >= 0 && tty_in_buf_used)
 	    goto another;
 
