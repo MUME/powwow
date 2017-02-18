@@ -516,8 +516,6 @@ static void mainloop __P0 (void)
     vtime *timeout;
     
     for (;;) {
-	readfds = fdset;
-	
 	tcp_fd = tcp_main_fd;
 	exec_delays();
 	
@@ -539,7 +537,8 @@ static void mainloop __P0 (void)
 	    
 	    error = now_updated = 0;
 	    
-	    err = select(tcp_max_fd+1, &readfds, NULL, NULL, timeout);
+            readfds = fdset;
+            err = select(tcp_max_fd+1, &readfds, NULL, NULL, timeout);
 	    
 	    prompt_reset_iac();
 	    
