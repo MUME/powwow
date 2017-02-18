@@ -286,12 +286,20 @@ static int tcp_addIAC __P3 (char *,dest, char *,txt, int,len)
 int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 {
     char state = CONN_LIST(fd).state;
+    char old_state = CONN_LIST(fd).old_state;
     int i;
     static byte subopt[MAX_SUBOPT];
     static int subchars;
     byte *p, *s, *linestart;
     
-    while ((i = read(fd, buffer, maxsize)) < 0 && errno == EINTR)
+    char *ibuffer = buffer;
+    if (state == GOT_R) {
+        /* make room for the leading \r */
+        ++ibuffer;
+        --maxsize;
+    }
+
+    while ((i = read(fd, ibuffer, maxsize)) < 0 && errno == EINTR)
 	;
     
     if (i == 0) {
@@ -308,7 +316,8 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
      * scan through the buffer,
      * interpret telnet protocol escapes and MUME MPI messages
      */
-    for (s = p = linestart = (byte *)buffer; i; s++, i--) {
+    p = (byte *)buffer;
+    for (s = linestart = (byte *)ibuffer; i; s++, i--) {
 	switch (state) {
 	 case NORMAL:
 	 case ALTNORMAL:
@@ -320,6 +329,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 	     */
 	    switch (*s) {
 	     case IAC:
+                old_state = state; /* remember state to return to after IAC processing */
 		state = GOTIAC;
 		break;
 	     case '\r':
@@ -386,20 +396,20 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 		break;
 	     case IAC:
 		*p++ = IAC;
-		state = NORMAL;
+		state = old_state;
 		break;
 	     case GA:
 		/* I should handle GA as end-of-prompt marker one day */
 		/* one day has come ;) - Max */
 		prompt_set_iac((char*)p);
-		state = NORMAL;
+		state = old_state;
 		break;
 	     default:
 		/* ignore the rest of the telnet commands */
 #ifdef TELOPTS
 		tty_printf("[skipped IAC <%d>]\n", *s);
 #endif
-		state = NORMAL;
+		state = old_state;
 		break;
 	    }
 	    break;
@@ -430,7 +440,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 		sendopt(DONT, *s);
 		break;
 	    }
-	    state = NORMAL;
+	    state = old_state;
 	    break;
 	    
 	 case GOTWONT:
@@ -443,7 +453,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 	    }
 	    /* accept any WONT */
 	    sendopt(DONT, *s);
-	    state = NORMAL;
+	    state = old_state;
 	    break;
 	    
 	 case GOTDO:
@@ -467,7 +477,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 		sendopt(WONT, *s);
 		break;
 	    }
-	    state = NORMAL;
+	    state = old_state;
 	    break;
 	    
 	 case GOTDONT:
@@ -479,7 +489,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 		tty_special_keys();
 	    }
 	    sendopt(WONT, *s);
-	    state = NORMAL;
+	    state = old_state;
 	    break;
 	    
 	 case GOTSB:
@@ -499,17 +509,18 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 	    } else if (*s == SE) {
 		subopt[subchars] = '\0';
 		dosubopt(subopt);
-		state = NORMAL;
+		state = old_state;
 	    } else {
 		/* problem! I haven't the foggiest idea of what to do here.
 		 * I'll just ignore it and hope it goes away. */
 		PRINTF("#telnet: got IAC <%d> instead of IAC SE!\n", (int)*s);
-		state = NORMAL;
+		state = old_state;
 	    }
 	    break;
 	}
     }
     CONN_LIST(fd).state = state;
+    CONN_LIST(fd).old_state = old_state;
     
     if (!(CONN_LIST(tcp_fd).flags & SPAWN)) {
         log_write(buffer, (char *)p - buffer, 0);
@@ -806,6 +817,7 @@ void tcp_open __P4 (char *,id, char *,initstring, char *,host, int,port)
     conn_table[newtcp_fd] = i;
     CONN_INDEX(i).flags = ACTIVE;
     CONN_INDEX(i).state = NORMAL;
+    CONN_INDEX(i).old_state = NORMAL;
     CONN_INDEX(i).port = port;
     CONN_INDEX(i).fd = newtcp_fd;
 
@@ -894,6 +906,7 @@ void tcp_close __P1 (char *,id)
 	tcp_count--;
     CONN_LIST(sfd).flags = 0;
     CONN_LIST(sfd).state = NORMAL;
+    CONN_LIST(sfd).old_state = NORMAL;
     CONN_LIST(sfd).port = 0;
     free(CONN_LIST(sfd).host); CONN_LIST(sfd).host = 0;
     free(CONN_LIST(sfd).id);   CONN_LIST(sfd).id = 0;
@@ -1001,6 +1014,7 @@ void tcp_spawn __P2 (char *,id, char *,cmd)
     }
     CONN_INDEX(i).flags = ACTIVE | SPAWN;
     CONN_INDEX(i).state = NORMAL;
+    CONN_INDEX(i).old_state = NORMAL;
     CONN_INDEX(i).port = 0;
     CONN_INDEX(i).fd = sockets[0];
     

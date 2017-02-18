@@ -46,6 +46,7 @@ typedef struct {
     char *fragment;		/* for SPAWN connections: unprocessed text */
     char flags;
     char state;
+    char old_state;
 } connsess;
 
 extern connsess conn_list[MAX_CONNECTS];     /* connection list */
