@@ -129,67 +129,90 @@ static void sendopt __P2 (byte,what, byte,opt)
  * connect to remote host
  * Warning: some voodoo code here
  */
-int tcp_connect __P2 (char *,addr, int,port)
+int tcp_connect __P2 (const char *,addr, int,port)
 {
-    struct sockaddr_in address;
-    struct hostent *host_info;
+    struct addrinfo *host_info;
+    struct addrinfo addrinfo;
+    struct sockaddr_in6 address;
+    int must_free = 0;
     int err, newtcp_fd;
-    
+
     status(1);
-    
-    memzero((char *)&address, sizeof(address));
+
+    memset(&address, 0, sizeof address);
+    memset(&addrinfo, 0, sizeof addrinfo);
+
     /*
      * inet_addr has a strange design: It is documented to return -1 for
      * malformed requests, but it is declared to return unsigned long!
      * Anyway, this works.
-     */    
-    
-#ifndef TERM  
-    address.sin_addr.s_addr = inet_addr(addr);
-    if (address.sin_addr.s_addr != (unsigned int)-1)
-	address.sin_family = AF_INET;
-    else
+     */
+
+#ifndef TERM
+    switch (inet_pton(AF_INET6, addr, &address.sin6_addr))
     {
+    case -1:
+        perror("inet_pton()");
+        return -1;
+    case 1:
+	address.sin6_family = AF_INET6;
+        addrinfo.ai_family   = AF_INET6;
+        addrinfo.ai_socktype = SOCK_STREAM;
+        addrinfo.ai_addr     = (struct sockaddr *)&address;
+        addrinfo.ai_addrlen  = sizeof address;
+        host_info = &addrinfo;
+        break;
+    case 0:
 	if (opt_info)
 	    tty_printf("#looking up %s... ", addr);
 	tty_flush();
-	host_info = gethostbyname(addr);
-	if (host_info == 0) {
-	    if (!opt_info) {
-		tty_printf("#looking up %s... ", addr);
-	    }
-	    tty_printf("unknown host!\n");
-	    return -1;
-	}
-	memmove((char *)&address.sin_addr, host_info->h_addr,
-	      host_info->h_length);
-	address.sin_family = host_info->h_addrtype;
+        addrinfo.ai_family   = AF_INET6;
+        addrinfo.ai_socktype = SOCK_STREAM;
+        addrinfo.ai_flags    = AI_V4MAPPED;
+        int gai = getaddrinfo(addr, NULL, &addrinfo, &host_info);
+        if (gai != 0) {
+            tty_printf("failed to look up host: %s\n",
+                       gai_strerror(gai));
+            return -1;
+        }
+        must_free = 1;
 	if (opt_info)
 	    tty_puts("found.\n");
+        break;
+    default:
+        abort();
     }
-    address.sin_port = htons(port);
-    
-    newtcp_fd = socket(address.sin_family, SOCK_STREAM, 0);
-    if (newtcp_fd == -1) {
-	errmsg("create socket");
-	return -1;
-    } else if (newtcp_fd >= MAX_FDSCAN) {
-	tty_printf("#connect: #error: too many open connections\n");
-	close(newtcp_fd);
-	return -1;
+
+    for (; host_info; host_info = host_info->ai_next) {
+        newtcp_fd = socket(host_info->ai_family, host_info->ai_socktype, 0);
+        if (newtcp_fd == -1)
+            continue;
+        if (newtcp_fd >= MAX_FDSCAN) {
+            tty_printf("#connect: #error: too many open connections\n");
+            close(newtcp_fd);
+            return -1;
+        }
+
+        tty_printf("#trying %s... ", addr);
+        tty_flush();
+
+        ((struct sockaddr_in6 *)host_info->ai_addr)->sin6_port = htons(port);
+
+        err = connect(newtcp_fd, host_info->ai_addr, host_info->ai_addrlen);
+
+        if (err == -1) { /* CTRL-C pressed, or other errors */
+            errmsg("connect to host");
+            close(newtcp_fd);
+            return -1;
+        }
+        break;
     }
-    
-    tty_printf("#trying %s... ", addr);
-    tty_flush();
-    
-    err = connect(newtcp_fd, (struct sockaddr *)&address, sizeof(address));
-    
-    if (err == -1) { /* CTRL-C pressed, or other errors */
-	errmsg("connect to host");
-	close(newtcp_fd);
-	return -1;
+
+    if (host_info == NULL) {
+        errmsg("failed to connect");
+        return -1;
     }
-    
+
 #else /* term */
     
     if ((newtcp_fd = connect_server(0)) < 0) {

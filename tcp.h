@@ -58,7 +58,7 @@ extern byte conn_table[MAX_FDSCAN];	     /* fd -> index translation table */
 
 extern fd_set fdset;               /* set of descriptors to select() on */
 
-int  tcp_connect	__P ((char *addr, int port));
+int  tcp_connect	__P ((const char *addr, int port));
 int  tcp_read		__P ((int fd, char *buffer, int maxsize));
 void tcp_raw_write	__P ((int fd, const char *data, int len));
 void tcp_write_escape_iac __P3 (int,fd, const char *,data, int,len);
