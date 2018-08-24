@@ -882,6 +882,95 @@ int tty_has_chars __P ((void))
     return !!tty_in_buf_used;
 }
 
+void bad_utf8(wchar_t * pwc, size_t bytes, unsigned codepoint)
+{
+  if (pwc != NULL)
+    *pwc = (wchar_t) '?';
+  fprintf(stderr, "WARNING: Unrecognized %d-byte UTF-8 codepoint U+%04X.\n",
+	  bytes, codepoint);
+}
+
+void reset_mbtowc()
+{
+  mbtowc(NULL, NULL, 0);
+}
+
+int pow_mbtowc(wchar_t * pwc, const char *s, size_t n)
+{
+  int ret = mbtowc(pwc, s, n);
+  if (ret >= 0)
+    return ret;
+
+  // mbtowc can't parse it. Let's try UTF-8.
+  if (n >= 1 && (s[0] & 0x80) == 0x00)
+    {
+      // 1-byte UFF-8: U+0000 U+007F
+      // 0xxxxxxx
+      if (pwc != NULL)
+	{
+	  unsigned codepoint = s[0] & 0x7f;
+	  *pwc = (wchar_t) codepoint;
+	}
+      reset_mbtowc();
+      return 1;
+    }
+  else if (n >= 2 && (s[0] & 0xe0) == 0xc0 && (s[1] & 0xc0) == 0x80)
+    {
+      // 2-byte UTF-8: U+0080 to U+07FF
+      // 110xxxxx 10xxxxxx
+      if (pwc != NULL)
+	{
+	  unsigned tmp0 = s[0] & 0x1f;
+	  unsigned tmp1 = s[1] & 0x3f;
+	  unsigned codepoint = (tmp0 << 6) | tmp1;
+	  if (codepoint < 0x80 || codepoint > 0xFF)
+	    bad_utf8(pwc, 2, codepoint);
+	  else
+	    *pwc = (wchar_t) codepoint;
+	}
+      reset_mbtowc();
+      return 2;
+    }
+  else if (n >= 3 && (s[0] & 0xf0) == 0xe0 && (s[1] & 0xc0) == 0x80
+	   && (s[2] & 0xc0) == 0x80)
+    {
+      // 3-byte UTF-8: U+0800 to U+FFFF:
+      // 1110xxxx 10xxxxxx 10xxxxxx
+      unsigned tmp0 = s[0] & 0x0f;
+      unsigned tmp1 = s[1] & 0x3f;
+      unsigned tmp2 = s[2] & 0x3f;
+      unsigned codepoint = (tmp0 << 12) | (tmp1 << 6) | tmp2;
+      bad_utf8(pwc, 3, codepoint);
+      reset_mbtowc();
+      return 3;
+    }
+  else if (n >= 4 && (s[0] & 0xf8) == 0xf0 && (s[1] & 0xc0) == 0x80
+	   && (s[2] & 0xc0) == 0x80 && (s[3] & 0xc0) == 0x80)
+    {
+      // 4-byte UFF-8: U+10000 to U+10FFFF
+      // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+      unsigned tmp0 = s[0] & 0x07;
+      unsigned tmp1 = s[1] & 0x3f;
+      unsigned tmp2 = s[2] & 0x3f;
+      unsigned tmp3 = s[3] & 0x3f;
+      unsigned codepoint = (tmp0 << 18) | (tmp1 << 12) | (tmp2 << 6) | tmp3;
+      bad_utf8(pwc, 4, codepoint);
+      reset_mbtowc();
+      return 4;
+    }
+  else if (n >= MB_CUR_MAX)
+    {
+      if (pwc != NULL)
+	*pwc = (wchar_t) '?';
+      fprintf(stderr, "WARNING: Unrecognized %d-byte codepoint.\n",
+	      MB_CUR_MAX);
+      reset_mbtowc();
+      return MB_CUR_MAX;
+    }
+
+  return ret;
+}
+
 int tty_read __P ((char *buf, size_t count))
 {
     int result = 0;
@@ -890,7 +979,7 @@ int tty_read __P ((char *buf, size_t count))
     int did_read = 0, should_read = 0;
     
     if (count && tty_in_buf_used) {
-	converted = mbtowc(&wc, tty_in_buf, tty_in_buf_used);
+	converted = pow_mbtowc(&wc, tty_in_buf, tty_in_buf_used);
 	if (converted >= 0)
 	    goto another;
     }
@@ -907,7 +996,7 @@ int tty_read __P ((char *buf, size_t count))
 
 	tty_in_buf_used += did_read;
 
-	converted = mbtowc(&wc, tty_in_buf, tty_in_buf_used);
+	converted = pow_mbtowc(&wc, tty_in_buf, tty_in_buf_used);
 	if (converted < 0)
 	    break;
 
@@ -927,7 +1016,7 @@ int tty_read __P ((char *buf, size_t count))
 	if (count == 0)
 	    break;
 
-	converted = mbtowc(&wc, tty_in_buf, tty_in_buf_used);
+	converted = pow_mbtowc(&wc, tty_in_buf, tty_in_buf_used);
 	if (converted >= 0 && tty_in_buf_used)
 	    goto another;
 
