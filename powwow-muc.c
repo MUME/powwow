@@ -121,7 +121,7 @@ int main( int argc, char *argv[] ) {
 		}
 
 		/* suck out action for display */
-		sscanf( line, "%100s", action );
+		sscanf( line, "%99s", action );
 
 		/* Modify sleep time according to speed, zero is fast as you can go, 1 == pause */
 		orig = sleep;
