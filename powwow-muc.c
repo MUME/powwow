@@ -21,7 +21,8 @@
 int main( int argc, char *argv[] ) {
 	WINDOW *text, *status;
 	int speed = 5;
-	int key, sleep, orig, i, color, looping, cursx, cursy;
+	int key, sleep, orig, color, looping, cursx, cursy;
+	size_t i;
 	FILE *in;
 	char line[ 1000 ], *displine, action[ 100 ];
 	long curr_pos, file_size, new_pos;
