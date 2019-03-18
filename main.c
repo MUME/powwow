@@ -675,6 +675,54 @@ static char *prompt_get_iac __P0 (void)
     return iac_l > iac_f ? iac_v[iac_f] : NULL;
 }
 
+
+/* compute the effective prompt string; may end in \b* or \r */
+static void effective_prompt __P0 (void)
+{
+    char *const pstr = promptstr;
+    char *dst = pstr;
+    const size_t len = promptlen;
+    size_t pos = 0, maxpos = 0, p;
+    for (p = 0; p < len; ++p) {
+        char c = pstr[p];
+        if (c == '\b') {
+            if (pos > 0)
+                --pos;
+            continue;
+        }
+        if (c == '\r') {
+            pos = 0;
+            continue;
+        }
+        if (c == '\033'
+            && len - p > 2 && pstr[p + 1] == '[' && pstr[p + 2] == 'K') {
+            if (dst == pstr)
+                dst = strdup(pstr);
+            maxpos = pos;
+            memset(dst + pos, 0, len - pos);
+            p += 2;
+            continue;
+        }
+        dst[pos++] = c;
+        if (pos > maxpos)
+            maxpos = pos;
+    }
+    if (dst != pstr) {
+        memcpy(pstr, dst, pos);
+        free(dst);
+    }
+    size_t nbs = maxpos - pos;
+    if (nbs == 0)
+        ;
+    else if (pos == 0)
+        pstr[maxpos++] = '\r';
+    else {
+        memset(pstr + maxpos, '\b', nbs);
+        maxpos += nbs;
+    }
+    ptrsetlen(prompt->str, maxpos);
+}
+
 static int grab_prompt __P3 (char *,linestart, int,len, int,islast)
 {
     char *p;
@@ -706,7 +754,9 @@ static int grab_prompt __P3 (char *,linestart, int,len, int,islast)
 	    len = surely_isprompt;
 	    prompt_status = 1;
 	} else if (!surely_isprompt && is_iac_prompt) {
-	    prompt->str = ptrmcpy(prompt->str, linestart, len = surely_isprompt = is_iac_prompt);
+            len = surely_isprompt = is_iac_prompt;
+	    prompt->str = ptrmcpy(prompt->str, linestart, len);
+            effective_prompt();
 	    if (MEM_ERROR) { promptzero(); errmsg("malloc(prompt)"); return 0; }
 	    prompt_status = 1;
 	}
@@ -724,6 +774,7 @@ static int grab_prompt __P3 (char *,linestart, int,len, int,islast)
     } else if (islast) {
 	prompt->str = ptrmcpy(prompt->str, linestart, len);
 	if (MEM_ERROR) { promptzero(); errmsg("malloc(prompt)"); return 0; }
+        effective_prompt();
 	prompt_status = 1; /* good, we got what to redraw */
     } else
 	len = 0;
@@ -893,7 +944,7 @@ static int process_first_fragment __P2 (char *,buf, int,got)
 	else
 	    lineend = buf + got;
 	
-	if (surely_isprompt || (spinning = memchr(buf, '\b', lineend - buf))) {
+	if (surely_isprompt) {
 	    /*
 	     * either #isprompt _was_ executed,
 	     * or we got a MUME spinning bar.
