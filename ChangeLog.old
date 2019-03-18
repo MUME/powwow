@@ -1,5 +1,6 @@
 2019-03-18    powwow@askgustav.com <powwow@askgustav.com>
         * handle more control characters in prompts
+	* drop support for non-ANSI C
 
 Changes from 1.2.4 to 1.2.5 (Massimiliano Ghilardi, ...) 21 Jan 2002
  	* Added append-mode to #capture: use #capture >file-name

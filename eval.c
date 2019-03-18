@@ -2,7 +2,7 @@
  *  eval.c  --  functions for builtin calculator
  *
  *  (created: Massimiliano Ghilardi (Cosmos), Jan 15th, 1995)
- * 
+ *
  *  Copyright (C) 1998 by Massimiliano Ghilardi
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -125,9 +125,9 @@ char *error_msg[] = {
 
 operator_list op_list[] = {
     { 0, 0,     0,	    "",     null		},
-	
+
     { 1, LEFT,  BINARY,     ",",    comma		},
-	
+
     { 2, RIGHT, BINARY,     "=",    eq			},
     { 2, RIGHT, BINARY,     "||=",  or_or_eq		},
     { 2, RIGHT, BINARY,     "^^=",  xor_xor_eq		},
@@ -142,36 +142,36 @@ operator_list op_list[] = {
     { 2, RIGHT, BINARY,     "*=",   times_eq		},
     { 2, RIGHT, BINARY,     "/=",   div_eq		},
     { 2, RIGHT, BINARY,     "%=",   ampersand_eq	},
-	
+
     { 3, LEFT,  BINARY,     "||",   or_or		},
-	
+
     { 4, LEFT,  BINARY,     "^^",   xor_xor		},
-	
+
     { 5, LEFT,  BINARY,     "&&",   and_and		},
-	
+
     { 6, LEFT,  BINARY,     "|",    or			},
-	
+
     { 7, LEFT,  BINARY,     "^",    xor			},
-	
+
     { 8, LEFT,  BINARY,     "&",    and			},
-	
+
     { 9, LEFT,  BINARY,     "<",    less		},
     { 9, LEFT,  BINARY,     "<=",   less_eq		},
     { 9, LEFT,  BINARY,     ">",    greater		},
     { 9, LEFT,  BINARY,     ">=",   greater_eq		},
     { 9, LEFT,  BINARY,     "==",   eq_eq		},
     { 9, LEFT,  BINARY,     "!=",   not_eq		},
-	
+
     {10, LEFT,  BINARY,     "<<",   lshift		},
     {10, LEFT,  BINARY,     ">>",   rshift		},
-	
+
     {11, LEFT,  BINARY,     "+",    plus		},
     {11, LEFT,  BINARY,     "-",    minus		},
-	
+
     {12, LEFT,  BINARY,     "*",    times		},
     {12, LEFT,  BINARY,     "/",    division		},
     {12, LEFT,  BINARY,     "%",    ampersand		},
-	
+
     {14, LEFT,  BINARY,     ":<",   colon_less		},
     {14, LEFT,  BINARY,     ":>",   colon_greater	},
     {14, LEFT,  BINARY,     "<:",   less_colon		},
@@ -183,12 +183,12 @@ operator_list op_list[] = {
     {14, LEFT,  BINARY,     ":",    colon		},
     {14, LEFT,  BINARY,     ".",    point		},
     {14, LEFT,  BINARY,     "?",    question		},
-	
+
     { 0, 0,     0,	    "",     another_null	},
-	
+
     { 0, RIGHT, PRE_UNARY,  "(",    left_paren		},
     { 0, RIGHT, POST_UNARY, ")",    right_paren		},
-	
+
     {13, RIGHT, PRE_UNARY,  "!",    not			},
     {13, RIGHT, PRE_UNARY,  "~",    tilde		},
     {13, RIGHT, PRE_UNARY,  "++",   pre_plus_plus	},
@@ -199,15 +199,15 @@ operator_list op_list[] = {
     {13, RIGHT, PRE_UNARY,  "%",    print		},
     {13, RIGHT, PRE_UNARY,  "rand", _random_		},
     {13, RIGHT, PRE_UNARY,  "attr", _attr_		},
-	
+
     {14, LEFT,  PRE_UNARY,  ":?",   colon_question	},
     {14, LEFT,  PRE_UNARY,  ".?",   point_question	},
-	
+
     {15, RIGHT, PRE_UNARY,  "+",    pre_plus		},
     {15, RIGHT, PRE_UNARY,  "-",    pre_minus		},
     {15, RIGHT, PRE_UNARY,  "@",    a_circle		},
     {15, RIGHT, PRE_UNARY,  "$",    dollar		},
-	
+
     { 0, 0,     PRE_UNARY,  "",     pre_null		},
     { 0, 0,     POST_UNARY, "",     post_null		}
 };
@@ -217,7 +217,7 @@ static char *line;
 static int depth;
 int error;
 
-void print_error __P1 (int,err_num)
+void print_error(int err_num)
 {
     clear_input_line(1);
     if (error == NO_MEM_ERROR) {
@@ -227,7 +227,7 @@ void print_error __P1 (int,err_num)
 	tty_printf("#error: %s.\n", error_msg[err_num]);
 }
 
-static int push_op __P1 (operator *,op)
+static int push_op(operator *op)
 {
     if (stk.curr_op<MAX_STACK) {
 	stk.op[++stk.curr_op]=*op;
@@ -239,7 +239,7 @@ static int push_op __P1 (operator *,op)
     }
 }
 
-static int pop_op __P1 (operator *,op)
+static int pop_op(operator *op)
 {
     if (stk.curr_op>=0) {
 	*op=stk.op[stk.curr_op--];
@@ -251,12 +251,12 @@ static int pop_op __P1 (operator *,op)
     }
 }
 
-static int push_obj __P1 (object *,obj)
+static int push_obj(object *obj)
 {
     object *tmp;
-    
+
     int curr=stk.curr_obj;
-    
+
     if (curr<MAX_STACK) {
 	tmp = stk.obj + (stk.curr_obj = ++curr);
 	memmove(tmp, obj, sizeof(object));
@@ -268,12 +268,12 @@ static int push_obj __P1 (object *,obj)
     }
 }
 
-static int pop_obj __P1 (object *,obj)
+static int pop_obj(object *obj)
 {
     object *tmp;
-    
+
     int curr=stk.curr_obj;
-    
+
     if (curr>=0) {
 	tmp = stk.obj + curr;
 	stk.curr_obj--;
@@ -286,19 +286,19 @@ static int pop_obj __P1 (object *,obj)
     }
 }
 
-static int check_operator __P3 (char,side, operator *,op, int,mindepth)
+static int check_operator(char side, operator *op, int mindepth)
 {
     int i, max, len;
     operator match;
     char *name, c, d;
-    
+
     if (!(c=*line) || c == CMDSEP) {
 	*op = side==BINARY ? null : side==LEFT ? pre_null : post_null;
 	return 1;
     }
     else if ((c=='$' || c=='@') && (d=line[1]) && (isalpha(d) || d=='_'))
 	return 0;           /* Danger! found named variable */
-    
+
     else if (side==LEFT && c=='(') {
 	line++;
 	depth++;
@@ -320,7 +320,7 @@ static int check_operator __P3 (char,side, operator *,op, int,mindepth)
 	*op=post_null;
 	return 1;
     }
-    
+
     for (max=match=0, i=(side==BINARY ? 1 : LOWEST_UNARY_CODE);
 	*(name = op_list[i].name); i++)
 	if ((len=strlen(name)) > max &&
@@ -329,7 +329,7 @@ static int check_operator __P3 (char,side, operator *,op, int,mindepth)
 	    match=op_list[i].code;
 	    max=len;
 	}
-    
+
     if (match) {
 	*op=match;
 	line+=max;
@@ -343,11 +343,11 @@ static int check_operator __P3 (char,side, operator *,op, int,mindepth)
     return 0;
 }
 
-static int check_object __P1 (object *,obj)
+static int check_object(object *obj)
 {
     long i=0, base = 10;
     char c, *end, digit;
-    
+
     if (c=*line, c == '#' || isdigit(c)) {
 	while (c == '#' || isalnum(c)) {
 	    digit = !!isdigit(c);
@@ -390,7 +390,7 @@ static int check_object __P1 (object *,obj)
     }
     else if ((c=='$' || c=='@') && (c=line[1]) && (isalpha(c) || c=='_')) {
 	varnode *named_var;                       /* Found named variable */
-	
+
 	if (*(line++) == '@') {
 	    i = 0;
 	    obj->type = TYPE_NUM_VAR;
@@ -444,11 +444,11 @@ static int check_object __P1 (object *,obj)
     }
     else
 	error=NO_VALUE_ERROR;
-    
+
     return (int)i;
 }
 
-static void check_delete __P1 (object *,obj)
+static void check_delete(object *obj)
 {
     if (obj->type==TYPE_TXT && obj->txt) {
 	ptrdel(obj->txt);
@@ -456,7 +456,7 @@ static void check_delete __P1 (object *,obj)
     }
 }
 
-static int exe_op __P1 (operator *,op)
+static int exe_op(operator *op)
 {
     object o1, o2, *p=NULL;
     long *l, rnd, delta;
@@ -464,9 +464,9 @@ static int exe_op __P1 (operator *,op)
     int srclen;
     char *ssrc, *tmp;
     int ret=0, i=0, j=0, danger=0;
-    
+
     o1.txt = o2.txt = NULL;
-    
+
     switch ((int)*op) {
       case (int)comma:
 	if (pop_obj(&o2) && pop_obj(&o1));
@@ -478,12 +478,12 @@ static int exe_op __P1 (operator *,op)
       case (int)eq:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	if (o2.type==TYPE_NUM_VAR) {
 	    o2.num = *VAR[o2.num].num;
 	    o2.type = TYPE_NUM;
 	}
-	
+
 	if (o1.type==TYPE_NUM_VAR && o2.type==TYPE_NUM) {
 	    *VAR[o1.num].num = o2.num;
 	    p=&o2;
@@ -491,13 +491,13 @@ static int exe_op __P1 (operator *,op)
 	}
 	else if (o1.type==TYPE_TXT_VAR &&
 		 (o2.type==TYPE_TXT || o2.type==TYPE_TXT_VAR)) {
-	    
+
 	    if (o2.type==TYPE_TXT_VAR) {
 		o2.txt = ptrdup(*VAR[o2.num].str);
 		if (REAL_ERROR) break;
 		o2.type=TYPE_TXT;
 	    }
-	    
+
 	    *VAR[o1.num].str = ptrcpy(*VAR[o1.num].str, o2.txt);
 	    if (REAL_ERROR) break;
 	    p=&o2;
@@ -521,15 +521,15 @@ static int exe_op __P1 (operator *,op)
       case (int)ampersand_eq:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	if (o2.type==TYPE_NUM_VAR) {
 	    o2.num = *VAR[o2.num].num;
 	    o2.type = TYPE_NUM;
 	}
-	
+
 	if (o1.type==TYPE_NUM_VAR && o2.type==TYPE_NUM) {
 	    l=VAR[o1.num].num;
-	    
+
 	    switch ((int)*op) {
 	      case (int)or_or_eq:  if ( o2.num) *l = 1;   else *l = !!*l; break;
 	      case (int)xor_xor_eq:if ( o2.num) *l = !*l; else *l = !!*l; break;
@@ -552,18 +552,18 @@ static int exe_op __P1 (operator *,op)
 	}
 	else if (*op==plus_eq && o1.type==TYPE_TXT_VAR &&
 		 (o2.type==TYPE_TXT || o2.type==TYPE_TXT_VAR)) {
-	    
+
 	    if (o2.type==TYPE_TXT)
 		src=o2.txt;
 	    else
 		src=*VAR[o2.num].str;
-	    
+
 	    *VAR[o1.num].str = ptrcat(*VAR[o1.num].str, src);
 	    check_delete(&o2);
-	    
+
 	    dst = ptrdup(*VAR[o1.num].str);
 	    if (REAL_ERROR) break;
-	    
+
 	    o1.type=TYPE_TXT;
 	    o1.txt=dst;
 	    p=&o1;
@@ -571,12 +571,12 @@ static int exe_op __P1 (operator *,op)
 	}
 	else if (*op==times_eq && o1.type==TYPE_TXT_VAR &&
 		 (o2.type==TYPE_NUM || o2.type==TYPE_NUM_VAR)) {
-	    
+
 	    if (o2.type==TYPE_NUM_VAR) {
 		o2.num = *VAR[o2.num].num;
 		o2.type = TYPE_NUM;
 	    }
-	    
+
 	    if (o2.num < 0)
 		error = OUT_RANGE_ERROR;
 	    else if (o2.num == 0)
@@ -590,11 +590,11 @@ static int exe_op __P1 (operator *,op)
 		for (n = 1; !error && n<o2.num; n++)
 		    memcpy(tmp+n*delta, tmp, delta);
 	    }
-	    
+
 	    check_delete(&o2);
 	    dst = ptrdup(*VAR[o1.num].str);
 	    if (REAL_ERROR) break;
-	    
+
 	    o1.type=TYPE_TXT;
 	    o1.txt=dst;
 	    p=&o1;
@@ -624,7 +624,7 @@ static int exe_op __P1 (operator *,op)
       case (int)ampersand:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	if (o1.type==TYPE_NUM_VAR) {
 	    o1.num = *VAR[o1.num].num;
 	    o1.type = TYPE_NUM;
@@ -633,14 +633,14 @@ static int exe_op __P1 (operator *,op)
 	    o2.num = *VAR[o2.num].num;
 	    o2.type = TYPE_NUM;
 	}
-	
+
 	if (o1.type==TYPE_NUM && o2.type==TYPE_NUM) {
 	    if (!o2.num &&
 		(*op==division || *op==ampersand)) {
 		error=DIV_BY_ZERO_ERROR;
 		break;
 	    }
-	    
+
 	    switch ((int)*op) {
 	      case (int)less:      o1.num = o1.num <  o2.num ? 1 : 0; break;
 	      case (int)less_eq:   o1.num = o1.num <= o2.num ? 1 : 0; break;
@@ -663,13 +663,13 @@ static int exe_op __P1 (operator *,op)
 	      case (int)ampersand:
 		if ((o1.num %= o2.num) < 0) o1.num += o2.num; break;
 	    }
-	    
+
 	    p=&o1;
 	    ret=1;
 	}
 	else if ((o1.type==TYPE_TXT || o1.type==TYPE_TXT_VAR) &&
 		 (o2.type==TYPE_TXT || o2.type==TYPE_TXT_VAR)) {
-	    
+
 	    if (o1.type==TYPE_TXT_VAR) {
 		o1.txt = ptrdup(*VAR[o1.num].str);
         o1.type = TYPE_TXT; /* not a var anymore */
@@ -680,7 +680,7 @@ static int exe_op __P1 (operator *,op)
 		src=o2.txt;
 	    else
 		src=*VAR[o2.num].str;
-   
+
 	    if (*op == plus) {
 		dst = ptrcat(dst, src);
 		o1.type = TYPE_TXT;
@@ -713,13 +713,13 @@ static int exe_op __P1 (operator *,op)
 	else if (*op==times
 		 && (o1.type==TYPE_TXT_VAR || o1.type==TYPE_TXT)
 		 && o2.type==TYPE_NUM) {
-	    
+
 	    if (o2.num > 0 && o1.type==TYPE_TXT_VAR) {
 		o1.txt = ptrdup(*VAR[o1.num].str);
 		if (REAL_ERROR) break;
 	    }
 	    dst = o1.txt;
-	    
+
 	    if (o2.num < 0)
 		error = OUT_RANGE_ERROR;
 	    else if (o2.num == 0)
@@ -735,7 +735,7 @@ static int exe_op __P1 (operator *,op)
 	    }
 	    check_delete(&o2);
 	    if (REAL_ERROR) break;
-	    
+
 	    o1.type=TYPE_TXT;
 	    o1.txt=dst;
 	    p=&o1;
@@ -756,22 +756,22 @@ static int exe_op __P1 (operator *,op)
       case (int)point:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	if (o2.type==TYPE_NUM_VAR) {
 	    o2.num = *VAR[o2.num].num;
 	    o2.type = TYPE_NUM;
 	}
-	
+
 	if ((o1.type!=TYPE_TXT_VAR && o1.type!=TYPE_TXT) || o2.type!=TYPE_NUM) {
 	    error=SYNTAX_ERROR;
 	    break;
 	}
-	
+
 	if (o2.num<=0) {
 	    error=OUT_RANGE_ERROR;
 	    break;
 	}
-	
+
 	if (o1.type==TYPE_TXT_VAR) {
 	    o1.type=TYPE_TXT;
 	    o1.txt=dst=NULL;
@@ -782,7 +782,7 @@ static int exe_op __P1 (operator *,op)
 	    src=dst=start=o1.txt;
 	    danger=1;
 	}
-	
+
 	if (!src) {
 	    /* src == empty string. just return it */
 	    check_delete(&o2);
@@ -791,10 +791,10 @@ static int exe_op __P1 (operator *,op)
 		p=&o1; ret=1;
 	    break;
 	}
-	
+
 	srclen = ptrlen(src);
 	ssrc = ptrdata(src);
-	
+
 	switch ((int)*op) {
 	  case (int)colon_less:
 	    while (o2.num && srclen) {
@@ -806,7 +806,7 @@ static int exe_op __P1 (operator *,op)
 		    i=tmp-ssrc, o2.num--, ssrc+=i, j+=i, srclen-=i;
 		else break;
 	    }
-	    
+
 	    if (o2.num) { /* end of valid string before the n-th word */
 		if (danger)
 		    ;
@@ -834,7 +834,7 @@ static int exe_op __P1 (operator *,op)
 			srclen--, ssrc++;
 		} else break;
 	    }
-	    
+
 	    if (o2.num)  /* end of valid string before the n-th word */
 		ptrzero(dst);
 	    else {
@@ -857,7 +857,7 @@ static int exe_op __P1 (operator *,op)
 		    o2.num--, srclen=tmp-ssrc;
 		else break;
 	    }
-	    
+
 	    if (o2.num) /* end of valid string before the n-th word */
 		ptrzero(dst);
 	    else
@@ -873,7 +873,7 @@ static int exe_op __P1 (operator *,op)
 		    o2.num--, srclen=tmp-ssrc;
 		else break;
 	    }
-	    
+
 	    if (o2.num) /* end of valid string before the n-th word */
 		dst = ptrcpy(dst, start);
 	    else
@@ -920,7 +920,7 @@ static int exe_op __P1 (operator *,op)
       case (int)point_question:
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	if (o1.type==TYPE_TXT)
 	    src=o1.txt;
 	else if (o1.type==TYPE_TXT_VAR)
@@ -938,10 +938,10 @@ static int exe_op __P1 (operator *,op)
 	    ret=1;
 	    break;
 	}
-	
+
 	ssrc = ptrdata(src);
 	srclen = ptrlen(src);
-	
+
 	if (*op==colon_question) {
 	    o1.num = 0;
 	    /* skip span of multiple word delimeters */
@@ -962,7 +962,7 @@ static int exe_op __P1 (operator *,op)
 	}
 	else
 	    o1.num=srclen;
-	
+
 	check_delete(&o1);
 	o1.type=TYPE_NUM;
 	p=&o1;
@@ -971,21 +971,21 @@ static int exe_op __P1 (operator *,op)
       case (int)question:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	if (o1.type==TYPE_TXT)
 	    src = o1.txt;
 	else if (o1.type==TYPE_TXT_VAR)
 	    src = *VAR[o1.num].str;
-	else 
+	else
 	    error = SYNTAX_ERROR;
-	
+
 	if (o2.type==TYPE_TXT)
 	    dst = o2.txt;
 	else if (o2.type==TYPE_TXT_VAR)
 	    dst = *VAR[o2.num].str;
-	else 
+	else
 	    error = SYNTAX_ERROR;
-	
+
 	if (!error) {
 	    if ((ssrc = ptrfind(src, dst)))
 		i = (int)(ssrc - ptrdata(src)) + 1;
@@ -1002,12 +1002,12 @@ static int exe_op __P1 (operator *,op)
       case (int)another_null:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	check_delete(&o1);
 	check_delete(&o2);
-	
+
 	o1.type=0, o1.num=0, o1.txt=NULL;
-	
+
 	p=&o1;
 	ret=1;
 	break;
@@ -1017,12 +1017,12 @@ static int exe_op __P1 (operator *,op)
       case (int)right_paren:
 	if (pop_op(op));
 	else if (REAL_ERROR) break;
-	
+
 	if (*op!=left_paren)
 	    error=MISMATCH_PAREN_ERROR;
 	else
 	    ret=1;
-	
+
 	break;
       case (int)_random_:
 #ifdef NO_RANDOM
@@ -1033,10 +1033,10 @@ static int exe_op __P1 (operator *,op)
       case (int)pre_minus:
       case (int)not:
       case (int)tilde:
-	
+
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	if (o1.type==TYPE_NUM_VAR) {
 	    o1.num = *VAR[o1.num].num;
 	    o1.type = TYPE_NUM;
@@ -1070,16 +1070,16 @@ static int exe_op __P1 (operator *,op)
       case (int)_attr_:
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	if (o1.type==TYPE_TXT_VAR) {
 	    o1.txt = ptrdup(*VAR[o1.num].str);
 	    if (REAL_ERROR) break;
 	    o1.type = TYPE_TXT;
-	}     
-	
+	}
+
 	if (o1.type==TYPE_TXT) {
 	    char dummy[CAPLEN]; /* just because attr_string must write somewhere */
-	    
+
 	    if (o1.txt)
 		i = parse_attributes(ptrdata(o1.txt));
 	    else
@@ -1097,17 +1097,17 @@ static int exe_op __P1 (operator *,op)
 	} else
 	    error=NO_STRING_ERROR;
 	break;
-	
+
       case (int)star:
       case (int)print:
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	if (o1.type==TYPE_NUM_VAR)
 	    o1.num = *VAR[o1.num].num;
 	else if (o1.type==TYPE_TXT_VAR)
 	    o1.txt = *VAR[o1.num].str;
-	
+
 	if (o1.type==TYPE_NUM || o1.type==TYPE_NUM_VAR) {
 	    o1.txt = NULL;
 	    if (*op==print) {
@@ -1138,7 +1138,7 @@ static int exe_op __P1 (operator *,op)
 	    o1.type = TYPE_NUM;
 	    p=&o1; ret=1;
 	}
-	else 
+	else
 	    error=SYNTAX_ERROR;
 	break;
       case (int)pre_plus_plus:
@@ -1147,11 +1147,11 @@ static int exe_op __P1 (operator *,op)
       case (int)post_minus_minus:
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	if (o1.type==TYPE_NUM_VAR) {
 	    l=VAR[o1.num].num;
 	    o1.type=TYPE_NUM;
-	    
+
 	    if (*op==pre_plus_plus)
 		o1.num=++*l;
 	    else if (*op==post_plus_plus)
@@ -1160,7 +1160,7 @@ static int exe_op __P1 (operator *,op)
 		o1.num=--*l;
 	    else
 		o1.num=(*l)--;
-	    
+
 	    p=&o1;
 	    ret=1;
 	}
@@ -1171,36 +1171,36 @@ static int exe_op __P1 (operator *,op)
       case (int)dollar:
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
-	
+
 	if (*op == dollar)
 	    delta = 1;
 	else
 	    delta = 0;
-	
+
 	if (o1.type==TYPE_NUM_VAR) {
 	    o1.type=TYPE_NUM;
 	    o1.num=*VAR[o1.num].num;
 	}
-	
+
 	if (o1.type==TYPE_NUM) {
 	    if (o1.num<-NUMVAR || o1.num>=NUMPARAM) {
 		error=OUT_RANGE_ERROR;
 		break;
 	    }
-	    o1.type= delta ? TYPE_TXT_VAR : TYPE_NUM_VAR;	    
+	    o1.type= delta ? TYPE_TXT_VAR : TYPE_NUM_VAR;
 	    p=&o1;
 	    ret=1;
 	} else {
 	    varnode *named_var;
 	    char c;
-	    
+
 	    if (o1.type==TYPE_TXT_VAR)
 		o1.txt = *VAR[o1.num].str;
 	    else if (o1.type!=TYPE_TXT) {
 		error=SYNTAX_ERROR;
 		break;
 	    }
-	    
+
 	    if (o1.txt && (tmp=ptrdata(o1.txt)) &&
 		((c=*tmp) == '_' || isalpha(c))) {
 		tmp++;
@@ -1211,7 +1211,7 @@ static int exe_op __P1 (operator *,op)
 		error=INVALID_NAME_ERROR;
 		break;
 	    }
-	    
+
 	    if (!(named_var = *lookup_varnode(ptrdata(o1.txt), delta))) {
 		named_var = add_varnode(ptrdata(o1.txt), delta);
 		if (REAL_ERROR)
@@ -1221,7 +1221,7 @@ static int exe_op __P1 (operator *,op)
 			   ? '$' : '@', ptrdata(o1.txt));
 		}
 	    }
-	    o1.type= delta ? TYPE_TXT_VAR : TYPE_NUM_VAR;	    
+	    o1.type= delta ? TYPE_TXT_VAR : TYPE_NUM_VAR;
 	    p=&o1;
 	    ret=1;
 	}
@@ -1233,12 +1233,12 @@ static int exe_op __P1 (operator *,op)
       default:
 	break;
     }
-    
+
     if (REAL_ERROR) {
 	check_delete(&o2);
 	check_delete(&o1);
     }
-	
+
     if (!REAL_ERROR) {
 	if (!ret)
 	    error=NOT_DONE_ERROR;
@@ -1249,39 +1249,39 @@ static int exe_op __P1 (operator *,op)
 		check_delete(p);
 	}
     }
-    
+
     if (REAL_ERROR)
 	return 0;
-    
+
     return ret;
 }
 
-static int whichfirst __P2 (operator *,op1, operator *,op2)
+static int whichfirst(operator *op1, operator *op2)
 {
     int p1, p2;
-    
+
     p1=op_list[*op1].priority;
     p2=op_list[*op2].priority;
     if (p1!=p2)
 	return p1>p2 ? -1 : 1;
-    
+
     p1 = op_list[*op1].assoc == LEFT;
     return p1 ? -1 : 1;
 }
 
-static int compare_and_unload __P1 (operator *,op)
+static int compare_and_unload(operator *op)
 {
     int first=0;
     operator new;
-    
+
     if (REAL_ERROR || stk.curr_op<0)
 	return 1;
-    
+
     while (stk.curr_op>=0 && pop_op(&new) && !REAL_ERROR &&
 	   (first = whichfirst(&new, op)) == -1 &&
 	   (first = 0, exe_op(&new))
 	   );
-    
+
     if (!REAL_ERROR) {
 	if (!first)
 	    return 1;
@@ -1291,49 +1291,49 @@ static int compare_and_unload __P1 (operator *,op)
 	return 0;
 }
 
-static int _eval __P1 (int,mindepth)
+static int _eval(int mindepth)
 {
     operator op;
     object obj;
     char endreached = 0;
-    
+
     for (;;) {
 	memzero(&obj, sizeof(obj));
-	
+
 	while (*line==' ') line++;
 	if (!*line || *line == CMDSEP)
 	    endreached = 1;
-	
+
 	while (check_operator(LEFT, &op, mindepth) && push_op(&op) &&
 	      !endreached) {
-	    
+
 	    if (error) return 0;
 	    while (*line==' ') line++;
 	    if (!*line || *line == CMDSEP)
 		endreached = 1;
 	}
-	
+
 	if (!endreached && check_object(&obj) && push_obj(&obj));
 	else if (error) return 0;
-	
+
 	while (*line==' ') line++;
 	if (!*line || *line == CMDSEP)
 	    endreached = 1;
-	
+
 	while (check_operator(RIGHT, &op, mindepth) && compare_and_unload(&op) &&
 	      exe_op(&op) && depth>=mindepth && !endreached) {
-	    
+
 	    if (error) return 0;
 	    while (*line==' ')
 		line++;
 	    if (!*line || *line == CMDSEP)
-		endreached = 1; 
+		endreached = 1;
 	}
 	if (error) return 0;
-	
+
 	if (endreached || depth < mindepth)
 	    break;
-	
+
 	if (check_operator(BINARY, &op, mindepth) &&
 	    compare_and_unload(&op) && push_op(&op));
 	else if (error) return 0;
@@ -1341,13 +1341,13 @@ static int _eval __P1 (int,mindepth)
     return 1;
 }
 
-int eval_any __P3 (long *,lres, ptr *,pres, char **,what)
+int eval_any(long *lres, ptr *pres, char **what)
 {
     int printmode;
     long val;
     ptr txt;
     object res;
-    
+
     if (pres)
 	printmode = PRINT_AS_PTR;
     else if (lres)
@@ -1358,10 +1358,10 @@ int eval_any __P3 (long *,lres, ptr *,pres, char **,what)
     error=0;
     stk.curr_obj=stk.curr_op=-1;
     line = *what;
-    
+
     depth = 0;
     (void)_eval(0);
-    
+
     if (!error)
 	(void)pop_obj(&res);
     if (error) {
@@ -1370,9 +1370,9 @@ int eval_any __P3 (long *,lres, ptr *,pres, char **,what)
 	}
     } else if (printmode!=PRINT_NOTHING || opt_debug) {
 	if (res.type==TYPE_NUM || res.type==TYPE_NUM_VAR) {
-	    
+
 	    val = res.type==TYPE_NUM ? res.num : *VAR[res.num].num;
-	    	    
+
 	    if (printmode==PRINT_AS_PTR) {
 		*pres = ptrsetlen(*pres, LONGLEN);
 		if (!MEM_ERROR) {
@@ -1413,7 +1413,7 @@ int eval_any __P3 (long *,lres, ptr *,pres, char **,what)
 	}
     }
     *what=line;
-    
+
     if (!error) {
 	if (printmode==PRINT_AS_PTR && res.type == TYPE_TXT
 	    && res.txt && ptrdata(res.txt))
@@ -1428,26 +1428,26 @@ int eval_any __P3 (long *,lres, ptr *,pres, char **,what)
 	}
 	res.type = 0;
     }
-    
+
     if (res.type==TYPE_TXT_VAR)
 	res.type = TYPE_TXT;
     else if (res.type==TYPE_NUM_VAR)
 	res.type = TYPE_NUM;
-    
+
     return res.type;
 }
 
-int evalp __P2 (ptr *,res, char **,what)
+int evalp(ptr *res, char **what)
 {
     return eval_any((long *)0, res, what);
 }
 
-int evall __P2 (long *,res, char **,what)
+int evall(long *res, char **what)
 {
     return eval_any(res, (ptr *)0, what);
 }
 
-int evaln __P1 (char **,what)
+int evaln(char **what)
 {
     return eval_any((long *)0, (ptr *)0, what);
 }

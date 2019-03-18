@@ -38,7 +38,7 @@ static char can_suspend = 0; /* 1 if shell has job control */
 /*
  * GH: memory-"safe" strdup
  */
-char *my_strdup __P1 (char *,s)
+char *my_strdup(char *s)
 {
     if (s) {
 	s = strdup(s);
@@ -53,7 +53,7 @@ char *my_strdup __P1 (char *,s)
  * copy up to len chars from src to dst, then add a final \0
  * (i.e. dst[len] = '\0')
  */
-char *my_strncpy __P3 (char *,dst, char *,src, int,len)
+char *my_strncpy(char *dst, char *src, int len)
 {
     int slen = strlen(src);
     if (slen < len)
@@ -69,7 +69,7 @@ char *my_strncpy __P3 (char *,dst, char *,src, int,len)
  * "<esc> [ <non-letters> <letter>", "<esc> <non-[>", "<control-char>".
  * This is not entirely universal but covers the most common cases (i.e. ansi)
  */
-int printstrlen __P1 (char *,s)
+int printstrlen(char *s)
 {
     int l;
     enum { NORM, ESCAPE, BRACKET } state = NORM;
@@ -83,11 +83,11 @@ int printstrlen __P1 (char *,s)
             } else if (*s == '\r')
 		l = (l / cols) * cols;
             break;
-	    
+
 	 case ESCAPE:
             state = (*s == '[') ? BRACKET : NORM;
             break;
-	    
+
 	 case BRACKET:
             if (isalpha(*s))
 	      state = NORM;
@@ -100,7 +100,7 @@ int printstrlen __P1 (char *,s)
 /*
  * return pointer to next non-blank char
  */
-char *skipspace __P1 (char *,p)
+char *skipspace(char *p)
 {
     while (*p == ' ' || *p == '\t') p++;
     return p;
@@ -110,7 +110,7 @@ char *skipspace __P1 (char *,p)
  * find the first valid (non-escaped)
  * char in a string
  */
-char *first_valid __P2 (char *,p, char,ch)
+char *first_valid(char *p, char ch)
 {
     if (*p && *p != ch) {
 	p++;
@@ -126,7 +126,7 @@ char *first_valid __P2 (char *,p, char,ch)
  * find the first regular (non-escaped, non in "" () or {} )
  * char in a string
  */
-char *first_regular __P2 (char *,p, char,c)
+char *first_regular(char *p, char c)
 {
     int escaped, quotes=0, paren=0, braces=0;
 
@@ -168,16 +168,16 @@ char *first_regular __P2 (char *,p, char,c)
 /*
  * remove escapes (backslashes) from a string
  */
-int memunescape __P2 (char *,p, int,lenp)
+int memunescape(char *p, int lenp)
 {
     char *start, *s;
     enum { NORM, ESCSINGLE, ESCAPE } state = NORM;
 
     if (!p || !*p)
 	return 0;
-    
+
     start = s = p;
-    
+
     while (lenp) switch (state) {
       case NORM:
 	if (*s != ESC) {
@@ -192,12 +192,12 @@ int memunescape __P2 (char *,p, int,lenp)
       case ESCAPE:
 	if (*s == ESC)
 	    state = ESCAPE, *p++ = *s++, lenp--;
-	else if (*s == ESC2) 
+	else if (*s == ESC2)
 	    state = NORM, *p++ = ESC, s++, lenp--;
 	else {
 	    if (state == ESCSINGLE && lenp >= 3 &&
 		ISODIGIT(s[0]) && ISODIGIT(s[1]) && ISODIGIT(s[2])) {
-		
+
 		*p++ = ((s[0]-'0') << 6) | ((s[1]-'0') << 3) | (s[2]-'0');
 		s += 3, lenp -= 3;
 	    } else
@@ -212,12 +212,12 @@ int memunescape __P2 (char *,p, int,lenp)
     return (int)(p - start);
 }
 
-void unescape __P1 (char *,s)
+void unescape(char *s)
 {
     (void)memunescape(s, strlen(s));
 }
 
-void ptrunescape __P1 (ptr,p)
+void ptrunescape(ptr p)
 {
     if (!p)
 	return;
@@ -227,42 +227,42 @@ void ptrunescape __P1 (ptr,p)
 /*
  * add escapes (backslashes) to src
  */
-ptr ptrmescape __P4 (ptr,dst, char *,src, int,srclen, int,append)
+ptr ptrmescape(ptr dst, char *src, int srclen, int append)
 {
     int len;
     char *p;
     enum { NORM, ESCAPE } state;
-    
+
     if (!src || srclen <= 0) {
 	if (!append)
 	    ptrzero(dst);
 	return dst;
     }
-    
+
     if (dst && append)
 	len = ptrlen(dst);
     else
 	len = 0;
-    
+
     dst = ptrsetlen(dst, len + srclen*4); /* worst case */
     if (MEM_ERROR) return dst;
-    
+
     dst->len = len;
     p = ptrdata(dst) + len;
-    
+
     while (srclen) {
 	state = NORM;
 	if (*src == ESC) {
 	    while (srclen && *src == ESC)
 		dst->len++, *p++ = *src++, srclen--;
-	    
+
 	    if (!srclen || *src == ESC2)
 		dst->len++, *p++ = ESC2;
 	    else
 		state = ESCAPE;
 	}
 	if (!srclen) break;
-	
+
 	if (*src < ' ' || *src > '~') {
 	    sprintf(p, "\\%03o", (int)(byte)*src++);
 	    len = strlen(p);
@@ -270,7 +270,7 @@ ptr ptrmescape __P4 (ptr,dst, char *,src, int,srclen, int,append)
 	} else {
 	    if (state == ESCAPE || strchr(SPECIAL_CHARS, *src))
 		dst->len++, *p++ = ESC;
-	
+
 	    dst->len++, *p++ = *src++, srclen--;
 	}
     }
@@ -278,7 +278,7 @@ ptr ptrmescape __P4 (ptr,dst, char *,src, int,srclen, int,append)
     return dst;
 }
 
-ptr ptrescape __P3 (ptr,dst, ptr,src, int,append)
+ptr ptrescape(ptr dst, ptr src, int append)
 {
     if (!src) {
 	if (!append)
@@ -291,7 +291,7 @@ ptr ptrescape __P3 (ptr,dst, ptr,src, int,append)
 /*
  * add escapes to protect special characters from being escaped.
  */
-void escape_specials __P2 (char *,dst, char *,src)
+void escape_specials(char *dst, char *src)
 {
     enum { NORM, ESCAPE } state;
     while (*src) {
@@ -299,21 +299,21 @@ void escape_specials __P2 (char *,dst, char *,src)
 	if (*src == ESC) {
 	    while (*src == ESC)
 		*dst++ = *src++;
-	    
+
 	    if (!*src || *src == ESC2)
 		*dst++ = ESC2;
 	    else
 		state = ESCAPE;
 	}
 	if (!*src) break;
-	
+
 	if (*src < ' ' || *src > '~') {
 	    sprintf(dst, "\\%03o", (int)(byte)*src++);
 	    dst += strlen(dst);
 	} else {
 	    if (state == ESCAPE || strchr(SPECIAL_CHARS, *src))
 		*dst++ = ESC;
-	
+
 	    *dst++ = *src++;
 	}
     }
@@ -325,13 +325,13 @@ void escape_specials __P2 (char *,dst, char *,src)
  * if 1, start and end contain the match bounds
  * if 0, start and end are undefined on return
  */
-static int match_mark __P2 (marknode *,mp, char *,src)
+static int match_mark(marknode *mp, char *src)
 {
     char *pat = mp->pattern;
     char *npat=0, *npat2=0, *nsrc=0, *prm=0, *endprm=0, *tmp, c;
     static char mpat[BUFSIZE];
     int mbeg = mp->mbeg, mword = 0, p;
-    
+
     /* shortcut for #marks without wildcards */
     if (!mp->wild) {
 	if ((nsrc = strstr(src, pat))) {
@@ -343,7 +343,7 @@ static int match_mark __P2 (marknode *,mp, char *,src)
     }
 
     mp->start = NULL;
-    
+
     if (ISMARKWILDCARD(*pat))
 	mbeg = - mbeg - 1;  /* pattern starts with '&' or '$' */
 
@@ -358,22 +358,22 @@ static int match_mark __P2 (marknode *,mp, char *,src)
 		mp->start = src;
 	    ++pat;
 	}
-	
+
 	npat  = first_valid(pat, '&');
 	npat2 = first_valid(pat, '$');
 	if (npat2 < npat) npat = npat2;
 	if (!*npat) npat = 0;
-	
+
 	if (npat) {
 	    my_strncpy(mpat, pat, npat-pat);
 	    /* mpat[npat - pat] = 0; */
 	} else
 	    strcpy(mpat, pat);
-	
+
 	if (*mpat) {
 	    nsrc = strstr(src, mpat);
 	    if (!nsrc)
-		return 0; 
+		return 0;
 	    if (mbeg > 0) {
 		if (nsrc != src)
 		    return 0;
@@ -391,8 +391,8 @@ static int match_mark __P2 (marknode *,mp, char *,src)
 	    mp->end = endprm = prm + strlen(prm);
 	else
 	    mp->end = src;
-	
-	
+
+
 	/* post-processing of param */
 	if (mword) {
 	    if (prm) {
@@ -432,14 +432,14 @@ static int match_mark __P2 (marknode *,mp, char *,src)
 /*
  * add marks to line. write in dst.
  */
-ptr ptrmaddmarks __P3 (ptr,dst, char *,line, int,len)
+ptr ptrmaddmarks(ptr dst, char *line, int len)
 {
     marknode *mp, *mfirst;
     char begin[CAPLEN], end[CAPLEN], *lineend = line + len;
     int start = 1, matchlen, matched = 0;
-    
+
     ptrzero(dst);
-    
+
     if (!line || len <= 0)
 	return dst;
 
@@ -459,16 +459,16 @@ ptr ptrmaddmarks __P3 (ptr,dst, char *,line, int,len)
 		(!mfirst || mp->start < mfirst->start))
 		mfirst = mp;
 	}
-	
+
 	if (mfirst) {
 	    start = 0;
 	    attr_string(mfirst->attrcode, begin, end);
-	    
+
 	    dst = ptrmcat(dst, line, matchlen = mfirst->start - line);
 	    if (MEM_ERROR) break;
 	    line += matchlen;
 	    len -= matchlen;
-	    
+
 	    dst = ptrmcat(dst, begin, strlen(begin));
 	    if (MEM_ERROR) break;
 
@@ -476,19 +476,19 @@ ptr ptrmaddmarks __P3 (ptr,dst, char *,line, int,len)
 	    if (MEM_ERROR) break;
 	    line += matchlen;
 	    len -= matchlen;
-	    
+
 	    dst = ptrmcat(dst, end, strlen(end));
 	    if (MEM_ERROR) break;
 	}
     } while (mfirst);
 
     if (!MEM_ERROR)
-	dst = ptrmcat(dst, line, len);	
-        
+	dst = ptrmcat(dst, line, len);
+
     return dst;
 }
 
-ptr ptraddmarks __P2 (ptr,dst, ptr,line)
+ptr ptraddmarks(ptr dst, ptr line)
 {
     if (line)
 	return ptrmaddmarks(dst, ptrdata(line), ptrlen(line));
@@ -500,7 +500,7 @@ ptr ptraddmarks __P2 (ptr,dst, ptr,line)
  * write string to tty, word wrapping to next line if needed.
  * don't print a final \n
  */
-static void wrap_print __P1 (char *,s)
+static void wrap_print(char *s)
 {
     /* ls = last space in *s, lp = last space in *p */
     char *ls, *lp, *p, c, follow = 1;
@@ -520,7 +520,7 @@ static void wrap_print __P1 (char *,s)
 #endif
 
     while (l >= cols_1 - col0 && *s) {
-        p = buf; m = 0; state = NORM; 
+        p = buf; m = 0; state = NORM;
         lp = ls = NULL;
 
         /* this scans over the remaining part of the line adding stuff to
@@ -542,7 +542,7 @@ static void wrap_print __P1 (char *,s)
                         m++, l--;
                     }else if (c == '\r') {
                         ls = lp = NULL;
-                        m = 0;  
+                        m = 0;
                     }
 
                     break;
@@ -578,7 +578,7 @@ static void wrap_print __P1 (char *,s)
     if (ansibug)
         tty_printf("%s%s%s", follow ? s : "" ,
                 tty_modenorm, tty_clreoln);
-    else	
+    else
 #endif
         if (follow)
             tty_puts(s);
@@ -588,11 +588,11 @@ static void wrap_print __P1 (char *,s)
  * add marks to line and print.
  * if newline, also print a final \n
  */
-void smart_print __P2 (char *,line, char,newline)
+void smart_print(char *line, char newline)
 {
     static ptr ptrbuf = NULL;
     static char *buf;
-    
+
     do {
 	if (!ptrbuf) {
 	    ptrbuf = ptrnew(PARAMLEN);
@@ -602,7 +602,7 @@ void smart_print __P2 (char *,line, char,newline)
 	if (MEM_ERROR || !ptrbuf) break;
 
 	buf = ptrdata(ptrbuf);
-    
+
 	if (opt_wrap)
 	    wrap_print(buf);
 	else {
@@ -626,18 +626,18 @@ void smart_print __P2 (char *,line, char,newline)
 /*
  * copy first word of src into dst, and return pointer to second word of src
  */
-char *split_first_word __P3 (char *,dst, int,dstlen, char *,src)
+char *split_first_word(char *dst, int dstlen, char *src)
 {
     char *tmp;
     int len;
-    
+
     src = skipspace(src);
     if (!*src) {
 	*dst='\0';
 	return src;
     }
     len = strlen(src);
-    
+
     tmp = memchrs(src, len, DELIM, DELIM_LEN);
     if (tmp) {
 	if (dstlen > tmp-src+1) dstlen = tmp-src+1;
@@ -650,46 +650,46 @@ char *split_first_word __P3 (char *,dst, int,dstlen, char *,src)
     return tmp;
 }
 
-static void sig_pipe_handler __P1 (int,signum)
+static void sig_pipe_handler(int signum)
 {
     tty_puts("\n#broken pipe.\n");
 }
 
-static void sig_winch_handler __P1 (int,signum)
+static void sig_winch_handler(int signum)
 {
     sig_pending = sig_winch_got = 1;
 }
 
-static void sig_chld_handler __P1 (int,signum)
+static void sig_chld_handler(int signum)
 {
     sig_pending = sig_chld_got = 1;
 }
 
-static void sig_term_handler __P1 (int,signum)
+static void sig_term_handler(int signum)
 {
     tty_printf("%s\n#termination signal.\n", edattrend);
     exit_powwow();
 }
 
-static void sig_intr_handler __P1 (int,signum)
+static void sig_intr_handler(int signum)
 {
     if (confirm) {
 	tty_printf("%s\n#interrupted.%s\n", edattrend, tty_clreoln);
 	exit_powwow();
     }
-    
+
     PRINTF("%s\n#interrupted. Press again to quit%s\n", edattrend, tty_clreoln);
     tty_flush(); /* in case we are not in mainlupe */
     confirm = 1;
     error = USER_BREAK;
-    
+
     sig_oneshot(SIGINT, sig_intr_handler);
 }
 
 /*
  * suspend ourselves
  */
-void suspend_powwow __P1 (int, signum)
+void suspend_powwow(int  signum)
 {
     if (can_suspend) {
         sig_permanent(SIGTSTP, SIG_DFL);
@@ -697,12 +697,12 @@ void suspend_powwow __P1 (int, signum)
         sig_permanent(SIGINT, SIG_IGN);
 	tty_puts(edattrend);
         tty_quit();
-	
+
 	if (kill(0, SIGTSTP) < 0) {
 	    errmsg("suspend powwow");
 	    return;
 	}
-	
+
         signal_start();
         tty_start();
         tty_sig_winch_bottomhalf();  /* in case size changed meanwhile */
@@ -715,11 +715,11 @@ void suspend_powwow __P1 (int, signum)
  * GH: Sets a signal-handler permanently (like bsd signal())
  *     from Ilie
  */
-function_signal sig_permanent __P2 (int,signum, function_signal,sighandler)
+function_signal sig_permanent(int signum, function_signal sighandler)
 {
     struct sigaction act;
     function_signal oldhandler;
-    
+
     if (sigaction(signum, NULL, &act))
         return SIG_ERR;
     oldhandler = act.sa_handler;
@@ -738,11 +738,11 @@ function_signal sig_permanent __P2 (int,signum, function_signal,sighandler)
  * One-shot only signal. Hope it will work as intended.
  */
 #ifdef SA_ONESHOT
-function_signal sig_oneshot __P2 (int,signum, function_signal,sighandler)
+function_signal sig_oneshot(int signum, function_signal sighandler)
 {
     struct sigaction act;
     function_signal oldhandler;
-    
+
     if (sigaction(signum, NULL, &act))
         return SIG_ERR;
     oldhandler = act.sa_handler;
@@ -758,7 +758,7 @@ function_signal sig_oneshot __P2 (int,signum, function_signal,sighandler)
 /*
  * set up our signal handlers
  */
-void signal_start __P0 (void)
+void signal_start(void)
 {
     if (sig_permanent(SIGTSTP, SIG_IGN) == SIG_DFL) {
 	sig_permanent(SIGTSTP, suspend_powwow);
@@ -776,21 +776,21 @@ void signal_start __P0 (void)
     sig_oneshot(SIGINT, sig_intr_handler);
 }
 
-void sig_bottomhalf __P0 (void)
+void sig_bottomhalf(void)
 {
     if (sig_chld_got)
 	sig_chld_bottomhalf();
     if (sig_winch_got)
 	tty_sig_winch_bottomhalf();
-    
+
     sig_pending = sig_chld_got = sig_winch_got = 0;
 }
 
-void errmsg __P1 (char *,msg)
+void errmsg(char *msg)
 {
     if (!msg)
 	msg = "";
-    
+
     clear_input_line(opt_compact);
     if (!opt_compact) {
 	tty_putc('\n');
@@ -815,7 +815,7 @@ void errmsg __P1 (char *,msg)
 /*
  * print system call error message and terminate
  */
-void syserr __P1 (char *,msg)
+void syserr(char *msg)
 {
     if (msg && *msg) {
 	clear_input_line(opt_compact);
@@ -824,13 +824,13 @@ void syserr __P1 (char *,msg)
 	    /* status(1); */
 	}
 	tty_flush();
-	
+
 	fprintf(stderr, "#powwow: fatal system call error:\n\t%s (%d", msg, errno);
 	if (errno > 0)
 	  fprintf(stderr, ": %s", strerror(errno));
 	fprintf(stderr, ")\n");
     }
-    
+
 #ifdef SAVE_ON_SYSERR
     /* Try to do an emergency save. This can wreak havoc
      * if called from the wrong place, like
@@ -842,15 +842,15 @@ void syserr __P1 (char *,msg)
 #else
     tty_puts("#settings NOT saved to file.\n");
 #endif
-    
+
     tty_quit();
     exit(1);
 }
 
-static void load_missing_stuff __P1 (int,n)
+static void load_missing_stuff(int n)
 {
     char buf[BUFSIZE];
-    
+
     if (n < 1) {
         tty_add_walk_binds();
         tty_puts("#default keypad settings loaded\n");
@@ -892,19 +892,19 @@ static void load_missing_stuff __P1 (int,n)
  * try to save the definition file even if it got
  * a broken or empty one.
  */
-int read_settings __P0 (void)
+int read_settings(void)
 {
     FILE *f;
     char *buf, *p, *cmd, old_nice = a_nice;
     int failed = 1, n, savefilever = 0, left, len, limit_mem_hit = 0;
     varnode **first;
     ptr ptrbuf;
-    
+
     if (!*deffile) {
 	PRINTF("#warning: no save-file defined!\n");
 	return 0;
     }
-    
+
     f = fopen(deffile, "r");
     if (!f) {
         PRINTF("#error: cannot open file \"%s\": %s\n", deffile, strerror(errno));
@@ -919,9 +919,9 @@ int read_settings __P0 (void)
     buf = ptrdata(ptrbuf);
     left = ptrmax(ptrbuf);
     len = 0;
-    
+
     opt_info = a_nice = 0;
-    
+
     for (n = 0; n < MAX_HASH; n++) {
 	while (aliases[n])
 	    delete_aliasnode(&aliases[n]);
@@ -941,31 +941,31 @@ int read_settings __P0 (void)
 	while (*first) {
 	    if (is_permanent_variable(*first))
 		first = &(*first)->next;
-	    else	
+	    else
 		delete_varnode(first, 1);
 	}
     }
-    
+
     for (n = 0; n < NUMVAR; n++) {
 	*var[n].num = 0;
 	ptrdel(*var[n].str);
 	*var[n].str = NULL;
     }
-    
+
     while (left > 0 && fgets(buf+len, left+1, f)) {
 	/* WARNING: accessing private field ->len */
 	len += n = strlen(buf+len);
 	ptrbuf->len = len;
 	left -= n;
 
-	/* Clear all \n prefixed with a literal backslash '\\' */ 
+	/* Clear all \n prefixed with a literal backslash '\\' */
 	while ((cmd = strstr(buf, "\\\n"))) {
 		cmd[ 0 ] = ' ';
 		cmd[ 1 ] = ' ';
 	}
 
 	cmd = strchr(buf, '\n');
-	
+
 	if (!cmd) {
 	    if (feof(f)) {
 		PRINTF("#error: missing newline at end of file \"%s\"\n", deffile);
@@ -988,11 +988,11 @@ int read_settings __P0 (void)
 	cmd = buf;
 	left += len;
 	len = 0;
-	
+
         cmd = skipspace(cmd);
 	if (!*cmd)
 	    continue;
-	
+
         error = 0;
         if (*(p = first_regular(cmd, ' '))) {
             *p++ = '\0';
@@ -1004,7 +1004,7 @@ int read_settings __P0 (void)
 	}
 	parse_user_input(cmd, 1);
     }
-    
+
     if (error)
 	failed = -1;
     else if (ferror(f) && !feof(f)) {
@@ -1019,19 +1019,19 @@ int read_settings __P0 (void)
 	PRINTF("\n#warning: config file is from an older version\n");
 	load_missing_stuff(savefilever);
     }
-    
+
     fclose(f);
     a_nice = old_nice;
-    
+
     if (ptrbuf)
 	ptrdel(ptrbuf);
-    
+
     return failed;
 }
 
 static char tmpname[BUFSIZE];
 
-static void fail_msg __P0 (void)
+static void fail_msg(void)
 {
     PRINTF("#error: cannot write to temporary file \"%s\": %s\n", tmpname, strerror(errno));
 }
@@ -1042,7 +1042,7 @@ static void fail_msg __P0 (void)
  * NEVER call syserr() from here or powwow will
  * enter an infinite loop!
  */
-int save_settings __P0 (void)
+int save_settings(void)
 {
     FILE *f;
     int l;
@@ -1060,7 +1060,7 @@ int save_settings __P0 (void)
 	return -1;
     }
     error = 0;
-    
+
     if (!*deffile) {
 	PRINTF("#warning: no save-file defined!\n");
 	return -1;
@@ -1076,20 +1076,20 @@ int save_settings __P0 (void)
 	l--;
     if (l)
 	l++;
-    
+
     sprintf(tmpname + l, "tmpsav%d%d", getpid(), rand() >> 8);
     if (!(f = fopen(tmpname, "w"))) {
         fail_msg();
         return -1;
     }
-    
+
     pp = ptrnew(PARAMLEN);
     if (MEM_ERROR) failed = -1;
 
     failed = fprintf(f, "#savefile-version %d\n", SAVEFILEVER);
     if (failed > 0 && *hostname)
 	failed = fprintf(f, "#host %s %d\n", hostname, portnumber);
-    
+
     if (failed > 0) {
 	if (delim_mode == DELIM_CUSTOM) {
 	    pp = ptrmescape(pp, DELIM, strlen(DELIM), 0);
@@ -1105,7 +1105,7 @@ int save_settings __P0 (void)
 
     if (failed > 0 && *initstr)
 	failed = fprintf(f, "#init =%s\n", initstr);
-    
+
     if (failed > 0 && limit_mem)
 	failed = fprintf(f, "#setvar mem=%d\n", limit_mem);
 
@@ -1119,18 +1119,18 @@ int save_settings __P0 (void)
 	    if (MEM_ERROR) { failed = -1; break; }
 	    failed = fprintf(f, "#alias %s%s%s=%s\n", ptrdata(pp),
 		alp -> group == NULL ? "" : group_delim,
-		alp -> group == NULL ? "" : alp -> group, 
+		alp -> group == NULL ? "" : alp -> group,
 		alp->subst);
 	}
 	reverse_sortedlist((sortednode **)&sortedaliases);
     }
-    
+
     for (acp = actions; acp && failed > 0; acp = acp->next) {
 	failed = fprintf(f, "#action %c%c%s%s%s %s=%s\n",
 			 action_chars[acp->type], acp->active ? '+' : '-',
-			 acp->label, 
+			 acp->label,
 		acp -> group == NULL ? "" : group_delim,
-		acp -> group == NULL ? "" : acp -> group, 
+		acp -> group == NULL ? "" : acp -> group,
 			 acp->pattern, acp->command);
     }
 
@@ -1139,7 +1139,7 @@ int save_settings __P0 (void)
 			 action_chars[ptp->type], ptp->active ? '+' : '-',
 			 ptp->label, ptp->pattern, ptp->command);
     }
-    
+
     for (mp = markers; mp && failed > 0; mp = mp->next) {
 	pp = ptrmescape(pp, mp->pattern, strlen(mp->pattern), 0);
 	if (MEM_ERROR) { failed = -1; break; }
@@ -1147,7 +1147,7 @@ int save_settings __P0 (void)
 			     ptrdata(pp), attr_name(mp->attrcode));
     }
     /* save value of global variables */
-    
+
     for (flag = 0, i=0; i<NUMVAR && failed > 0; i++) {
         if (var[i].num && *var[i].num) {    /* first check was missing!!! */
 	    failed = fprintf(f, "%s@%d = %ld", flag ? ", " : "#(",
@@ -1156,7 +1156,7 @@ int save_settings __P0 (void)
         }
     }
     if (failed > 0 && flag) failed = fprintf(f, ")\n");
-    
+
     for (i=0; i<NUMVAR && failed > 0; i++) {
         if (var[i].str && *var[i].str && ptrlen(*var[i].str)) {
 	    pp = ptrescape(pp, *var[i].str, 0);
@@ -1164,7 +1164,7 @@ int save_settings __P0 (void)
 	    failed = fprintf(f, "#($%d = \"%s\")\n", i-NUMVAR, ptrdata(pp));
 	}
     }
-    
+
     if (failed > 0) {
 	reverse_sortedlist((sortednode **)&sortednamed_vars[0]);
 	for (flag = 0, vp = sortednamed_vars[0]; vp && failed > 0; vp = vp->snext) {
@@ -1177,7 +1177,7 @@ int save_settings __P0 (void)
 	reverse_sortedlist((sortednode **)&sortednamed_vars[0]);
     }
     if (failed > 0 && flag) failed = fprintf(f, ")\n");
-    
+
     if (failed > 0) {
 	reverse_sortedlist((sortednode **)&sortednamed_vars[1]);
 	for (vp = sortednamed_vars[1]; vp && failed > 0; vp = vp->snext) {
@@ -1189,7 +1189,7 @@ int save_settings __P0 (void)
 	}
 	reverse_sortedlist((sortednode **)&sortednamed_vars[1]);
     }
-    
+
     /* GH: fixed the history and word completions saves */
     if (failed > 0 && opt_history) {
 	l = (curline + 1) % MAX_HIST;
@@ -1203,7 +1203,7 @@ int save_settings __P0 (void)
 		l = 0;
 	}
     }
-    
+
     if (failed > 0 && opt_words) {
 	int cl = 4, len;
 	l = wordindex;
@@ -1226,10 +1226,10 @@ int save_settings __P0 (void)
 	if (failed > 0 && flag)
 	    failed = fprintf(f, "\n");
     }
-    
+
     for (kp = keydefs; kp && failed > 0; kp = kp->next) {
 	if (kp->funct==key_run_command)
-	    failed = fprintf(f, "#bind %s %s=%s\n", kp->name, 
+	    failed = fprintf(f, "#bind %s %s=%s\n", kp->name,
 			     seq_name(kp->sequence, kp->seqlen), kp->call_data);
 	else
 	    failed = fprintf(f, "#bind %s %s=%s%s%s\n", kp->name,
@@ -1238,12 +1238,12 @@ int save_settings __P0 (void)
 			     kp->call_data ? " " : "",
 			     kp->call_data ? kp->call_data : "");
     }
-    
+
     if (failed > 0)
         failed = print_all_options(f);
 
     fclose(f);
-    
+
     if (error)
 	errmsg("malloc");
     else if (failed <= 0)
@@ -1256,17 +1256,17 @@ int save_settings __P0 (void)
 	} else
 	    failed = 1;
     }
-    
+
     if (pp)
 	ptrdel(pp);
-    
+
     return failed > 0 ? 1 : -1;
 }
 
 /*
  * update "now" to current time
  */
-void update_now __P0 (void)
+void update_now(void)
 {
     if (!now_updated) {
 	gettimeofday(&now, NULL);
@@ -1277,7 +1277,7 @@ void update_now __P0 (void)
 /*
  * terminate powwow as cleanly as possible
  */
-void exit_powwow __P0 (void)
+void exit_powwow(void)
 {
     log_flush();
     if (capturefile) fclose(capturefile);

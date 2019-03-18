@@ -26,7 +26,7 @@
  * create a new, empty ptr.
  * return NULL if max == 0
  */
-ptr ptrnew __P1 (int,max)
+ptr ptrnew(int max)
 {
     ptr p = (ptr)0;
 
@@ -48,10 +48,10 @@ ptr ptrnew __P1 (int,max)
 /*
  * create a new ptr giving an initial contents,
  * which gets duplicated.
- * 
+ *
  * warning: newmax could be so small that we must truncate the copied data!
  */
-ptr ptrdup2 __P2 (ptr,src, int,newmax)
+ptr ptrdup2(ptr src, int newmax)
 {
     ptr p = (ptr)0;
 
@@ -75,7 +75,7 @@ ptr ptrdup2 __P2 (ptr,src, int,newmax)
     return p;
 }
 
-ptr ptrdup __P1 (ptr,src)
+ptr ptrdup(ptr src)
 {
     if (!src)
 	return src;
@@ -83,7 +83,7 @@ ptr ptrdup __P1 (ptr,src)
 }
 
 /* delete (free) a ptr */
-void _ptrdel __P1 (ptr,p)
+void _ptrdel(ptr p)
 {
     if (p && p->signature == PTR_SIG)
 	free((void *)p);
@@ -92,7 +92,7 @@ void _ptrdel __P1 (ptr,p)
 }
 
 /* clear a ptr */
-void ptrzero __P1 (ptr,p)
+void ptrzero(ptr p)
 {
     if (p) {
 	p->len = 0;
@@ -101,17 +101,17 @@ void ptrzero __P1 (ptr,p)
 }
 
 /* truncate a ptr to len chars */
-void ptrtrunc __P2 (ptr,p, int,len)
+void ptrtrunc(ptr p, int len)
 {
     if (p) {
 	if (len < 0 || len > ptrlen(p))
 	    return;
 	ptrdata(p)[p->len = len] = '\0';
-    } 
+    }
 }
 
 /* shrink a ptr by len chars */
-void ptrshrink __P2 (ptr,p, int,len)
+void ptrshrink(ptr p, int len)
 {
     if (p) {
 	if (len < 0 || len > ptrlen(p))
@@ -128,11 +128,11 @@ void ptrshrink __P2 (ptr,p, int,len)
  * You have been warned! Don't use any statically created ptr for
  * write operations, and you will be fine.
  */
-ptr __ptrmcat __P4 (ptr,dst, char *,src, int,len, int,shrink)
+ptr __ptrmcat(ptr dst, char *src, int len, int shrink)
 {
     int newmax, failmax, overlap;
     char mustalloc;
-    
+
     if (!src || len <= 0)
 	return dst;
     if (len + sizeofptr < 0) {
@@ -140,14 +140,14 @@ ptr __ptrmcat __P4 (ptr,dst, char *,src, int,len, int,shrink)
 	error = NO_MEM_ERROR;
 	return dst;
     }
-    
+
     if (!dst) {
 	failmax = len;
 	mustalloc = 1;
     } else {
 	failmax = ptrlen(dst) + len;
 	mustalloc = ptrmax(dst) < ptrlen(dst) + len;
-    
+
 	if (shrink && ptrmax(dst) > PARAMLEN
 	    && ptrmax(dst)/4 > ptrlen(dst) + len)
 	    /* we're wasting space, shrink dst */
@@ -159,7 +159,7 @@ ptr __ptrmcat __P4 (ptr,dst, char *,src, int,len, int,shrink)
 	error = NO_MEM_ERROR;
 	return dst;
     }
-    
+
     if (mustalloc) {
 	/* dst must be (re)allocated */
 	ptr p;
@@ -169,7 +169,7 @@ ptr __ptrmcat __P4 (ptr,dst, char *,src, int,len, int,shrink)
 	    overlap = 1;
 	else
 	    overlap = 0;
-	
+
 	/* find a suitable new size */
 	if (limit_mem && failmax > limit_mem) {
 	    error = MEM_LIMIT_ERROR;
@@ -214,12 +214,12 @@ ptr __ptrmcat __P4 (ptr,dst, char *,src, int,len, int,shrink)
     return dst;
 }
 
-ptr ptrmcat __P3 (ptr,dst, char *,src, int,len)
+ptr ptrmcat(ptr dst, char *src, int len)
 {
     return __ptrmcat(dst, src, len, 1);
 }
 
-ptr ptrcat __P2 (ptr,dst, ptr,src)
+ptr ptrcat(ptr dst, ptr src)
 {
     if (src)
 	return __ptrmcat(dst, ptrdata(src), ptrlen(src), 1);
@@ -230,11 +230,11 @@ ptr ptrcat __P2 (ptr,dst, ptr,src)
  * copy a ptr into another (ptrcpy), or a char* into a ptr (ptrmcpy);
  * same warning as above if dst is too small or way too big.
  */
-ptr __ptrmcpy __P4(ptr,dst, char *,src, int,len, int,shrink)
+ptr __ptrmcpy(ptr dst, char *src, int len, int shrink)
 {
     int newmax, failmax = len, overlap;
     char mustalloc;
-    
+
     if (!src || len<=0) {
 	if (len>=0)
 	    ptrzero(dst);
@@ -245,7 +245,7 @@ ptr __ptrmcpy __P4(ptr,dst, char *,src, int,len, int,shrink)
 	error = NO_MEM_ERROR;
 	return dst;
     }
-    
+
     if (!dst) {
 	mustalloc = 1;
     } else {
@@ -255,7 +255,7 @@ ptr __ptrmcpy __P4(ptr,dst, char *,src, int,len, int,shrink)
 	    /* we're wasting space, shrink dst */
 	    mustalloc = 1;
     }
-    
+
     if (mustalloc) {
 	/* dst must be (re)allocated */
 	ptr p;
@@ -309,12 +309,12 @@ ptr __ptrmcpy __P4(ptr,dst, char *,src, int,len, int,shrink)
     return dst;
 }
 
-ptr ptrmcpy __P3 (ptr,dst, char *,src, int,len)
+ptr ptrmcpy(ptr dst, char *src, int len)
 {
     return __ptrmcpy(dst, src, len, 1);
 }
 
-ptr ptrcpy __P2 (ptr,dst, ptr,src)
+ptr ptrcpy(ptr dst, ptr src)
 {
     if (src)
 	return __ptrmcpy(dst, ptrdata(src), ptrlen(src), 1);
@@ -323,7 +323,7 @@ ptr ptrcpy __P2 (ptr,dst, ptr,src)
 }
 
 /* enlarge a ptr by len chars. create new if needed */
-ptr ptrpad __P2 (ptr,p, int,len)
+ptr ptrpad(ptr p, int len)
 {
     if (!p) {
 	if (len<=0)
@@ -354,7 +354,7 @@ ptr ptrpad __P2 (ptr,p, int,len)
 }
 
 /* set a ptr to be len chars at minimum. create new if needed */
-ptr ptrsetlen __P2 (ptr,p, int,len)
+ptr ptrsetlen(ptr p, int len)
 {
     if (!p) {
 	if (len<=0)
@@ -366,13 +366,13 @@ ptr ptrsetlen __P2 (ptr,p, int,len)
 	}
     }
     return ptrpad(p, len - ptrlen(p));
-}   
+}
 
 /*
  * compare two ptr (ptrcmp) or a ptr and a char* (ptrmcmp)
  * if one is a truncated copy of the other, the shorter is considered smaller
  */
-int ptrmcmp __P3 (ptr,p, char *,q, int,lenq)
+int ptrmcmp(ptr p, char *q, int lenq)
 {
     int res;
     if (!p || !ptrlen(p)) {
@@ -394,7 +394,7 @@ int ptrmcmp __P3 (ptr,p, char *,q, int,lenq)
     return res;
 }
 
-int ptrcmp __P2 (ptr,p, ptr,q)
+int ptrcmp(ptr p, ptr q)
 {
     if (q)
 	return ptrmcmp(p, ptrdata(q), ptrlen(q));
@@ -408,7 +408,7 @@ int ptrcmp __P2 (ptr,p, ptr,q)
  * find first occurrence of c in p
  * return NULL if none found.
  */
-char *ptrchr __P2 (ptr,p, char,c)
+char *ptrchr(ptr p, char c)
 {
     if (p)
 	return (char *)memchr(ptrdata(p), c, ptrlen(p));
@@ -419,13 +419,13 @@ char *ptrchr __P2 (ptr,p, char,c)
  * find last occurrence of c in p
  * return NULL if none found.
  */
-char *memrchr __P3 (char *,p, int,lenp, char,c)
+char *memrchr(char *p, int lenp, char c)
 {
     char *v, *s = p;
 
     if (!p || lenp<=0)
 	return NULL;
-    
+
     v = s + lenp - 1;
     while (v != s && *v != c) {
 	v--;
@@ -436,7 +436,7 @@ char *memrchr __P3 (char *,p, int,lenp, char,c)
 	return NULL;
 }
 
-char *ptrrchr __P2 (ptr,p, char,c)
+char *ptrrchr(ptr p, char c)
 {
     if (p)
 	return memrchr(ptrdata(p), ptrlen(p), c);
@@ -446,18 +446,18 @@ char *ptrrchr __P2 (ptr,p, char,c)
 #ifndef _GNU_SOURCE
 /*
  * find first occurrence of needle in hay
- * 
+ *
  * GNU libc has memmem(), for others we do by hand.
  */
-char *memfind __P4 (char *,hay, int,haylen, char *,needle, int,needlelen)
+char *memfind(char *hay, int haylen, char *needle, int needlelen)
 {
     char *tmp;
-    
+
     if (!hay || haylen<=0 || needlelen<0)
 	return NULL;
     if (!needle || !needlelen)
 	return hay;
-    
+
     while (haylen >= needlelen) {
 	/* find a matching first char */
 	if ((tmp = memchr(hay, *needle, haylen))) {
@@ -466,7 +466,7 @@ char *memfind __P4 (char *,hay, int,haylen, char *,needle, int,needlelen)
 	    hay = tmp;
 	} else
 	    return NULL;
-	
+
 	/* got a matching first char,
 	 * check the rest */
 	if (!memcmp(needle, tmp, needlelen))
@@ -474,7 +474,7 @@ char *memfind __P4 (char *,hay, int,haylen, char *,needle, int,needlelen)
 
 	hay++, haylen --;
     }
-    
+
     return NULL;
 }
 #endif /* !_GNU_SOURCE */
@@ -483,7 +483,7 @@ char *memfind __P4 (char *,hay, int,haylen, char *,needle, int,needlelen)
  * find first occurrence of q in p,
  * return NULL if none found.
  */
-char *ptrmfind __P3 (ptr,p, char *,q, int,lenq)
+char *ptrmfind(ptr p, char *q, int lenq)
 {
     if (p) {
 	if (q && lenq>0)
@@ -493,7 +493,7 @@ char *ptrmfind __P3 (ptr,p, char *,q, int,lenq)
     return (char*)p; /* shortcut for NULL */
 }
 
-char *ptrfind __P2 (ptr,p, ptr,q)
+char *ptrfind(ptr p, ptr q)
 {
     if (p) {
 	if (q)
@@ -508,33 +508,33 @@ char *ptrfind __P2 (ptr,p, ptr,q)
  * Scan p for the first occurrence of one of the characters in q,
  * return NULL if none of them is found.
  */
-char *memchrs __P4 (char *,p, int,lenp, char *,q, int,lenq)
+char *memchrs(char *p, int lenp, char *q, int lenq)
 {
     char *endp;
-    
+
     if (!q || lenq<=0)
 	return p;
     if (!p || lenp<=0)
 	return NULL;
-    
+
     endp = p + lenp;
-    
+
     while (p < endp && !memchr(q, *p, lenq))
 	p++;
-    
+
     if (p == endp)
 	return NULL;
     return p;
 }
 
-char *ptrmchrs __P3 (ptr,p, char *,q, int,lenq)
+char *ptrmchrs(ptr p, char *q, int lenq)
 {
     if (p)
 	return memchrs(ptrdata(p), ptrlen(p), q, lenq);
     return (char*)p; /* shortcut for NULL */
 }
 
-char *ptrchrs __P2 (ptr,p, ptr,q)
+char *ptrchrs(ptr p, ptr q)
 {
     if (p) {
 	if (q)
@@ -549,7 +549,7 @@ char *ptrchrs __P2 (ptr,p, ptr,q)
  * Scan p for the last occurrence of one of the characters in q,
  * return NULL if none of them is found.
  */
-char *memrchrs __P4 (char *,p, int,lenp, char *,q, int,lenq)
+char *memrchrs(char *p, int lenp, char *q, int lenq)
 {
     if (!p || lenp<=0) {
 	if (!q || lenq<=0)
@@ -557,27 +557,27 @@ char *memrchrs __P4 (char *,p, int,lenp, char *,q, int,lenq)
 	else
 	    return NULL;
     }
-    
+
     p += lenp;
     if (!q || lenq<=0)
 	return p;
     do {
 	lenp--, p--;
     } while (lenp >= 0 && !memchr(q, *p, lenq));
-	
+
     if (lenp < 0)
 	return NULL;
     return p;
 }
 
-char *ptrmrchrs __P3 (ptr,p, char *,q, int,lenq)
+char *ptrmrchrs(ptr p, char *q, int lenq)
 {
     if (p)
 	return memrchrs(ptrdata(p), ptrlen(p), q, lenq);
     return (char*)p; /* shortcut for NULL */
 }
 
-char *ptrrchrs __P2 (ptr,p, ptr,q)
+char *ptrrchrs(ptr p, ptr q)
 {
     if (p && q)
 	return memrchrs(ptrdata(p), ptrlen(p), ptrdata(q), ptrlen(q));

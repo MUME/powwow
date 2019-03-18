@@ -39,7 +39,7 @@ static int mapend = 0;		/* index one past last map entry */
 /*
  * return reverse direction
  */
-static char reverse_dir __P1 (char,dir)
+static char reverse_dir(char dir)
 {
     static char dirs[] = "nsewud";
     char *p = strchr(dirs, dir);
@@ -49,12 +49,12 @@ static char reverse_dir __P1 (char,dir)
 /*
  * retrace steps on map, optionally walk them back
  */
-void map_retrace __P2 (int,steps, int,walk_back)
+void map_retrace(int steps, int walk_back)
 {
     char cmd[2];
-    
+
     cmd[1] = '\0';
-    
+
     if (!steps && !walk_back)
 	mapend = mapstart;
     else {
@@ -64,7 +64,7 @@ void map_retrace __P2 (int,steps, int,walk_back)
 	    status(1);
 	    tty_putc('[');
 	}
-	
+
 	while (mapstart != mapend && steps--) {
 	    mapend = MAPINDEX(mapend - 1);
 	    if (walk_back) {
@@ -82,7 +82,7 @@ void map_retrace __P2 (int,steps, int,walk_back)
 /*
  * show automatic map (latest steps) in the form s2ews14n
  */
-void map_show __P0 (void)
+void map_show(void)
 {
     char lastdir;
     int count = 0;
@@ -110,13 +110,13 @@ void map_show __P0 (void)
 	    tty_printf("%d", count);
 
 	tty_printf("%c\n", lastdir);
-    } 
+    }
 }
 
 /*
  * print map to string in the form seewsnnnnn
  */
-void map_sprintf __P1 (char *,buf)
+void map_sprintf(char *buf)
 {
     int i;
 
@@ -129,7 +129,7 @@ void map_sprintf __P1 (char *,buf)
 /*
  * add direction to automap
  */
-void map_add_dir __P1 (char,dir)
+void map_add_dir(char dir)
 {
 #ifdef NOMAZEMAPPING
     if (mapend != mapstart && dir == reverse_dir(MAPENTRY(mapend - 1))) {
@@ -148,25 +148,25 @@ void map_add_dir __P1 (char,dir)
  * execute walk if word is valid [speed]walk sequence -
  * return 1 if walked, 0 if not
  */
-int map_walk __P3 (char *,word, int,silent, int,maponly)
+int map_walk(char *word, int silent, int maponly)
 {
     char buf[16];
     int n = strlen(word);
     int is_main = (tcp_fd == tcp_main_fd);
-    
+
     if (!is_main && !maponly && !opt_speedwalk)
 	return 0;
     if (!n || (n > 1 && !opt_speedwalk && !maponly) ||
 	!strchr("neswud", word[n - 1]) ||
 	(int)strspn(word, "neswud0123456789") != n)
 	return 0;
-    
+
     if (maponly)
 	silent = 1;
     buf[1] = '\0';
     while (*word) {
         if (!silent) { status(1); tty_putc('['); }
-	
+
         if (isdigit(*word)) {
             n = strtol(word, &word, 10);
 	    if (!silent)

@@ -1,6 +1,6 @@
 /*
  *  follow.c  --  interactively print an ASCII file.
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -135,8 +135,8 @@ int main(int argc, char *argv[]) {
     FILE *f;
     char c = 0, buf[512];
     int d;
-    
-    if (argc < 2) {      
+
+    if (argc < 2) {
 	fprintf(stderr, "needed a file name\n");
 	exit(0);
     }
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
 	fprintf(stderr, "unable to open %s\n", argv[1]);
 	exit(0);
     }
-    
+
     set_terminal();
     while(c!=0x1b) {
 	read(0, &c, 1);

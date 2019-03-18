@@ -1,6 +1,6 @@
 /*
  *  list.c  --  list utility functions.
- * 
+ *
  *  Copyright (C) 1998 by Massimiliano Ghilardi
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@
 /*
  * compare two times, return -1 if t1 < t2, 1 if t1 > t2, 0 if t1 == t2
  */
-int cmp_vtime __P2 (vtime *,t1, vtime *,t2)
+int cmp_vtime(vtime *t1, vtime *t2)
 {
     int i;
     i = t1->tv_sec < t2->tv_sec ? -1 : t1->tv_sec > t2->tv_sec ? 1 : 0;
@@ -44,7 +44,7 @@ int cmp_vtime __P2 (vtime *,t1, vtime *,t2)
 /*
  * add t2 to t1 (i.e. t1 += t2)
  */
-void add_vtime __P2 (vtime *,t1, vtime *,t2)
+void add_vtime(vtime *t1, vtime *t2)
 {
     t1->tv_sec += t2->tv_sec;
     if ((t1->tv_usec += t2->tv_usec) >= uSEC_PER_SEC) {
@@ -56,13 +56,13 @@ void add_vtime __P2 (vtime *,t1, vtime *,t2)
 /*
  * Return t1 - t2, in milliseconds
  */
-long diff_vtime __P2 (vtime *,t1, vtime *,t2)
+long diff_vtime(vtime *t1, vtime *t2)
 {
     return (t1->tv_sec - t2->tv_sec) * mSEC_PER_SEC +
 	(t1->tv_usec - t2->tv_usec) / uSEC_PER_mSEC;
 }
 
-int rev_sort __P2 (defnode *,node1, defnode *,node2)
+int rev_sort(defnode *node1, defnode *node2)
 {
     return -1;
 }
@@ -70,12 +70,12 @@ int rev_sort __P2 (defnode *,node1, defnode *,node2)
 /*
  * standard ASCII comparison between nodes
  */
-int ascii_sort __P2 (defnode *,node1, defnode *,node2)
+int ascii_sort(defnode *node1, defnode *node2)
 {
     return strcmp(node1->sortfield, node2->sortfield);
 }
 
-int rev_ascii_sort __P2 (defnode *,node1, defnode *,node2)
+int rev_ascii_sort(defnode *node1, defnode *node2)
 {
     return strcmp(node2->sortfield, node1->sortfield);
 }
@@ -85,7 +85,7 @@ int rev_ascii_sort __P2 (defnode *,node1, defnode *,node2)
  * comparison between times of execution of nodes
  * (return -1 if node1->when < node2->when)
  */
-int time_sort __P2 (defnode *,node1, defnode *,node2)
+int time_sort(defnode *node1, defnode *node2)
 {
     return cmp_vtime(&((delaynode *)node1)->when, &((delaynode *)node2)->when);
 }
@@ -94,7 +94,7 @@ int time_sort __P2 (defnode *,node1, defnode *,node2)
  * reverse comparison between times of execution of nodes
  * (return -1 if node1->when > node2->when)
  */
-int rev_time_sort __P2 (defnode *,node1, defnode *,node2)
+int rev_time_sort(defnode *node1, defnode *node2)
 {
     return cmp_vtime(&((delaynode *)node2)->when, &((delaynode *)node1)->when);
 }
@@ -102,7 +102,7 @@ int rev_time_sort __P2 (defnode *,node1, defnode *,node2)
 /*
  * compute the hash value of a name
  */
-int hash __P2 (char *,name, int,optlen)
+int hash(char *name, int optlen)
 {
     int h = 0, i = 0;
     if (optlen < 0)
@@ -118,7 +118,7 @@ int hash __P2 (char *,name, int,optlen)
 /*
  * generic list node adding routine
  */
-void add_node __P3 (defnode *,newnode, defnode **,base, function_sort,sort)
+void add_node(defnode *newnode, defnode **base, function_sort sort)
 {
     while((*base) && (!sort || (*sort)(newnode, *base) > 0))
 	base = &(*base)->next;
@@ -126,7 +126,7 @@ void add_node __P3 (defnode *,newnode, defnode **,base, function_sort,sort)
     *base = newnode;
 }
 
-static void add_sortednode __P3 (sortednode *,newnode, sortednode **,base, function_sort,sort)
+static void add_sortednode(sortednode *newnode, sortednode **base, function_sort sort)
 {
     while((*base) && (!sort || (*sort)((defnode *)newnode, (defnode *)*base) > 0))
 	base = &(*base)->snext;
@@ -134,7 +134,7 @@ static void add_sortednode __P3 (sortednode *,newnode, sortednode **,base, funct
     *base = newnode;
 }
 
-void reverse_list __P1 (defnode **,base)
+void reverse_list(defnode **base)
 {
     defnode *node = *base, *list = NULL, *tmp;
     while (node) {
@@ -146,7 +146,7 @@ void reverse_list __P1 (defnode **,base)
     *base = list;
 }
 
-void reverse_sortedlist __P1 (sortednode **,base)
+void reverse_sortedlist(sortednode **base)
 {
     sortednode *node = *base, *list = NULL, *tmp;
     while (node) {
@@ -158,7 +158,7 @@ void reverse_sortedlist __P1 (sortednode **,base)
     *base = list;
 }
 
-static sortednode **selflookup_sortednode __P2 (sortednode *,self, sortednode **,base)
+static sortednode **selflookup_sortednode(sortednode *self, sortednode **base)
 {
     sortednode **p = base;
     while (*p && *p != self)
@@ -173,14 +173,14 @@ static sortednode **selflookup_sortednode __P2 (sortednode *,self, sortednode **
 /*
  * add a node to the alias list
  */
-void add_aliasnode __P2 (char *,name, char *,subst)
+void add_aliasnode(char *name, char *subst)
 {
     aliasnode *new = (aliasnode*)malloc(sizeof(aliasnode));
     if (!new) {
 	errmsg("malloc");
 	return;
     }
-  
+
     new->group = NULL;
     new->active = 1;
     new->name = my_strdup(name);
@@ -201,7 +201,7 @@ void add_aliasnode __P2 (char *,name, char *,subst)
 /*
  * add a node to the marker list
  */
-void add_marknode __P4 (char *,pattern, int,attrcode, char,mbeg, char,wild)
+void add_marknode(char *pattern, int attrcode, char mbeg, char wild)
 {
     marknode **p, *new = (marknode*)malloc(sizeof(marknode));
     int i;
@@ -232,7 +232,7 @@ void add_marknode __P4 (char *,pattern, int,attrcode, char,mbeg, char,wild)
 /*
  * add a node to the action list
  */
-void add_actionnode __P6 (char *,pattern, char *,command, char *,label, int,active, int,type, void *,vregexp)
+void add_actionnode(char *pattern, char *command, char *label, int active, int type, void *vregexp)
 {
     actionnode **p, *new = (actionnode*)malloc(sizeof(actionnode));
     int i;
@@ -240,7 +240,7 @@ void add_actionnode __P6 (char *,pattern, char *,command, char *,label, int,acti
 	errmsg("malloc");
 	return;
     }
-   
+
     new->group = NULL;
     new->pattern = my_strdup(pattern);
     new->command = my_strdup(command);
@@ -274,7 +274,7 @@ void add_actionnode __P6 (char *,pattern, char *,command, char *,label, int,acti
 /*
  * add a node to the prompt list
  */
-void add_promptnode __P6 (char *,pattern, char *,command, char *,label, int,active, int,type, void *,vregexp)
+void add_promptnode(char *pattern, char *command, char *label, int active, int type, void *vregexp)
 {
     promptnode **p, *new = (promptnode*)malloc(sizeof(promptnode));
     int i;
@@ -282,7 +282,7 @@ void add_promptnode __P6 (char *,pattern, char *,command, char *,label, int,acti
 	errmsg("malloc");
 	return;
     }
-    
+
     new->pattern = my_strdup(pattern);
     new->command = my_strdup(command);
     new->label = my_strdup(label);
@@ -315,7 +315,7 @@ void add_promptnode __P6 (char *,pattern, char *,command, char *,label, int,acti
 /*
  * add a node to the keydef list
  */
-void add_keynode __P5 (char *,name, char *,sequence, int,seqlen, function_str,funct, char *,call_data)
+void add_keynode(char *name, char *sequence, int seqlen, function_str funct, char *call_data)
 {
     keynode *new = (keynode*)malloc(sizeof(keynode));
     if (!new) {
@@ -339,7 +339,7 @@ void add_keynode __P5 (char *,name, char *,sequence, int,seqlen, function_str,fu
 	    free(new->call_data);
 	free(new);
 	return;
-    }	
+    }
     add_node((defnode*)new, (defnode**)&keydefs, ascii_sort);
 }
 
@@ -347,7 +347,7 @@ void add_keynode __P5 (char *,name, char *,sequence, int,seqlen, function_str,fu
  * add a node to the delayed command list
  * is_dead == 1 means when < now (and so cannot be executed anymore)
  */
-delaynode *add_delaynode __P4 (char *,name, char *,command, vtime *,when, int,is_dead)
+delaynode *add_delaynode(char *name, char *command, vtime *when, int is_dead)
 {
     delaynode *new = (delaynode*)malloc(sizeof(delaynode));
     if (!new) {
@@ -365,30 +365,30 @@ delaynode *add_delaynode __P4 (char *,name, char *,command, vtime *,when, int,is
 	free(new);
 	return NULL;
     }
-    
+
     new->when.tv_sec = when->tv_sec;
     new->when.tv_usec = when->tv_usec;
     if (is_dead)
 	add_node((defnode*)new, (defnode**)&dead_delays, rev_time_sort);
     else
 	add_node((defnode*)new, (defnode**)&delays, time_sort);
-    
+
     return new;
 }
 
 /*
  * add a node to named variables list
- * 
+ *
  * do NOT allocate a ptr!
  */
-varnode *add_varnode __P2 (char *,name, int,type)
+varnode *add_varnode(char *name, int type)
 {
     varnode *new;
     int m, n;
-    
+
     if (type)
 	type = 1;
-    
+
     if (num_named_vars[type] >= max_named_vars) {
 	/* we are running low on var pointers. try to enlarge */
 	m = NUMTOT + max_named_vars;
@@ -414,7 +414,7 @@ varnode *add_varnode __P2 (char *,name, int,type)
 	    memzero(var + m, (n-m)*sizeof(vars));
 	}
     }
-    
+
     new = (varnode*)malloc(sizeof(varnode));
     if (!new) {
 	errmsg("malloc");
@@ -429,13 +429,13 @@ varnode *add_varnode __P2 (char *,name, int,type)
     new->num = 0;
     new->str = (ptr)0;
     new->index = m = NUMPARAM + num_named_vars[type];
-    
+
     if (type)
 	VAR[m].str = &new->str;
     else
 	VAR[m].num = &new->num;
     num_named_vars[type]++;
-    
+
     add_node((defnode*)new, (defnode**)&named_vars[type][hash(name,-1)], rev_sort);
     add_sortednode((sortednode*)new, (sortednode**)&sortednamed_vars[type], rev_ascii_sort);
     return new;
@@ -445,7 +445,7 @@ varnode *add_varnode __P2 (char *,name, int,type)
  * look up an alias node by name:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-aliasnode **lookup_alias __P1 (char *,name)
+aliasnode **lookup_alias(char *name)
 {
     aliasnode **p = &aliases[hash(name,-1)];
     while (*p && strcmp(name, (*p)->name))
@@ -457,7 +457,7 @@ aliasnode **lookup_alias __P1 (char *,name)
  * look up an action node by label:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-actionnode **lookup_action __P1 (char *,label)
+actionnode **lookup_action(char *label)
 {
     actionnode **p = &actions;
     while (*p && strcmp(label, (*p)->label))
@@ -469,7 +469,7 @@ actionnode **lookup_action __P1 (char *,label)
  * look up an action node by pattern:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-actionnode **lookup_action_pattern __P1 (char *,pattern)
+actionnode **lookup_action_pattern(char *pattern)
 {
     actionnode **p = &actions;
     while (*p && strcmp(pattern, (*p)->pattern))
@@ -481,7 +481,7 @@ actionnode **lookup_action_pattern __P1 (char *,pattern)
  * look up a prompt node by label:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-actionnode **lookup_prompt __P1 (char *,label)
+actionnode **lookup_prompt(char *label)
 {
     promptnode **p = &prompts;
     while (*p && strcmp(label, (*p)->label))
@@ -493,7 +493,7 @@ actionnode **lookup_prompt __P1 (char *,label)
  * look up an marker node by pattern:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-marknode **lookup_marker __P2 (char *,pattern, char,mbeg)
+marknode **lookup_marker(char *pattern, char mbeg)
 {
     marknode **p = &markers;
     while (*p && (mbeg != (*p)->mbeg || strcmp(pattern, (*p)->pattern)))
@@ -505,10 +505,10 @@ marknode **lookup_marker __P2 (char *,pattern, char,mbeg)
  * look up a key node by name:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-keynode **lookup_key __P1 (char *,name)
+keynode **lookup_key(char *name)
 {
     keynode **p = &keydefs;
-    
+
     while (*p && strcmp(name, (*p)->name))
 	p = &(*p)->next;
     return p;
@@ -518,7 +518,7 @@ keynode **lookup_key __P1 (char *,name)
  * look up a delayed command node by label:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-delaynode **lookup_delay __P2 (char *,name, int,is_dead)
+delaynode **lookup_delay(char *name, int is_dead)
 {
     delaynode **p = (is_dead ? &dead_delays : &delays);
     while (*p && strcmp(name, (*p)->name))
@@ -530,7 +530,7 @@ delaynode **lookup_delay __P2 (char *,name, int,is_dead)
  * look up a named variable node by name:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-varnode **lookup_varnode __P2 (char *,name, int,type)
+varnode **lookup_varnode(char *name, int type)
 {
     varnode **p = &named_vars[type][hash(name,-1)];
     while (*p && strcmp(name, (*p)->name))
@@ -541,7 +541,7 @@ varnode **lookup_varnode __P2 (char *,name, int,type)
 /*
  * delete an alias node, given a pointer to its precessor's pointer
  */
-void delete_aliasnode __P1 (aliasnode **,base)
+void delete_aliasnode(aliasnode **base)
 {
     aliasnode *p = *base;
     *base = p->next;
@@ -558,7 +558,7 @@ void delete_aliasnode __P1 (aliasnode **,base)
 /*
  * delete an action node, given a pointer to its precessor's pointer
  */
-void delete_actionnode __P1 (actionnode **,base)
+void delete_actionnode(actionnode **base)
 {
     actionnode *p = *base;
     if (p->pattern) free(p->pattern);
@@ -577,7 +577,7 @@ void delete_actionnode __P1 (actionnode **,base)
 /*
  * delete an prompt node, given a pointer to its precessor's pointer
  */
-void delete_promptnode __P1 (promptnode **,base)
+void delete_promptnode(promptnode **base)
 {
     promptnode *p = *base;
     if (p->pattern) free(p->pattern);
@@ -596,7 +596,7 @@ void delete_promptnode __P1 (promptnode **,base)
 /*
  * delete an marker node, given a pointer to its precessor's pointer
  */
-void delete_marknode __P1 (marknode **,base)
+void delete_marknode(marknode **base)
 {
     marknode *p = *base;
     if (p->pattern) free(p->pattern);
@@ -607,7 +607,7 @@ void delete_marknode __P1 (marknode **,base)
 /*
  * delete a keydef node, given a pointer to its precessor's pointer
  */
-void delete_keynode __P1 (keynode **,base)
+void delete_keynode(keynode **base)
 {
     keynode *p = *base;
     if (p->name) free(p->name);
@@ -620,7 +620,7 @@ void delete_keynode __P1 (keynode **,base)
 /*
  * delete a delayed command node, given a pointer to its precessor's pointer
  */
-void delete_delaynode __P1 (delaynode **,base)
+void delete_delaynode(delaynode **base)
 {
     delaynode *p = *base;
     if (p->name) free(p->name);
@@ -632,11 +632,11 @@ void delete_delaynode __P1 (delaynode **,base)
 /*
  * delete a named variable node, given a pointer to its precessor's pointer
  */
-void delete_varnode __P2 (varnode **,base, int,type)
+void delete_varnode(varnode **base, int type)
 {
     varnode *p = *base;
     int idx = p->index, i, n;
-    
+
     *base = p->next;
     if (*(base = (varnode**)selflookup_sortednode
 	  ((sortednode*)p, (sortednode**)&sortednamed_vars[type])))
@@ -646,28 +646,28 @@ void delete_varnode __P2 (varnode **,base, int,type)
     if (p->name) free(p->name);
     if (type && p->str) ptrdel(p->str);
     free((void*)p);
-    
+
     i = NUMPARAM + --num_named_vars[type];
-    
+
     if (idx == i)
 	return;
-    
+
     /* now I must fill the hole in var[idx].*** */
-    
+
     for (n = 0; n < MAX_HASH; n++)
 	for (p = named_vars[type][n]; p; p = p->next)
 	if (p->index == i) {
 	    n = MAX_HASH;
 	    break;
 	}
-    
+
     if (!p) {               /* should NEVER happen */
 	print_error(error=UNDEFINED_VARIABLE_ERROR);
 	return;
     }
-    
+
     p->index = idx;
-    
+
     if (type) {
 	VAR[idx].str = &p->str;
 	VAR[ i ].str = NULL;

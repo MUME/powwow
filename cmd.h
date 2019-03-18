@@ -14,13 +14,13 @@ typedef struct cmdstruct {
 
 extern cmdstruct *commands;
 
-void show_stat		__P ((void));
+void show_stat(void);
 
 void cmd_add_command( cmdstruct *cmd );
 
 void initialize_cmd(void);
 
-int print_all_options __P1 (FILE *,file);
+int print_all_options(FILE *file);
 
 #endif /* _CMD_H_ */
 

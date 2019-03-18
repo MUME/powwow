@@ -37,7 +37,7 @@ int argc; char *argv[];
 	fprintf(stderr, "Please run this program as \"powwow-movieplay\" or \"powwow-movie2ascii\"\n");
 	return 1;
     }
-    
+
     if (play) {
 	if (argc == 2) {
 	    infile = fopen(argv[1], "rb");
@@ -67,7 +67,7 @@ int argc; char *argv[];
 	    return 1;
 	}
     }
-    
+
     while (fgets(buf, 4096, infile) != NULL) {
 	i = strlen(buf);
 	if (i > 0 && buf[i-1] == '\n')

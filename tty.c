@@ -1,6 +1,6 @@
 /*
  *  tty.c -- terminal handling routines for powwow
- * 
+ *
  *  Copyright (C) 1998 by Massimiliano Ghilardi
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -97,9 +97,9 @@ static char kpadstart[] = "", kpadend[] = "", begoln[] = "\r",
 	modebold[] = "\033[1m", modeblink[] = "\033[5m", modeinv[] = "\033[7m",
 	modeuline[] = "\033[4m", modestandon[] = "", modestandoff[] = "",
         modenorm[] = "\033[m", modenormbackup[4],
-	cursor_left[] = "\033[D", cursor_right[] = "\033[C", 
+	cursor_left[] = "\033[D", cursor_right[] = "\033[C",
         cursor_up[] = "\033[A", cursor_down[] = "\033[B";
-	
+
 #define insertfinish (0)
 static int len_begoln = 1, len_leftcur = 3, len_upcur = 3, gotocost = 8;
 
@@ -114,7 +114,7 @@ char *tgoto();
 /* terminal escape sequences */
 static char kpadstart[CAPLEN], kpadend[CAPLEN],
 	leftcur[CAPLEN], rightcur[CAPLEN], upcur[CAPLEN], curgoto[CAPLEN],
-	delchar[CAPLEN], insstart[CAPLEN], insstop[CAPLEN], 
+	delchar[CAPLEN], insstart[CAPLEN], insstop[CAPLEN],
         inschar[CAPLEN],
 	begoln[CAPLEN], clreoln[CAPLEN], clreoscr[CAPLEN],
 	cursor_left[CAPLEN], cursor_right[CAPLEN], cursor_up[CAPLEN],
@@ -128,7 +128,7 @@ static char modebold[CAPLEN], modeblink[CAPLEN], modeinv[CAPLEN],
 static int len_begoln, len_clreoln, len_leftcur, len_upcur, gotocost,
            deletecost, insertcost, insertfinish, inscharcost;
 
-static int extract __P ((char *cap, char *buf));
+static int extract(char *cap, char *buf);
 
 #endif /* USE_VT100 */
 
@@ -172,7 +172,7 @@ static termiostruct ttybsave;
  * Set the terminal to character-at-a-time-without-echo mode, and save the
  * original state in ttybsave
  */
-void tty_start __P0 (void)
+void tty_start(void)
 {
 #ifdef USE_SGTTY
     struct sgttyb ttyb;
@@ -221,7 +221,7 @@ void tty_start __P0 (void)
 /*
  * Reset the terminal to its original state
  */
-void tty_quit __P0 (void)
+void tty_quit(void)
 {
 #ifdef USE_SGTTY
     ioctl(tty_read_fd, TIOCSETP, &ttybsave);
@@ -240,7 +240,7 @@ void tty_quit __P0 (void)
 /*
  * enable/disable special keys depending on the current linemode
  */
-void tty_special_keys __P0 (void)
+void tty_special_keys(void)
 {
 #ifdef USE_SGTTY
     struct tchars tc = {-1, -1, -1, -1, -1, -1};
@@ -285,7 +285,7 @@ void tty_special_keys __P0 (void)
 /*
  * get window size and react to any window size change
  */
-void tty_sig_winch_bottomhalf __P0 (void)
+void tty_sig_winch_bottomhalf(void)
 {
     struct winsize wsiz;
         /* if ioctl fails or gives silly values, don't change anything */
@@ -298,11 +298,11 @@ void tty_sig_winch_bottomhalf __P0 (void)
 	cols_1 = cols = wsiz.ws_col;
 	if (!wrapglitch)
 	    cols_1--;
-	
+
 	if (tcp_main_fd != -1)
 	    tcp_write_tty_size();
 	line0 += lines - olines;
-	
+
 	tty_gotoxy(0, line0);
 	/* so we know where the cursor is */
 #ifdef BUG_ANSI
@@ -311,7 +311,7 @@ void tty_sig_winch_bottomhalf __P0 (void)
 	else
 #endif
 	    tty_puts(tty_clreoscr);
-	
+
 	olines = lines;
 	status(1);
     }
@@ -320,7 +320,7 @@ void tty_sig_winch_bottomhalf __P0 (void)
 /*
  * read termcap definitions
  */
-void tty_bootstrap __P0 (void)
+void tty_bootstrap(void)
 {
 #ifdef USE_LOCALE
     tty_read_stream = stdin;
@@ -407,7 +407,7 @@ void tty_bootstrap __P0 (void)
 
     gotocost = strlen(tgoto(curgoto, cols - 1, lines - 1));
     insertfinish = gotocost + len_clreoln;
-    
+
     /* this must be before getting window size */
     wrapglitch = tgetflag("xn");
 
@@ -418,7 +418,7 @@ void tty_bootstrap __P0 (void)
 #ifdef BUG_TELNET
     if (strncmp(term, "vt10", 4) == 0) {
 	/* might be NCSA Telnet 2.2 for PC, which doesn't reset colours */
-	sprintf(modenorm, "\033[;%c%d;%s%dm", 
+	sprintf(modenorm, "\033[;%c%d;%s%dm",
 		DEFAULTFG<LOWCOLORS ? '3' : '9',  DEFAULTFG % LOWCOLORS,
 		DEFAULTBG<LOWCOLORS ? "4" : "10", DEFAULTBG % LOWCOLORS);
     }
@@ -428,7 +428,7 @@ void tty_bootstrap __P0 (void)
 /*
  * add the default keypad bindings to the list
  */
-void tty_add_walk_binds __P0 (void)
+void tty_add_walk_binds(void)
 {
     /*
      * Note: termcap doesn't have sequences for the numeric keypad, so we just
@@ -448,7 +448,7 @@ void tty_add_walk_binds __P0 (void)
 /*
  * initialize the key binding list
  */
-void tty_add_initial_binds __P0 (void)
+void tty_add_initial_binds(void)
 {
     struct b_init_node {
 	char *label, *seq;
@@ -488,7 +488,7 @@ void tty_add_initial_binds __P0 (void)
     do {
 	add_keynode(p->label, p->seq, 0, p->funct, NULL);
     } while((++p)->seq[0]);
-    
+
     if (*cursor_left ) add_keynode("Left" , cursor_left , 0, prev_char, NULL);
     if (*cursor_right) add_keynode("Right", cursor_right, 0, next_char, NULL);
     if (*cursor_up   ) add_keynode("Up"   , cursor_up   , 0, prev_line, NULL);
@@ -500,7 +500,7 @@ void tty_add_initial_binds __P0 (void)
  * extract termcap 'cap' and strcat it to buf.
  * return the lenght of the extracted string.
  */
-static int extract __P2 (char *,cap, char *,buf)
+static int extract(char *cap, char *buf)
 {
     static char *bp;
     char *d = buf + strlen(buf);
@@ -524,7 +524,7 @@ static int extract __P2 (char *,cap, char *,buf)
  * position the cursor using absolute coordinates
  * note: does not flush the output buffer
  */
-void tty_gotoxy __P2 (int,col, int,line)
+void tty_gotoxy(int col, int line)
 {
 #ifdef USE_VT100
     tty_printf("\033[%d;%dH", line + 1, col + 1);
@@ -538,15 +538,15 @@ void tty_gotoxy __P2 (int,col, int,line)
  * from (fromcol, fromline) to (tocol, toline)
  * if tocol > 0, (tocol, toline) must lie on editline.
  */
-void tty_gotoxy_opt __P4 (int,fromcol, int,fromline, int,tocol, int,toline)
+void tty_gotoxy_opt(int fromcol, int fromline, int tocol, int toline)
 {
     static char buf[BUFSIZE];
     char *cp = buf;
     int cost, i, dist;
-    
+
     CLIP(fromline, 0, lines-1);
     CLIP(toline  , 0, lines-1);
-	
+
     /* First, move vertically to the correct line, then horizontally
      * to the right column. If this turns out to be fewer characters
      * than a direct cursor positioning (tty_gotoxy), use that.
@@ -612,7 +612,7 @@ void tty_gotoxy_opt __P4 (int,fromcol, int,fromline, int,tocol, int,toline)
  * GH: change the position on input line (gotoxy there, and set pos)
  *     from cancan 2.6.3a
  */
-void input_moveto __P1 (int,new_pos)
+void input_moveto(int new_pos)
 {
     /*
      * FEATURE: the line we are moving to might be less than 0, or greater
@@ -625,7 +625,7 @@ void input_moveto __P1 (int,new_pos)
 	new_pos = edlen;
     if (new_pos == pos)
 	return;
-    
+
     if (line_status == 0) {
 	int fromline = CURLINE(pos), toline = CURLINE(new_pos);
 	if (toline < 0)
@@ -641,12 +641,12 @@ void input_moveto __P1 (int,new_pos)
  * delete n characters at current position (the position is unchanged)
  * assert(n < edlen - pos)
  */
-void input_delete_nofollow_chars __P1 (int,n)
+void input_delete_nofollow_chars(int n)
 {
     int r_cost, p = pos, d_cost;
     int nl = pos - CURCOL(pos);	/* this line's starting pos (can be <= 0) */
     int cl = CURLINE(pos);	/* current line */
-    
+
     if (n > edlen - p)
 	n = edlen - p;
     if (n <= 0)
@@ -658,7 +658,7 @@ void input_delete_nofollow_chars __P1 (int,n)
 	edlen -= n;
 	return;
     }
-    
+
     memmove(edbuf + p, edbuf + d_cost, edlen - d_cost);
     memset(edbuf + edlen - n, (int)' ', n);
     for (;; tty_putc('\n'), p = nl, cl++) {
@@ -677,17 +677,17 @@ void input_delete_nofollow_chars __P1 (int,n)
 #ifdef BUG_ANSI
 	    if (edattrbg)
 		tty_puts(edattrend);
-#endif	    
+#endif
 	    for (d_cost = n; d_cost; d_cost--)
 	        tty_puts(delchar);
 #ifdef BUG_ANSI
 	    if (edattrbg)
 		tty_puts(edattrbeg);
-#endif	    
+#endif
 
 	    if (edlen <= nl)
 		break;
-	    
+
 	    tty_gotoxy(cols_1 - n, cl);
 	    tty_printf("%.*s", n, edbuf + nl - n);
 	} else
@@ -701,9 +701,9 @@ void input_delete_nofollow_chars __P1 (int,n)
 	    else
 #endif
 		tty_printf("%.*s", r_cost, edbuf + p);
-	    
+
 	    p += r_cost;
-	    
+
 	    if (edlen <= nl) {
 #ifdef BUG_ANSI
 		if (edattrbg)
@@ -730,7 +730,7 @@ void input_delete_nofollow_chars __P1 (int,n)
  * GH: print a char on current position (overwrite), advance position
  *     from cancan 2.6.3a
  */
-void input_overtype_follow __P1 (char,c)
+void input_overtype_follow(char c)
 {
     if (pos >= edlen)
 	return;
@@ -753,7 +753,7 @@ void input_overtype_follow __P1 (char,c)
  * insert n characters at input line current position.
  * The position is set to after the inserted characters.
  */
-void input_insert_follow_chars __P2 (char *,str, int,n)
+void input_insert_follow_chars(char *str, int n)
 {
     int r_cost, i_cost, p = pos;
     int nl = p - CURCOL(p);	/* next line's starting pos */
@@ -763,14 +763,14 @@ void input_insert_follow_chars __P2 (char *,str, int,n)
 	n = BUFSIZE - edlen - 1;
     if (n <= 0)
 	return;
-    
+
     memmove(edbuf + p + n, edbuf + p, edlen + 1 - p);
     memmove(edbuf + p, str, n);
     edlen += n; pos += n;
-    
+
     if (line_status != 0)
 	return;
-    
+
     do {
 	i_cost = n;
 	if ((r_cost = edlen) > (nl += cols_1))
@@ -804,7 +804,7 @@ void input_insert_follow_chars __P2 (char *,str, int,n)
 	    line0--;
 	}
     } while (edlen > nl);
-    
+
     if (p != pos)
 	tty_gotoxy_opt(CURCOL(p), cl, CURCOL(pos), CURLINE(pos));
 }
@@ -812,13 +812,13 @@ void input_insert_follow_chars __P2 (char *,str, int,n)
 #ifdef USE_LOCALE
 /* curses wide character support by Dain */
 
-void tty_puts __P ((const char *s))
+void tty_puts(const char *s)
 {
     while (*s)
         tty_putc(*s++);
 }
 
-void tty_putc __P ((char c))
+void tty_putc(char c)
 {
     size_t r;
     int ignore_error = 0;
@@ -844,7 +844,7 @@ again:
     tty_write_state.used += r;
 }
 
-int tty_printf __P ((const char *format, ...))
+int tty_printf(const char *format, ...)
 {
     char buf[1024], *bufp = buf;
     va_list va;
@@ -877,12 +877,12 @@ int tty_printf __P ((const char *format, ...))
 static char tty_in_buf[MB_LEN_MAX + 1];
 static size_t tty_in_buf_used = 0;
 
-int tty_has_chars __P ((void))
+int tty_has_chars(void)
 {
     return tty_in_buf_used != 0;
 }
 
-static int safe_mbtowc __P3 (wchar_t *,pwc, char *,s, size_t *,n)
+static int safe_mbtowc(wchar_t *pwc, char *s, size_t *n)
 {
     static mbstate_t ps;
 
@@ -908,7 +908,7 @@ again:
     return r;
 }
 
-int tty_read __P ((char *buf, size_t count))
+int tty_read(char *buf, size_t count)
 {
     int result = 0;
     int converted;
@@ -965,7 +965,7 @@ int tty_read __P ((char *buf, size_t count))
 }
 
 
-void tty_gets __P ((char *s, int size))
+void tty_gets(char *s, int size)
 {
     wchar_t *ws = alloca(size * sizeof *ws);
 
@@ -979,7 +979,7 @@ void tty_gets __P ((char *s, int size))
     }
 }
 
-void tty_flush __P ((void))
+void tty_flush(void)
 {
     size_t n = tty_write_state.used;
     char *data = tty_write_state.data;
@@ -1017,7 +1017,7 @@ void tty_flush __P ((void))
     tty_write_state.used = 0;
 }
 
-void tty_raw_write __P ((char *data, size_t len))
+void tty_raw_write(char *data, size_t len)
 {
     if (len == 0) return;
 

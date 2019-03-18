@@ -41,12 +41,12 @@
 #define PRINT_AS_PTR  1
 #define PRINT_AS_LONG 2
 
-int  eval_any	__P ((long *lres, ptr *pres, char **what));
-int  evalp	__P ((            ptr *pres, char **what));
-int  evall	__P ((long *lres,            char **what));
-int  evaln	__P ((                       char **what));
+int  eval_any(long *lres, ptr *pres, char **what);
+int  evalp(            ptr *pres, char **what);
+int  evall(long *lres,            char **what);
+int  evaln(                       char **what);
 
-void print_error __P ((int err_num));
+void print_error(int err_num);
 
 extern char *error_msg[];
 extern int error;

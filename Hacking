@@ -7,25 +7,6 @@ improve powwow, fix bugs or just have fun:
   maintain his own code, who can?). If you write any new functions,
   ok, use your own style as long as it's clear and consistent.
 
-* For portability, powwow is written using a few #defines that can
-  generate either K&R and ANSI function prototypes depending on the compiler,
-  so that it (should) compile fine in both cases.
-  If people convince me that non-ANSI compilers are rare enough these days,
-  we could switch to ANSI-only prototypes. Even then, please, do NOT
-  use any gcc-specific features (I've seen the char constant '\e' in some
-  places) even if gcc is very common. Our goal should be to let the
-  maximum number of people use powwow. (Most non-ANSI compilers grok
-  void and unsigned, so these are safe to use.)
-  
-* For the same reason, do NOT use C++ style comments //
-
-* To sum it up, assume that the user has:
-  - a non-ANSI C compiler (use the __P, __P0, __P1, ... defines!)
-  - an exotic non-VT100 terminal (use TERMCAP!), possibly on a slow line
-  - a slow workstation, or a larger computer shared by 100 users and
-    aggressive sysadmins who think that mudding doesn't justify 10% or
-    even 5% CPU load.
-
 * Document your changes! A brief report of changes in the Changelog file is
   absolutely necessary. So is updating the doc files (powwow.doc, powwow_help
   and README) Also, sending an e-mail to the code author/mantainer documenting

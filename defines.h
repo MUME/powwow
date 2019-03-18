@@ -23,64 +23,6 @@
 #  define init_random srand48
 #endif
 
-#ifdef __STDC__
-
-# define VOLATILE volatile
-# ifndef __P
-#  define __P(args)					args
-# endif
-# define __P0(dummy)					(void)
-# define __P1(t1,a1)					(t1 a1)
-# define __P2(t1,a1,t2,a2)				(t1 a1, t2 a2)
-# define __P3(t1,a1,t2,a2,t3,a3)			(t1 a1, t2 a2, t3 a3)
-# define __P4(t1,a1,t2,a2,t3,a3,t4,a4)			(t1 a1, t2 a2, t3 a3, t4 a4)
-# define __P5(t1,a1,t2,a2,t3,a3,t4,a4,t5,a5)		(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5)
-# define __P6(t1,a1,t2,a2,t3,a3,t4,a4,t5,a5,t6,a6)	(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6)
-# define __P7(t1,a1,t2,a2,t3,a3,t4,a4,t5,a5,t6,a6,t7,a7) (t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7)
-
-#else /* ! __STDC__ */
-
-# define VOLATILE
-# ifndef __P
-#  define __P(args)					()
-# endif
-# define __P0(dummy)					()
-# define __P1(t1,a1)					(a1) t1 a1;
-# define __P2(t1,a1,t2,a2)				(a1, a2) t1 a1; t2 a2;
-# define __P3(t1,a1,t2,a2,t3,a3)			(a1, a2, a3) t1 a1; t2 a2; t3 a3;
-# define __P4(t1,a1,t2,a2,t3,a3,t4,a4)			(a1, a2, a3, a4) t1 a1; t2 a2; t3 a3; t4 a4;
-# define __P5(t1,a1,t2,a2,t3,a3,t4,a4,t5,a5)		(a1, a2, a3, a4, a5) t1 a1; t2 a2; t3 a3; t4 a4; t5 a5;
-# define __P6(t1,a1,t2,a2,t3,a3,t4,a4,t5,a5,t6,a6)	(a1, a2, a3, a4, a5, a6) t1 a1; t2 a2; t3 a3; t4 a4; t5 a5; t6 a6;
-# define __P7(t1,a1,t2,a2,t3,a3,t4,a4,t5,a5,t6,a6,t7,a7) (a1, a2, a3, a4, a5, a6, a7) t1 a1; t2 a2; t3 a3; t4 a4; t5 a5; t6 a6; t7 a7;
-
-#endif /* __STDC__ */
-
-#ifdef __GNUC__
-# define INLINE static inline
-#else
-# define INLINE static
-#endif
-
-#ifndef NULL
-#  define NULL ((void *)0)
-#endif
-
-#ifndef LONG_MAX
-#  define LONG_MAX ( (long) ((~(unsigned long)0) >> 1) )
-#endif
-
-#ifndef LONG_MIN
-#  define LONG_MIN ( (long) (((~(unsigned long)0) >> 1) + 1) )
-#endif
-
-#ifndef INT_MAX
-#  define INT_MAX ( (int) ((~(unsigned int)0) >> 1) )
-#endif
-
-#ifndef INT_MIN
-#  define INT_MIN ( (int) (((~(unsigned int)0) >> 1) + 1) )
-#endif
-
 #define uSEC_PER_SEC ((long)1000000)  /* microseconds in a second */
 #define mSEC_PER_SEC ((long)1000)     /* milliseconds in a second */
 #define uSEC_PER_mSEC ((long)1000)    /* microseconds in a millisecond */
@@ -232,11 +174,11 @@ typedef unsigned char byte;
 
 typedef void (*function_any) ();	/* generic function pointer */
 
-typedef void (*function_int) __P ((int i));
+typedef void (*function_int)(int i);
 
 typedef function_int function_signal;
 
-typedef void (*function_str)	__P ((char *arg));
+typedef void (*function_str)(char *arg);
 
 typedef struct timeval vtime;   /* needs #include <sys/tyme.h> */
 
@@ -303,7 +245,7 @@ typedef struct triggernode {
 typedef triggernode actionnode;
 typedef triggernode promptnode;
 
-typedef int  (*function_sort)	__P ((defnode *node1, defnode *node2));
+typedef int  (*function_sort)(defnode *node1, defnode *node2);
 
 typedef struct keynode {
     struct keynode *next;

@@ -7,24 +7,24 @@
 #define _MAIN_H_
 
 /* shared functions from main.c */
-void printver		__P ((void));
-void status		__P ((int s));
-void process_remote_input __P ((char *buf, int size));
-void push_params	__P ((void));
-void pop_params		__P ((void));
-void prompt_set_iac     __P ((char *p));
-char *parse_instruction __P ((char *line, char silent, char subs, char jit_subs));
-char *get_next_instr	__P ((char *p));
-void parse_user_input	__P ((char *line, char silent));
-void set_deffile	__P ((char *arg));
-int  is_permanent_variable __P ((varnode *v));
+void printver(void);
+void status(int s);
+void process_remote_input(char *buf, int size);
+void push_params(void);
+void pop_params(void);
+void prompt_set_iac(char *p);
+char *parse_instruction(char *line, char silent, char subs, char jit_subs);
+char *get_next_instr(char *p);
+void parse_user_input(char *line, char silent);
+void set_deffile(char *arg);
+int  is_permanent_variable(varnode *v);
 
 
 /* shared vars from main.c */
 extern int  prompt_status, line_status;
 extern int  limit_mem;
 extern char ready;
-extern VOLATILE char confirm;
+extern volatile char confirm;
 extern int  history_done;
 extern int  linemode;
 extern char hostname[];
@@ -49,7 +49,7 @@ extern int pos;			/* cursor position in edbuf */
 extern char edattrbeg[], edattrend[];
 extern int edattrbg;
 
-extern VOLATILE int sig_pending, sig_winch_got, sig_chld_got;
+extern volatile int sig_pending, sig_winch_got, sig_chld_got;
 
 extern long received, sent;
 

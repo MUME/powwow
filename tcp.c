@@ -71,7 +71,7 @@ fd_set fdset;			/* set of descriptors to select() on */
  * so far, only terminal type is processed but future extensions are
  * window size, X display location, etc.
  */
-static void dosubopt __P1 (byte *,str)
+static void dosubopt(byte *str)
 {
     char buf[256], *term;
     int len, err;
@@ -85,7 +85,7 @@ static void dosubopt __P1 (byte *,str)
 	    if (!(term = getenv("TERM"))) term = "unknown";
 	    sprintf(buf, "%c%c%c%c%.*s%c%c", IAC, SB, TELOPT_TTYPE, 0,
 		    256-7, term, IAC, SE);	/* 0 == IS */
-	    
+
 	    len = strlen(term) + 6;
 	    while ((err = write(tcp_fd, buf, len)) < 0 && errno == EINTR)
 	        ;
@@ -104,12 +104,12 @@ static void dosubopt __P1 (byte *,str)
  * send an option negotiation
  * 'what' is one of WILL, WONT, DO, DONT
  */
-static void sendopt __P2 (byte,what, byte,opt)
+static void sendopt(byte what, byte opt)
 {
     static byte buf[3] = { IAC, 0, 0 };
     int i;
     buf[1] = what; buf[2] = opt;
-    
+
     while ((i = write(tcp_fd, buf, 3)) < 0 && errno == EINTR)
 	;
     if (i != 3) {
@@ -129,7 +129,7 @@ static void sendopt __P2 (byte,what, byte,opt)
  * connect to remote host
  * Warning: some voodoo code here
  */
-int tcp_connect __P2 (const char *,addr, int,port)
+int tcp_connect(const char *addr, int port)
 {
     struct addrinfo *host_info;
     struct addrinfo addrinfo;
@@ -214,7 +214,7 @@ int tcp_connect __P2 (const char *,addr, int,port)
     }
 
 #else /* term */
-    
+
     if ((newtcp_fd = connect_server(0)) < 0) {
 	tty_puts("\n#powwow: unable to connect to term server\n");
 	return -1;
@@ -228,15 +228,15 @@ int tcp_connect __P2 (const char *,addr, int,port)
 	tty_puts("Connected to term server...\n");
 #ifdef TERM_COMPRESS
 	send_command(newtcp_fd, C_COMPRESS, 1, "y");
-#endif     
+#endif
 	send_command(newtcp_fd, C_DUMB, 1, 0);
     }
 
 #endif /* term */
-    
+
     tty_puts("connected!\n");
-    
-    
+
+
     {
 	/*
 	 * Now set some options on newtcp_fd :
@@ -248,7 +248,7 @@ int tcp_connect __P2 (const char *,addr, int,port)
 #	endif
 	if (setsockopt(newtcp_fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt)))
 	    errmsg("setsockopt(TCP_NODELAY) failed");
-	
+
 	/* TCP keep-alive */
 	if (setsockopt(newtcp_fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)))
 	    errmsg("setsockopt(SO_KEEPALIVE) failed");
@@ -257,10 +257,10 @@ int tcp_connect __P2 (const char *,addr, int,port)
 	 * Then, close-on-exec:
 	 * we don't want children to inherit the socket!
 	 */
-	
+
 	fcntl(newtcp_fd, F_SETFD, FD_CLOEXEC);
     }
-    
+
     return newtcp_fd;
 }
 
@@ -268,12 +268,12 @@ int tcp_connect __P2 (const char *,addr, int,port)
  * we don't expect IAC commands here, except IAC IAC (a protected ASCII 255)
  * which we replace with a single IAC (a plain ASCII 255)
  */
-int tcp_unIAC __P2 (char *,buffer, int,len)
+int tcp_unIAC(char *buffer, int len)
 {
     char *s, *start, warnIACs = 1;
     if (!memchr(buffer, IAC, len))
 	return len;
-    
+
     for (s = start = buffer; len > 0; buffer++, len--) {
 	if (buffer[0] == (char)(byte)IAC) {
 	    if (len > 1 && buffer[1] == (char)(byte)IAC)
@@ -292,7 +292,7 @@ int tcp_unIAC __P2 (char *,buffer, int,len)
  * the reverse step: protect ASCII 255 as IAC IAC
  * the dest buffer is assumed to be big enough to hold the whole data
  */
-static int tcp_addIAC __P3 (char *,dest, char *,txt, int,len)
+static int tcp_addIAC(char *dest, char *txt, int len)
 {
     char *s = dest;
     while (len-- > 0) {
@@ -306,7 +306,7 @@ static int tcp_addIAC __P3 (char *,dest, char *,txt, int,len)
  * read a maximum of size chars from remote host
  * using the telnet protocol. return chars read.
  */
-int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
+int tcp_read(int fd, char *buffer, int maxsize)
 {
     char state = CONN_LIST(fd).state;
     char old_state = CONN_LIST(fd).old_state;
@@ -314,7 +314,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
     static byte subopt[MAX_SUBOPT];
     static int subchars;
     byte *p, *s, *linestart;
-    
+
     char *ibuffer = buffer;
     if (state == GOT_R) {
         /* make room for the leading \r */
@@ -324,7 +324,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 
     while ((i = read(fd, ibuffer, maxsize)) < 0 && errno == EINTR)
 	;
-    
+
     if (i == 0) {
 	CONN_LIST(fd).state = NORMAL;
 	tcp_close(NULL);
@@ -334,7 +334,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 	errmsg("read from socket");
 	return 0;
     }
-    
+
     /*
      * scan through the buffer,
      * interpret telnet protocol escapes and MUME MPI messages
@@ -379,9 +379,9 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 		/* first, flush any missing \r */
 		if (state == GOT_R)
 		  *p++ = '\r';
-		
+
 		*p++ = *s;
-		
+
 		/* check for MUME MPI messages: */
 		if (p - linestart == MPILEN && !memcmp(linestart, MPI, MPILEN)) {
 		    if (!(CONN_LIST(fd).flags & IDEDITOR)) {
@@ -396,13 +396,13 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 			p = linestart;
 		    }
 		}
-		
+
 		if (state != ALTNORMAL)
 		    state = NORMAL;
 		break;
 	    }
 	    break;
-	    
+
 	 case GOTIAC:
 	    switch (*s) {
 	     case WILL:
@@ -436,7 +436,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 		break;
 	    }
 	    break;
-	    
+
 	 case GOTWILL:
 #ifdef TELOPTS
 	    tty_printf("[got WILL %s]\n", TELOPTSTR(*s));
@@ -465,7 +465,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 	    }
 	    state = old_state;
 	    break;
-	    
+
 	 case GOTWONT:
 #ifdef TELOPTS
 	    tty_printf("[got WONT %s]\n", TELOPTSTR(*s));
@@ -478,7 +478,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 	    sendopt(DONT, *s);
 	    state = old_state;
 	    break;
-	    
+
 	 case GOTDO:
 #ifdef TELOPTS
 	    tty_printf("[got DO %s]\n", TELOPTSTR(*s));
@@ -502,7 +502,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 	    }
 	    state = old_state;
 	    break;
-	    
+
 	 case GOTDONT:
 #ifdef TELOPTS
 	    tty_printf("[got DONT %s]\n", TELOPTSTR(*s));
@@ -514,7 +514,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 	    sendopt(WONT, *s);
 	    state = old_state;
 	    break;
-	    
+
 	 case GOTSB:
 	    if (*s == IAC) {
 		state = GOTSBIAC;
@@ -523,7 +523,7 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
 		  subopt[subchars++] = *s;
 	    }
 	    break;
-	    
+
 	 case GOTSBIAC:
 	    if (*s == IAC) {
 		if (subchars < MAX_SUBOPT)
@@ -544,15 +544,15 @@ int tcp_read __P3 (int,fd, char *,buffer, int,maxsize)
     }
     CONN_LIST(fd).state = state;
     CONN_LIST(fd).old_state = old_state;
-    
+
     if (!(CONN_LIST(tcp_fd).flags & SPAWN)) {
         log_write(buffer, (char *)p - buffer, 0);
     }
-    
+
     return (char *)p - buffer;
 }
 
-static void internal_tcp_raw_write __P3 (int,fd, const char *,data, int,len)
+static void internal_tcp_raw_write(int fd, const char *data, int len)
 {
     while (len > 0) {
         int i;
@@ -567,14 +567,14 @@ static void internal_tcp_raw_write __P3 (int,fd, const char *,data, int,len)
     }
 }
 
-void tcp_raw_write __P3 (int,fd, const char *,data, int,len)
+void tcp_raw_write(int fd, const char *data, int len)
 {
     tcp_flush();
     internal_tcp_raw_write(fd, data, len);
 }
 
 /* write data, escape any IACs */
-void tcp_write_escape_iac __P3 (int,fd, const char *,data, int,len)
+void tcp_write_escape_iac(int fd, const char *data, int len)
 {
     tcp_flush();
 
@@ -593,15 +593,15 @@ void tcp_write_escape_iac __P3 (int,fd, const char *,data, int,len)
 /*
  * Send current terminal size (RFC 1073)
  */
-void tcp_write_tty_size __P0 (void)
+void tcp_write_tty_size(void)
 {
     static byte buf[] = { IAC, SB, TELOPT_NAWS, 0, 0, 0, 0, IAC, SE };
-    
+
     buf[3] = cols >> 8;
     buf[4] = cols & 0xff;
     buf[5] = lines >> 8;
     buf[6] = lines & 0xff;
-    
+
     tcp_raw_write(tcp_main_fd, (char *)buf, 9);
 #ifdef TELOPTS
     tty_printf("[sent term size %d %d]\n", cols, lines);
@@ -611,7 +611,7 @@ void tcp_write_tty_size __P0 (void)
 /*
  * send a string to the main connection on the remote host
  */
-void tcp_main_write __P1 (char *,data)
+void tcp_main_write(char *data)
 {
     tcp_write(tcp_main_fd, data);
 }
@@ -624,12 +624,12 @@ static int output_socket = -1;	/* to which socket buffer should be sent*/
 /*
  * put data in the output buffer for transmission to the remote host
  */
-void tcp_write __P2 (int,fd, char *,data)
+void tcp_write(int fd, char *data)
 {
     char *iacs, *out;
     int len, space, iacp;
     len = strlen(data);
-    
+
     if (tcp_main_fd != -1 && tcp_main_fd == fd) {
 	if (linemode & LM_NOECHO)
 	    log_write("", 0, 1); /* log a newline only */
@@ -643,19 +643,19 @@ void tcp_write __P2 (int,fd, char *,data)
 	status(1);
     else
 	status(-1);
-    
+
     if (fd != output_socket) { /* is there data to another socket? */
 	tcp_flush(); /* then flush it */
 	output_socket = fd;
     }
-    
+
     out = output_buffer + output_len;
     space = BUFSIZE - output_len;
-    
+
     while (len) {
 	iacs = memchr(data, IAC, len);
 	iacp = iacs ? iacs - data : len;
-	
+
 	if (iacp == 0) {
 	    /* we're at the IAC, send it */
 	    if (space < 2) {
@@ -667,18 +667,18 @@ void tcp_write __P2 (int,fd, char *,data)
 	    data++; len--;
 	    continue;
 	}
-	
+
 	while (space < iacp) {
 	    memcpy(out, data, space);
 	    data += space; len -= space;
 	    iacp -= space;
 	    output_len = BUFSIZE;
-	    
+
 	    tcp_flush();
 	    out = output_buffer;
 	    space = BUFSIZE;
 	}
-	    
+
 	if (iacp /* && space >= iacp */ ) {
 	    memcpy(out, data, iacp);
 	    out += iacp; output_len += iacp; space -= iacp;
@@ -696,22 +696,22 @@ void tcp_write __P2 (int,fd, char *,data)
 /*
  * send all buffered data to the remote host
  */
-void tcp_flush __P0 (void)
+void tcp_flush(void)
 {
     int n;
     char *p = output_buffer;
-    
+
     if (output_len && output_socket == -1) {
 	clear_input_line(1);
 	PRINTF("#no open connections. Use '#connect main <address> <port>' to open a connection.\n");
 	output_len = 0;
 	return;
     }
-    
+
     if (!output_len)
 	return;
-    
-    while (output_len) {	
+
+    while (output_len) {
 	while ((n = write(output_socket, p, output_len)) < 0 && errno == EINTR)
 	    ;
 	if (n < 0) {
@@ -723,7 +723,7 @@ void tcp_flush __P0 (void)
 	p += n;
 	output_len -= n;
     }
-    
+
     if (CONN_LIST(output_socket).flags & SPAWN)
 	status(1);
     else
@@ -739,10 +739,10 @@ void tcp_flush __P0 (void)
  * return connection's fd given id,
  * or -1 if null or invalid id is given
  */
-int tcp_find __P1 (char *,id)
+int tcp_find(char *id)
 {
     int i;
-    
+
     for (i=0; i<conn_max_index; i++) {
 	if (CONN_INDEX(i).id && !strcmp(CONN_INDEX(i).id, id))
 	    return CONN_INDEX(i).fd;
@@ -753,20 +753,20 @@ int tcp_find __P1 (char *,id)
 /*
  * show list of open connections
  */
-void tcp_show __P0 (void)
+void tcp_show(void)
 {
     int i = tcp_count+tcp_attachcount;
-    
-    PRINTF("#%s connection%s opened%c\n", i ? "The following" : "No", 
+
+    PRINTF("#%s connection%s opened%c\n", i ? "The following" : "No",
 	       i==1 ? " is" : "s are", i ? ':' : '.');
-    
-    
+
+
     for (i=0; i<conn_max_index; i++)
 	if (CONN_INDEX(i).id && !(CONN_INDEX(i).flags & SPAWN)) {
 	    tty_printf("MUD %sactive %s ##%s\t (%s %d)\n",
 		       CONN_INDEX(i).flags & ACTIVE ? "   " : "non",
 		       i == tcp_main_fd ? "(default)" : "         ",
-		       CONN_INDEX(i).id, 
+		       CONN_INDEX(i).id,
 		       CONN_INDEX(i).host, CONN_INDEX(i).port);
 	}
     for (i=0; i<conn_max_index; i++)
@@ -781,11 +781,11 @@ void tcp_show __P0 (void)
 /*
  * permanently change main connection
  */
-void tcp_set_main __P1 (int,fd)
+void tcp_set_main(int fd)
 {
     /* GH: reset linemode and prompt */
     tcp_main_fd = fd;
-    if (linemode & LM_CHAR) 
+    if (linemode & LM_CHAR)
 	linemode = 0, tty_special_keys();
     else
 	linemode = 0;
@@ -796,10 +796,10 @@ void tcp_set_main __P1 (int,fd)
 /*
  * open another connection
  */
-void tcp_open __P4 (char *,id, char *,initstring, char *,host, int,port)
+void tcp_open(char *id, char *initstring, char *host, int port)
 {
     int newtcp_fd, i;
-    
+
     if (tcp_count+tcp_attachcount >= MAX_CONNECTS) {
 	PRINTF("#too many open connections.\n");
 	return;
@@ -808,7 +808,7 @@ void tcp_open __P4 (char *,id, char *,initstring, char *,host, int,port)
 	PRINTF("#connection \"%s\" already open.\n", id);
 	return;
     }
-    
+
     /* find a free slot */
     for (i=0; i<MAX_CONNECTS; i++) {
 	if (!CONN_INDEX(i).id)
@@ -818,7 +818,7 @@ void tcp_open __P4 (char *,id, char *,initstring, char *,host, int,port)
 	PRINTF("#internal error, connection table full :(\n");
 	return;
     }
-	
+
     if (!(CONN_INDEX(i).host = my_strdup(host))) {
 	errmsg("malloc");
 	return;
@@ -836,7 +836,7 @@ void tcp_open __P4 (char *,id, char *,initstring, char *,host, int,port)
 	CONN_INDEX(i).id = 0;
 	return;
     }
-    
+
     conn_table[newtcp_fd] = i;
     CONN_INDEX(i).flags = ACTIVE;
     CONN_INDEX(i).state = NORMAL;
@@ -848,7 +848,7 @@ void tcp_open __P4 (char *,id, char *,initstring, char *,host, int,port)
 	tcp_max_fd = newtcp_fd;
     if (conn_max_index <= i)
 	conn_max_index = i+1;
-    
+
     FD_SET(newtcp_fd, &fdset); 		/* add socket to select() set */
     tcp_count++;
 
@@ -858,7 +858,7 @@ void tcp_open __P4 (char *,id, char *,initstring, char *,host, int,port)
     tcp_set_main(tcp_fd = newtcp_fd);
     if (opt_sendsize)
 	tcp_write_tty_size();
-    
+
     if (initstring) {
 	parse_instruction(initstring, 0, 0, 1);
 	history_done = 0;
@@ -868,10 +868,10 @@ void tcp_open __P4 (char *,id, char *,initstring, char *,host, int,port)
 /*
  * close a connection
  */
-void tcp_close __P1 (char *,id)
+void tcp_close(char *id)
 {
     int i, sfd;
-    
+
     status(1);
     tty_puts(edattrend);
     /*
@@ -879,7 +879,7 @@ void tcp_close __P1 (char *,id)
      * if tcp_read gets an EOF, before edattrend is
      * printed by get_remote_input() itself.
      */
-    
+
     if (id) {  /* #zap cmd */
 	if ((sfd = tcp_find(id)) < 0) {
 	    tty_printf("#no such connection: \"%s\"\n", id);
@@ -892,9 +892,9 @@ void tcp_close __P1 (char *,id)
     close(sfd);
 
     abort_edit_fd(sfd);
-    
+
     tty_printf("#connection on \"%s\" closed.\n", CONN_LIST(sfd).id);
-    
+
     if (sfd == tcp_main_fd) { /* main connection closed */
 	if (tcp_count == 1) { /* was last connection */
 	    if (opt_exit)
@@ -918,10 +918,10 @@ void tcp_close __P1 (char *,id)
 	}
 	tcp_set_main(tcp_main_fd);
     }
-    
+
     if (tcp_fd == sfd)
 	tcp_fd = -1; /* no further I/O allowed on sfd, as we just closed it */
-    
+
     FD_CLR(sfd, &fdset);
     if (CONN_LIST(sfd).flags & SPAWN)
 	tcp_attachcount--;
@@ -937,7 +937,7 @@ void tcp_close __P1 (char *,id)
 	free(CONN_LIST(sfd).fragment);
 	CONN_LIST(sfd).fragment = 0;
     }
-    
+
     /* recalculate conn_max_index */
     i = conn_table[sfd];
     if (i+1 == conn_max_index) {
@@ -946,7 +946,7 @@ void tcp_close __P1 (char *,id)
 	} while (i>=0 && !CONN_INDEX(i).id);
 	conn_max_index = i+1;
     }
-    
+
     /* recalculate tcp_max_fd */
     for (i = tcp_max_fd = 0; i<conn_max_index; i++) {
 	if (CONN_INDEX(i).id && tcp_max_fd < CONN_INDEX(i).fd)
@@ -957,10 +957,10 @@ void tcp_close __P1 (char *,id)
 /*
  * toggle output display from another connection
  */
-void tcp_togglesnoop __P1 (char *,id)
+void tcp_togglesnoop(char *id)
 {
     int sfd;
-    
+
     sfd = tcp_find(id);
     if (sfd>=0) {
         CONN_LIST(sfd).flags ^= ACTIVE;
@@ -973,7 +973,7 @@ void tcp_togglesnoop __P1 (char *,id)
     }
 }
 
-void tcp_spawn __P2 (char *,id, char *,cmd)
+void tcp_spawn(char *id, char *cmd)
 {
     int i, childpid, sockets[2];
 
@@ -986,7 +986,7 @@ void tcp_spawn __P2 (char *,id, char *,cmd)
 	return;
     }
     unescape(cmd);
-    
+
     switch (childpid = fork()) {
       case 0:
 	/* child */
@@ -1007,10 +1007,10 @@ void tcp_spawn __P2 (char *,id, char *,cmd)
 	return;
     }
     close(sockets[1]);
-    
+
     /* Again, we don't want children to inherit sockets */
     fcntl(sockets[0], F_SETFD, FD_CLOEXEC);
-    
+
     /* now find a free slot */
     for (i=0; i<MAX_CONNECTS; i++) {
 	if (!CONN_INDEX(i).id) {
@@ -1023,7 +1023,7 @@ void tcp_spawn __P2 (char *,id, char *,cmd)
 	close(sockets[0]);
 	return;
     }
-    
+
     if (!(CONN_INDEX(i).host = my_strdup(cmd))) {
 	errmsg("malloc");
 	close(sockets[0]);
@@ -1040,22 +1040,22 @@ void tcp_spawn __P2 (char *,id, char *,cmd)
     CONN_INDEX(i).old_state = NORMAL;
     CONN_INDEX(i).port = 0;
     CONN_INDEX(i).fd = sockets[0];
-    
+
     FD_SET(sockets[0], &fdset);	       /* add socket to select() set */
     tcp_attachcount++;
-    
+
     if (tcp_max_fd < sockets[0])
 	tcp_max_fd = sockets[0];
     if (conn_max_index <= i)
 	conn_max_index = i+1;
-    
+
     if (opt_info) {
 	PRINTF("#successfully spawned \"%s\" with pid %d\n", id, childpid);
     }
-    
+
     /*
      * when the child exits we also get an EOF on the socket,
      * so no special care is needed by the SIGCHLD handler.
-     */    
+     */
 }
 

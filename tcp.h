@@ -12,7 +12,7 @@ extern int tcp_attachcount;	/* number of spawned or attached commands */
 
 extern int conn_max_index;	/* 1 + highest used conn_list[] index */
 
-    
+
 /* multiple connections control */
 
 /* state of telnet connection */
@@ -58,22 +58,22 @@ extern byte conn_table[MAX_FDSCAN];	     /* fd -> index translation table */
 
 extern fd_set fdset;               /* set of descriptors to select() on */
 
-int  tcp_connect	__P ((const char *addr, int port));
-int  tcp_read		__P ((int fd, char *buffer, int maxsize));
-void tcp_raw_write	__P ((int fd, const char *data, int len));
-void tcp_write_escape_iac __P3 (int,fd, const char *,data, int,len);
-void tcp_write_tty_size __P ((void));
-void tcp_write		__P ((int fd, char *data));
-void tcp_main_write	__P ((char *data));
-void tcp_flush		__P ((void));
-void tcp_set_main	__P ((int fd));
-void tcp_open		__P ((char *id, char *initstring, char *host, int port));
-int  tcp_find		__P ((char *id));
-void tcp_show		__P ((void));
-void tcp_close		__P ((char *id));
-void tcp_togglesnoop	__P ((char *id));
-void tcp_spawn		__P ((char *id, char *cmd));
-int  tcp_unIAC		__P ((char *data, int len));
+int  tcp_connect(const char *addr, int port);
+int  tcp_read(int fd, char *buffer, int maxsize);
+void tcp_raw_write(int fd, const char *data, int len);
+void tcp_write_escape_iac(int fd, const char *data, int len);
+void tcp_write_tty_size(void);
+void tcp_write(int fd, char *data);
+void tcp_main_write(char *data);
+void tcp_flush(void);
+void tcp_set_main(int fd);
+void tcp_open(char *id, char *initstring, char *host, int port);
+int  tcp_find(char *id);
+void tcp_show(void);
+void tcp_close(char *id);
+void tcp_togglesnoop(char *id);
+void tcp_spawn(char *id, char *cmd);
+int  tcp_unIAC(char *data, int len);
 
 #endif /* _TCP_H_ */
 

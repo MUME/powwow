@@ -37,10 +37,10 @@
 
 editsess *edit_sess;	/* head of session list */
 
-char edit_start[BUFSIZE]; /* messages to send to host when starting */ 
-char edit_end[BUFSIZE];   /* or leaving editing sessions */ 
+char edit_start[BUFSIZE]; /* messages to send to host when starting */
+char edit_end[BUFSIZE];   /* or leaving editing sessions */
 
-static void write_message __P1 (char *,s)
+static void write_message(char *s)
 {
     clear_input_line(opt_compact);
     if (!opt_compact) {
@@ -54,7 +54,7 @@ static void write_message __P1 (char *,s)
  * Process editing protocol message from buf with len remaining chars.
  * Return number of characters used in the message.
  */
-int process_message __P2 (char *,buf, int,len)
+int process_message(char *buf, int len)
 {
     int msglen, i, l, used;
     char *text, *from, *to;
@@ -62,17 +62,17 @@ int process_message __P2 (char *,buf, int,len)
     int got_iac;
 
     status(1);
-    
+
     msglen = atoi(buf + 1);
     for (i = 1; i < len && isdigit(buf[i]); i++)
       ;
-    
+
     if (i < len && buf[i] == '\r') i++;
     if (i >= len || buf[i] != '\n') {
 	write_message ("#warning: MPI protocol error\n");
 	return 0;
     }
-    
+
     l = len - ++i;
 
     text = (char *)malloc(msglen);
@@ -125,7 +125,7 @@ int process_message __P2 (char *,buf, int,len)
 	tty_flush();
     }
     tty_printf("\rread all %d chars.%s\n", msglen, tty_clreoln);
-    
+
     switch(*buf) {
     case 'E':
         message_edit(text, msglen, 0, 0);
@@ -147,18 +147,18 @@ int process_message __P2 (char *,buf, int,len)
  * abort an editing session when
  * the MUD socket it comes from gets closed
  */
-void abort_edit_fd __P1 (int,fd)
+void abort_edit_fd(int fd)
 {
     editsess **sp, *p;
 
     if (fd < 0)
 	return;
-    
+
     for (sp = &edit_sess; *sp; sp = &(*sp)->next) {
 	p = *sp;
 	if (p->fd != fd)
 	    continue;
-    
+
 	if (kill(p->pid, SIGKILL) < 0) {       /* Editicide */
 	    errmsg("kill editor child");
 	    continue;
@@ -173,11 +173,11 @@ void abort_edit_fd __P1 (int,fd)
  * cancel an editing session; does not free anything
  * (the child death signal handler will remove the session from the list)
  */
-void cancel_edit __P1 (editsess *,sp)
+void cancel_edit(editsess *sp)
 {
     char buf[BUFSIZE];
     char keystr[16];
-    
+
     if (kill(sp->pid, SIGKILL) < 0) {       /* Editicide */
 	errmsg("kill editor child");
 	return;
@@ -212,16 +212,16 @@ static ssize_t read_file(int fd, void *buf, size_t count)
  * send back edited text to server, or cancel the editing session if the
  * file was not changed.
  */
-static void finish_edit __P1 (editsess *,sp)
+static void finish_edit(editsess *sp)
 {
     char *realtext = NULL, *text;
     int fd, txtlen, hdrlen;
     struct stat sbuf;
     char keystr[16], buf[256], hdr[65];
-    
+
     if (sp->fd == -1)
 	goto cleanup_file;
-    
+
     fd = open(sp->file, O_RDONLY);
     if (fd == -1) {
 	errmsg("open edit file");
@@ -231,19 +231,19 @@ static void finish_edit __P1 (editsess *,sp)
 	errmsg("fstat edit file");
 	goto cleanup_fd;
     }
-    
+
     txtlen = sbuf.st_size;
-    
+
     if (!sp->cancel && (sbuf.st_mtime > sp->ctime || txtlen != sp->oldsize)) {
 	/* file was changed by editor: send back result to server */
-	
+
 	realtext = (char *)malloc(txtlen + 65);
 	/* +1 is for possible LF, +64 for header */
 	if (!realtext) {
 	    errmsg("malloc");
 	    goto cleanup_fd;
 	}
-	
+
 	text = realtext + 64;
         txtlen = read_file(fd, text, txtlen);
         if (txtlen < 0)
@@ -255,30 +255,30 @@ static void finish_edit __P1 (editsess *,sp)
 	    text[txtlen] = '\n';
 	    txtlen++;
 	}
-	
+
 	sprintf(keystr, "E%u\n", sp->key);
-	
+
 	sprintf(hdr, "%sE%d\n%s", MPI, (int)(txtlen + strlen(keystr)), keystr);
-	
+
 	text -= (hdrlen = strlen(hdr));
 	memcpy(text, hdr, hdrlen);
-	
+
 	/* text[hdrlen + txtlen] = '\0'; */
 	tcp_write_escape_iac(sp->fd, text, hdrlen + txtlen);
-	
+
 	sprintf(buf, "#completed session %s (%u)\n", sp->descr, sp->key);
 	write_message(buf);
     } else {
 	/* file wasn't changed, cancel editing session */
 	sprintf(keystr, "C%u\n", sp->key);
 	sprintf(hdr, "%sE%d\n%s", MPI, (int) strlen(keystr), keystr);
-	
+
 	tcp_raw_write(sp->fd, hdr, strlen(hdr));
-	
+
 	sprintf(buf, "#cancelled session %s (%u)\n", sp->descr, sp->key);
 	write_message(buf);
     }
-    
+
 cleanup_text: if (realtext) free(realtext);
 cleanup_fd:   close(fd);
 cleanup_file: if (unlink(sp->file) < 0)
@@ -289,7 +289,7 @@ cleanup_file: if (unlink(sp->file) < 0)
  * start an editing session: process the EDIT/VIEW message
  * if view == 1, text will be viewed, else edited
  */
-void message_edit __P4 (char *,text, int,msglen, char,view, char,builtin)
+void message_edit(char *text, int msglen, char view, char builtin)
 {
     char tmpname[BUFSIZE], command_str[BUFSIZE], buf[BUFSIZE];
     char *errdesc = "#warning: protocol error (message_edit, no %s)\n";
@@ -299,11 +299,11 @@ void message_edit __P4 (char *,text, int,msglen, char,view, char,builtin)
     char *editor, *descr;
     char *args[4];
     int waitforeditor;
-    
+
     status(1);
 
     args[0] = "/bin/sh"; args[1] = "-c";
-    args[2] = command_str; args[3] = 0;  
+    args[2] = command_str; args[3] = 0;
 
     if (view) {
 	key = (unsigned int)-1;
@@ -331,7 +331,7 @@ void message_edit __P4 (char *,text, int,msglen, char,view, char,builtin)
 	return;
     }
     text[i++] = '\0';
-    
+
     sprintf(tmpname, "/tmp/powwow.%u.%d%d", key, getpid(), abs(rand()) >> 8);
     if ((tmpfd = open(tmpname, O_WRONLY | O_CREAT, 0600)) < 0) {
 	errmsg("create temp edit file");
@@ -345,7 +345,7 @@ void message_edit __P4 (char *,text, int,msglen, char,view, char,builtin)
 	return;
     }
     close(tmpfd);
-    
+
     s = (editsess*)malloc(sizeof(editsess));
     if (!s) {
 	errmsg("malloc");
@@ -359,14 +359,14 @@ void message_edit __P4 (char *,text, int,msglen, char,view, char,builtin)
     s->descr = my_strdup(descr);
     s->file = my_strdup(tmpname);
     free(text);
-    
-    /* send a edit_start message (if wanted) */ 
+
+    /* send a edit_start message (if wanted) */
     if ((!edit_sess) && (*edit_start)) {
 	error = 0;
 	parse_instruction(edit_start, 0, 0, 1);
 	history_done = 0;
     }
-    
+
     if (view) {
 	if (!(editor = getenv("POWWOWPAGER")) && !(editor = getenv("PAGER")))
 	    editor = "more";
@@ -374,13 +374,13 @@ void message_edit __P4 (char *,text, int,msglen, char,view, char,builtin)
 	if (!(editor = getenv("POWWOWEDITOR")) && !(editor = getenv("EDITOR")))
 	    editor = "emacs";
     }
-    
+
     if (editor[0] == '&') {
 	waitforeditor = 0;
 	editor++;
     } else
 	waitforeditor = 1;
-    
+
     if (waitforeditor) {
 	tty_quit();
 	/* ignore SIGINT since interrupting the child would interrupt us too,
@@ -388,7 +388,7 @@ void message_edit __P4 (char *,text, int,msglen, char,view, char,builtin)
 	sig_permanent(SIGINT, SIG_IGN);
 	sig_permanent(SIGCHLD, SIG_DFL);
     }
-    
+
     switch(childpid = fork()) {		/* let's get schizophrenic */
       case 0:
 	sprintf(command_str, "%s %s", editor, s->file);
@@ -412,17 +412,17 @@ void message_edit __P4 (char *,text, int,msglen, char,view, char,builtin)
 
 	signal_start();		/* reset SIGINT and SIGCHLD handlers */
 	tty_start();
-	
+
 	if (s->fd != -1) {
 	    tty_gotoxy(0, lines - 1);
 	    tty_putc('\n');
 	}
-	
+
 	if (i == -1)
 	    errmsg("waitpid");
 	else
 	    finish_edit(s);
-	
+
 	free(s->descr);
 	free(s->file);
 	if (i != -1 && !edit_sess && *edit_end) {
@@ -430,9 +430,9 @@ void message_edit __P4 (char *,text, int,msglen, char,view, char,builtin)
 	    parse_instruction(edit_end, 0, 0, 1);
 	    history_done = 0;
 	}
-	
+
 	free(s);
-	
+
     } else {
 	s->next = edit_sess;
 	edit_sess = s;
@@ -443,11 +443,11 @@ void message_edit __P4 (char *,text, int,msglen, char,view, char,builtin)
  * Our child has snuffed it. check if it was an editor, and update the
  * session list if that is the case.
  */
-void sig_chld_bottomhalf __P0 (void)
+void sig_chld_bottomhalf(void)
 {
     int fd, pid, ret;
     editsess **sp, *p;
-   
+
     /* GH: while() instead of just one check */
     while ((pid = waitpid(-1, &ret, WNOHANG)) > 0) {
 
@@ -465,7 +465,7 @@ void sig_chld_bottomhalf __P0 (void)
 
 	    /* GH: only send message if found matching session */
 
-	    /* send the edit_end message if this is the last editor... */ 
+	    /* send the edit_end message if this is the last editor... */
 	    if ((!edit_sess) && (*edit_end)) {
 		int otcp_fd = tcp_fd;  /* backup current socket fd */
 		tcp_fd = fd;
