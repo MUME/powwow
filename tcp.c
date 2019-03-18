@@ -134,7 +134,6 @@ int tcp_connect(const char *addr, int port)
     struct addrinfo *host_info;
     struct addrinfo addrinfo;
     struct sockaddr_in6 address;
-    int must_free = 0;
     int err, newtcp_fd;
 
     status(1);
@@ -175,7 +174,6 @@ int tcp_connect(const char *addr, int port)
                        gai_strerror(gai));
             return -1;
         }
-        must_free = 1;
 	if (opt_info)
 	    tty_puts("found.\n");
         break;
@@ -286,20 +284,6 @@ int tcp_unIAC(char *buffer, int len)
 	*s++ = *buffer;
     }
     return s - start;
-}
-
-/*
- * the reverse step: protect ASCII 255 as IAC IAC
- * the dest buffer is assumed to be big enough to hold the whole data
- */
-static int tcp_addIAC(char *dest, char *txt, int len)
-{
-    char *s = dest;
-    while (len-- > 0) {
-	if ((*s++ = *txt++) == (char)(byte)IAC)
-	    *s++ = (char)(byte)IAC;
-    }
-    return s - dest;
 }
 
 /*
@@ -755,7 +739,7 @@ int tcp_find(char *id)
  */
 void tcp_show(void)
 {
-    int i = tcp_count+tcp_attachcount;
+    int i = tcp_count + tcp_attachcount;
 
     PRINTF("#%s connection%s opened%c\n", i ? "The following" : "No",
 	       i==1 ? " is" : "s are", i ? ':' : '.');
