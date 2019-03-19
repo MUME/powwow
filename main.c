@@ -1172,7 +1172,7 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
     char mpat[BUFSIZE], *npat=0, *npat2=0, *src=line, *nsrc=0, c;
     ptr *pbuf, buf = (ptr)0;
     char *tmp, *realpat = pat;
-    int mbeg = 0, mword = 0, prm = -1, p;
+    int mbeg = 0, mword = 0, prm = -1;
 
     TAKE_PTR(pbuf, buf);
 
@@ -1185,9 +1185,11 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
     }
     unescape(pat);
 
-    for (p = 0; p < NUMPARAM; p++)
-	match_s[p] = match_e[p] = 0;
-    p = 0;
+    {
+        int p;
+        for (p = 0; p < NUMPARAM; p++)
+            match_s[p] = match_e[p] = 0;
+    }
 
     if (*pat == '^') {
 	pat++;
@@ -1202,7 +1204,7 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 	    /* $x matches a single word */
 	    tmp = pat + 1;
 	    if (isdigit(*tmp)) {
-		p = 0;
+		int p = 0;
 		while (isdigit(*tmp) && p < NUMPARAM) {
 		    p *= 10;
 		    p += *tmp++ - '0';
