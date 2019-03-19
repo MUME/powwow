@@ -309,7 +309,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	key = (unsigned int)-1;
 	i = 0;
     } else {
-	if (text[0] != 'M') {
+	if (msglen < 1 || text[0] != 'M') {
 	    tty_printf(errdesc, "M");
 	    free(text);
 	    return;
