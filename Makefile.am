@@ -1,5 +1,6 @@
 # Default help file directory
-AM_CFLAGS=-DPOWWOW_DIR=\"$(pkgdatadir)\" -DPLUGIN_DIR=\"$(plugindir)\"
+AM_CPPFLAGS=-D_XOPEN_SOURCE=700 -DPOWWOW_DIR=\"$(pkgdatadir)\" \
+	-DPLUGIN_DIR=\"$(plugindir)\"
 
 bin_PROGRAMS = powwow powwow-muc powwow-movieplay
 powwow_SOURCES = beam.c cmd.c log.c edit.c cmd2.c eval.c \

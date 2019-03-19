@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT
-AM_INIT_AUTOMAKE(powwow, 1.2.18)
+AC_INIT(powwow, 1.2.18)
+AM_INIT_AUTOMAKE
 
 AC_CANONICAL_HOST
 
@@ -74,7 +74,7 @@ AM_CONDITIONAL([MAN_PAGE_ENCODING_IS_UTF_8],
                [test "${MAN_PAGE_ENCODING}" = UTF-8 ])
 
 # Checks for programs.
-AC_PROG_CC
+AC_PROG_CC_C89
 AC_PROG_LN_S
 
 # Checks for libraries.
