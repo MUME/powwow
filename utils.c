@@ -10,6 +10,15 @@
  *
  */
 
+#ifdef BSD_LIKE
+/* Needed for SIGWINCH on OpenBSD. */
+# define _BSD_SOURCE
+/* Needed for SIGWINCH on FreeBSD. */
+# define __BSD_VISIBLE
+/* Needed for SIGWINCH on Darwin. */
+# define _DARWIN_C_SOURCE 1
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
