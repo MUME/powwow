@@ -13,6 +13,16 @@ AC_ARG_ENABLE(vt100,
 AS_IF([ test "${enable_vt100}" = yes ],
       [ AC_DEFINE(USE_VT100) ])
 
+AC_ARG_ENABLE(pcreposix,
+	AC_HELP_STRING([--enable-pcreposix],
+			[Use PCRE POSIX library for regular expressions [[default=no]]]),
+        ,
+        [enable_pcreposix="no"]
+)
+AS_IF([ test "${enable_pcreposix}" = yes ],
+      [ AC_DEFINE(USE_PCREPOSIX) ])
+
+
 AC_ARG_ENABLE(sort,
 	AC_HELP_STRING([--enable-sort],
 			[Sort aliases and actions [[default=no]]]),
@@ -99,6 +109,12 @@ AC_CHECK_HEADERS([stdlib.h unistd.h])
 AC_CHECK_HEADER([locale.h],
     [AC_CHECK_FUNC([putwc],[AC_DEFINE(USE_LOCALE)])])
 
+if test "x${enable_pcreposix}" == "xyes"; then
+    AC_CHECK_HEADER([pcreposix.h],
+        [AC_CHECK_FUNC([regcomp], [AC_CHECK_LIB(pcreposix,regcomp)])],
+        [AC_MSG_ERROR([*** pcreposix libraries not found])], [])
+fi
+
 AC_ARG_WITH([plugindir],
             AC_HELP_STRING([--with-plugindir=DIR],
                            [Plugin installation directory [[default=LIBDIR/powwow]]])],
@@ -128,6 +144,7 @@ Data directory:     $(eval eval eval echo "${datadir}/${PACKAGE}")
 Plugin directory:   $(eval eval eval echo "${plugindir}")
 
 enable-vt100:       ${enable_vt100}
+enable-pcreposix:   ${enable_pcreposix}
 enable-sort:        ${enable_sort}
 enable-noshell:     ${enable_noshell}
 enable-ansibug:     ${enable_ansibug}

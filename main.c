@@ -75,7 +75,9 @@
 extern int errno;
 extern int select();
 
-#ifdef USE_REGEXP
+#ifdef USE_PCREPOSIX
+# include <pcreposix.h>
+#elif defined(USE_REGEXP)
 # include <regex.h>
 #endif
 
@@ -436,6 +438,9 @@ void printver(void)
 	       " regexp,"
 #else
 	       " no regexp,"
+#endif
+#ifdef USE_PCREPOSIX
+	       " pcreposix,"
 #endif
 #ifdef USE_LOCALE
 	       " locale,"
