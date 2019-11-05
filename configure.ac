@@ -150,7 +150,7 @@ AC_C_CONST
 # Checks for library functions.
 AC_FUNC_MALLOC
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile src/Makefile doc/Makefile man/Makefile)
 
 AC_OUTPUT
 
