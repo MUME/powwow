@@ -18,14 +18,9 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-#ifdef USE_PCREPOSIX
-# include <pcreposix.h>
-#elif defined(USE_REGEXP)
-# include <regex.h>
-#endif
-
 #include "defines.h"
 #include "main.h"
+#include "feature/regex.h"
 #include "utils.h"
 #include "cmd2.h"
 #include "tty.h"

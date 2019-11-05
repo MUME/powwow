@@ -26,17 +26,12 @@
 #include <unistd.h>
 #include <errno.h>
 
-#ifdef USE_PCREPOSIX
-# include <pcreposix.h>
-#elif defined(USE_REGEXP)
-# include <regex.h>
-#endif
-
 int strcasecmp();
 int select();
 
 #include "defines.h"
 #include "main.h"
+#include "feature/regex.h"
 #include "utils.h"
 #include "beam.h"
 #include "edit.h"

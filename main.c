@@ -75,14 +75,9 @@
 extern int errno;
 extern int select();
 
-#ifdef USE_PCREPOSIX
-# include <pcreposix.h>
-#elif defined(USE_REGEXP)
-# include <regex.h>
-#endif
-
 #include "defines.h"
 #include "main.h"
+#include "feature/regex.h"
 #include "utils.h"
 #include "beam.h"
 #include "cmd.h"
@@ -435,12 +430,15 @@ void printver(void)
 	       " termios,"
 #endif
 #ifdef USE_REGEXP
-	       " regexp,"
+          " regexp "
+  #ifdef USE_REGEXP_PCREPOSIX
+          "(pcreposix)"
+  #else
+          "(libc)"
+  #endif
+          ","
 #else
-	       " no regexp,"
-#endif
-#ifdef USE_PCREPOSIX
-	       " pcreposix,"
+          " no regexp,"
 #endif
 #ifdef USE_LOCALE
 	       " locale,"
