@@ -10,7 +10,7 @@ powwow_LDFLAGS = @dl_ldflags@
 powwowdir = $(pkgincludedir)
 powwow_HEADERS = beam.h cmd.h log.h edit.h cmd2.h eval.h \
 		 utils.h main.h tcp.h list.h map.h tty.h \
-		 ptr.h defines.h
+		 ptr.h defines.h feature/regex.h
 powwow_muc_SOURCES = powwow-muc.c
 powwow_movieplay_SOURCES = powwow-movieplay.c
 
