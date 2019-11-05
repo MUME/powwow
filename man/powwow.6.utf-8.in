@@ -1,5 +1,5 @@
 .\" -*-nroff-*-
-.TH POWWOW 6 "2018-Sep-11" "powwow 1.2.20"
+.TH POWWOW 6 "2018-Sep-11" "powwow @PACKAGE_VERSION@"
 .SH NAME
 powwow \- telnet protocol client for MUD playing
 .SH SYNOPSIS
