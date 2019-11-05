@@ -13,15 +13,12 @@ AC_ARG_ENABLE(vt100,
 AS_IF([ test "${enable_vt100}" = yes ],
       [ AC_DEFINE(USE_VT100) ])
 
-AC_ARG_ENABLE(pcreposix,
-	AC_HELP_STRING([--enable-pcreposix],
-			[Use PCRE POSIX library for regular expressions [[default=no]]]),
+AC_ARG_ENABLE(regex,
+    AS_HELP_STRING([--enable-regex],
+            [Enable regular expressions [[default=yes]]]),
         ,
-        [enable_pcreposix="no"]
+        [enable_regex="yes"]
 )
-AS_IF([ test "${enable_pcreposix}" = yes ],
-      [ AC_DEFINE(USE_PCREPOSIX) ])
-
 
 AC_ARG_ENABLE(sort,
 	AC_HELP_STRING([--enable-sort],
@@ -88,7 +85,6 @@ AC_PROG_CC_C89
 AC_PROG_LN_S
 
 # Checks for libraries.
-AC_CHECK_FUNC(regcomp,AC_DEFINE(USE_REGEXP))
 AC_CHECK_FUNC(lrand48,,AC_DEFINE(USE_RANDOM))
 
 if test "x${enable_vt100}" != "xyes"; then
@@ -109,10 +105,35 @@ AC_CHECK_HEADERS([stdlib.h unistd.h])
 AC_CHECK_HEADER([locale.h],
     [AC_CHECK_FUNC([putwc],[AC_DEFINE(USE_LOCALE)])])
 
-if test "x${enable_pcreposix}" == "xyes"; then
-    AC_CHECK_HEADER([pcreposix.h],
-        [AC_CHECK_FUNC([regcomp], [AC_CHECK_LIB(pcreposix,regcomp)])],
-        [AC_MSG_ERROR([*** pcreposix libraries not found])], [])
+if test "x${enable_regex}" = "xno"; then
+    enable_regex_using="disabled"
+else
+    enable_regex_using="none"
+
+    if test "x${enable_regex}" = "xyes"; then
+        AC_CHECK_HEADER("pcreposix.h",[
+            enable_regex_using="pcreposix"
+        ], [
+            AC_CHECK_FUNC(regcomp,[
+                enable_regex_using="libc"
+            ])
+        ])
+    else
+        # Use the options defined
+        enable_regex_using="${enable_regex}"
+    fi
+
+    if test "x${enable_regex_using}" = "xnone"; then
+        # no regex
+        AC_MSG_RESULT([Unable to find regex support])
+    else
+        AC_DEFINE(USE_REGEXP)
+
+        if test "x${enable_regex_using}" = "xpcreposix"; then
+            AC_DEFINE(USE_REGEXP_PCREPOSIX)
+            AC_CHECK_LIB(pcreposix, regcomp)
+        fi
+    fi
 fi
 
 AC_ARG_WITH([plugindir],
@@ -144,7 +165,7 @@ Data directory:     $(eval eval eval echo "${datadir}/${PACKAGE}")
 Plugin directory:   $(eval eval eval echo "${plugindir}")
 
 enable-vt100:       ${enable_vt100}
-enable-pcreposix:   ${enable_pcreposix}
+enable-regex:       ${enable_regex} (${enable_regex_using})
 enable-sort:        ${enable_sort}
 enable-noshell:     ${enable_noshell}
 enable-ansibug:     ${enable_ansibug}
