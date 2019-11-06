@@ -14,8 +14,13 @@ AS_IF([ test "${enable_vt100}" = yes ],
       [ AC_DEFINE(USE_VT100) ])
 
 AC_ARG_ENABLE(regex,
-    AS_HELP_STRING([--enable-regex],
-            [Enable regular expressions [[default=yes]]]),
+
+        AS_HELP_STRING([--enable-regex],
+            [Enable regular expressions [[default=yes]]])
+        []
+        [yes            - find first available: pcreposix, libc]
+        [pcreposix      - use pcreposix]
+        [libc           - use libc]
         ,
         [enable_regex="yes"]
 )
