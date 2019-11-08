@@ -21,7 +21,7 @@ AC_ARG_ENABLE(regex,
         [yes            - find first available: pcreposix, libc]
         [pcreposix      - use pcreposix]
         [libc           - use libc]
-        ,
+        ,,
         [enable_regex="yes"]
 )
 
