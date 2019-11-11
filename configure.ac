@@ -111,15 +111,16 @@ AC_CHECK_HEADER([locale.h],
     [AC_CHECK_FUNC([putwc],[AC_DEFINE(USE_LOCALE)])])
 
 if test "x${enable_regex}" = "xno"; then
+    AC_MSG_RESULT([Regex support disabled])
     enable_regex_using="disabled"
 else
-    enable_regex_using="none"
+    enable_regex_using="not_found"
 
     if test "x${enable_regex}" = "xyes"; then
         AC_CHECK_HEADER("pcreposix.h",[
             enable_regex_using="pcreposix"
         ], [
-            AC_CHECK_FUNC(regcomp,[
+            AC_CHECK_HEADER("regex.h",[
                 enable_regex_using="libc"
             ])
         ])
@@ -128,15 +129,24 @@ else
         enable_regex_using="${enable_regex}"
     fi
 
-    if test "x${enable_regex_using}" = "xnone"; then
+    if test "x${enable_regex_using}" = "xnot_found"; then
         # no regex
-        AC_MSG_RESULT([Unable to find regex support])
+        enable_regex=no
+        AC_MSG_RESULT([*** Unable to enable regex support])
     else
         AC_DEFINE(USE_REGEXP)
 
         if test "x${enable_regex_using}" = "xpcreposix"; then
             AC_DEFINE(USE_REGEXP_PCREPOSIX)
-            AC_CHECK_LIB(pcreposix, regcomp)
+            AC_CHECK_LIB(pcreposix, regcomp
+            ,,AC_MSG_ERROR([*** pcreposix library not found])
+            )
+        elif test "x${enable_regex_using}" = "libc"; then
+            AC_CHECK_FUNC(regcomp
+                ,,AC_MSG_ERROR([*** regcomp not found in libc])
+            )
+        else
+            AC_MSG_ERROR([*** unknown regex option: $enable_regex_using])
         fi
     fi
 fi
@@ -156,8 +166,6 @@ AC_C_CONST
 AC_FUNC_MALLOC
 
 AC_OUTPUT(Makefile src/Makefile doc/powwow.doc doc/Makefile man/powwow.6.utf-8 man/Makefile)
-
-AC_OUTPUT
 
 cat <<EOF
 
