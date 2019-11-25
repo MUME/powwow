@@ -137,14 +137,14 @@ else
         AC_DEFINE(USE_REGEXP)
 
         if test "x${enable_regex_using}" = "xpcreposix"; then
-            AC_CHECK_LIB(pcreposix, regcomp,
-                AC_MSG_RESULT([Using pcreposix regcomp])
-                    AC_DEFINE(USE_REGEXP_PCREPOSIX),
+            AC_MSG_RESULT([Using pcreposix regcomp])
+            AC_DEFINE(USE_REGEXP_PCREPOSIX)
+            AC_CHECK_LIB(pcreposix,regcomp,,
                 AC_MSG_ERROR([*** pcreposix library not found])
             )
         elif test "x${enable_regex_using}" = "xlibc"; then
-            AC_CHECK_FUNC(regcomp,
-                AC_MSG_RESULT([Using libc regcomp]),
+            AC_MSG_RESULT([Using libc regcomp])
+            AC_CHECK_FUNC(regcomp,,
                 AC_MSG_ERROR([*** regcomp not found in libc])
             )
         else
