@@ -179,7 +179,7 @@ int map_walk(char *word, int silent, int maponly)
             *buf = *word;
             if (!maponly) {
                 if (*lookup_alias(buf))
-                    parse_instruction(buf, 1, 0, 0); // we want to execute aliases n,e,s,w,u,d
+                    parse_instruction(buf, 1, 0, 0); /* we want to execute aliases n,e,s,w,u,d */
                 else tcp_write(tcp_fd, buf);
 	    }
             if (is_main || maponly)

@@ -87,8 +87,8 @@ void _ptrdel(ptr p)
 {
     if (p && p->signature == PTR_SIG)
 	free((void *)p);
-    //else
-	//fprintf( stderr, "Tried to free non ptr @%x\n", p );
+    /* else */
+    /*     fprintf( stderr, "Tried to free non ptr @%x\n", p ); */
 }
 
 /* clear a ptr */
