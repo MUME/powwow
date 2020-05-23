@@ -230,6 +230,7 @@ void log_write(char *str, int len, int newline)
                 if (newline) {
                     const char nl[1] = "\n";
                     fwrite(nl, 1, 1, capturefile);
+                    newline = 0;
                 }
             }
 	}
