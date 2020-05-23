@@ -392,10 +392,8 @@ void message_edit(char *text, int msglen, char view, char builtin)
     switch(childpid = fork()) {		/* let's get schizophrenic */
       case 0:
 	sprintf(command_str, "%s %s", editor, s->file);
-	sprintf(buf, "TITLE=%s", s->descr);
-	putenv(buf);
-	/*	   setenv("TITLE", s->descr, 1);*/
-	execvp((char *)args[0], (char **)args);
+        setenv("TITLE", s->descr, 1);
+	execvp(args[0], args);
 	syserr("execve");
 	break;
       case -1:
