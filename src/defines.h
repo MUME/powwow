@@ -72,7 +72,6 @@
 
 #define CAPLEN		20	/* max length of a terminal capability */
 #define BUFSIZE		4096	/* general buffer size */
-#define SOCKBUFSIZE	BUFSIZE	/* socket buffer size for read */
 #define PARAMLEN	99	/* initial length of text strings */
 #define MAX_MAPLEN	1000	/* maximum length of automapped path */
 #define MIN_WORDLEN	3	/* the minimum length for history words */
