@@ -159,7 +159,7 @@ void log_resize(int newsize)
 /*
  * add a single line to the buffer
  */
-static void log_writeline(char *line, int len, int kind, long msecs)
+static void log_writeline(const char *line, int len, int kind, long msecs)
 {
     int dst;
 
@@ -193,7 +193,7 @@ static void log_writeline(char *line, int len, int kind, long msecs)
 /*
  * write to #capture / #movie buffer
  */
-void log_write(char *str, int len, int newline)
+void log_write(const char *str, int len, int newline)
 {
     char *next;
     long diff;
@@ -228,8 +228,7 @@ void log_write(char *str, int len, int newline)
 	    if (capturefile) {
                 fwrite(str, 1, i, capturefile);
                 if (newline) {
-                    const char nl[1] = "\n";
-                    fwrite(nl, 1, 1, capturefile);
+                    fputc('\n', capturefile);
                     newline = 0;
                 }
             }

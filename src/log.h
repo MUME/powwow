@@ -12,7 +12,7 @@ void log_clearsleep(void);
 void log_flush(void);
 int  log_getsize(void);
 void log_resize(int newsize);
-void log_write(char *str, int len, int newline);
+void log_write(const char *str, int len, int newline);
 
 void  reprint_writeline(char *line);
 char *reprint_getline(void);
