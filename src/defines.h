@@ -75,8 +75,8 @@
 #define PARAMLEN	99	/* initial length of text strings */
 #define MAX_MAPLEN	1000	/* maximum length of automapped path */
 #define MIN_WORDLEN	3	/* the minimum length for history words */
-#define MAX_WORDS	512	/* number of words kept for TAB-completion */
-#define MAX_HIST	128	/* number of history lines kept */
+#define MAX_WORDS	4096	/* number of words kept for TAB-completion */
+#define MAX_HIST	2048	/* number of history lines kept */
 #define LOG_MAX_HASH	7
 #define MAX_HASH	(1<<LOG_MAX_HASH) /* max hash value, must be a power of 2 */
 #define NUMPARAM	10	/* number of local unnamed params allowed
