@@ -789,8 +789,9 @@ static int exe_op(operator *op)
 	    /* src == empty string. just return it */
 	    check_delete(&o2);
 	    o1.txt = src;
-	    if (!REAL_ERROR)
+	    if (!REAL_ERROR) {
 		p=&o1; ret=1;
+            }
 	    break;
 	}
 
@@ -915,8 +916,9 @@ static int exe_op(operator *op)
 	}
 	check_delete(&o2);
 	o1.txt = dst;
-	if (!REAL_ERROR)
+	if (!REAL_ERROR) {
 	    p=&o1; ret=1;
+        }
 	break;
       case (int)colon_question:
       case (int)point_question:
