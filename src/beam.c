@@ -291,7 +291,7 @@ cleanup_file: if (unlink(sp->file) < 0)
  */
 void message_edit(char *text, int msglen, char view, char builtin)
 {
-    char tmpname[BUFSIZE], command_str[BUFSIZE], buf[BUFSIZE];
+    char tmpname[BUFSIZE], command_str[BUFSIZE];
     char *errdesc = "#warning: protocol error (message_edit, no %s)\n";
     int tmpfd, i, childpid;
     unsigned int key;
