@@ -31,9 +31,9 @@ COMPILING
 	make
 
 	To build the powwow binary.  It will run from any location, but there
-	are some settings set at compile time that will make more sense if 
-	you use the "install" make target to install the binaries and 
-	documentation together.  For example, POWWOWDIR will default to the 
+	are some settings set at compile time that will make more sense if
+	you use the "install" make target to install the binaries and
+	documentation together.  For example, POWWOWDIR will default to the
 	location that "make install" will put the online powwow documentation,
 	making the #help feature work out of the box without modifying any
 	settings or flags.
@@ -113,7 +113,7 @@ BUGS
 	the maintainer has a fair chance of fixing them. Don't expect
 	a bug to be fixed, unless you explain it in detail (expecially
 	how to reproduce it) and supply the powwow and OS version,
-	as well as the compilation options. 
+	as well as the compilation options.
         Suggestions for improvements are also very welcome.
 
 AUTHORS OF CANCAN
@@ -130,15 +130,14 @@ AUTHORS OF CANCAN
 
 AUTHORS OF POWWOW
 
-        Massimiliano Ghilardi <max@Linuz.sns.it>, alias Cosmos,
-	is the original author, and Gustav Hållberg <f92-gha@nada.kth.se>
-	contributed a lot of new features.
+        Massimiliano Ghilardi <max@Linuz.sns.it>, alias Cosmos, is the original
+	author, and Gustav HÃ¥llberg contributed a lot of new features.
 
 	powwow moved to hoopajoo.net in 2005, and is now maintained by
 	Steve Slaven <bpk@hoopajoo.net>
 
         The powwow WWW page is: http://hoopajoo.net/projects/powwow.html
-	
+
 	If you forgot where you downloaded powwow from, you can get it from
 	the above address.
 

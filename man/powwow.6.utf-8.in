@@ -60,9 +60,8 @@ variable set to the document title sent from the MUD.
 
 .SH AUTHOR
 .PP
-Massimiliano Ghilardi <max@Linuz.sns.it> and Gustav Hållberg <gustav
-at gmail dot com> are the people that added many new features to an
-existing client,
+Massimiliano Ghilardi <max@Linuz.sns.it> and Gustav Hållberg are the
+people that added many new features to an existing client,
 .I Cancan
 and transformed it into
 .IR powwow .
