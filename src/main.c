@@ -1394,11 +1394,8 @@ static void get_user_input(void)
 	    edbuf[edlen] = '\0';
 #ifdef BUG_ANSI
 	    if (edattrbg)
-		tty_printf("%s\n", edattrend);
-	    else
+		tty_puts(edattrend);
 #endif
-		tty_putc('\n');
-
 	    tcp_write(tcp_fd, edbuf);
 	    edlen = 0;
 	    typed[nchars = 0] = 0;
