@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(powwow, 1.2.22)
+AC_INIT(powwow, 1.2.23)
 AM_INIT_AUTOMAKE
 
 AC_CANONICAL_HOST
