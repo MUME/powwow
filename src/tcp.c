@@ -579,14 +579,15 @@ void tcp_write_escape_iac(int fd, const char *data, int len)
  */
 void tcp_write_tty_size(void)
 {
-    static byte buf[] = { IAC, SB, TELOPT_NAWS, 0, 0, 0, 0, IAC, SE };
+    static const char head[] = { IAC, SB, TELOPT_NAWS };
+    tcp_raw_write(tcp_main_fd, head, sizeof head);
 
-    buf[3] = cols >> 8;
-    buf[4] = cols & 0xff;
-    buf[5] = lines >> 8;
-    buf[6] = lines & 0xff;
+    char size[] = { cols >> 8, cols & 0xff, lines >> 8, lines & 0xff };
+    tcp_write_escape_iac(tcp_main_fd, size, sizeof size);
 
-    tcp_raw_write(tcp_main_fd, (char *)buf, 9);
+    static const char tail[] = { IAC, SE };
+    tcp_raw_write(tcp_main_fd, tail, sizeof tail);
+
 #ifdef TELOPTS
     tty_printf("[sent term size %d %d]\n", cols, lines);
 #endif
