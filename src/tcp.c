@@ -73,26 +73,26 @@ fd_set fdset;			/* set of descriptors to select() on */
  */
 static void dosubopt(byte *str)
 {
-    char buf[256], *term;
-    int len, err;
-
     if (str[0] == TELOPT_TTYPE) {
 	if (str[1] == 1) {
 	    /* 1 == SEND */
 #ifdef TELOPTS
 	    tty_printf("[got SB TERMINAL TYPE SEND]\n");
 #endif
-	    if (!(term = getenv("TERM"))) term = "unknown";
-	    sprintf(buf, "%c%c%c%c%.*s%c%c", IAC, SB, TELOPT_TTYPE, 0,
-		    256-7, term, IAC, SE);	/* 0 == IS */
+            static const char head[] = { IAC, SB, TELOPT_TTYPE, TELQUAL_IS };
+            tcp_raw_write(tcp_fd, head, sizeof head);
 
-	    len = strlen(term) + 6;
-	    while ((err = write(tcp_fd, buf, len)) < 0 && errno == EINTR)
-	        ;
-	    if (err != len) {
-	        errmsg("write subopt to socket");
-		return;
-	    }
+            const char *term = getenv("TERM");
+	    if (term == NULL)
+                term = "unknown";
+            size_t len = strlen(term);
+            if (len > 256)
+                len = 256;      /* cap to something sensible */
+
+            tcp_write_escape_iac(tcp_fd, term, len);
+
+            static const char tail[] = { IAC, SE };
+            tcp_raw_write(tcp_fd, tail, sizeof tail);
 #ifdef TELOPTS
 	    tty_printf("[sent SB TERMINAL TYPE IS %s]\n", term);
 #endif
