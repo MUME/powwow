@@ -27,6 +27,9 @@
 #ifndef TELOPT_NAWS
 #  define TELOPT_NAWS 31
 #endif
+#ifndef TELOPT_CHARSET
+#  define TELOPT_CHARSET 42
+#endif
 #include <arpa/inet.h>
 #ifndef NEXT
 #  include <unistd.h>
@@ -66,6 +69,58 @@ byte conn_table[MAX_FDSCAN];	     /* fd -> index translation table */
 
 fd_set fdset;			/* set of descriptors to select() on */
 
+enum {
+    CHARSET_REQUEST = 1,
+    CHARSET_ACCEPTED = 2,
+    CHARSET_REJECTED = 3
+};
+
+static void charset_request_subopt(char *str)
+{
+    byte sep = str[0];
+    if (sep == 0)
+        return;
+
+    for (char *start = str + 1; *start; ) {
+        char *end = strchr(start, sep);
+        size_t nlen = end == NULL ? strlen(start) : end - start;
+
+        /* supported charset names; powwow can only do ISO 8859-1 */
+#define N(s) { .str = s, .len = sizeof s - 1 }
+        static const struct {
+            const char *str;
+            size_t len;
+        } csets[] = {
+            N("ISO_8859-1:1987"),
+            N("ISO-8859-1")
+        };
+#undef N
+
+        for (int i = 0; i < sizeof csets / sizeof csets[0]; ++i)
+            if (nlen == csets[i].len
+                && memcmp(start, csets[i].str, nlen) == 0) {
+                static const char head[] = {
+                    IAC, SB, TELOPT_CHARSET, CHARSET_ACCEPTED
+                };
+                tcp_raw_write(tcp_fd, head, sizeof head);
+
+                tcp_write_escape_iac(tcp_fd, csets[i].str,
+                                     csets[i].len);
+
+                static const char tail[] = { IAC, SE };
+                tcp_raw_write(tcp_fd, tail, sizeof tail);
+                return;
+            }
+
+        ++start;
+    }
+
+    static const char reject[] = {
+        IAC, SB, TELOPT_CHARSET, CHARSET_REJECTED, IAC, SE
+    };
+    tcp_raw_write(tcp_fd, reject, sizeof reject);
+}
+
 /*
  * process suboptions.
  * so far, only terminal type is processed but future extensions are
@@ -97,7 +152,8 @@ static void dosubopt(byte *str)
 	    tty_printf("[sent SB TERMINAL TYPE IS %s]\n", term);
 #endif
 	}
-    }
+    } else if (str[0] == TELOPT_CHARSET && str[1] == CHARSET_REQUEST)
+        charset_request_subopt((char *)str + 2);
 }
 
 /*
@@ -106,13 +162,12 @@ static void dosubopt(byte *str)
  */
 static void sendopt(byte what, byte opt)
 {
-    static byte buf[3] = { IAC, 0, 0 };
+    byte buf[] = { IAC, what, opt };
     int i;
-    buf[1] = what; buf[2] = opt;
 
-    while ((i = write(tcp_fd, buf, 3)) < 0 && errno == EINTR)
+    while ((i = write(tcp_fd, buf, sizeof buf)) < 0 && errno == EINTR)
 	;
-    if (i != 3) {
+    if (i != sizeof buf) {
 	errmsg("write option to socket");
 	return;
     }
@@ -479,6 +534,9 @@ int tcp_read(int fd, char *buffer, int maxsize)
 		sendopt(WILL, *s);
 		tcp_write_tty_size();
 		break;
+            case TELOPT_CHARSET:
+                sendopt(WILL, *s);
+                break;
 	     default:
 		/* accept nothing else */
 		sendopt(WONT, *s);
