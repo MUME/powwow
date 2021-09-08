@@ -207,7 +207,10 @@ void tty_start(void)
 
 #ifdef USE_LOCALE
     tty_write_state.fd = 1;
-    wcrtomb(NULL, L'\0', &tty_write_state.mbstate);
+    if (wcrtomb(NULL, L'\0', &tty_write_state.mbstate) == (size_t)-1) {
+        perror("wcrtomb()");
+        abort();
+    }
 #else  /* ! USE_LOCALE */
  #ifdef DEBUG_TTY
     setvbuf(stdout, NULL, _IONBF, BUFSIZ);
@@ -830,7 +833,7 @@ again:
         if (ignore_error)
             return;
         if (errno != EILSEQ) {
-            perror("mcrtomb()");
+            perror("wcrtomb()");
             abort();
         }
         /* character cannot be represented; try to write a question
