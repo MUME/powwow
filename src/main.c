@@ -71,10 +71,6 @@
 #include <locale.h>
 #endif
 
-/* are these really needed? */
-extern int errno;
-extern int select();
-
 #include "defines.h"
 #include "main.h"
 #include "feature/regex.h"
@@ -222,11 +218,15 @@ volatile int sig_pending, sig_winch_got, sig_chld_got;
  * Cosmos: they are hardcoded in cmd2.c, function parse_action()
  * so don't change them.
  */
-char action_chars[ACTION_TYPES] = { '>', '%' };
+const char action_chars[ACTION_TYPES] = { '>', '%' };
 
-/* GH: different delimeter modes */
-char *delim_list[] = { " ;", " <>!=(),;\"'{}[]+-/*%", 0 };
-int   delim_len [] = {   2 ,                     21 , 0 };
+#define DELIMSET_NORMAL   " ;"
+#define DELIMSET_PROGRAM  " <>!=(),;\"'{}[]+-/*%"
+
+char *delim_list[] = { DELIMSET_NORMAL, DELIMSET_PROGRAM, NULL };
+int   delim_len [] = {
+    sizeof DELIMSET_NORMAL - 1, sizeof DELIMSET_PROGRAM - 1, 0
+};
 char *delim_name[] = { "normal",    "program", "custom" };
 int   delim_mode = DELIM_NORMAL;
 

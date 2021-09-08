@@ -16,6 +16,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <ctype.h>
@@ -25,9 +26,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <errno.h>
-
-int strcasecmp();
-int select();
 
 #include "defines.h"
 #include "main.h"
@@ -42,7 +40,7 @@ int select();
 #include "eval.h"
 
 /* anyone knows if ANSI 6429 talks about more than 8 colors? */
-static char *colornames[] = {
+static const char *const colornames[] = {
     "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white",
     "BLACK", "RED", "GREEN", "YELLOW", "BLUE", "MAGENTA", "CYAN", "WHITE", "none"
 };

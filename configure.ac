@@ -86,7 +86,15 @@ AM_CONDITIONAL([MAN_PAGE_ENCODING_IS_UTF_8],
                [test "${MAN_PAGE_ENCODING}" = UTF-8 ])
 
 # Checks for programs.
-AC_PROG_CC_C89
+AC_PROG_CC
+AC_MSG_CHECKING([C version])
+case "x${ac_prog_cc_stdc}" in
+    xc89 ) AC_MSG_ERROR([C99 or later is required; found C89]) ;;
+    xc99 ) AC_MSG_RESULT(C99) ;;
+    xc11 ) AC_MSG_RESULT(C11) ;;
+    x ) AC_MSG_ERROR([not found]) ;;
+    * ) AC_MSG_WARN([unknown version ${ac_prog_cc_stdc}]) ;;
+esac
 AC_PROG_LN_S
 
 # Checks for libraries.

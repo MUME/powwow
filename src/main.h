@@ -114,6 +114,6 @@ extern int   delim_mode;
 /* Group delimiter for actions/aliases, defaults to @ */
 extern char *group_delim;
 
-extern char action_chars[];
+extern const char action_chars[];
 
 #endif /* _MAIN_H_ */

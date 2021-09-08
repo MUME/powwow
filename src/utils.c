@@ -869,11 +869,12 @@ static void load_missing_stuff(int n)
         tty_puts("#default editing keys settings loaded\n");
     }
     if (n < 5) {
-	static char *str[] = { "compact", "debug", "echo", "info",
+	static const char *const str[] = { "compact", "debug", "echo", "info",
 		"keyecho", "speedwalk", "wrap", 0 };
 	int i;
 	for (i=0; str[i]; i++) {
-	    sprintf(buf, "#%s={#if ($(1)==\"on\") #option +%s; #else #if ($(1)==\"off\") #option -%s; #else #option %s}",
+	    sprintf(buf, "#%s={#if ($(1)==\"on\") #option +%s; #else"
+                    " #if ($(1)==\"off\") #option -%s; #else #option %s}",
 		    str[i], str[i], str[i], str[i]);
 	    parse_alias(buf);
 	}
@@ -887,7 +888,8 @@ static void load_missing_stuff(int n)
 	parse_alias(buf);
 	limit_mem = 1048576;
 	tty_printf("#compatibility aliases loaded:\n\t%s\n", "#lines, #settimer");
-	tty_puts("#max text/strings length set to 1048576 bytes\n\tuse \"#setvar mem\" to change it\n\n#wait...");
+	tty_puts("#max text/strings length set to 1048576 bytes\n"
+                 "\tuse \"#setvar mem\" to change it\n\n#wait...");
 	tty_flush();
 	sleep(1);
 	tty_puts("ok\n");
@@ -1042,7 +1044,8 @@ static char tmpname[BUFSIZE];
 
 static void fail_msg(void)
 {
-    PRINTF("#error: cannot write to temporary file \"%s\": %s\n", tmpname, strerror(errno));
+    PRINTF("#error: cannot write to temporary file \"%s\": %s\n",
+           tmpname, strerror(errno));
 }
 
 /*
@@ -1261,7 +1264,7 @@ int save_settings(void)
 	failed = rename(tmpname, deffile);
 	if (failed == -1) {
 	    PRINTF("#error: cannot move temporary file \"%s\" to \"%s\": %s\n",
-		       tmpname, deffile, strerror(errno));
+                   tmpname, deffile, strerror(errno));
 	} else
 	    failed = 1;
     }

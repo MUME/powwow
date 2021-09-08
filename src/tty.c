@@ -88,8 +88,6 @@ typedef struct termio termiostruct;
 #  endif
 #endif
 
-/* int ioctl(); */
-
 #ifdef USE_VT100	/* hard-coded vt100 features if no termcap: */
 
 static char kpadstart[] = "", kpadend[] = "", begoln[] = "\r",
@@ -106,11 +104,11 @@ static int len_begoln = 1, len_leftcur = 3, len_upcur = 3, gotocost = 8;
 
 #else /* not USE_VT100, termcap function declarations */
 
-int tgetent();
-int tgetnum();
-int tgetflag();
-char *tgetstr();
-char *tgoto();
+int tgetent(char *bp, const char *name);
+int tgetnum(const char *id);
+int tgetflag(const char *id);
+char *tgetstr(const char *id, char **area);
+char *tgoto(const char *cap, int col, int row);
 
 /* terminal escape sequences */
 static char kpadstart[CAPLEN], kpadend[CAPLEN],

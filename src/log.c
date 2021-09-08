@@ -52,7 +52,7 @@ static int logsize  = 0;	/* size of circular (pointer to string) list */
 
 #define LOGFULL (logend == (logstart ? logstart - 1 : logsize - 1))
 
-static char *names[] = { NULL, "line", "prompt", "sleep" };
+static const char *const names[] = { NULL, "line", "prompt", "sleep" };
 
 /*
  * flush a single buffer line
