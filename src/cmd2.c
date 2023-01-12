@@ -879,8 +879,8 @@ void show_marks(void)
 	       (markers && !markers->next) ? " is" : "s are",
 	       markers ? ':' : '.');
     for (p = markers; p; p = p->next)
-	tty_printf("#mark %s%s=%s\n", p->mbeg ? "^" : "",
-		   p->pattern, attr_name(p->attrcode));
+	tty_printf("#mark %s%s=%s\n", p->b.mbeg ? "^" : "",
+		   p->b.pattern, attr_name(p->attrcode));
 }
 
 
@@ -894,7 +894,7 @@ void parse_mark(char *str)
     char mbeg = 0;
 
     if (*str == '=') {
-	PRINTF("#marker must be non-null.\n");
+	PRINTF("#marker must be non-empty.\n");
 	return;
     }
     p = first_regular(str, '=');
@@ -906,10 +906,10 @@ void parse_mark(char *str)
         if ((n = *np)) {
 	    ptr pbuf = (ptr)0;
 	    char *name;
-	    pbuf = ptrmescape(pbuf, n->pattern, strlen(n->pattern), 0);
+	    pbuf = ptrmescape(pbuf, n->b.pattern, strlen(n->b.pattern), 0);
 	    if (MEM_ERROR) { ptrdel(pbuf); return; }
             name = attr_name(n->attrcode);
-            sprintf(inserted_next, "#mark %s%.*s=%.*s", n->mbeg ? "^" : "",
+            sprintf(inserted_next, "#mark %s%.*s=%.*s", n->b.mbeg ? "^" : "",
 		    BUFSIZE-(int)strlen(name)-9, pbuf ? ptrdata(pbuf) : "",
 		    BUFSIZE-9, name);
 	    ptrdel(pbuf);
@@ -949,8 +949,8 @@ void parse_mark(char *str)
         } else if (!*p)
 	    if ((n = *np)) {
 		if (opt_info) {
-		    PRINTF("#deleting mark: %s%s=%s\n", n->mbeg ? "^" : "",
-			   n->pattern, attr_name(n->attrcode));
+		    PRINTF("#deleting mark: %s%s=%s\n", n->b.mbeg ? "^" : "",
+			   n->b.pattern, attr_name(n->attrcode));
 		}
 		delete_marknode(np);
 	    } else {
@@ -972,6 +972,111 @@ void parse_mark(char *str)
             if (opt_info)
 		tty_printf(" mark: %s%s=%s\n", mbeg ? "^" : "",
 			   pattern, attr_name(attrcode));
+        }
+    }
+}
+
+
+/*
+ * show defined substitutions
+ */
+void show_substitutions(void)
+{
+    substnode *p;
+    PRINTF("#%s substitution%s defined%c\n", substitutions ? "the following" : "no",
+	       (substitutions && !substitutions->next) ? " is" : "s are",
+	       substitutions ? ':' : '.');
+    for (p = substitutions; p; p = p->next)
+	tty_printf("#substitute %s%s=%s\n", p->b.mbeg ? "^" : "",
+		   p->b.pattern, p->replacement);
+}
+
+
+/*
+ * parse arguments to the #mark command
+ */
+void parse_substitute(char *str)
+{
+    char *p;
+    substnode **np, *n;
+    char mbeg = 0;
+
+    if (*str == '=') {
+	PRINTF("#substitute must be non-empty.\n");
+	return;
+    }
+    p = first_regular(str, '=');
+    if (!*p) {
+	if (*str ==  '^')
+	    mbeg = 1, str++;
+        unescape(str);
+        np = lookup_subst(str, mbeg);
+        if ((n = *np)) {
+	    char *replacement = n->replacement;
+	    ptr pbuf = ptrmescape(pbuf, n->b.pattern, strlen(n->b.pattern), 0);
+	    if (MEM_ERROR) { ptrdel(pbuf); return; }
+            sprintf(inserted_next, "#substitute %s%.*s=%.*s", n->b.mbeg ? "^" : "",
+		    BUFSIZE-(int)strlen(replacement)-14, pbuf ? ptrdata(pbuf) : "",
+		    BUFSIZE-14, replacement);
+	    ptrdel(pbuf);
+        } else {
+            PRINTF("#unknown substitution, cannot show: \"%s\"\n", str);
+        }
+
+    } else {
+	char pattern[BUFSIZE], *p2, *replacement;
+        int  wild = 0;
+
+        *(p++) = '\0';
+	if (*str ==  '^')
+	    mbeg = 1, str++;
+	my_strncpy(pattern, str, BUFSIZE-1);
+        unescape(pattern);
+	p2 = pattern;
+	while (*p2) {
+	    if (ISMARKWILDCARD(*p2)) {
+		wild = 1;
+		if (ISMARKWILDCARD(*(p2 + 1))) {
+		    error = SYNTAX_ERROR;
+		    PRINTF("#error: two wildcards (& or $) may not be next to eachother\n");
+		    return;
+		}
+	    }
+	    p2++;
+	}
+
+        np = lookup_subst(pattern, mbeg);
+        replacement = p;
+        if (!*p)
+	    if ((n = *np)) {
+		if (opt_info) {
+		    PRINTF("#deleting substitution: %s%s=%s\n", n->b.mbeg ? "^" : "",
+			   n->b.pattern, n->replacement);
+		}
+		delete_substnode(np);
+	    } else {
+		PRINTF("#unknown substitution, cannot delete: \"%s%s\"\n",
+		       mbeg ? "^" : "", pattern);
+	    }
+        else {
+            if ((n = *np)) {
+                if (!(replacement = my_strdup(replacement))) {
+                        return;
+                }
+                if (n->replacement) { free(n->replacement); }
+                n->replacement = replacement;
+                if (opt_info) {
+                    PRINTF("#changed");
+                }
+            } else {
+                add_substnode(pattern, replacement, mbeg, wild);
+                if (opt_info) {
+                    PRINTF("#new");
+                }
+            }
+            if (opt_info)
+		tty_printf(" substitution: %s%s=%s\n", mbeg ? "^" : "",
+			   pattern, replacement);
         }
     }
 }
@@ -1673,4 +1778,3 @@ void exe_history(int count)
 	parse_user_input(buf, 0);
     }
 }
-
