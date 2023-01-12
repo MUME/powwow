@@ -13,8 +13,8 @@ int  memunescape(char *p, int lenp);
 ptr  ptrescape(ptr dst, ptr src, int append);
 ptr  ptrmescape(ptr dst, char *src, int srclen, int append);
 
-ptr  ptraddmarks(ptr dst, ptr line);
-ptr  ptrmaddmarks(ptr dst, char *line, int len);
+ptr  ptraddsubst_and_marks(ptr dst, ptr line);
+ptr  ptrmaddsubst_and_marks(ptr dst, char *line, int len);
 
 void put_marks(char *dst, char *line);
 void smart_print(char *line, char newline);
@@ -45,4 +45,3 @@ void movie_write(char *str, int newline);
 void update_now(void);
 
 #endif /* _UTILS_H_ */
-

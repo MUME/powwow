@@ -63,6 +63,7 @@ extern aliasnode *sortedaliases;
 extern actionnode *actions;
 extern promptnode *prompts;
 extern marknode *markers;
+extern substnode *substitutions;
 extern int a_nice;
 extern keynode *keydefs;
 extern delaynode *delays;

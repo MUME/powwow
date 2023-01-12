@@ -14,6 +14,9 @@ char *attr_name(int attrcode);
 void show_marks(void);
 void parse_mark(char *str);
 
+void show_substitutions(void);
+void parse_substitute(char *str);
+
 char *seq_name(char *seq, int len);
 void show_binds(char edit);
 void parse_bind(char *arg);
@@ -29,4 +32,3 @@ void new_delaynode(char *name, char *command, long millisec);
 
 void show_history(int count);
 void exe_history(int count);
-
