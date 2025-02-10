@@ -145,7 +145,7 @@ int main( int argc, char *argv[] ) {
 
 		/* Update status line */
 		mvwprintw( status, 1, 0,
-			"%7d/%7d/%2d%% Speed: %d (5=normal,0=pause) Cmd: %-6s (%d/%d)\n",
+			"%7ld/%7ld/%2ld%% Speed: %d (5=normal,0=pause) Cmd: %-6s (%d/%d)\n",
 			curr_pos, file_size, curr_pos * 100 / file_size,
 			speed, action, sleep, orig );
 		wrefresh( status );
@@ -275,7 +275,7 @@ int main( int argc, char *argv[] ) {
 				new_pos = 0;
 
 			wprintw( text,
-				"\n=============\nMoving from %d to file offset %d\n",
+				"\n=============\nMoving from %ld to file offset %ld\n",
 				curr_pos, new_pos );
 
 			/* calcs offsets because we may want to seek to
@@ -290,7 +290,7 @@ int main( int argc, char *argv[] ) {
 
 			/* Make a note of moving */
 			wprintw( text,
-				"Final offset after adjusting for newline: %d (%d)\n=============\n",
+				"Final offset after adjusting for newline: %ld (%ld)\n=============\n",
 				new_pos, new_pos - curr_pos );
 			wattroff( text, A_BOLD );
 		}

@@ -1,12 +1,11 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(powwow, 1.2.23)
+AC_INIT([powwow],[1.2.23])
 AM_INIT_AUTOMAKE
 
 AC_CANONICAL_HOST
 
 AC_ARG_ENABLE(vt100,
-	AC_HELP_STRING([--enable-vt100],
-			[Hard code VT100 escape sequences; use if you have no termcap [[default=no]]]),
+	AS_HELP_STRING([--enable-vt100],[Hard code VT100 escape sequences; use if you have no termcap [[default=no]]]),
         ,
         [enable_vt100="no"]
 )
@@ -26,8 +25,7 @@ AC_ARG_ENABLE(regex,
 )
 
 AC_ARG_ENABLE(sort,
-	AC_HELP_STRING([--enable-sort],
-			[Sort aliases and actions [[default=no]]]),
+	AS_HELP_STRING([--enable-sort],[Sort aliases and actions [[default=no]]]),
         ,
         [enable_sort="no"]
 )
@@ -35,8 +33,7 @@ AS_IF([ test "${enable_sort}" = yes ],
       [ AC_DEFINE(DO_SORT) ])
 
 AC_ARG_ENABLE(noshell,
-	AC_HELP_STRING([--enable-noshell],
-			[Disables the "#!" command [[default=no]]]),
+	AS_HELP_STRING([--enable-noshell],[Disables the "#!" command [[default=no]]]),
         ,
         [enable_noshell="no"]
 )
@@ -44,8 +41,7 @@ AS_IF([ test "${enable_noshell}" = yes ],
       [ AC_DEFINE(NO_SHELL) ])
 
 AC_ARG_ENABLE(ansibug,
-	AC_HELP_STRING([--enable-ansibug],
-		       [Enables fixes for "#mark" ansi bugs on some terminals [[default=no]]]),
+	AS_HELP_STRING([--enable-ansibug],[Enables fixes for "#mark" ansi bugs on some terminals [[default=no]]]),
         ,
         [enable_ansibug="no"]
 )
@@ -53,8 +49,7 @@ AS_IF([ test "${enable_ansibug}" = yes ],
       [ AC_DEFINE(BUG_ANSI) ])
 
 AC_ARG_ENABLE(bsd,
-	AC_HELP_STRING([--enable-bsd],
-		       [Needed for BSD systems, in powwow this was USE_SGTTY and BSD_LIKE. Default on Darwin (OS X) systems.]))
+	AS_HELP_STRING([--enable-bsd],[Needed for BSD systems, in powwow this was USE_SGTTY and BSD_LIKE. Default on Darwin (OS X) systems.]))
 AS_IF([ test -z "${enable_bsd}" ],
       [ case "${host_os}" in
             darwin*) enable_bsd=yes ;;
@@ -162,8 +157,7 @@ else
 fi
 
 AC_ARG_WITH([plugindir],
-            AC_HELP_STRING([--with-plugindir=DIR],
-                           [Plugin installation directory [[default=LIBDIR/powwow]]])],
+            AS_HELP_STRING([--with-plugindir=DIR],[Plugin installation directory [[default=LIBDIR/powwow]]])],
             [plugindir="${withval}"],
             [plugindir="\${libdir}/powwow"])
 
@@ -175,7 +169,8 @@ AC_C_CONST
 # Checks for library functions.
 AC_FUNC_MALLOC
 
-AC_OUTPUT(Makefile src/Makefile doc/powwow.doc doc/Makefile man/powwow.6.utf-8 man/Makefile)
+AC_CONFIG_FILES([Makefile src/Makefile doc/powwow.doc doc/Makefile man/powwow.6.utf-8 man/Makefile])
+AC_OUTPUT
 
 cat <<EOF
 
