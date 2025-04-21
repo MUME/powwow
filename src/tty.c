@@ -302,7 +302,7 @@ void tty_sig_winch_bottomhalf(void)
 	if (!wrapglitch)
 	    cols_1--;
 
-	if (tcp_main_fd != -1)
+	if (main_connection != NULL)
 	    tcp_write_tty_size();
 	line0 += lines - olines;
 

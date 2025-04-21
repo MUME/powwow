@@ -296,7 +296,7 @@ typedef struct editsess {
     struct editsess *next;
     unsigned int key;	/* session identifier */
     int pid;		/* pid of child */
-    int fd;		/* MUD socket to talk with (-1 if non-MUD text) */
+    struct connsess *conn; /* MUD conncetion to talk with (NULL if non-MUD text) */
     char *descr;  	/* short description of what we are editing */
     char *file;		/* name of temporary file */
     time_t ctime; 	/* time when temp file was created (upper bound) */

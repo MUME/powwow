@@ -282,7 +282,7 @@ void reprint_clear(void)
 /*
  * add a single line to the buffer
  */
-void reprint_writeline(char *line)
+void reprint_writeline(const char *line)
 {
     int len = strlen(line) + 1;
     int dst;

@@ -71,7 +71,7 @@ void map_retrace(int steps, int walk_back)
 		cmd[0] = reverse_dir(mappath[mapend]);
 		if (opt_echo)
 		    tty_putc(cmd[0]);
-		tcp_write(tcp_fd, cmd);
+		tcp_write(current_connection, cmd);
 	    }
 	}
 	if (walk_back && opt_echo)
@@ -152,7 +152,7 @@ int map_walk(char *word, int silent, int maponly)
 {
     char buf[16];
     int n = strlen(word);
-    int is_main = (tcp_fd == tcp_main_fd);
+    int is_main = (current_connection == main_connection);
 
     if (!is_main && !maponly && !opt_speedwalk)
 	return 0;
@@ -180,7 +180,7 @@ int map_walk(char *word, int silent, int maponly)
             if (!maponly) {
                 if (*lookup_alias(buf))
                     parse_instruction(buf, 1, 0, 0); /* we want to execute aliases n,e,s,w,u,d */
-                else tcp_write(tcp_fd, buf);
+                else tcp_write(current_connection, buf);
 	    }
             if (is_main || maponly)
 		map_add_dir(*word);

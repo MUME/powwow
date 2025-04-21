@@ -286,8 +286,6 @@ int main(int argc, char **argv)
 #endif
 
     /* initializations */
-    initstr[0] = 0;
-    memzero(conn_list, sizeof(conn_list));
     group_delim = my_strdup( "@" );
 
     update_now();
@@ -560,7 +558,7 @@ static void mainloop(void)
     vtime *timeout;
 
     for (;;) {
-	tcp_fd = tcp_main_fd;
+	current_connection = main_connection;
 	exec_delays();
 
 	do {
@@ -596,9 +594,9 @@ static void mainloop(void)
 	/* process subsidiary and spawned connections first */
 	if (tcp_count > 1 || tcp_attachcount) {
 	    for (i=0; err && i<conn_max_index; i++) {
-		if (CONN_INDEX(i).id && CONN_INDEX(i).fd != tcp_main_fd) {
-		    tcp_fd = CONN_INDEX(i).fd;
-		    if (FD_ISSET(tcp_fd, &readfds)) {
+		if (CONN_INDEX(i).id && &CONN_INDEX(i) != main_connection) {
+		    current_connection = &CONN_INDEX(i);
+		    if (FD_ISSET(current_connection->fd, &readfds)) {
 			err--;
 			get_remote_input();
 		    }
@@ -606,12 +604,13 @@ static void mainloop(void)
 	    }
 	}
 	/* and main connection last */
-	if (tcp_main_fd != -1 && FD_ISSET(tcp_main_fd, &readfds)) {
-	    tcp_fd = tcp_main_fd;
+	if (main_connection != NULL
+            && FD_ISSET(main_connection->fd, &readfds)) {
+	    current_connection = main_connection;
 	    get_remote_input();
 	}
 	if (FD_ISSET(tty_read_fd, &readfds)) {
-	    tcp_fd = tcp_main_fd;
+	    current_connection = main_connection;
 	    confirm = 0;
 	    get_user_input();
 	}
@@ -773,7 +772,7 @@ static int grab_prompt(char *linestart, int len, int islast)
     int is_iac_prompt = surely_isprompt = 0;
 
     /* recognize IAC GA as end-of-prompt marker */
-    if ((CONN_LIST(tcp_fd).flags & IDPROMPT)) {
+    if ((current_connection->flags & IDPROMPT)) {
 	if ((p = prompt_get_iac()) && p > linestart && p <= linestart+len)
 	    iac_f++, is_iac_prompt = len = p - linestart;
 	else if (!islast)
@@ -877,7 +876,7 @@ static void process_singleline(char **pbuf, int *psize)
      * if a #prompt matches and sets #isprompt, then it is REALLY a prompt
      *     so never match #actions on it.
      */
-    if (lineend == end && tcp_fd == tcp_main_fd) {
+    if (lineend == end && current_connection == main_connection) {
 	/*
 	 * The last line in the chunk we received has no trailing \n
 	 * Assume it is a prompt.
@@ -890,7 +889,7 @@ static void process_singleline(char **pbuf, int *psize)
 	if (lineend > linestart && (len = grab_prompt(linestart, lineend-linestart, 1)))
 	    size = len;
     } else {
-	if (tcp_fd == tcp_main_fd) {
+	if (current_connection == main_connection) {
 	    surely_isprompt = 0;
 	    promptzero();
 
@@ -906,8 +905,8 @@ static void process_singleline(char **pbuf, int *psize)
 	if (!len && ((!search_action(linestart, 0) || opt_autoprint))) {
 	    if (line0 < lines - 1)
 		line0++;
-	    if (tcp_fd != tcp_main_fd)        /* sub connection */
-		tty_printf("##%s> ", CONN_LIST(tcp_fd).id);
+	    if (current_connection != main_connection) /* sub connection */
+		tty_printf("##%s> ", current_connection->id);
 
 	    smart_print(linestart, 1);
 	}
@@ -1034,7 +1033,7 @@ static int process_first_fragment(char *buf, int got)
 void process_remote_input(char *buf, int size)
 {
 
-    if (promptlen && tcp_fd == tcp_main_fd)
+    if (promptlen && current_connection == main_connection)
 	promptzero();  /* discard the prompt, we look for another one */
 
     status(1);
@@ -1061,21 +1060,21 @@ static void get_remote_input(void)
     char *buf = buffer, *newline;
     int got, otcp_fd, i;
 
-    if (CONN_LIST(tcp_fd).fragment) {
-	if ((i = strlen(CONN_LIST(tcp_fd).fragment)) >= BUFSIZE-1) {
+    if (current_connection->fragment) {
+	if ((i = strlen(current_connection->fragment)) >= BUFSIZE-1) {
 	    i = 0;
 	    common_clear(promptlen && !opt_compact);
-	    tty_printf("#error: ##%s : line too long, discarded\n", CONN_LIST(tcp_fd).id);
+	    tty_printf("#error: ##%s : line too long, discarded\n", current_connection->id);
 	} else {
 	    buf += i;
-	    memcpy(buffer, CONN_LIST(tcp_fd).fragment, i);
+	    memcpy(buffer, current_connection->fragment, i);
 	}
-	free(CONN_LIST(tcp_fd).fragment);
-	CONN_LIST(tcp_fd).fragment = 0;
+	free(current_connection->fragment);
+	current_connection->fragment = 0;
     } else
 	i = 0;
 
-    got = tcp_read(tcp_fd, buf, BUFSIZE - i);
+    got = tcp_read(current_connection, buf, BUFSIZE - i);
     if (!got)
 	return;
 
@@ -1097,17 +1096,17 @@ static void get_remote_input(void)
     }
 #endif
 
-    if (!(CONN_LIST(tcp_fd).flags & ACTIVE))
+    if (!(current_connection->flags & ACTIVE))
 	return; /* process only active connections */
 
     got += (buf - buffer);
     buf = buffer;
 
-    if (CONN_LIST(tcp_fd).flags & SPAWN) {
+    if (current_connection->flags & SPAWN) {
 	/* this is data from a spawned child or an attached program.
 	 * execute as if typed */
-	otcp_fd = tcp_fd;
-	tcp_fd = tcp_main_fd;
+        connsess *old_connection = current_connection;
+        current_connection = main_connection;
 
 	if ((newline = strchr(buf, '\n'))) {
 	    /* instead of newline = strtok(buf, "\n") */
@@ -1121,7 +1120,7 @@ static void get_remote_input(void)
 		    if (line_status == 0) {
 			common_clear(!opt_compact);
 		    }
-		    tty_printf("##%s [%s]\n", CONN_LIST(otcp_fd).id, buf);
+		    tty_printf("##%s [%s]\n", old_connection->id, buf);
 		}
 		parse_user_input(buf, 0);
 		/*
@@ -1145,16 +1144,16 @@ static void get_remote_input(void)
 	     * save last fragment for later, when spawned command will
 	     * (hopefully) send the rest of the text
 	     */
-	    CONN_LIST(otcp_fd).fragment = my_strdup(buf);
+	    old_connection->fragment = my_strdup(buf);
 
 	    if (opt_info) {
 		if (line_status == 0) {
 		    common_clear(!opt_compact);
 		}
-		tty_printf("#warning: ##%s : unterminated [%s]\n", CONN_LIST(otcp_fd).id, buf);
+		tty_printf("#warning: ##%s : unterminated [%s]\n", old_connection->id, buf);
 	    }
 	}
-	tcp_fd = otcp_fd;
+	current_connection = old_connection;
 	return;
     }
 
@@ -1167,7 +1166,7 @@ static void get_remote_input(void)
 
     /* line-at-a-time mode: process input in a number of ways */
 
-    if (tcp_fd == tcp_main_fd && promptlen) {
+    if (current_connection == main_connection && promptlen) {
 	i = process_first_fragment(buf, got);
 	buf += i, got -= i;
     } else {
@@ -1420,7 +1419,8 @@ static void get_user_input(void)
 
     if (linemode & LM_CHAR) {
 	/* char mode. chunk == 1 */
-	while ((i = write(tcp_fd, c, 1)) < 0 && errno == EINTR)
+	while ((i = write(current_connection->fd, c, 1)) < 0
+               && errno == EINTR)
 	    ;
 	if (i != 1)
 	    syserr("write to socket");
@@ -1437,7 +1437,7 @@ static void get_user_input(void)
 	    if (edattrbg)
 		tty_puts(edattrend);
 #endif
-	    tcp_write(tcp_fd, edbuf);
+	    tcp_write(current_connection, edbuf);
 	    edlen = 0;
 	    typed[nchars = 0] = 0;
 	}
@@ -1642,7 +1642,7 @@ char *get_next_instr(char *p)
 static void send_line(char *line, char silent)
 {
     if (!silent && opt_echo) { PRINTF("[%s]\n", line); }
-    tcp_write(tcp_fd, line);
+    tcp_write(current_connection, line);
 }
 
 
@@ -1655,7 +1655,7 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
     aliasnode *np;
     char *buf, *arg, *end, *ret;
     char last_is_sep = 0;
-    int len, copied = 0, otcp_fd = -1;
+    int len, copied = 0;
     ptr p1 = (ptr)0, p2 = (ptr)0;
     ptr *pbuf, *pbusy, *tmp;
 
@@ -1726,6 +1726,8 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
 	PRINTF("#parsing: %s\n", line);
     }
 
+    connsess *old_conn = NULL;
+
     if (!*line)
 	send_line(line, silent);
     else do {
@@ -1738,21 +1740,22 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
 	    line = split_first_word(buf, len+1, arg + 2);
 	    /* now (pbuf) is used too: first word of line */
 	    /* line contains the rest */
-	    otcp_fd = tcp_fd;
-	    if ((tcp_fd = tcp_find(buf))<0) {
+            old_conn = current_connection;
+            current_connection = tcp_find_connection(buf);
+	    if (current_connection == NULL) {
 		error = OUT_RANGE_ERROR;
 		PRINTF("#no connection named \"%s\"\n", buf);
 		break;
 	    }
 	    arg = skipspace(line);
 	    if (!*arg) {
-		if (CONN_LIST(tcp_fd).flags & SPAWN) {
+		if (current_connection->flags & SPAWN) {
 		    error = OUT_RANGE_ERROR;
 		    PRINTF("#only MUD connections can be default ones!\n");
 		} else {
 		    /* set it as main connection */
-		    tcp_set_main(tcp_fd);
-		    otcp_fd = -1;
+		    tcp_set_main(current_connection);
+                    old_conn = NULL;
 		}
 		/* stop parsing, otherwise a newline would be sent to tcp_fd */
 		break;
@@ -1816,8 +1819,8 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
 	}
     } while (0);
 
-    if (otcp_fd != -1)
-	tcp_fd = otcp_fd;
+    if (old_conn != NULL)
+        current_connection = old_conn;
     DROP_PTR(pbuf); DROP_PTR(pbusy);
     return !REAL_ERROR ? ret : NULL;
 }

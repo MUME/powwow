@@ -38,7 +38,7 @@ extern int conn_max_index;	/* 1 + highest used conn_list[] index */
 #define IDEDITOR 4
 #define IDPROMPT 8
 
-typedef struct {
+typedef struct connsess {
     char *id;			/* session id */
     char *host;			/* address of remote host */
     int port;			/* port number of remote host */
@@ -51,28 +51,27 @@ typedef struct {
 
 extern connsess conn_list[MAX_CONNECTS];     /* connection list */
 
-extern byte conn_table[MAX_FDSCAN];	     /* fd -> index translation table */
+extern connsess *main_connection;
+extern connsess *current_connection;
 
-#define CONN_LIST(n) conn_list[conn_table[n]]
 #define CONN_INDEX(n) conn_list[n]
 
 extern fd_set fdset;               /* set of descriptors to select() on */
 
-int  tcp_connect(const char *addr, int port);
-int  tcp_read(int fd, char *buffer, int maxsize);
-void tcp_raw_write(int fd, const char *data, int len);
-void tcp_write_escape_iac(int fd, const char *data, int len);
+int  tcp_read(connsess *conn, void *buffer, size_t maxsize);
+void tcp_raw_write(connsess *conn, const void *data, size_t len);
+void tcp_write_escape_iac(connsess *conn, const void *data, size_t len);
 void tcp_write_tty_size(void);
-void tcp_write(int fd, char *data);
-void tcp_main_write(char *data);
+void tcp_write(connsess *conn, const char *data);
+void tcp_main_write(const char *data);
 void tcp_flush(void);
-void tcp_set_main(int fd);
-void tcp_open(char *id, char *initstring, char *host, int port);
-int  tcp_find(char *id);
+void tcp_set_main(connsess *conn);
+void tcp_open(const char *id, char *initstring, const char *host, int port);
+connsess *tcp_find_connection(const char *id);
 void tcp_show(void);
-void tcp_close(char *id);
-void tcp_togglesnoop(char *id);
-void tcp_spawn(char *id, char *cmd);
+void tcp_close(const char *id);
+void tcp_togglesnoop(const char *id);
+void tcp_spawn(const char *id, char *cmd);
 int  tcp_unIAC(char *data, int len);
 
 #endif /* _TCP_H_ */

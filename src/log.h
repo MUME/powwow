@@ -14,7 +14,7 @@ int  log_getsize(void);
 void log_resize(int newsize);
 void log_write(const char *str, int len, int newline);
 
-void  reprint_writeline(char *line);
+void  reprint_writeline(const char *line);
 char *reprint_getline(void);
 void  reprint_clear(void);
 

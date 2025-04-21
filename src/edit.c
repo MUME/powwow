@@ -678,7 +678,7 @@ void enter_line(char *dummy)
     col0 = error = pos = line_status = 0;
 
     if (!*edbuf || (verbatim && *edbuf != '#'))
-	tcp_write(tcp_fd, edbuf);
+	tcp_write(current_connection, edbuf);
     else
 	parse_user_input(edbuf, 1);
     history_done = 0;

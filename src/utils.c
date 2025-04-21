@@ -45,17 +45,14 @@
 
 static char can_suspend = 0; /* 1 if shell has job control */
 
-/*
- * GH: memory-"safe" strdup
- */
-char *my_strdup(char *s)
+char *my_strdup(const char *s)
 {
-    if (s) {
-	s = strdup(s);
-	if (!s)
-	    error = NO_MEM_ERROR;
-    }
-    return s;
+    if (s == NULL)
+        return NULL;
+    char *res = strdup(s);
+    if (res == NULL)
+        error = NO_MEM_ERROR;
+    return res;
 }
 
 /*
@@ -63,7 +60,7 @@ char *my_strdup(char *s)
  * copy up to len chars from src to dst, then add a final \0
  * (i.e. dst[len] = '\0')
  */
-char *my_strncpy(char *dst, char *src, int len)
+char *my_strncpy(char *dst, const char *src, int len)
 {
     int slen = strlen(src);
     if (slen < len)

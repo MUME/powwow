@@ -3,8 +3,8 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
-char *my_strdup(char *s);
-char *my_strncpy(char *dst, char *src, int len);
+char *my_strdup(const char *s);
+char *my_strncpy(char *dst, const char *src, int len);
 int  printstrlen(char *s);
 
 void ptrunescape(ptr p);

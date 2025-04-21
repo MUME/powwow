@@ -795,7 +795,7 @@ static void cmd_request(char *arg)
     char buf[256];
     int all, len;
 
-    if (tcp_fd == -1) {
+    if (current_connection == NULL) {
 	PRINTF("#not connected to a MUD!\n");
 	return;
     }
@@ -805,15 +805,15 @@ static void cmd_request(char *arg)
 	    all = !strcmp(buf, "all");
 	    len = strlen(buf);
 	    if ((all || !strncmp(buf, "editor", len))) {
-		tcp_raw_write(tcp_fd, ideditor, strlen(ideditor));
-		CONN_LIST(tcp_fd).flags |= IDEDITOR;
+		tcp_raw_write(current_connection, ideditor, strlen(ideditor));
+		current_connection->flags |= IDEDITOR;
 		if (opt_info) {
 		    PRINTF("#request editor: %s done!\n", ideditor);
 		}
 	    }
 	    if ((all || !strncmp(buf, "prompt", len))) {
-		tcp_raw_write(tcp_fd, idprompt, strlen(idprompt));
-		CONN_LIST(tcp_fd).flags |= IDPROMPT;
+		tcp_raw_write(current_connection, idprompt, strlen(idprompt));
+		current_connection->flags |= IDPROMPT;
 		if (opt_info) {
 		    PRINTF("#request prompt: %s done!\n", idprompt);
 		}
@@ -1042,7 +1042,7 @@ static void cmd_init(char *arg)
 
 static void cmd_isprompt(char *arg)
 {
-    if (tcp_fd == tcp_main_fd) {
+    if (current_connection == main_connection) {
 	int i;
 	long l;
 	arg = skipspace(arg);
@@ -1520,7 +1520,7 @@ static void cmd_send(char *arg)
 		if (opt_echo) {
 		    PRINTF("[%s]\n", buf);
 		}
-		tcp_write(tcp_fd, buf);
+		tcp_write(current_connection, buf);
 	    }
 	}
 	if (kind == '!') pclose(fp); else fclose(fp);
@@ -1528,7 +1528,7 @@ static void cmd_send(char *arg)
 	if (opt_echo) {
 	    PRINTF("[%s]\n", arg);
 	}
-	tcp_write(tcp_fd, arg);
+	tcp_write(current_connection, arg);
     }
     ptrdel(pbuf);
 }
@@ -1545,11 +1545,11 @@ static void cmd_rawsend(char *arg)
 	    print_error(error);
 	    ptrdel(pbuf);
 	} else if (pbuf)
-	    tcp_raw_write(tcp_fd, ptrdata(pbuf), ptrlen(pbuf));
+	    tcp_raw_write(current_connection, ptrdata(pbuf), ptrlen(pbuf));
     } else {
 	int len;
 	if ((len = memunescape(arg, strlen(arg))))
-	    tcp_raw_write(tcp_fd, arg, len);
+	    tcp_raw_write(current_connection, arg, len);
     }
 }
 

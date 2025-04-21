@@ -102,7 +102,8 @@ int process_message(char *buf, int len)
 
     while (i < msglen) {
 	/* read() might block here, but it should't be long */
-	while ((l = read(tcp_fd, text + i, msglen - i)) == -1 && errno == EINTR)
+	while ((l = read(current_connection->fd, text + i, msglen - i)) == -1
+               && errno == EINTR)
 	    ;
 	if (l == -1) {
 	    errmsg("read message from socket");
@@ -147,16 +148,16 @@ int process_message(char *buf, int len)
  * abort an editing session when
  * the MUD socket it comes from gets closed
  */
-void abort_edit_fd(int fd)
+void abort_edit_fd(connsess *conn)
 {
     editsess **sp, *p;
 
-    if (fd < 0)
+    if (conn == NULL)
 	return;
 
     for (sp = &edit_sess; *sp; sp = &(*sp)->next) {
 	p = *sp;
-	if (p->fd != fd)
+	if (p->conn != conn)
 	    continue;
 
 	if (kill(p->pid, SIGKILL) < 0) {       /* Editicide */
@@ -185,7 +186,7 @@ void cancel_edit(editsess *sp)
     PRINTF("#killed \"%s\" (%u)\n", sp->descr, sp->key);
     sprintf(keystr, "C%u\n", sp->key);
     sprintf(buf, "%sE%d\n%s", MPI, (int)strlen(keystr), keystr);
-    tcp_write(sp->fd, buf);
+    tcp_write(sp->conn, buf);
     sp->cancel = 1;
 }
 
@@ -219,7 +220,7 @@ static void finish_edit(editsess *sp)
     struct stat sbuf;
     char keystr[16], buf[256], hdr[65];
 
-    if (sp->fd == -1)
+    if (sp->conn == NULL)
 	goto cleanup_file;
 
     fd = open(sp->file, O_RDONLY);
@@ -264,7 +265,7 @@ static void finish_edit(editsess *sp)
 	memcpy(text, hdr, hdrlen);
 
 	/* text[hdrlen + txtlen] = '\0'; */
-	tcp_write_escape_iac(sp->fd, text, hdrlen + txtlen);
+	tcp_write_escape_iac(sp->conn, text, hdrlen + txtlen);
 
 	sprintf(buf, "#completed session %s (%u)\n", sp->descr, sp->key);
 	write_message(buf);
@@ -273,7 +274,7 @@ static void finish_edit(editsess *sp)
 	sprintf(keystr, "C%u\n", sp->key);
 	sprintf(hdr, "%sE%d\n%s", MPI, (int) strlen(keystr), keystr);
 
-	tcp_raw_write(sp->fd, hdr, strlen(hdr));
+	tcp_raw_write(sp->conn, hdr, strlen(hdr));
 
 	sprintf(buf, "#cancelled session %s (%u)\n", sp->descr, sp->key);
 	write_message(buf);
@@ -354,7 +355,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
     s->ctime = time((time_t*)NULL);
     s->oldsize = msglen - i;
     s->key = key;
-    s->fd = (view || builtin) ? -1 : tcp_fd; /* MUME doesn't expect a reply. */
+    s->conn = (view || builtin) ? NULL : current_connection;
     s->cancel = 0;
     s->descr = my_strdup(descr);
     s->file = my_strdup(tmpname);
@@ -411,7 +412,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	signal_start();		/* reset SIGINT and SIGCHLD handlers */
 	tty_start();
 
-	if (s->fd != -1) {
+	if (s->conn != NULL) {
 	    tty_gotoxy(0, lines - 1);
 	    tty_putc('\n');
 	}
@@ -443,10 +444,9 @@ void message_edit(char *text, int msglen, char view, char builtin)
  */
 void sig_chld_bottomhalf(void)
 {
-    int fd, pid, ret;
+    int pid, ret;
     editsess **sp, *p;
 
-    /* GH: while() instead of just one check */
     while ((pid = waitpid(-1, &ret, WNOHANG)) > 0) {
 
 	/* GH: check for WIFSTOPPED unnecessary since no */
@@ -456,21 +456,19 @@ void sig_chld_bottomhalf(void)
 	if (*sp) {
 	    finish_edit(*sp);
 	    p = *sp; *sp = p->next;
-	    fd = p->fd;
+	    connsess *conn = p->conn;
 	    free(p->descr);
 	    free(p->file);
 	    free(p);
 
-	    /* GH: only send message if found matching session */
-
 	    /* send the edit_end message if this is the last editor... */
 	    if ((!edit_sess) && (*edit_end)) {
-		int otcp_fd = tcp_fd;  /* backup current socket fd */
-		tcp_fd = fd;
+		connsess *old_conn = current_connection;
+		current_connection = conn;
 		error = 0;
 		parse_instruction(edit_end, 0, 0, 1);
 		history_done = 0;
-		tcp_fd = otcp_fd;
+		current_connection = old_conn;
 	    }
 	}
     }
