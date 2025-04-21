@@ -62,6 +62,14 @@ AS_IF([ test "${enable_bsd}" = yes ],
       AC_DEFINE(USE_BSD_LIKE, 1,
     [Define for building on BSD-like systems.]) ])
 
+AC_ARG_ENABLE(tls,
+    AS_HELP_STRING([--disable-tls],[disables TLS support]),
+    [],
+    [enable_tls=yes])
+
+AS_IF([ test "${enable_tls}" != no ],
+    [ AC_DEFINE(USE_TLS, 1, [Define to enable TLS using GnuTLS.]) ])
+
 # Checks for programs.
 AC_PROG_CC
 AC_MSG_CHECKING([C version])
@@ -93,6 +101,14 @@ AC_SEARCH_LIBS(dlopen,[dl],[
     AC_DEFINE(HAVE_LIBDL, 1, [Define if we have -ldl.])
     dl_ldflags="-rdynamic"])
 AC_SUBST(dl_ldflags)
+
+AS_IF([test "x${enable_tls}" = xyes], [
+    AC_SEARCH_LIBS(gnutls_global_init, gnutls, [
+        AC_DEFINE([HAVE_GNUTLS], 1,
+            [Define to 1 to use the 'gnutls' library.]) ],
+        AC_MSG_ERROR([cannot find gnutls]))
+    AC_CHECK_HEADER(gnutls/gnutls.h, ,
+        AC_MSG_ERROR([cannot find gnutls/gnutls.h])) ])
 
 # Checks for header files.
 AC_CHECK_HEADER([locale.h],
@@ -167,6 +183,7 @@ Plugin directory:   $(eval eval eval echo "${plugindir}")
 
 enable-vt100:       ${enable_vt100}
 enable-regex:       ${enable_regex} (${enable_regex_using})
+enable-tls:         ${enable_tls}
 enable-sort:        ${enable_sort}
 enable-shell:       ${enable_shell}
 enable-ansi-bug:    ${enable_ansi_bug}

@@ -102,7 +102,8 @@ int process_message(char *buf, int len)
 
     while (i < msglen) {
 	/* read() might block here, but it should't be long */
-	while ((l = read(current_connection->fd, text + i, msglen - i)) == -1
+	while ((l = current_connection->fns->read(
+                    current_connection, text + i, msglen - i)) == -1
                && errno == EINTR)
 	    ;
 	if (l == -1) {
@@ -464,7 +465,7 @@ void sig_chld_bottomhalf(void)
 	    /* send the edit_end message if this is the last editor... */
 	    if ((!edit_sess) && (*edit_end)) {
 		connsess *old_conn = current_connection;
-		current_connection = conn;
+                current_connection = conn;
 		error = 0;
 		parse_instruction(edit_end, 0, 0, 1);
 		history_done = 0;

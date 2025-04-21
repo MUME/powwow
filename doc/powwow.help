@@ -149,12 +149,15 @@ Attributes: one or more of bold, blink, inverse, underline and/or
 black, red, green, yellow, blue, magenta, cyan, white and
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, none.
 @host
-#host [hostname port]
+#host [hostname port --tls[=options]]
 
 Sets the default host that powwow shall try to connect to when you use
 #connect.
 If you type #host without any arguments, the current host and port are
 shown (provided that you have specified them).
+Available TLS options are:
+  no-verify    do not verify the CA certificate
+  host=<host>  assume the CA certificate host name is <host>
 @color
 #color [attrib]
 
@@ -163,7 +166,7 @@ shown (provided that you have specified them).
 Set your standard foreground and background to the colours you specify.
 #color  		sets default colors
 @connect
-#connect [session-id [initstr] [address port]]
+#connect [session-id] [initstr] [address port] [--tls[=options]]
 
 Connect a new session.
 
@@ -174,6 +177,8 @@ where <address> and <port> indicate the host you want to connect to.
 If no address/port is defined, you either get connected to the default
 host and port (if you have no open connection) or a list of open
 connections is shown.
+
+For documentation on the --tls option, see '#help host'.
 
 Last opened session will be the default one.
 

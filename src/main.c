@@ -48,19 +48,21 @@
 #include <locale.h>
 #endif
 
-#include "main.h"
-#include "feature/regex.h"
-#include "utils.h"
 #include "beam.h"
 #include "cmd.h"
 #include "cmd2.h"
 #include "edit.h"
-#include "map.h"
-#include "list.h"
-#include "tcp.h"
-#include "tty.h"
 #include "eval.h"
+#include "feature/regex.h"
+#include "list.h"
 #include "log.h"
+#include "main.h"
+#include "main.h"
+#include "map.h"
+#include "tcp.h"
+#include "tls.h"
+#include "tty.h"
+#include "utils.h"
 
 #ifdef USE_LOCALE
   #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fr\363r, D\341in"
@@ -85,7 +87,7 @@ static void printmotd(void);
 static void mainloop(void);
 static void exec_delays(void);
 static void prompt_reset_iac(void);
-static void get_remote_input(void);
+static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds);
 static void get_user_input(void);
 
 static int  search_action_or_prompt(char *line, char clearline, char copyprompt);
@@ -135,8 +137,8 @@ char opt_autoclear = 1;	/* 1 = clear input line before executing commands
 			 * if 0, spawned progs must #clear before printing
 			 */
 
-char hostname[BUFSIZE];
-int portnumber;
+struct hostinfo hostinfo;
+
 static char powwow_dir[BUFSIZE];   /* default path to definition files */
 char deffile[BUFSIZE];             /* name and path of definition file */
 char helpfile[BUFSIZE];            /* name and path of help file */
@@ -228,17 +230,30 @@ char *group_delim;
 static void show_help(const char *prog)
 {
 #ifdef HAVE_GETOPT_LONG
-#define HELP_ARG "--help, -h"
+#define HELP_ARG "--help, -h         "
+#define TLS_ARG  "--tls[=TLS-OPTIONS]"
 #else
-#define HELP_ARG "-h"
+#define HELP_ARG "-h                "
+#define TLS_ARG  "-t, -T TLS-OPTIONS"
 #endif
+
+#ifdef USE_TLS
+#define TLS_DESC "; available TLS-OPTIONS:\n"                   \
+    "        no-verify     do not verify CA certificate\n"      \
+    "        host=HOST     assume the CA hostname is HOST"
+#else
+#define TLS_DESC " (not supported)"
+#endif
+
     printf("Usage:\n"
            "  %s [OPTIONS] [DEFINITION-FILE] [HOST PORT]\n"
            "\n"
            "Options:\n"
-           "  " HELP_ARG "    display this help text\n",
+           "  " HELP_ARG "    display this help text\n"
+           "  " TLS_ARG  "    enable TLS" TLS_DESC "\n",
            prog);
 #undef HELP_ARG
+#undef TLS_DESC
 }
 
 int main(int argc, char **argv)
@@ -246,14 +261,15 @@ int main(int argc, char **argv)
 #ifdef HAVE_GETOPT_LONG
     static const struct option longopts[] = {
         { "help", no_argument,       NULL, 'h' },
+        { "tls",  optional_argument, NULL, 't' },
         { NULL }
     };
 #endif
     for (int c;;) {
 #ifdef HAVE_GETOPT_LONG
-        c = getopt_long(argc, argv, "h", longopts, NULL);
+        c = getopt_long(argc, argv, "ht::", longopts, NULL);
 #else
-        c = getopt(argc, argv, "h");
+        c = getopt(argc, argv, "htT:");
 #endif
         if (c == -1)
             break;
@@ -263,6 +279,18 @@ int main(int argc, char **argv)
         case 'h':
             show_help(argv[0]);
             exit(EXIT_SUCCESS);
+        case 't':
+#ifndef HAVE_GETOPT_LONG
+            optarg = NULL;      /* only -T accepts arguments */
+#endif
+        case 'T': {
+            const char *arg = optarg ? optarg : "";
+            if (!parse_tls_flag(&hostinfo.tlsopt, &arg, false)) {
+                fprintf(stderr, "invalid TLS options: '%s'\n", optarg);
+                exit(EXIT_FAILURE);
+            }
+            break;
+        }
         default:
             abort();
         }
@@ -276,8 +304,7 @@ int main(int argc, char **argv)
 
     char *p;
     int i;
-    int read_file = 0;	/* GH: if true, powwow was started with
-			 * a file argument, and initstr shall be ran */
+    bool read_file = false;     /* run initstr ? */
 
 #ifdef USE_LOCALE
     if (!setlocale(LC_ALL, "")) {
@@ -393,19 +420,19 @@ under certain conditions; type \"#help copyright\" for details.\n"
          */
         set_deffile(argv[optind++]);
 
-        if (access(deffile,R_OK) == -1 || access(deffile,W_OK) == -1) {
+        if (access(deffile, R_OK) == -1 || access(deffile, W_OK) == -1) {
 	    char portnum[INTLEN];
             tty_printf("Creating %s\nHost name  :", deffile);
 	    tty_flush();
-	    tty_gets(hostname, BUFSIZE);
-	    if (hostname[0] == '\n')
-		hostname[0] = '\0';
+	    tty_gets(hostinfo.name, BUFSIZE);
+	    if (hostinfo.name[0] == '\n')
+		hostinfo.name[0] = '\0';
 	    else
-		strtok(hostname, "\n");
+		strtok(hostinfo.name, "\n");
             tty_puts("Port number:");
 	    tty_flush();
 	    tty_gets(portnum, INTLEN);
-	    portnumber = atoi(portnum);
+	    hostinfo.port = atoi(portnum);
             tty_add_initial_binds();
 	    tty_add_walk_binds();
 	    limit_mem = 1048576;
@@ -414,14 +441,14 @@ under certain conditions; type \"#help copyright\" for details.\n"
         } else if (read_settings() < 0)
 	    exit(0);
 	else
-	    read_file = 1;
+	    read_file = true;
     }
 
     nargs = argc - optind;
     if (nargs == 2) {
         /* assume last two args are hostname and port number */
-        my_strncpy(hostname, argv[optind], BUFSIZE - 1);
-        portnumber = atoi(argv[optind + 1]);
+        my_strncpy(hostinfo.name, argv[optind], BUFSIZE-1);
+        hostinfo.port = atoi(argv[optind + 1]);
     }
 
     signal_start();
@@ -436,10 +463,11 @@ under certain conditions; type \"#help copyright\" for details.\n"
     FD_ZERO(&fdset);
     FD_SET(tty_read_fd, &fdset);
 
-    if (*hostname)
-	tcp_open("main", (*initstr ? initstr : NULL), hostname, portnumber);
+    if (*hostinfo.name)
+	tcp_open("main", (*initstr ? initstr : NULL), hostinfo.name,
+                 hostinfo.port, &hostinfo.tlsopt);
 
-    if (read_file && !*hostname && *initstr) {
+    if (read_file && !*hostinfo.name && *initstr) {
 	parse_instruction(initstr, 0, 0, 1);
 	history_done = 0;
     }
@@ -481,6 +509,9 @@ void printver(void)
 #endif
 #ifdef USE_LOCALE
 	       " locale,"
+#endif
+#ifdef USE_TLS
+	       " tls,"
 #endif
 #ifdef HAVE_LIBDL
 	       " modules,"
@@ -525,9 +556,15 @@ static void redraw_everything(void)
 }
 
 /* how much can we sleep in select() ? */
-static void compute_sleeptime(vtime **timeout)
+static void compute_sleeptime(vtime **timeout, bool force_zero)
 {
     static vtime tbuf;
+    if (force_zero) {
+        tbuf = (vtime){ 0 };
+        *timeout = &tbuf;
+        return;
+    }
+
     int sleeptime = 0;
 
     if (delays) {
@@ -553,9 +590,12 @@ static void compute_sleeptime(vtime **timeout)
  */
 static void mainloop(void)
 {
-    fd_set readfds;
+    fd_set readfds, cache_read_fds;
     int i, err;
     vtime *timeout;
+    unsigned ncache_read_fds = 0;
+
+    FD_ZERO(&cache_read_fds);
 
     for (;;) {
 	current_connection = main_connection;
@@ -575,19 +615,31 @@ static void mainloop(void)
 	    redraw_everything();
 	    tty_flush();
 
-	    compute_sleeptime(&timeout);
+            compute_sleeptime(&timeout, ncache_read_fds > 0);
 
 	    error = now_updated = 0;
 
             readfds = fdset;
-            err = select(tcp_max_fd+1, &readfds, NULL, NULL, timeout);
+            err = select(tcp_max_fd + 1, &readfds, NULL, NULL, timeout);
 
 	    prompt_reset_iac();
 
 	} while (err < 0 && errno == EINTR);
 
-	if (err < 0 && errno != EINTR)
+	if (err < 0)
 	    syserr("select");
+        else if (ncache_read_fds > 0) {
+            for (int fd = 0; ncache_read_fds > 0; ++fd) {
+                if (FD_ISSET(fd, &cache_read_fds)) {
+                    FD_CLR(fd, &cache_read_fds);
+                    --ncache_read_fds;
+                    if (!FD_ISSET(fd, &readfds)) {
+                        FD_SET(fd, &readfds);
+                        ++err;
+                    }
+                }
+            }
+        }
 
 	if (flashback) putbackcursor();
 
@@ -597,8 +649,8 @@ static void mainloop(void)
 		if (CONN_INDEX(i).id && &CONN_INDEX(i) != main_connection) {
 		    current_connection = &CONN_INDEX(i);
 		    if (FD_ISSET(current_connection->fd, &readfds)) {
-			err--;
-			get_remote_input();
+			--err;
+			get_remote_input(&cache_read_fds, &ncache_read_fds);
 		    }
 		}
 	    }
@@ -607,7 +659,7 @@ static void mainloop(void)
 	if (main_connection != NULL
             && FD_ISSET(main_connection->fd, &readfds)) {
 	    current_connection = main_connection;
-	    get_remote_input();
+            get_remote_input(&cache_read_fds, &ncache_read_fds);
 	}
 	if (FD_ISSET(tty_read_fd, &readfds)) {
 	    current_connection = main_connection;
@@ -1054,7 +1106,7 @@ static void common_clear(int newline)
 /*
  * get data from the socket and process/display it.
  */
-static void get_remote_input(void)
+static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
 {
     char buffer[BUFSIZE + 2];        /* allow for a terminating \0 later */
     char *buf = buffer, *newline;
@@ -1077,6 +1129,11 @@ static void get_remote_input(void)
     got = tcp_read(current_connection, buf, BUFSIZE - i);
     if (!got)
 	return;
+    if (!FD_ISSET(current_connection->fd, fdset)
+        && current_connection->fns->can_read(current_connection)) {
+        FD_SET(current_connection->fd, fdset);
+        ++*ncache_read_fds;
+    }
 
     buf[got]='\0';  /* Safe, there is space. Do it now not to forget it later */
     received += got;

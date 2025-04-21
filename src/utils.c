@@ -40,8 +40,12 @@
 #include "edit.h"
 #include "eval.h"
 #include "log.h"
+#include "tls.h"
 
-#define SAVEFILEVER 6
+enum {
+    SAVEFILEVER = 7,            /* current version */
+    TLS_SAVEFILEVER = 7,        /* version when --tls was added */
+};
 
 static char can_suspend = 0; /* 1 if shell has job control */
 
@@ -1024,6 +1028,8 @@ int read_settings(void)
 	failed = -1;
     } else if (savefilever > SAVEFILEVER) {
 	PRINTF("#warning: this powwow version is too old!\n");
+    } else if (SAVEFILEVER == TLS_SAVEFILEVER && savefilever == TLS_SAVEFILEVER - 1) {
+        /* no action/warning needed */
     } else if (savefilever < SAVEFILEVER) {
 	PRINTF("\n#warning: config file is from an older version\n");
 	load_missing_stuff(savefilever);
@@ -1097,8 +1103,9 @@ int save_settings(void)
     if (MEM_ERROR) failed = -1;
 
     failed = fprintf(f, "#savefile-version %d\n", SAVEFILEVER);
-    if (failed > 0 && *hostname)
-	failed = fprintf(f, "#host %s %d\n", hostname, portnumber);
+    if (failed > 0 && *hostinfo.name)
+	failed = fprintf(f, "#host %s %d%s\n", hostinfo.name, hostinfo.port,
+                         tlsopt_str(&hostinfo.tlsopt));
 
     if (failed > 0) {
 	if (delim_mode == DELIM_CUSTOM) {

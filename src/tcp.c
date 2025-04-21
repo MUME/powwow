@@ -45,6 +45,7 @@
 #include "main.h"
 #include "utils.h"
 #include "tcp.h"
+#include "tls.h"
 #include "tty.h"
 #include "edit.h"
 #include "beam.h"
@@ -185,7 +186,7 @@ static void sendopt(byte what, byte opt)
  * connect to remote host
  * Warning: some voodoo code here
  */
-static int tcp_connect(const char *addr, int port)
+static int tcp_connect(const char *addr, int port, const char *protocol)
 {
     struct addrinfo *host_info;
     struct addrinfo addrinfo;
@@ -247,7 +248,8 @@ static int tcp_connect(const char *addr, int port)
             return -1;
         }
 
-        tty_printf("#trying %s... ", addr);
+        tty_printf("#trying %s:%d (%s)... ", addr, port, protocol);
+
         tty_flush();
 
         ((struct sockaddr_in6 *)host_info->ai_addr)->sin6_port = htons(port);
@@ -290,33 +292,36 @@ static int tcp_connect(const char *addr, int port)
 
     tty_puts("connected!\n");
 
-
-    {
-	/*
-	 * Now set some options on newtcp_fd :
-	 * First, no-nagle
-	 */
-	int opt = 1;
-#	ifndef SOL_TCP
-#	 define SOL_TCP IPPROTO_TCP
-#	endif
-	if (setsockopt(newtcp_fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt)))
-	    errmsg("setsockopt(TCP_NODELAY) failed");
-
-	/* TCP keep-alive */
-	if (setsockopt(newtcp_fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)))
-	    errmsg("setsockopt(SO_KEEPALIVE) failed");
-
-	/*
-	 * Then, close-on-exec:
-	 * we don't want children to inherit the socket!
-	 */
-
-	fcntl(newtcp_fd, F_SETFD, FD_CLOEXEC);
-    }
-
     return newtcp_fd;
 }
+
+static void tcp_set_fdmode(int fd)
+{
+#ifndef SOL_TCP
+#  define SOL_TCP IPPROTO_TCP
+#endif
+
+    /*
+     * Now set some options on newtcp_fd :
+     * First, no-nagle
+     */
+    int opt = 1;
+    if (setsockopt(fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt)))
+        errmsg("setsockopt(TCP_NODELAY) failed");
+
+    /* TCP keep-alive */
+    if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)))
+        errmsg("setsockopt(SO_KEEPALIVE) failed");
+
+    /*
+     * Then, close-on-exec:
+     * we don't want children to inherit the socket!
+     */
+
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
+}
+
+
 
 /*
  * we don't expect IAC commands here, except IAC IAC (a protected ASCII 255)
@@ -366,7 +371,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
            && errno == EINTR)
 	;
 
-    if (i == 0) {
+    if (i == 0 || (i < 0 && errno == EINVAL)) {
 	conn->state = NORMAL;
 	tcp_close(NULL);
 	return 0;
@@ -844,7 +849,8 @@ void tcp_show(void)
 void tcp_set_main(connsess *conn)
 {
     main_connection = conn;
-    if (linemode & LM_CHAR) {
+    if (linemode & LM_CHAR)
+    {
 	linemode = 0;
         tty_special_keys();
     }
@@ -870,19 +876,24 @@ static int tcp_conn_close(connsess *conn)
     return close(conn->fd);
 }
 
+static bool tcp_conn_can_read(connsess *conn)
+{
+    return false;
+}
+
 static const struct io_fns tcp_io_fns = {
-    .read  = tcp_conn_read,
-    .write = tcp_conn_write,
-    .close = tcp_conn_close
+    .read     = tcp_conn_read,
+    .write    = tcp_conn_write,
+    .close    = tcp_conn_close,
+    .can_read = tcp_conn_can_read
 };
 
 /*
  * open another connection
  */
-void tcp_open(const char *id, char *initstring, const char *host, int port)
+void tcp_open(const char *id, char *initstring, const char *host,
+              int port, const struct tls_options *tlsopt)
 {
-    int newtcp_fd, i;
-
     if (tcp_count + tcp_attachcount >= MAX_CONNECTS) {
 	PRINTF("#too many open connections.\n");
 	return;
@@ -893,7 +904,8 @@ void tcp_open(const char *id, char *initstring, const char *host, int port)
     }
 
     /* find a free slot */
-    for (i=0; i<MAX_CONNECTS; i++) {
+    int i;
+    for (i = 0; i < MAX_CONNECTS; i++) {
 	if (!CONN_INDEX(i).id)
 	    break;
     }
@@ -911,7 +923,8 @@ void tcp_open(const char *id, char *initstring, const char *host, int port)
     }
 
     /* dial the number by moving the right index in small circles */
-    if ((newtcp_fd = tcp_connect(host, port)) < 0) {
+    int newtcp_fd = tcp_connect(host, port, tlsopt->use_tls ? "TLS" : "TCP");
+    if (newtcp_fd < 0) {
 	free(conn_host);
 	free(conn_id);
 	return;
@@ -928,6 +941,12 @@ void tcp_open(const char *id, char *initstring, const char *host, int port)
         .fns       = &tcp_io_fns
     };
 
+    if (tlsopt->use_tls && !tls_upgrade(&CONN_INDEX(i), tlsopt)) {
+        current_connection = &CONN_INDEX(i);
+        tcp_close(NULL);
+        return;
+    }
+
     if (tcp_max_fd < newtcp_fd)
 	tcp_max_fd = newtcp_fd;
     if (conn_max_index <= i)
@@ -935,6 +954,8 @@ void tcp_open(const char *id, char *initstring, const char *host, int port)
 
     FD_SET(newtcp_fd, &fdset); 		/* add socket to select() set */
     tcp_count++;
+
+    tcp_set_fdmode(newtcp_fd);
 
     if (opt_info && tcp_count) {
 	PRINTF("#default connection is now \"%s\"\n", id);

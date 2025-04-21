@@ -42,6 +42,7 @@
 #include "list.h"
 #include "map.h"
 #include "tcp.h"
+#include "tls.h"
 #include "tty.h"
 #include "eval.h"
 #include "log.h"
@@ -144,7 +145,7 @@ cmdstruct default_commands[] =
     C("history",    cmd_history,
       "[{number|(expr)}]\tlist/execute commands in history"),
     C("host",       cmd_host,
-      "[hostname port]]\tset/show address of default host"),
+      "[hostname port [--tls[=options]]]]\tset/show address of default host"),
     C("identify",   cmd_identify,
       "[startact [endact]]\tsend MUME client identification"),
     C("if",         cmd_if,
@@ -766,26 +767,37 @@ static void cmd_history(char *arg)
 
 static void cmd_host(char *arg)
 {
-    char newhost[BUFSIZE];
-
     arg = skipspace(arg);
     if (*arg) {
-	arg = split_first_word(newhost, BUFSIZE, arg);
+        char hostname[BUFSIZE];
+	arg = split_first_word(hostname, BUFSIZE, arg);
 	if (*arg) {
-	    my_strncpy(hostname, newhost, BUFSIZE-1);
-	    portnumber = atoi(arg);
-	    if (opt_info) {
-		PRINTF("#host set to: %s %d\n", hostname, portnumber);
-	    }
-	} else {
-	    PRINTF("#host: missing portnumber.\n");
+            char buf[BUFSIZE];
+            arg = split_first_word(buf, BUFSIZE, arg);
+	    int port = atoi(buf);
+            struct tls_options tlsopt = { 0 };
+            if (!parse_tls_flag(&tlsopt, (const char **)&arg, true))
+                goto fail;
+
+	    my_strncpy(hostinfo.name, hostname, BUFSIZE - 1);
+            hostinfo.port = port;
+            hostinfo.tlsopt = tlsopt;
+
+	    if (opt_info)
+		PRINTF("#host set to: %s %d%s\n", hostinfo.name, hostinfo.port,
+                       tlsopt_str(&hostinfo.tlsopt));
+            return;
 	}
-    } else if (*hostname)
-	sprintf(inserted_next, "#host %.*s %d", BUFSIZE-INTLEN-8,
-		hostname, portnumber);
-    else {
-	PRINTF("#syntax: #host hostname port\n");
+    } else if (*hostinfo.name) {
+	sprintf(inserted_next, "#host %.*s %d%s", BUFSIZE-INTLEN-8,
+		hostinfo.name, hostinfo.port,
+                tlsopt_str(&hostinfo.tlsopt));
+        return;
     }
+
+fail:
+    error = NOT_SUPPORTED_ERROR;
+    PRINTF("#syntax: #host hostname port --tls[=options]\n");
 }
 
 static void cmd_request(char *arg)
@@ -2334,51 +2346,90 @@ static void cmd_color(char *arg)
 }
 #endif
 
+static bool maybe_tls_arg(char **argp, struct tls_options *tlsopt)
+{
+    if (*argp == NULL || !**argp || tlsopt->use_tls)
+        return true;
+
+    const char *targ = *argp;
+    if (!parse_tls_flag(tlsopt, &targ, true)) {
+        PRINTF("#connect: invalid argument '%s'\n", *argp);
+        return false;
+    }
+
+    if (tlsopt->use_tls)
+        *argp = strtok(NULL, " ");
+    return true;
+}
+
 static void cmd_connect(char *arg)
 {
 #ifdef TERM
     PRINTF("#connect: multiple connections not supported in term version.\n");
 #else
-    char *s1, *s2, *s3 = NULL, *s4 = NULL;
-    int argc = 1;
-
     if (!*skipspace(arg)) {
 	tcp_show();
 	return;
     }
-    else {
-	s1 = strtok(arg, " ");
-	s2 = strtok(NULL, " ");
-	if (s2 && *s2) {
-	    argc++;
-	    s3 = strtok(NULL, " ");
-	    if (s3 && *s3) {
-		argc++;
-		s4 = strtok(NULL, " ");
-		if (s4 && *s4)
-		    argc++;
-	    }
-	}
+
+    struct tls_options tlsopt = { .use_tls = false };
+
+    int argc = 1;
+    char *s1 = strtok(arg, " ");
+    if (!maybe_tls_arg(&s1, &tlsopt))
+        return;
+
+    char *s2 = strtok(NULL, " ");
+    if (!maybe_tls_arg(&s2, &tlsopt))
+        return;
+
+    char *s3 = NULL, *s4 = NULL;
+
+    if (s2 && *s2) {
+        argc++;
+        s3 = strtok(NULL, " ");
+        if (!maybe_tls_arg(&s3, &tlsopt))
+            return;
+        if (s3 && *s3) {
+            argc++;
+            s4 = strtok(NULL, " ");
+            if (!maybe_tls_arg(&s4, &tlsopt))
+                return;
+            if (s4 && *s4)
+                argc++;
+        }
     }
 
     if (argc <= 2) {
-	if (*hostname)
-	    tcp_open(s1, s2, hostname, portnumber);
+	if (*hostinfo.name)
+	    tcp_open(s1, s2, hostinfo.name, hostinfo.port,
+                     tlsopt.use_tls ? &tlsopt : &hostinfo.tlsopt);
 	else {
-	    PRINTF("#connect: no host defined!\n#syntax: #connect session-id [[init-str] [hostname] [port]]\n");
+	    PRINTF("#connect: no host defined!\n#syntax: #connect session-id"
+                   " [init-str] [hostname] [port] [--tls[=tls-options]]\n");
 	}
     } else if (argc == 3) {
-	if (!*hostname) {
-	    my_strncpy(hostname, s2, BUFSIZE-1);
-	    portnumber = atoi(s3);
+	if (!*hostinfo.name) {
+	    my_strncpy(hostinfo.name, s2, BUFSIZE-1);
+	    hostinfo.port = atoi(s3);
+            hostinfo.tlsopt = tlsopt;
 	}
-	tcp_open(s1, NULL, s2, atoi(s3));
+	tcp_open(s1, NULL, s2, atoi(s3), &tlsopt);
     } else {
-	if (!*hostname) {
-	    my_strncpy(hostname, s3, BUFSIZE-1);
-	    portnumber = atoi(s4);
+        const char *s5 = strtok(NULL, " ");
+        if (s5 && *s5) {
+            if (!parse_tls_flag(&tlsopt, &s5, true)) {
+                PRINTF("#connect: invalid argument '%s'\n", s5);
+                return;
+            }
+        }
+
+	if (!*hostinfo.name) {
+	    my_strncpy(hostinfo.name, s3, BUFSIZE-1);
+	    hostinfo.port = atoi(s4);
+            hostinfo.tlsopt = tlsopt;
 	}
-	tcp_open(s1, s2, s3, atoi(s4));
+	tcp_open(s1, s2, s3, atoi(s4), &tlsopt);
     }
 #endif /* TERM */
 }

@@ -44,6 +44,7 @@ struct io_fns {
     ssize_t (*read)(struct connsess *conn, void *buf, size_t count);
     ssize_t (*write)(struct connsess *conn, const void *buf, size_t count);
     int (*close)(struct connsess *conn);
+    bool (*can_read)(struct connsess *conn);
 };
 
 typedef struct connsess {
@@ -51,6 +52,7 @@ typedef struct connsess {
     char *host;			/* address of remote host */
     int fd;
     int port;			/* port number of remote host */
+    struct tls *tls;            /* NULL unless TLS in use */
     const struct io_fns *fns;
     char *fragment;		/* for SPAWN connections: unprocessed text */
     char flags;
@@ -75,7 +77,8 @@ void tcp_write(connsess *conn, const char *data);
 void tcp_main_write(const char *data);
 void tcp_flush(void);
 void tcp_set_main(connsess *conn);
-void tcp_open(const char *id, char *initstring, const char *host, int port);
+void tcp_open(const char *id, char *initstring, const char *host,
+              int port, const struct tls_options *tlsopt);
 connsess *tcp_find_connection(const char *id);
 void tcp_show(void);
 void tcp_close(const char *id);

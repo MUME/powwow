@@ -6,6 +6,12 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
+#include <stdbool.h>
+
+#include "defines.h"
+
+struct varnode;
+
 /* shared functions from main.c */
 void printver(void);
 void status(int s);
@@ -17,7 +23,7 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs);
 char *get_next_instr(char *p);
 void parse_user_input(char *line, char silent);
 void set_deffile(char *arg);
-int  is_permanent_variable(varnode *v);
+int  is_permanent_variable(struct varnode *v);
 
 
 /* shared vars from main.c */
@@ -27,8 +33,14 @@ extern char ready;
 extern volatile char confirm;
 extern int  history_done;
 extern int  linemode;
-extern char hostname[];
-extern int  portnumber;
+
+struct hostinfo {
+    char name[BUFSIZE];
+    int port;
+    struct tls_options tlsopt;
+};
+extern struct hostinfo hostinfo;
+
 extern char deffile[], helpfile[], copyfile[];
 
 extern int cols, lines, cols_1;	/* terminal window size */

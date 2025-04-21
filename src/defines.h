@@ -7,6 +7,8 @@
 
 #include "../config.h"
 
+#include <stdbool.h>
+
 #if !defined(SYS_TIME_H) && !defined(_H_SYS_TIME)
 #  include <sys/time.h>
 #endif
@@ -303,6 +305,12 @@ typedef struct editsess {
     long oldsize; 	/* original file size */
     char cancel;	/* 1 if cancelled */
 } editsess;
+
+struct tls_options {
+    bool use_tls;
+    bool no_verify_ca;          /* disable certificate verification */
+    char *hostname;             /* expected hostname */
+};
 
 #endif /* _DEFINES_H_ */
 

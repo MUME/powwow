@@ -5,12 +5,12 @@ AM_CPPFLAGS=-D_XOPEN_SOURCE=700 -DPOWWOW_DIR=\"$(pkgdatadir)\" \
 bin_PROGRAMS = powwow powwow-muc powwow-movieplay
 powwow_SOURCES = beam.c cmd.c log.c edit.c cmd2.c eval.c \
 		 utils.c main.c tcp.c list.c map.c tty.c \
-		 ptr.c
+		 ptr.c tls.c
 powwow_LDFLAGS = @dl_ldflags@
 powwowdir = $(pkgincludedir)
 powwow_HEADERS = beam.h cmd.h log.h edit.h cmd2.h eval.h \
 		 utils.h main.h tcp.h list.h map.h tty.h \
-		 ptr.h defines.h feature/regex.h
+		 ptr.h defines.h tls.h feature/regex.h
 powwow_muc_SOURCES = powwow-muc.c
 powwow_movieplay_SOURCES = powwow-movieplay.c
 

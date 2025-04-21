@@ -37,6 +37,19 @@ Available options:
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 display help text and exit
+.TP
+\fB\-\-tls\fR[=\fItls-options\fR]
+enable encrypted TLS connections; additional \fItls-options\fR,
+separated by colons (\[oq]:\[cq]), are:
+.RS
+.TP
+.B no-verify
+do not validate the CA certificate
+.TP
+.B host=\fIHOST\fR
+assume the host name to be \fIHOST\fR when validating the CA
+certificate
+.RE
 .PP
 Lines that begin with \[oq]#\[cq] are assumed to be special commands
 to be processed locally.  Help is available with the
