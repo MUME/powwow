@@ -62,27 +62,6 @@ AS_IF([ test "${enable_bsd}" = yes ],
       AC_DEFINE(USE_BSD_LIKE, 1,
     [Define for building on BSD-like systems.]) ])
 
-AC_MSG_CHECKING([man page encoding])
-if test -z "${MAN_PAGE_ENCODING}"; then
-    case "${host_os}" in
-        darwin*) MAN_PAGE_ENCODING=ISO-8859-1 ;;
-        *)       MAN_PAGE_ENCODING=UTF-8 ;;
-    esac
-fi
-AC_SUBST([MAN_PAGE_ENCODING])
-AC_MSG_RESULT([${MAN_PAGE_ENCODING}])
-
-if test "${MAN_PAGE_ENCODING}" != UTF-8; then
-    AC_CHECK_PROG([ICONV], [iconv], [iconv], [])
-    if test -z "${ICONV}" -a "${MAN_PAGE_ENCODING}" != UTF-8; then
-        AC_MSG_WARN([Forcing man page encoding to UTF-8])
-        MAN_PAGE_ENCODING=UTF-8
-    fi
-fi
-
-AM_CONDITIONAL([MAN_PAGE_ENCODING_IS_UTF_8],
-    [test "${MAN_PAGE_ENCODING}" = UTF-8 ])
-
 # Checks for programs.
 AC_PROG_CC
 AC_MSG_CHECKING([C version])
@@ -170,7 +149,7 @@ AC_ARG_WITH([plugindir],
 AC_SUBST(plugindir)
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/powwow.doc doc/Makefile
-    man/powwow.6.utf-8 man/Makefile])
+    man/powwow.6 man/Makefile])
 AC_OUTPUT
 
 cat <<EOF
@@ -189,8 +168,6 @@ enable-sort:        ${enable_sort}
 enable-shell:       ${enable_shell}
 enable-ansi-bug:    ${enable_ansi_bug}
 enable-bsd:         ${enable_bsd}
-
-Man page encoding:  ${MAN_PAGE_ENCODING}
 
 Host:               ${host}
 Compiler:           ${CC}
