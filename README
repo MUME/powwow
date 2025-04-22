@@ -7,7 +7,7 @@ It implements (a subset of) the telnet protocol.
 Files you should have received:
 
 	README		This text.
-	Changelog 	What has changed since the last release.
+	Changelog	What has changed since the last release.
 	powwow.doc	Complete documentation. READ this!
 	configure	A shell script that will create a Makefile
 			suitable for your system
@@ -19,7 +19,7 @@ Files you should have received:
 	Hacking		Read this if you want to improve/destroy powwow
 			yourself.
 	README.follow	Documentation for the 'follow' mini-program.
-	README.term     How to make termpowwow
+	README.term	How to make termpowwow
 
 COMPILING
 
@@ -30,10 +30,14 @@ COMPILING
 	./configure
 	make
 
+	If you do not have a 'configure' script, first run:
+
+	./autogen.sh
+
 	To build the powwow binary.  It will run from any location, but there
 	are some settings set at compile time that will make more sense if
 	you use the "install" make target to install the binaries and
-	documentation together.  For example, POWWOWDIR will default to the
+	documentation together.	 For example, POWWOWDIR will default to the
 	location that "make install" will put the online powwow documentation,
 	making the #help feature work out of the box without modifying any
 	settings or flags.
@@ -43,7 +47,7 @@ COMPILING
 	include your system information (uname -a, etc)
 
 	There are also some other options that may be turned on or off or
-	forced using configure.  Try "configure --help" to see the full
+	forced using configure.	 Try "configure --help" to see the full
 	list of compile-time configuration options.
 
 INSTALLING
@@ -67,7 +71,7 @@ INSTALLING
 	If you are on a multi-window terminal (such as an X terminal or NCSA
 	telnet from a Mac or PC), powwow will let you start the editor in
 	another window and remain active.  You will then also be able to edit
-	several texts at the same time.  To achieve this, let the first
+	several texts at the same time.	 To achieve this, let the first
 	character of your editor/pager be '&' (which is then skipped).
 
 	Example: (Bourne shell syntax)
@@ -114,13 +118,13 @@ BUGS
 	a bug to be fixed, unless you explain it in detail (expecially
 	how to reproduce it) and supply the powwow and OS version,
 	as well as the compilation options.
-        Suggestions for improvements are also very welcome.
+	Suggestions for improvements are also very welcome.
 
 AUTHORS OF CANCAN
 
 	Since powwow is based on cancan, we report also this.
 
-        Mattias Engdegård <f91-men@nada.kth.se> was the original author.
+	Mattias Engdegård <f91-men@nada.kth.se> was the original author.
 	Many other people have contributed at least as much, including
 	Finn Arne Gangstad <finnag@pvv.unit.no>, David Gay <dgay@di.epfl.ch>,
 	Gary Dezern <gdezern@satelnet.org>
@@ -130,13 +134,13 @@ AUTHORS OF CANCAN
 
 AUTHORS OF POWWOW
 
-        Massimiliano Ghilardi <max@Linuz.sns.it>, alias Cosmos, is the original
+	Massimiliano Ghilardi <max@Linuz.sns.it>, alias Cosmos, is the original
 	author, and Gustav Hållberg contributed a lot of new features.
 
 	powwow moved to hoopajoo.net in 2005, and is now maintained by
 	Steve Slaven <bpk@hoopajoo.net>
 
-        The powwow WWW page is: http://hoopajoo.net/projects/powwow.html
+	The powwow WWW page is: http://hoopajoo.net/projects/powwow.html
 
 	If you forgot where you downloaded powwow from, you can get it from
 	the above address.
