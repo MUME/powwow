@@ -142,7 +142,7 @@ of lines in your screen.
 #hilite [attribute]
 
 This sets the attribute of your entered text to the given attribute.
-Just #hilite turns it off. 
+Just #hilite turns it off.
 
 Attributes: one or more of bold, blink, inverse, underline and/or
 [<foreground>] [on <background>], where the colors are:
@@ -151,7 +151,7 @@ BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, none.
 @host
 #host [hostname port]
 
-Sets the default host that powwow shall try to connect to when you use 
+Sets the default host that powwow shall try to connect to when you use
 #connect.
 If you type #host without any arguments, the current host and port are
 shown (provided that you have specified them).
@@ -171,7 +171,7 @@ To connect your first session, use:
 #connect main <address> <port>
 where <address> and <port> indicate the host you want to connect to.
 
-If no address/port is defined, you either get connected to the default 
+If no address/port is defined, you either get connected to the default
 host and port (if you have no open connection) or a list of open
 connections is shown.
 
@@ -181,26 +181,26 @@ If <initstr> is specified, it is sent to host on connection.
 @keys
 Default editing keys:
 
-^A	&begin-of-line	   
-^E	&end-of-line	   
+^A	&begin-of-line
+^E	&end-of-line
 ^B	&prev-char		M-b	&prev-word
 ^F	&next-char		M-f	&next-word
-^P	&prev-line	   
-^N	&next-line	   
+^P	&prev-line
+^N	&next-line
 ^D	&del-char-right		M-d	&del-word-right
 BS	&del-char-left		M-BS	&del-word-left
 ^K	&kill-to-eol		M-k	&redraw-line-noprompt
-^L	&redraw-line		M-l	&downcase-word	
-^T	&transpose		M-t	&transpose-words	
+^L	&redraw-line		M-l	&downcase-word
+^T	&transpose		M-t	&transpose-words
 ^Q	&clear-line
 				M-u	&upcase-word
-^W	&to-history	
-^Z	&suspend	
+^W	&to-history
+^Z	&suspend
 Tab	&complete-word		M-Tab	&complete-line
 Ret	&enter-line
 LF      &enter-line
-			
-not assigned: &insert-string 	
+
+not assigned: &insert-string
 
 M-<key> means press escape and then <key>, or press meta/alt key at the same
 time as <key>. ^ means control.
@@ -271,7 +271,7 @@ If you want to tell powwow to execute the command 'kill wolf'
 #in attack (2000) kill wolf
 
 If you do not specify the command, powwow assumes the label is already
-defined, and changes its delay. 
+defined, and changes its delay.
 A delay less than zero means the delayed label is disabled.
 A delay of zero deletes the delayed label.
 
@@ -537,7 +537,7 @@ operators between strings:
    + chain two strings
    = assign a string to a string-variable
   += append a string to a string-variable
-   - compare two strings: result -1 if s1<s2, +1 if s1>s2, 
+   - compare two strings: result -1 if s1<s2, +1 if s1>s2,
       0 if s1==s2
    < <=  > >= == != compare two strings
   .? number of chars in a string
@@ -562,7 +562,7 @@ Examples:
 
 #print($5="Hello, world")	(assign "Hello, world" to $5  and print it)
 
-#action >+exp ^You have scored $1 exp={#print;#print ("You gained " + 
+#action >+exp ^You have scored $1 exp={#print;#print ("You gained " +
 	%($1 - @-5) + " exp. points since last score"); #(@-5 = $1)}
 		(when you type 'score' in MUME, one of the lines you get is:
 		 You have scored xxx experience points ... )

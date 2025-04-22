@@ -323,7 +323,7 @@
 #mark victim shocked=bold
 #mark You feel a watchful eye=bold
 
-#mark The corpse of *&*=bold 
+#mark The corpse of *&*=bold
 #mark *an Orc*=bold yellow on red
 #mark *$ the Orc*=bold yellow on red
 #mark *a Troll*=bold cyan on yellow

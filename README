@@ -55,7 +55,7 @@ INSTALLING
 	If you want powwow's definition files to go in a specific directory,
 	set the environment variable POWWOWDIR to that directory. It will be
 	searched first for definition files at startup.
-	
+
 	Put the file powwow.6 in a suitable directory if you want users on
 	your system to be able to read the long and comprehensive man page ;)
 
@@ -75,7 +75,7 @@ INSTALLING
 	character of your editor/pager be '&' (which is then skipped).
 
 	Example: (Bourne shell syntax)
-	
+
 	POWWOWEDITOR=vi		  Use vi as normal editor (same window as
 				  powwow)
 	POWWOWEDITOR='&emacs'	  Use emacs as editor in a separate window (if
@@ -152,4 +152,3 @@ COPYRIGHT
 
 	Powwow is placed under the terms of GPL (GNU General Public License)
 	The GPL License can be found in the file COPYING.
-

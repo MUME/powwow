@@ -8,14 +8,14 @@ can be loaded using:
 
 #module plugtest
 
-If it works, when you do "#help" you will see a new command called 
+If it works, when you do "#help" you will see a new command called
 "#plugtest" that is listed.  It will just echo the arguments back
 to the terminal.  This is the minimum required to make a functional
 module for powwow 1.2.7 and later.
 
 Modules are loaded using the libdl interface with RTLD_LAZY so that
 symbol resolution is deferred until as late as possible.  This means
-that you should test any commands you create since just because a 
+that you should test any commands you create since just because a
 module loads, that doesn't mean that there are no undefined references.
 
 The basic requirements for a module are:
