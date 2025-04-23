@@ -1,10 +1,10 @@
 .\" -*-nroff-*-
-.TH POWWOW 6 "2018-Sep-11" "powwow @PACKAGE_VERSION@"
+.TH POWWOW 6 "April 2025" "powwow @PACKAGE_VERSION@"
 .SH NAME
 powwow \- telnet protocol client for MUD playing
 .SH SYNOPSIS
 .B powwow
-.RI "[" definition-file "] [" host " " port "]"
+.RI "[" options "] [" definition-file "] [" host " " port "]"
 .SH DESCRIPTION
 .PP
 .B powwow
@@ -32,6 +32,12 @@ etc.) is changed.  If the environment variable POWWOWDIR is defined,
 will look there first for definition files (and create new ones
 there).
 
+Available options:
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+display help text and exit
+.PP
 Lines that begin with \[oq]#\[cq] are assumed to be special commands
 to be processed locally.  Help is available with the
 .I #help

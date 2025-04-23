@@ -25,12 +25,7 @@
  * Maintance was taken over by Steve Slaven (bpk@hoopajoo.net) in 2005
  */
 
-/*
- * Set this to whatever you like
- *
- * #define POWWOW_DIR	"/home/gustav/powwow"
- */
-
+#include <getopt.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -230,8 +225,55 @@ int   delim_mode = DELIM_NORMAL;
 /* Group delimiter */
 char *group_delim;
 
+static void show_help(const char *prog)
+{
+#ifdef HAVE_GETOPT_LONG
+#define HELP_ARG "--help, -h"
+#else
+#define HELP_ARG "-h"
+#endif
+    printf("Usage:\n"
+           "  %s [OPTIONS] [DEFINITION-FILE] [HOST PORT]\n"
+           "\n"
+           "Options:\n"
+           "  " HELP_ARG "    display this help text\n",
+           prog);
+#undef HELP_ARG
+}
+
 int main(int argc, char **argv)
 {
+#ifdef HAVE_GETOPT_LONG
+    static const struct option longopts[] = {
+        { "help", no_argument,       NULL, 'h' },
+        { NULL }
+    };
+#endif
+    for (int c;;) {
+#ifdef HAVE_GETOPT_LONG
+        c = getopt_long(argc, argv, "h", longopts, NULL);
+#else
+        c = getopt(argc, argv, "h");
+#endif
+        if (c == -1)
+            break;
+        switch (c) {
+        case '?':
+            exit(EXIT_FAILURE);
+        case 'h':
+            show_help(argv[0]);
+            exit(EXIT_SUCCESS);
+        default:
+            abort();
+        }
+    }
+
+    int nargs = argc - optind;
+    if (nargs > 2) {
+        fprintf(stderr, "%s: too many arguments\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
     char *p;
     int i;
     int read_file = 0;	/* GH: if true, powwow was started with
@@ -333,7 +375,7 @@ int main(int argc, char **argv)
 
     printver();
 
-    if (argc == 1) {
+    if (nargs == 0) {
 	tty_printf(
 "\nPowwow comes with ABSOLUTELY NO WARRANTY; for details type \"#help warranty\".\n\
 This is free software, and you are welcome to redistribute it\n\
@@ -341,17 +383,17 @@ under certain conditions; type \"#help copyright\" for details.\n"
 		   );
     }
 
-    if (argc == 1 || argc == 3) {
+    if (nargs == 0 || nargs == 2) {
 	tty_add_initial_binds();
 	tty_add_walk_binds();
-    } else if (argc == 2 || argc == 4) {
+    } else if (nargs == 1 || nargs == 3) {
         /*
          * assuming first arg is definition file name
          * If three args, first is definition file name,
          * second and third are hostname and port number
          * (they overwrite the ones in definition file)
          */
-        set_deffile(argv[1]);
+        set_deffile(argv[optind++]);
 
         if (access(deffile,R_OK) == -1 || access(deffile,W_OK) == -1) {
 	    char portnum[INTLEN];
@@ -376,10 +418,12 @@ under certain conditions; type \"#help copyright\" for details.\n"
 	else
 	    read_file = 1;
     }
-    if (argc == 3 || argc == 4) {
+
+    nargs = argc - optind;
+    if (nargs == 2) {
         /* assume last two args are hostname and port number */
-        my_strncpy(hostname, argv[argc - 2], BUFSIZE-1);
-        portnumber = atoi(argv[argc - 1]);
+        my_strncpy(hostname, argv[optind], BUFSIZE - 1);
+        portnumber = atoi(argv[optind + 1]);
     }
 
     signal_start();

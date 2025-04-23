@@ -85,6 +85,9 @@ if test "x${enable_vt100}" != "xyes"; then
         fi])
 fi
 
+AC_CHECK_FUNC([getopt_long],
+    AC_DEFINE(HAVE_GETOPT_LONG, 1, [Define to use getopt_long().]))
+
 # Dynamic modules
 AC_SEARCH_LIBS(dlopen,[dl],[
     AC_DEFINE(HAVE_LIBDL, 1, [Define if we have -ldl.])
