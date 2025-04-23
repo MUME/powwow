@@ -3,8 +3,10 @@
 #ifndef _TCP_H_
 #define _TCP_H_
 
-extern int tcp_fd;		/* current socket file descriptor */
-extern int tcp_main_fd;		/* main session socket */
+#include <stdbool.h>
+
+#include "defines.h"
+
 extern int tcp_max_fd;		/* highest used fd */
 
 extern int tcp_count;		/* number of open connections */
@@ -38,11 +40,18 @@ extern int conn_max_index;	/* 1 + highest used conn_list[] index */
 #define IDEDITOR 4
 #define IDPROMPT 8
 
+struct io_fns {
+    ssize_t (*read)(struct connsess *conn, void *buf, size_t count);
+    ssize_t (*write)(struct connsess *conn, const void *buf, size_t count);
+    int (*close)(struct connsess *conn);
+};
+
 typedef struct connsess {
     char *id;			/* session id */
     char *host;			/* address of remote host */
+    int fd;
     int port;			/* port number of remote host */
-    int fd;			/* fd number */
+    const struct io_fns *fns;
     char *fragment;		/* for SPAWN connections: unprocessed text */
     char flags;
     char state;

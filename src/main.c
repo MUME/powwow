@@ -1419,7 +1419,8 @@ static void get_user_input(void)
 
     if (linemode & LM_CHAR) {
 	/* char mode. chunk == 1 */
-	while ((i = write(current_connection->fd, c, 1)) < 0
+	while ((i = current_connection->fns->write(
+                    current_connection, c, 1)) < 0
                && errno == EINTR)
 	    ;
 	if (i != 1)

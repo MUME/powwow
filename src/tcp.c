@@ -164,7 +164,8 @@ static void sendopt(byte what, byte opt)
     byte buf[] = { IAC, what, opt };
     int i;
 
-    while ((i = write(current_connection->fd, buf, sizeof buf)) < 0
+    while ((i = current_connection->fns->write(
+                current_connection, buf, sizeof buf)) < 0
            && errno == EINTR)
 	;
     if (i != sizeof buf) {
@@ -361,7 +362,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
         --maxsize;
     }
 
-    while ((i = read(conn->fd, ibuffer, maxsize)) < 0
+    while ((i = conn->fns->read(conn, ibuffer, maxsize)) < 0
            && errno == EINTR)
 	;
 
@@ -599,7 +600,7 @@ static void internal_tcp_raw_write(connsess *conn, const char *data, int len)
 {
     while (len > 0) {
         int i;
-	while ((i = write(conn->fd, data, len)) < 0
+	while ((i = conn->fns->write(conn, data, len)) < 0
                && errno == EINTR)
 	    ;
 	if (i < 0) {
@@ -769,7 +770,8 @@ void tcp_flush(void)
 	return;
 
     while (output_len) {
-	while ((n = write(output_connection->fd, p, output_len)) < 0
+	while ((n = output_connection->fns->write(
+                    output_connection, p, output_len)) < 0
                && errno == EINTR)
 	    ;
 	if (n < 0) {
@@ -852,6 +854,28 @@ void tcp_set_main(connsess *conn)
     reprint_clear();
 }
 
+static ssize_t tcp_conn_read(connsess *conn, void *buf, size_t count)
+{
+    return read(conn->fd, buf, count);
+}
+
+static ssize_t tcp_conn_write(connsess *conn, const void *buf,
+                              size_t count)
+{
+    return write(conn->fd, buf, count);
+}
+
+static int tcp_conn_close(connsess *conn)
+{
+    return close(conn->fd);
+}
+
+static const struct io_fns tcp_io_fns = {
+    .read  = tcp_conn_read,
+    .write = tcp_conn_write,
+    .close = tcp_conn_close
+};
+
 /*
  * open another connection
  */
@@ -901,6 +925,7 @@ void tcp_open(const char *id, char *initstring, const char *host, int port)
         .old_state = NORMAL,
         .port      = port,
         .fd        = newtcp_fd,
+        .fns       = &tcp_io_fns
     };
 
     if (tcp_max_fd < newtcp_fd)
@@ -947,7 +972,7 @@ void tcp_close(const char *id)
 	}
     }
 
-    close(conn->fd);
+    conn->fns->close(conn);
 
     abort_edit_fd(conn);
 
