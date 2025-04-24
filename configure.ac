@@ -2,6 +2,8 @@
 AC_INIT([powwow],[1.2.23])
 AM_INIT_AUTOMAKE
 
+AC_CONFIG_HEADERS([config.h])
+
 AC_CANONICAL_HOST
 
 AC_ARG_ENABLE(vt100,
@@ -10,7 +12,7 @@ AC_ARG_ENABLE(vt100,
         [enable_vt100="no"]
 )
 AS_IF([ test "${enable_vt100}" = yes ],
-      [ AC_DEFINE(USE_VT100) ])
+      [ AC_DEFINE(USE_VT100, 1, [Define to enable VT-100 escape sequences.]) ])
 
 AC_ARG_ENABLE(regex,
 
@@ -30,7 +32,7 @@ AC_ARG_ENABLE(sort,
         [enable_sort="no"]
 )
 AS_IF([ test "${enable_sort}" = yes ],
-      [ AC_DEFINE(DO_SORT) ])
+      [ AC_DEFINE(DO_SORT, 1, [Enable to sort entries in some lists.]) ])
 
 AC_ARG_ENABLE(noshell,
 	AS_HELP_STRING([--enable-noshell],[Disables the "#!" command [[default=no]]]),
@@ -38,15 +40,16 @@ AC_ARG_ENABLE(noshell,
         [enable_noshell="no"]
 )
 AS_IF([ test "${enable_noshell}" = yes ],
-      [ AC_DEFINE(NO_SHELL) ])
+      [ AC_DEFINE(NO_SHELL, 1, [Define to disable the "#!" command.]) ])
 
 AC_ARG_ENABLE(ansibug,
-	AS_HELP_STRING([--enable-ansibug],[Enables fixes for "#mark" ansi bugs on some terminals [[default=no]]]),
+	AS_HELP_STRING([--enable-ansibug],
+            [Enables fixes for "#mark" ansi bugs on some terminals [[default=no]]]),
         ,
         [enable_ansibug="no"]
 )
 AS_IF([ test "${enable_ansibug}" = yes ],
-      [ AC_DEFINE(BUG_ANSI) ])
+      [ AC_DEFINE(BUG_ANSI, 1, [Enable fix for "#mark" ANSI bugs on some terminals.]) ])
 
 AC_ARG_ENABLE(bsd,
 	AS_HELP_STRING([--enable-bsd],[Needed for BSD systems, in powwow this was USE_SGTTY and BSD_LIKE. Default on Darwin (OS X) systems.]))
@@ -56,8 +59,8 @@ AS_IF([ test -z "${enable_bsd}" ],
             *)       enable_bsd=no ;;
         esac])
 AS_IF([ test "${enable_bsd}" = yes ],
-      [ AC_DEFINE(USE_SGTTY)
-        AC_DEFINE(BSD_LIKE) ])
+      [ AC_DEFINE(USE_SGTTY, 1, [Define to use BSD sgtty.])
+        AC_DEFINE(BSD_LIKE, 1, [Define for building on BSD-like systems.]) ])
 
 AC_MSG_CHECKING([man page encoding])
 if test -z "${MAN_PAGE_ENCODING}"; then
@@ -93,7 +96,8 @@ esac
 AC_PROG_LN_S
 
 # Checks for libraries.
-AC_CHECK_FUNC(lrand48,,AC_DEFINE(USE_RANDOM))
+AC_CHECK_FUNC(lrand48, ,
+    AC_DEFINE(USE_RANDOM, 1, [Define to use random() rather than lrand48().]))
 
 if test "x${enable_vt100}" != "xyes"; then
     AC_SEARCH_LIBS(initscr,[ncurses curses], [], [
@@ -104,14 +108,15 @@ fi
 
 # Dynamic modules
 AC_SEARCH_LIBS(dlopen,[dl],[
-               AC_DEFINE(HAVE_LIBDL)
+               AC_DEFINE(HAVE_LIBDL, 1, [Define if we have -ldl.])
                dl_ldflags="-rdynamic"])
 AC_SUBST(dl_ldflags)
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h unistd.h])
 AC_CHECK_HEADER([locale.h],
-    [AC_CHECK_FUNC([putwc],[AC_DEFINE(USE_LOCALE)])])
+    [AC_CHECK_FUNC([putwc], [AC_DEFINE(USE_LOCALE, 1, [
+        Enable locale support for wide characters.])])])
 
 if test "x${enable_regex}" = "xno"; then
     AC_MSG_RESULT([Regex support disabled])
@@ -137,11 +142,11 @@ else
         enable_regex=no
         AC_MSG_RESULT([*** Unable to enable regex support])
     else
-        AC_DEFINE(USE_REGEXP)
+        AC_DEFINE(USE_REGEXP, 1, [Define to enable regular expression support.])
 
         if test "x${enable_regex_using}" = "xpcreposix"; then
             AC_MSG_RESULT([Using pcreposix regcomp])
-            AC_DEFINE(USE_REGEXP_PCREPOSIX)
+            AC_DEFINE(USE_REGEXP_PCREPOSIX, 1, [Define to use pcreposix.])
             AC_CHECK_LIB(pcreposix,regcomp,,
                 AC_MSG_ERROR([*** pcreposix library not found])
             )

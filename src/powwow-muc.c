@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "defines.h"
+
 /* Curses based powwow movie player.
  * Author: Steve Slaven - http://hoopajoo.net
  *

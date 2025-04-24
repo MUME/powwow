@@ -22,12 +22,13 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "defines.h"
+
 #ifdef USE_LOCALE
 #include <wchar.h>
 #include <locale.h>
 #endif
 
-#include "defines.h"
 #include "main.h"
 #include "edit.h"
 #include "utils.h"

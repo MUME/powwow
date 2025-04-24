@@ -27,11 +27,12 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "defines.h"
+
 #ifdef HAVE_LIBDL
 #include <dlfcn.h>
 #endif
 
-#include "defines.h"
 #include "main.h"
 #include "utils.h"
 #include "beam.h"

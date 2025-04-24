@@ -24,6 +24,9 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/telnet.h>
+
+#include "defines.h"
+
 #ifndef TELOPT_NAWS
 #  define TELOPT_NAWS 31
 #endif
@@ -39,7 +42,6 @@
 #  include "client.h"
 #endif
 
-#include "defines.h"
 #include "main.h"
 #include "utils.h"
 #include "tcp.h"

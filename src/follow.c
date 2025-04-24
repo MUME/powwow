@@ -17,6 +17,8 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
+#include "defines.h"
+
 #ifndef USE_SGTTY
 # ifdef APOLLO
 #  include "/sys5.3/usr/include/sys/termio.h"

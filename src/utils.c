@@ -10,6 +10,8 @@
  *
  */
 
+#include "defines.h"
+
 #ifdef BSD_LIKE
 /* Needed for SIGWINCH on OpenBSD. */
 # define _BSD_SOURCE
@@ -28,7 +30,6 @@
 #include <signal.h>
 #include <time.h>
 
-#include "defines.h"
 #include "main.h"
 #include "utils.h"
 #include "list.h"

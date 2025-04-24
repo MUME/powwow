@@ -31,26 +31,6 @@
  * #define POWWOW_DIR	"/home/gustav/powwow"
  */
 
-#ifdef USE_LOCALE
-  #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fr\363r, D\341in"
-  #define COPYRIGHT      "\251"
-#else
-  #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fror, Dain"
-  #define COPYRIGHT      "Copyright"
-#endif
-
-#define POWWOW_VERSION VERSION                          \
-    ", " COPYRIGHT " 2000-2005 by Cosmos\n"             \
-    COPYRIGHT " 2005 by bpk - http://hoopajoo.net\n"    \
-    "(contributions by " POWWOW_HACKERS ")\n"
-
-#define HELPNAME "powwow.help"
-#define COPYNAME "COPYING"
-
-#ifndef POWWOW_DIR
-# define POWWOW_DIR "./"
-#endif
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -67,11 +47,12 @@
 #include <memory.h>
 #include <unistd.h>
 
+#include "defines.h"
+
 #ifdef USE_LOCALE
 #include <locale.h>
 #endif
 
-#include "defines.h"
 #include "main.h"
 #include "feature/regex.h"
 #include "utils.h"
@@ -85,6 +66,22 @@
 #include "tty.h"
 #include "eval.h"
 #include "log.h"
+
+#ifdef USE_LOCALE
+  #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fr\363r, D\341in"
+  #define COPYRIGHT      "\251"
+#else
+  #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fror, Dain"
+  #define COPYRIGHT      "Copyright"
+#endif
+
+#define POWWOW_VERSION VERSION                          \
+    ", " COPYRIGHT " 2000-2005 by Cosmos\n"             \
+    COPYRIGHT " 2005 by bpk - http://hoopajoo.net\n"    \
+    "(contributions by " POWWOW_HACKERS ")\n"
+
+#define HELPNAME "powwow.help"
+#define COPYNAME "COPYING"
 
 /*     local function declarations       */
 #ifdef MOTDFILE

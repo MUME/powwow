@@ -5,6 +5,8 @@
 #ifndef _DEFINES_H_
 #define _DEFINES_H_
 
+#include "../config.h"
+
 #if !defined(SYS_TIME_H) && !defined(_H_SYS_TIME)
 #  include <sys/time.h>
 #endif
