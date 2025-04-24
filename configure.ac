@@ -6,82 +6,82 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_CANONICAL_HOST
 
-AC_ARG_ENABLE(vt100,
-	AS_HELP_STRING([--enable-vt100],[Hard code VT100 escape sequences; use if you have no termcap [[default=no]]]),
-        ,
-        [enable_vt100="no"]
-)
+AC_ARG_ENABLE([vt100],
+    AS_HELP_STRING([--enable-vt100],
+        [hardcode use of VT100 escape sequences; use if you have no termcap]),
+    [],
+    [enable_vt100=no])
 AS_IF([ test "${enable_vt100}" = yes ],
-      [ AC_DEFINE(USE_VT100, 1, [Define to enable VT-100 escape sequences.]) ])
+    [ AC_DEFINE(USE_VT100, 1,
+          [Define to hard code use of VT-100 escape sequences.]) ])
 
-AC_ARG_ENABLE(regex,
+AC_ARG_ENABLE([regex],
+    AS_HELP_STRING([--enable-regex],
+        [enable regular expressions; argument is one of:])
+    AS_HELP_STRING([yes], [find first available: pcreposix, libc (default)])
+    AS_HELP_STRING([pcreposix], [use pcreposix])
+    AS_HELP_STRING([libc], [use libc]),
+    [],
+    [enable_regex=yes])
 
-        AS_HELP_STRING([--enable-regex],
-            [Enable regular expressions [[default=yes]]])
-        []
-        [yes            - find first available: pcreposix, libc]
-        [pcreposix      - use pcreposix]
-        [libc           - use libc]
-        ,,
-        [enable_regex="yes"]
-)
-
-AC_ARG_ENABLE(sort,
-	AS_HELP_STRING([--enable-sort],[Sort aliases and actions [[default=no]]]),
-        ,
-        [enable_sort="no"]
-)
+AC_ARG_ENABLE([sort],
+    AS_HELP_STRING([--enable-sort],[sort aliases and actions]),
+    [],
+    [enable_sort=no])
 AS_IF([ test "${enable_sort}" = yes ],
-      [ AC_DEFINE(DO_SORT, 1, [Enable to sort entries in some lists.]) ])
+    [ AC_DEFINE(USE_LIST_SORT, 1, [Enable to sort entries in some lists.]) ])
 
-AC_ARG_ENABLE(noshell,
-	AS_HELP_STRING([--enable-noshell],[Disables the "#!" command [[default=no]]]),
-        ,
-        [enable_noshell="no"]
-)
-AS_IF([ test "${enable_noshell}" = yes ],
-      [ AC_DEFINE(NO_SHELL, 1, [Define to disable the "#!" command.]) ])
+AC_ARG_ENABLE([shell],
+    AS_HELP_STRING([--disable-shell],[disables the "#!" command.]),
+    [],
+    [enable_shell=yes])
+AS_IF([ test "${enable_shell}" != no ],
+    [ AC_DEFINE(USE_SHELL, 1, [Define to enable the "#!" command.]) ])
 
-AC_ARG_ENABLE(ansibug,
-	AS_HELP_STRING([--enable-ansibug],
-            [Enables fixes for "#mark" ansi bugs on some terminals [[default=no]]]),
-        ,
-        [enable_ansibug="no"]
-)
-AS_IF([ test "${enable_ansibug}" = yes ],
-      [ AC_DEFINE(BUG_ANSI, 1, [Enable fix for "#mark" ANSI bugs on some terminals.]) ])
+AC_ARG_ENABLE([ansi-bug],
+    AS_HELP_STRING([--enable-ansi-bug],
+        [enables fixes for "#mark" ansi bugs on some terminals]),
+    [],
+    [enable_ansi_bug=no])
+AS_IF([ test "${enable_ansi_bug}" != no ],
+    [ AC_DEFINE(USE_ANSIBUG, 1,
+          [Enable fix for "#mark" ANSI bugs on some terminals.]) ])
 
-AC_ARG_ENABLE(bsd,
-	AS_HELP_STRING([--enable-bsd],[Needed for BSD systems, in powwow this was USE_SGTTY and BSD_LIKE. Default on Darwin (OS X) systems.]))
-AS_IF([ test -z "${enable_bsd}" ],
-      [ case "${host_os}" in
-            darwin*) enable_bsd=yes ;;
-            *)       enable_bsd=no ;;
-        esac])
+is_darwin=
+case "${host_os}" in
+    darwin*) is_darwin=t ;;
+esac
+
+AC_ARG_ENABLE([bsd],
+    AS_HELP_STRING([--enable-bsd], [enable BSD features (default on Darwin)]),
+    [],
+    [ enable_bsd=no; test -n "${is_darwin}" && enable_bsd=yes ])
+
 AS_IF([ test "${enable_bsd}" = yes ],
-      [ AC_DEFINE(USE_SGTTY, 1, [Define to use BSD sgtty.])
-        AC_DEFINE(BSD_LIKE, 1, [Define for building on BSD-like systems.]) ])
+    [ AC_DEFINE(USE_SGTTY, 1, [Define to use BSD sgtty.])
+      AC_DEFINE(USE_BSD_LIKE, 1,
+    [Define for building on BSD-like systems.]) ])
 
 AC_MSG_CHECKING([man page encoding])
 if test -z "${MAN_PAGE_ENCODING}"; then
-   case "${host_os}" in
-       darwin*) MAN_PAGE_ENCODING=ISO-8859-1 ;;
-       *)       MAN_PAGE_ENCODING=UTF-8 ;;
-   esac
+    case "${host_os}" in
+        darwin*) MAN_PAGE_ENCODING=ISO-8859-1 ;;
+        *)       MAN_PAGE_ENCODING=UTF-8 ;;
+    esac
 fi
 AC_SUBST([MAN_PAGE_ENCODING])
 AC_MSG_RESULT([${MAN_PAGE_ENCODING}])
 
 if test "${MAN_PAGE_ENCODING}" != UTF-8; then
-   AC_CHECK_PROG([ICONV], [iconv], [iconv], [])
-   if test -z "${ICONV}" -a "${MAN_PAGE_ENCODING}" != UTF-8; then
-      AC_MSG_WARN([Forcing man page encoding to UTF-8])
-      MAN_PAGE_ENCODING=UTF-8
-   fi
+    AC_CHECK_PROG([ICONV], [iconv], [iconv], [])
+    if test -z "${ICONV}" -a "${MAN_PAGE_ENCODING}" != UTF-8; then
+        AC_MSG_WARN([Forcing man page encoding to UTF-8])
+        MAN_PAGE_ENCODING=UTF-8
+    fi
 fi
 
 AM_CONDITIONAL([MAN_PAGE_ENCODING_IS_UTF_8],
-               [test "${MAN_PAGE_ENCODING}" = UTF-8 ])
+    [test "${MAN_PAGE_ENCODING}" = UTF-8 ])
 
 # Checks for programs.
 AC_PROG_CC
@@ -96,27 +96,27 @@ esac
 AC_PROG_LN_S
 
 # Checks for libraries.
-AC_CHECK_FUNC(lrand48, ,
+AC_CHECK_FUNC([lrand48], ,
     AC_DEFINE(USE_RANDOM, 1, [Define to use random() rather than lrand48().]))
 
 if test "x${enable_vt100}" != "xyes"; then
     AC_SEARCH_LIBS(initscr,[ncurses curses], [], [
-                   if test "x${enable_vt100}" = "xno" ; then
-                       AC_MSG_ERROR([*** curses libraries not found])
-                   fi])
+        if test "x${enable_vt100}" = "xno" ; then
+            AC_MSG_ERROR([*** curses libraries not found])
+        fi])
 fi
 
 # Dynamic modules
 AC_SEARCH_LIBS(dlopen,[dl],[
-               AC_DEFINE(HAVE_LIBDL, 1, [Define if we have -ldl.])
-               dl_ldflags="-rdynamic"])
+    AC_DEFINE(HAVE_LIBDL, 1, [Define if we have -ldl.])
+    dl_ldflags="-rdynamic"])
 AC_SUBST(dl_ldflags)
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdlib.h unistd.h])
 AC_CHECK_HEADER([locale.h],
-    [AC_CHECK_FUNC([putwc], [AC_DEFINE(USE_LOCALE, 1, [
-        Enable locale support for wide characters.])])])
+    [ AC_CHECK_FUNC([putwc],
+          [ AC_DEFINE(USE_LOCALE, 1, [
+                Enable locale support for wide characters.])])])
 
 if test "x${enable_regex}" = "xno"; then
     AC_MSG_RESULT([Regex support disabled])
@@ -162,19 +162,15 @@ else
 fi
 
 AC_ARG_WITH([plugindir],
-            AS_HELP_STRING([--with-plugindir=DIR],[Plugin installation directory [[default=LIBDIR/powwow]]])],
-            [plugindir="${withval}"],
-            [plugindir="\${libdir}/powwow"])
+    AS_HELP_STRING([--with-plugindir=DIR],
+        [Plugin installation directory; default=LIBDIR/powwow]),
+    [plugindir="${withval}"],
+    [plugindir="\${libdir}/powwow"])
 
 AC_SUBST(plugindir)
 
-# Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
-
-# Checks for library functions.
-AC_FUNC_MALLOC
-
-AC_CONFIG_FILES([Makefile src/Makefile doc/powwow.doc doc/Makefile man/powwow.6.utf-8 man/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile doc/powwow.doc doc/Makefile
+    man/powwow.6.utf-8 man/Makefile])
 AC_OUTPUT
 
 cat <<EOF
@@ -190,8 +186,8 @@ Plugin directory:   $(eval eval eval echo "${plugindir}")
 enable-vt100:       ${enable_vt100}
 enable-regex:       ${enable_regex} (${enable_regex_using})
 enable-sort:        ${enable_sort}
-enable-noshell:     ${enable_noshell}
-enable-ansibug:     ${enable_ansibug}
+enable-shell:       ${enable_shell}
+enable-ansi-bug:    ${enable_ansi_bug}
 enable-bsd:         ${enable_bsd}
 
 Man page encoding:  ${MAN_PAGE_ENCODING}

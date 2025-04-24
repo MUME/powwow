@@ -12,7 +12,7 @@
 
 #include "defines.h"
 
-#ifdef BSD_LIKE
+#ifdef USE_BSD_LIKE
 /* Needed for SIGWINCH on OpenBSD. */
 # define _BSD_SOURCE
 /* Needed for SIGWINCH on FreeBSD. */
@@ -519,12 +519,12 @@ static void wrap_print(char *s)
     /* l = left, m = current offset */
     int l, m;
     enum { NORM, ESCAPE, BRACKET } state;
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
     int ansibug = 0;
 #endif
 
     l = printstrlen(s);
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
     if (l > cols_1 && l < (int)strlen(s))
         ansibug = 1;
 #endif
@@ -584,7 +584,7 @@ static void wrap_print(char *s)
             col0 = 0;
     }
 
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
     if (ansibug)
         tty_printf("%s%s%s", follow ? s : "" ,
                 tty_modenorm, tty_clreoln);
@@ -616,7 +616,7 @@ void smart_print(char *line, char newline)
 	if (opt_wrap)
 	    wrap_print(buf);
 	else {
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
 	    int l;
 	    l = printstrlen(buf);
 	    if (l > cols_1 && l < ptrlen(ptrbuf))

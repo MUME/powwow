@@ -43,7 +43,7 @@ extern int printf();
 # include <sys/ioctl.h>
 #endif
 
-#ifdef BSD_LIKE
+#ifdef USE_BSD_LIKE
 # include <sys/ioctl_compat.h>
 # define O_RAW RAW
 # define O_ECHO ECHO

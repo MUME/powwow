@@ -1389,7 +1389,7 @@ static void get_user_input(void)
 	    edbuf[edlen++] = *c;
 	else {
 	    edbuf[edlen] = '\0';
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
 	    if (edattrbg)
 		tty_puts(edattrend);
 #endif

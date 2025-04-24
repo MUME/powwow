@@ -218,7 +218,7 @@ void draw_input_line(void)
 	} else {
 	    tty_printf("%.*s", cols_1 - col0, edbuf);
 	    for (i = cols_1 - col0; i <= edlen; i += cols_1) {
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
 		if (edattrbg)
 		    tty_printf("%s\n%s%.*s", edattrend, edattrbeg, cols_1, edbuf + i);
 		else

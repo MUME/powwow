@@ -84,7 +84,7 @@ cmdstruct default_commands[] =
       "[keys|math|command]\tthis text, or help on specified topic"),
     C("17", (function_str)0,
       "command\t\t\trepeat \"command\" 17 times"),
-#ifndef NO_SHELL
+#ifdef USE_SHELL
     C("!",          cmd_shell,
       "shell-command\t\texecute a shell command using /bin/sh"),
 #endif
@@ -567,7 +567,7 @@ static void cmd_clear(char *arg)
     }
 }
 
-#ifndef NO_SHELL
+#ifdef USE_SHELL
 static void cmd_shell(char *arg)
 {
     if (!*arg) {

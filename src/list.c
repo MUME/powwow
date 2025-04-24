@@ -216,7 +216,7 @@ void add_marknode(char *pattern, int attrcode, char mbeg, char wild)
 	free(new);
 	return;
     }
-#ifdef DO_SORT
+#ifdef USE_LIST_SORT
     add_node((defnode*)new, (defnode**)&markers, ascii_sort);
 #else
     for (p=&markers, i=1; *p && (a_nice==0 || i<a_nice); p = &(*p)->next, i++)
@@ -258,7 +258,7 @@ void add_actionnode(char *pattern, char *command, char *label, int active, int t
 	free(new);
 	return;
     }
-#ifdef DO_SORT
+#ifdef USE_LIST_SORT
     add_node((defnode*)new, (defnode**)&actions, ascii_sort);
 #else
     for (p=&actions, i=1; *p && (a_nice==0 || i<a_nice); p = &(*p)->next, i++)
@@ -299,7 +299,7 @@ void add_promptnode(char *pattern, char *command, char *label, int active, int t
 	free(new);
 	return;
     }
-#ifdef DO_SORT
+#ifdef USE_LIST_SORT
     add_node((defnode*)new, (defnode**)&prompts, ascii_sort);
 #else
     for (p=&prompts, i=1; *p && (a_nice==0 || i<a_nice); p = &(*p)->next, i++)

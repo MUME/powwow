@@ -60,7 +60,7 @@
 #  include <sys/ioctl.h>
 #endif
 
-#ifdef BSD_LIKE
+#ifdef USE_BSD_LIKE
 #  include <sys/ioctl_compat.h>
 #  define O_RAW RAW
 #  define O_ECHO ECHO
@@ -308,7 +308,7 @@ void tty_sig_winch_bottomhalf(void)
 
 	tty_gotoxy(0, line0);
 	/* so we know where the cursor is */
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
 	if (edattrbg)
 	    tty_printf("%s%s", edattrend, tty_clreoscr);
 	else
@@ -677,13 +677,13 @@ void input_delete_nofollow_chars(int n)
 	 * we delete more than one char). Simplicity
 	 */
 	if (deletecost && deletecost * n + d_cost < r_cost) {
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
 	    if (edattrbg)
 		tty_puts(edattrend);
 #endif
 	    for (d_cost = n; d_cost; d_cost--)
 	        tty_puts(delchar);
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
 	    if (edattrbg)
 		tty_puts(edattrbeg);
 #endif
@@ -696,7 +696,7 @@ void input_delete_nofollow_chars(int n)
 	} else
 #endif /* not USE_VT100 */
 	{
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
 	    if (edattrbg && p <= edlen - n && p + r_cost >= edlen - n)
 		tty_printf("%.*s%s%.*s", edlen - p - n, edbuf + p,
 					 edattrend,
@@ -708,7 +708,7 @@ void input_delete_nofollow_chars(int n)
 	    p += r_cost;
 
 	    if (edlen <= nl) {
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
 		if (edattrbg)
 		    tty_puts(edattrbeg);
 #endif
@@ -742,7 +742,7 @@ void input_overtype_follow(char c)
     if (line_status == 0) {
 	tty_putc(c);
 	if (!CURCOL(pos)) {
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
 	    if (edattrbg)
 		tty_printf("%s\n%s", edattrend, edattrbeg);
 	    else
@@ -795,7 +795,7 @@ void input_insert_follow_chars(char *str, int n)
 	}
 	if (edlen < nl)
 	    break;
-#ifdef BUG_ANSI
+#ifdef USE_ANSIBUG
 	if (edattrbg)
 	    tty_printf("%s\n%s", edattrend, edattrbeg);
 	else
