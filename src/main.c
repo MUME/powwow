@@ -75,7 +75,7 @@
 #define POWWOW_VERSION VERSION                          \
     ", " COPYRIGHT " 2000-2005 by Cosmos\n"             \
     COPYRIGHT " 2005 by bpk - http://hoopajoo.net\n"    \
-    "(contributions by " POWWOW_HACKERS ")\n"
+    "(contributions by " POWWOW_HACKERS ")"
 
 #define HELPNAME "powwow.help"
 #define COPYNAME "COPYING"
@@ -398,7 +398,7 @@ int main(int argc, char **argv)
     printmotd();
 #endif
 
-    printver();
+    printver(false);
 
     if (nargs == 0) {
 	tty_printf(
@@ -483,9 +483,13 @@ under certain conditions; type \"#help copyright\" for details.\n"
 /*
  * show current version
  */
-void printver(void)
+void printver(bool verbose)
 {
-    tty_printf("Powwow version %s\nOptions: %s%s\n", POWWOW_VERSION,
+    tty_printf("Powwow version %s\n", POWWOW_VERSION);
+    if (!verbose)
+        return;
+
+    tty_printf("\nOptions: "
 #ifdef USE_VT100
 	       "vt100-only,"
 #else
@@ -516,13 +520,7 @@ void printver(void)
 #ifdef HAVE_LIBDL
 	       " modules,"
 #endif
-	       ,
-#if __STDC__
-	       " compiled " __TIME__ " " __DATE__
-#else
-	       " uknown compile date"
-#endif
-	       );
+	       " compiled " __TIME__ " " __DATE__ "\n");
 }
 
 #ifdef MOTDFILE

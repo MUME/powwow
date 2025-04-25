@@ -13,7 +13,7 @@
 struct varnode;
 
 /* shared functions from main.c */
-void printver(void);
+void printver(bool verbose);
 void status(int s);
 void process_remote_input(char *buf, int size);
 void push_params(void);
