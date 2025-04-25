@@ -1016,6 +1016,10 @@ int read_settings(void)
 	    *--p = ' ';
 	}
 	parse_user_input(cmd, 1);
+        if (error != 0) {
+            PRINTF("#error: loading save-file failed\n");
+            break;
+        }
     }
 
     if (error)
@@ -1041,6 +1045,7 @@ int read_settings(void)
     if (ptrbuf)
 	ptrdel(ptrbuf);
 
+    tty_flush();
     return failed;
 }
 
