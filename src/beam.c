@@ -374,7 +374,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	    editor = "more";
     } else {
 	if (!(editor = getenv("POWWOWEDITOR")) && !(editor = getenv("EDITOR")))
-	    editor = "emacs";
+	    editor = "vi";
     }
 
     if (editor[0] == '&') {

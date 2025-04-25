@@ -62,7 +62,7 @@ a literal semicolon, prefix it with a backslash: \[oq]\\\;\[cq].
 also supports the MUME editing protocol for editing texts locally.
 The name of the editor is taken from the environment variable
 POWWOWEDITOR or EDITOR.
-.BR emacs (1)
+.BR vi (1)
 is used by default.  For text viewing, POWWOWPAGER is searched, then
 PAGER and
 .BR more (1)
@@ -129,7 +129,7 @@ Name of editor to use.
 .BR POWWOWPAGER " or " PAGER
 Name of pager to use.
 .SH SEE ALSO
-.BR telnet "(1), " more "(1), " emacs (1)
+.BR telnet "(1), " more "(1), " vi (1)
 .SH DIAGNOSTICS
 Most diagnostics are self-explanatory.  Some are even more
 self-explanatory than others, namely those who crash the program.
