@@ -72,4 +72,6 @@ void prev_char(char *dummy);
 void next_char(char *dummy);
 void key_run_command(char *cmd);
 
+void fmt_next_edit(const char *fmt, ...) PRINTF_FUNCTION(1, 2);
+
 #endif /* _EDIT_H_ */

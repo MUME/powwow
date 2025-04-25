@@ -10,15 +10,17 @@
  *
  */
 
+#include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <strings.h>
-#include <ctype.h>
 #include <time.h>
-#include <sys/types.h>
+#include <unistd.h>
+
 #include <sys/time.h>
+#include <sys/types.h>
 
 #include "defines.h"
 #include "main.h"
@@ -650,6 +652,18 @@ void set_custom_delimeters(char *s)
 	    free(old);
 	delim_len[DELIM_CUSTOM] = strlen(s);
 	delim_mode = DELIM_CUSTOM;
+    }
+}
+
+void fmt_next_edit(const char *fmt, ...)
+{
+    va_list va;
+    va_start(va, fmt);
+    int n = vsnprintf(inserted_next, sizeof inserted_next, fmt, va);
+    if (n >= sizeof inserted_next) {
+        static const char msg[] = " [TRUNCATED]";
+        memcpy(inserted_next + sizeof inserted_next - sizeof msg,
+               msg, sizeof msg);
     }
 }
 

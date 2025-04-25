@@ -518,7 +518,7 @@ static void cmd_help(char *arg)
 	return;
     }
 
-    if (!(text = (char *)malloc(size = BUFSIZE))) {
+    if (!(text = malloc(size = BUFSIZE + 32))) {
 	errmsg("malloc");
 	fclose(f);
 	return;
@@ -789,9 +789,9 @@ static void cmd_host(char *arg)
             return;
 	}
     } else if (*hostinfo.name) {
-	sprintf(inserted_next, "#host %.*s %d%s", BUFSIZE-INTLEN-8,
-		hostinfo.name, hostinfo.port,
-                tlsopt_str(&hostinfo.tlsopt));
+	fmt_next_edit("#host %s %d%s",
+                      hostinfo.name, hostinfo.port,
+                      tlsopt_str(&hostinfo.tlsopt));
         return;
     }
 
@@ -1041,7 +1041,7 @@ static void cmd_init(char *arg)
 	    }
 	}
     } else
-	sprintf(inserted_next, "#init =%.*s", BUFSIZE-8, initstr);
+	fmt_next_edit("#init =%s", initstr);
 }
 
 static void cmd_isprompt(char *arg)
@@ -1836,24 +1836,22 @@ static void cmd_var(char *arg)
 		    ptrdel(pbuf);
 		    return;
 		}
-		sprintf(inserted_next, "#($%.*s = \"%.*s\")",
-			BUFSIZE - 10, named_var->name,
-			BUFSIZE - (int)strlen(named_var->name) - 10,
-			pbuf ? ptrdata(pbuf) : (char *)"");
+		fmt_next_edit("#($%s = \"%s\")",
+                              named_var->name,
+                              pbuf ? ptrdata(pbuf) : (char *)"");
 	    } else {
-		sprintf(inserted_next, "#(@%.*s = %ld)",
-			BUFSIZE - 8, named_var->name,
-			*VAR[idx].num);
+		fmt_next_edit("#(@%s = %ld)",
+                              named_var->name,
+                              *VAR[idx].num);
 	    }
 	} else {
 	    if (type == TYPE_TXT_VAR) {
 		pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
-		sprintf(inserted_next, "#($%d = \"%.*s\")", idx,
-			BUFSIZE - INTLEN - 10,
-			pbuf ? ptrdata(pbuf) : (char *)"");
+		fmt_next_edit("#($%d = \"%s\")", idx,
+                              pbuf ? ptrdata(pbuf) : (char *)"");
 	    } else {
-		sprintf(inserted_next, "#(@%d = %ld)", idx,
-			*VAR[idx].num);
+		fmt_next_edit("#(@%d = %ld)", idx,
+                              *VAR[idx].num);
 	    }
 	}
 	ptrdel(pbuf);
@@ -1952,8 +1950,8 @@ static void cmd_setvar(char *arg)
 	vtime t;
 	update_now();
 	if (func == 0)
-	    sprintf(inserted_next, "#setvar timer=%ld",
-		    diff_vtime(&now, &ref_time));
+	    fmt_next_edit("#setvar timer=%ld",
+                          diff_vtime(&now, &ref_time));
 	else {
 	    t.tv_usec = ((-buf) % mSEC_PER_SEC) * uSEC_PER_mSEC;
 	    t.tv_sec  =  (-buf) / mSEC_PER_SEC;
@@ -1964,7 +1962,7 @@ static void cmd_setvar(char *arg)
     }
     else if (i && !strncmp(name, "lines", i)) {
 	if (func == 0)
-	    sprintf(inserted_next, "#setvar lines=%d", lines);
+	    fmt_next_edit("#setvar lines=%d", lines);
 	else {
 	    if (buf > 0)
 		lines = (int)buf;
@@ -1975,7 +1973,7 @@ static void cmd_setvar(char *arg)
     }
     else if (i && !strncmp(name, "mem", i)) {
 	if (func == 0)
-	    sprintf(inserted_next, "#setvar mem=%d", limit_mem);
+	    fmt_next_edit("#setvar mem=%d", limit_mem);
 	else {
 	    if (buf == 0 || buf >= PARAMLEN)
 		limit_mem = buf <= INT_MAX ? (int)buf : INT_MAX;
@@ -1987,7 +1985,7 @@ static void cmd_setvar(char *arg)
     }
     else if (i && !strncmp(name, "buffer", i)) {
 	if (func == 0)
-	    sprintf(inserted_next, "#setvar buffer=%d", log_getsize());
+	    fmt_next_edit("#setvar buffer=%d", log_getsize());
 	else
 	    log_resize(buf);
     } else {
@@ -2597,8 +2595,7 @@ static void cmd_option(char *arg)
 
         switch (mode) {
         case MODE_REP:
-            sprintf(inserted_next, "#option %c%s", *varp ? '+' : '-',
-                    p);
+            fmt_next_edit("#option %c%s", *varp ? '+' : '-', p);
             break;
         case MODE_ON:     *varp  = 1; break;
         case MODE_OFF:    *varp  = 0; break;
@@ -2634,7 +2631,7 @@ static void cmd_file(char *arg)
 	    }
 	}
     } else if (*deffile) {
-	sprintf(inserted_next, "#file =%.*s", BUFSIZE-8, deffile);
+	fmt_next_edit("#file =%s", deffile);
     } else {
 	PRINTF("#save-file not defined.\n");
     }

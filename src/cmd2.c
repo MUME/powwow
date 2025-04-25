@@ -214,11 +214,11 @@ void parse_alias(char *str)
         if (*np) {
 	    char buf[BUFSIZE];
             escape_specials(buf, left);
-            snprintf(inserted_next, BUFSIZE, "#alias %s%s%s=%s",
-                buf,
-                group_delim,
-                (*np)->group == NULL ? "*" : (*np)->group,
-		        (*np)->subst);
+            fmt_next_edit("#alias %s%s%s=%s",
+                          buf,
+                          group_delim,
+                          (*np)->group == NULL ? "*" : (*np)->group,
+                          (*np)->subst);
         } else {
             PRINTF("#unknown alias, cannot show: \"%s\"\n", left);
         }
@@ -583,12 +583,12 @@ void parse_action(char *str, int onprompt)
         } else if (assign == '='){
             if (np && *np) {
 		int len = (int)strlen((*np)->label);
-		sprintf(inserted_next, "#%s %c%c%.*s %.*s=%.*s", ONPROMPT,
-			action_chars[(*np)->type], (*np)->active ? '+' : '-',
-			BUFSIZE - 6 /*strlen(ONPROMPT)*/ - 7, (*np)->label,
-			BUFSIZE - 6 /*strlen(ONPROMPT)*/ - 7 - len, (*np)->pattern,
-			BUFSIZE - 6 /*strlen(ONPROMPT)*/ - 7 - len - (int)strlen((*np)->pattern),
-			(*np)->command);
+		fmt_next_edit("#%s %c%c%s %s=%s", ONPROMPT,
+                              action_chars[(*np)->type],
+                              (*np)->active ? '+' : '-',
+                              (*np)->label,
+                              (*np)->pattern,
+                              (*np)->command);
             } else {
                 PRINTF("#no %s, cannot list label: \"%s\"\n", ONPROMPT, label);
             }
@@ -640,10 +640,9 @@ void parse_action(char *str, int onprompt)
         } else {
             np = lookup_action_pattern(str);
             if (np && *np) {
-                sprintf(inserted_next, "#action %.*s=%.*s",
-			BUFSIZE - 10, (*np)->pattern,
-			BUFSIZE - (int)strlen((*np)->pattern) - 10,
-			(*np)->command);
+                fmt_next_edit("#action %s=%s",
+                              (*np)->pattern,
+                              (*np)->command);
             } else {
                 PRINTF("#no action, cannot show pattern: \"%s\"\n", str);
             }
@@ -907,9 +906,8 @@ void parse_mark(char *str)
 	    pbuf = ptrmescape(pbuf, n->pattern, strlen(n->pattern), 0);
 	    if (MEM_ERROR) { ptrdel(pbuf); return; }
             name = attr_name(n->attrcode);
-            sprintf(inserted_next, "#mark %s%.*s=%.*s", n->mbeg ? "^" : "",
-		    BUFSIZE-(int)strlen(name)-9, pbuf ? ptrdata(pbuf) : "",
-		    BUFSIZE-9, name);
+            fmt_next_edit("#mark %s%s=%s", n->mbeg ? "^" : "",
+                          pbuf ? ptrdata(pbuf) : "", name);
 	    ptrdel(pbuf);
         } else {
             PRINTF("#unknown marker, cannot show: \"%s\"\n", str);
@@ -1352,17 +1350,13 @@ void parse_bind(char *arg)
 	    seqlen = strlen(seqname);
 
 	    if (np->funct == key_run_command)
-		sprintf(inserted_next, "#bind %.*s %s=%.*s",
-			BUFSIZE-seqlen-9, name, seqname,
-			BUFSIZE-seqlen-(int)strlen(name)-9,
-			np->call_data);
+		fmt_next_edit("#bind %s %s=%s", name, seqname, np->call_data);
 	    else {
 		p = internal_functions[lookup_edit_function(np->funct)].name;
-		sprintf(inserted_next, "#bind %.*s %s=%s%s%.*s",
-			BUFSIZE-seqlen-10, name, seqname, p,
-			np->call_data ? " " : "",
-			BUFSIZE-seqlen-(int)strlen(name)-(int)strlen(p)-10,
-			np->call_data ? np->call_data : "");
+		fmt_next_edit("#bind %s %s=%s%s%s",
+                              name, seqname, p,
+                              np->call_data ? " " : "",
+                              np->call_data ? np->call_data : "");
 	    }
 	} else {
             PRINTF("#no such key: \"%s\"\n", name);
@@ -1532,7 +1526,7 @@ void show_vars(void)
 		    break;
 		}
 		tty_printf("#($%s = \"%s\")\n", v->name,
-		       p ? ptrdata(p) : "");
+                           p ? ptrdata(p) : "");
 	    }
 	    v = v->snext;
 	}
@@ -1567,14 +1561,12 @@ void show_delaynode(delaynode *p, int in_or_at)
 	if (in_or_at == 2) {
 	    /* write time in buf */
 	    (void)strftime(buf, BUFSIZE - 1, "%H%M%S", s);
-	    sprintf(inserted_next, "#at %.*s (%s) %.*s",
-		    BUFSIZE - 15, p->name, buf,
-		    BUFSIZE - 15 - (int)strlen(p->name), p->command);
+	    fmt_next_edit("#at %s (%s) %s",
+                          p->name, buf, p->command);
 	}
 	else
-	    sprintf(inserted_next, "#in %.*s (%ld) %.*s",
-		    BUFSIZE - LONGLEN - 9, p->name, d,
-		    BUFSIZE - LONGLEN - 9 - (int)strlen(p->name), p->command);
+	    fmt_next_edit("#in %s (%ld) %s",
+                          p->name, d, p->command);
     } else {
 	(void)strftime(buf, BUFSIZE - 1, "%H:%M:%S", s);
 	PRINTF("#at (%s) #in (%ld) \"%s\" %s\n", buf, d, p->name, p->command);

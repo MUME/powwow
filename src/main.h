@@ -96,7 +96,7 @@ extern int now_updated;
 
 extern char initstr[];
 extern char prefixstr[];
-extern char inserted_next[];
+extern char inserted_next[BUFSIZE];
 extern char flashback;
 extern int excursion;
 extern char verbatim;

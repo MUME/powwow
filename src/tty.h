@@ -37,13 +37,6 @@ void input_moveto(int new_pos);
 
 #else /* USE_LOCALE */
 
-#ifdef __GNUC__
- #define PRINTF_FUNCTION(string, first) \
-	__attribute__ ((format (printf, string, first)))
-#else
- #define PRINTF_FUNCTION(string, first)
-#endif
-
 void tty_puts(const char *s);
 void tty_putc(char c);
 int  tty_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);

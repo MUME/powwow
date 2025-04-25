@@ -47,6 +47,13 @@
 
 #define ISODIGIT(c) ((c) >= '0' && (c) <= '7')
 
+#ifdef __GNUC__
+ #define PRINTF_FUNCTION(string, first) \
+	__attribute__ ((format (printf, string, first)))
+#else
+ #define PRINTF_FUNCTION(string, first)
+#endif
+
 #define PRINTF status(1), tty_printf
 
 #define INTLEN		(3*(1+(int)sizeof(int)))
