@@ -802,8 +802,7 @@ fail:
 
 static void cmd_request(char *arg)
 {
-    char *idprompt = "~$#EP2\nG\n";
-    char *ideditor = "~$#EI\n";
+    static const char ideditor[] = "~$#EI\n";
     char buf[256];
     int all, len;
 
@@ -820,17 +819,10 @@ static void cmd_request(char *arg)
 		tcp_raw_write(current_connection, ideditor, strlen(ideditor));
 		current_connection->flags |= IDEDITOR;
 		if (opt_info) {
-		    PRINTF("#request editor: %s done!\n", ideditor);
+		    PRINTF("#request editor\n");
 		}
 	    }
-	    if ((all || !strncmp(buf, "prompt", len))) {
-		tcp_raw_write(current_connection, idprompt, strlen(idprompt));
-		current_connection->flags |= IDPROMPT;
-		if (opt_info) {
-		    PRINTF("#request prompt: %s done!\n", idprompt);
-		}
-	    }
-	}
+        }
     }
 
 }
