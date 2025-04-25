@@ -408,7 +408,7 @@ varnode *add_varnode(char *name, int type)
 	    }
 	    var = newvar;
 	    max_named_vars += n-m;
-	    memzero(var + m, (n-m)*sizeof(vars));
+	    memset(var + m, 0, (n - m) * sizeof(vars));
 	}
     }
 

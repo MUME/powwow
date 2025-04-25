@@ -17,8 +17,6 @@
 #  include <sys/select.h>
 #endif
 
-#define memzero(a,b)	memset((a), 0, (b))
-
 #ifdef USE_RANDOM
 #  define get_random random
 #  define init_random srandom

@@ -1298,11 +1298,10 @@ static int compare_and_unload(operator *op)
 static int _eval(int mindepth)
 {
     operator op;
-    object obj;
     char endreached = 0;
 
     for (;;) {
-	memzero(&obj, sizeof(obj));
+        object obj = { 0 };
 
 	while (*line==' ') line++;
 	if (!*line || *line == CMDSEP)

@@ -189,14 +189,11 @@ static void sendopt(byte what, byte opt)
 static int tcp_connect(const char *addr, int port, const char *protocol)
 {
     struct addrinfo *host_info;
-    struct addrinfo addrinfo;
-    struct sockaddr_in6 address;
+    struct addrinfo addrinfo = { 0 };
+    struct sockaddr_in6 address = { 0 };
     int err, newtcp_fd;
 
     status(1);
-
-    memset(&address, 0, sizeof address);
-    memset(&addrinfo, 0, sizeof addrinfo);
 
     /*
      * inet_addr has a strange design: It is documented to return -1 for

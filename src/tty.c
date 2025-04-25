@@ -663,7 +663,7 @@ void input_delete_nofollow_chars(int n)
     }
 
     memmove(edbuf + p, edbuf + d_cost, edlen - d_cost);
-    memset(edbuf + edlen - n, (int)' ', n);
+    memset(edbuf + edlen - n, ' ', n);
     for (;; tty_putc('\n'), p = nl, cl++) {
 	d_cost = 0;
 	/* FEATURE: ought to be "d_cost = n > gotocost ? -gotocost : -n;"
