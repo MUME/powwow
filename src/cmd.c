@@ -424,7 +424,6 @@ static void cmd_groupdelim(char *arg) {
     if( *arg != 0 ) {
         free( group_delim );
         group_delim = my_strdup( arg );
-	    PRINTF( "#group delimiter is now '%s'\n", group_delim );
     }
 }
 
