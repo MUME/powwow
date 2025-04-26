@@ -2293,12 +2293,6 @@ static void cmd_cpu(char *arg)
 	       (l > 0 && l > f) ? f * 100.0 / l : 100.0);
 }
 
-void show_stat(void)
-{
-    cmd_net(NULL);
-    cmd_cpu(NULL);
-}
-
 #ifdef BUG_TELNET
 static void cmd_color(char *arg)
 {

@@ -665,6 +665,7 @@ void fmt_next_edit(const char *fmt, ...)
         memcpy(inserted_next + sizeof inserted_next - sizeof msg,
                msg, sizeof msg);
     }
+    va_end(va);
 }
 
 /*

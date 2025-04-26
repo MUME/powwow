@@ -1305,8 +1305,7 @@ void exit_powwow(void)
     if (capturefile) fclose(capturefile);
     if (recordfile)  fclose(recordfile);
     if (moviefile)   fclose(moviefile);
-    (void)save_settings();
-    show_stat();
+    save_settings();
     tty_quit();
     exit(0);
 }

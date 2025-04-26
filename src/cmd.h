@@ -14,8 +14,6 @@ typedef struct cmdstruct {
 
 extern cmdstruct *commands;
 
-void show_stat(void);
-
 void cmd_add_command( cmdstruct *cmd );
 
 void initialize_cmd(void);
