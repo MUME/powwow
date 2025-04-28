@@ -50,6 +50,9 @@ do not validate the CA certificate
 assume the host name to be \fIHOST\fR when validating the CA
 certificate
 .RE
+.TP
+\fB\-v\fR, \fB\-\-version\fR
+display the powwow version and exit
 .PP
 Lines that begin with \[oq]#\[cq] are assumed to be special commands
 to be processed locally.  Help is available with the

@@ -232,9 +232,11 @@ static void show_help(const char *prog)
 #ifdef HAVE_GETOPT_LONG
 #define HELP_ARG "--help, -h         "
 #define TLS_ARG  "--tls[=TLS-OPTIONS]"
+#define VER_ARG  "--version, -v      "
 #else
 #define HELP_ARG "-h                "
 #define TLS_ARG  "-t, -T TLS-OPTIONS"
+#define VER_ARG  "-v                "
 #endif
 
 #ifdef USE_TLS
@@ -250,7 +252,8 @@ static void show_help(const char *prog)
            "\n"
            "Options:\n"
            "  " HELP_ARG "    display this help text\n"
-           "  " TLS_ARG  "    enable TLS" TLS_DESC "\n",
+           "  " TLS_ARG  "    enable TLS" TLS_DESC "\n"
+           "  " VER_ARG  "    display the powwow version\n",
            prog);
 #undef HELP_ARG
 #undef TLS_DESC
@@ -258,18 +261,25 @@ static void show_help(const char *prog)
 
 int main(int argc, char **argv)
 {
+#ifdef USE_LOCALE
+    if (!setlocale(LC_ALL, "")) {
+        fprintf(stderr, "Failed setlocale(LC_ALL, \"\")\n");
+    }
+#endif
+
 #ifdef HAVE_GETOPT_LONG
     static const struct option longopts[] = {
-        { "help", no_argument,       NULL, 'h' },
-        { "tls",  optional_argument, NULL, 't' },
+        { "help",    no_argument,       NULL, 'h' },
+        { "tls",     optional_argument, NULL, 't' },
+        { "version", no_argument,       NULL, 'v' },
         { NULL }
     };
 #endif
     for (int c;;) {
 #ifdef HAVE_GETOPT_LONG
-        c = getopt_long(argc, argv, "ht::", longopts, NULL);
+        c = getopt_long(argc, argv, "ht::v", longopts, NULL);
 #else
-        c = getopt(argc, argv, "htT:");
+        c = getopt(argc, argv, "htT:v");
 #endif
         if (c == -1)
             break;
@@ -291,6 +301,11 @@ int main(int argc, char **argv)
             }
             break;
         }
+        case 'v': {
+            printver(true);
+            tty_flush();
+            exit(EXIT_SUCCESS);
+        }
         default:
             abort();
         }
@@ -305,12 +320,6 @@ int main(int argc, char **argv)
     char *p;
     int i;
     bool read_file = false;     /* run initstr ? */
-
-#ifdef USE_LOCALE
-    if (!setlocale(LC_ALL, "")) {
-        fprintf(stderr, "Failed setlocale(LC_ALL, \"\")\n");
-    }
-#endif
 
     /* initializations */
     group_delim = my_strdup( "@" );
