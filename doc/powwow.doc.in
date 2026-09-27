@@ -331,6 +331,12 @@ SPECIAL COMMANDS: ALIASES AND ACTIONS
 	you define an action that uses an Extended POSIX regexp to match
 	instead of the standard matcher.
 
+	Regexps match characters, not bytes: for example, . matches the
+	euro sign. powwow uses PCRE2 for regexps when it is available (see
+	"configure --enable-regex"); if it was built with the regexp
+	functions of the C library instead, regexps match characters only
+	when powwow runs in a UTF-8 locale.
+
 	#action %first ^([[:alpha:]]+) ([[:digit:]]+)=#print $2 counted $3.
 							(matches abc 123)
 

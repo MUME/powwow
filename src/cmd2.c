@@ -525,7 +525,13 @@ void parse_action(char *str, int onprompt)
 		    return;
 		}
 
-		if ((errcode = regcomp((regex_t *)regexp, unesc_pat, REG_EXTENDED))) {
+#ifdef REG_UTF
+		/* PCRE2: match UTF-8 characters, not bytes */
+		const int cflags = REG_EXTENDED | REG_UTF;
+#else
+		const int cflags = REG_EXTENDED;
+#endif
+		if ((errcode = regcomp((regex_t *)regexp, unesc_pat, cflags))) {
 		    int n;
 		    char *tmp;
 		    n = regerror(errcode, (regex_t *)regexp, NULL, 0);

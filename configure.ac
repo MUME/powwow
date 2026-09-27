@@ -18,9 +18,9 @@ AS_IF([ test "${enable_vt100}" = yes ],
 AC_ARG_ENABLE([regex],
     AS_HELP_STRING([--enable-regex],
         [enable regular expressions; argument is one of:])
-    AS_HELP_STRING([yes], [find first available: pcreposix, libc (default)])
-    AS_HELP_STRING([pcreposix], [use pcreposix])
-    AS_HELP_STRING([libc], [use libc]),
+    AS_HELP_STRING([yes], [find first available: pcre2posix, libc (default)])
+    AS_HELP_STRING([pcre2posix], [use PCRE2's POSIX API (matches UTF-8 characters)])
+    AS_HELP_STRING([libc], [use libc (matches UTF-8 characters only in UTF-8 locales)]),
     [],
     [enable_regex=yes])
 
@@ -123,8 +123,8 @@ else
     enable_regex_using="not_found"
 
     if test "x${enable_regex}" = "xyes"; then
-        AC_CHECK_HEADER("pcreposix.h",[
-            enable_regex_using="pcreposix"
+        AC_CHECK_HEADER("pcre2posix.h",[
+            enable_regex_using="pcre2posix"
         ], [
             AC_CHECK_HEADER("regex.h",[
                 enable_regex_using="libc"
@@ -142,12 +142,15 @@ else
     else
         AC_DEFINE(USE_REGEXP, 1, [Define to enable regular expression support.])
 
-        if test "x${enable_regex_using}" = "xpcreposix"; then
-            AC_MSG_RESULT([Using pcreposix regcomp])
-            AC_DEFINE(USE_REGEXP_PCREPOSIX, 1, [Define to use pcreposix.])
-            AC_CHECK_LIB(pcreposix,regcomp,,
-                AC_MSG_ERROR([*** pcreposix library not found])
-            )
+        if test "x${enable_regex_using}" = "xpcre2posix"; then
+            AC_MSG_RESULT([Using pcre2posix regcomp])
+            AC_DEFINE(USE_REGEXP_PCRE2POSIX, 1, [Define to use pcre2posix.])
+            dnl since PCRE2 10.33, pcre2posix.h renames regcomp to pcre2_regcomp
+            AC_CHECK_LIB(pcre2-posix, pcre2_regcomp,
+                [LIBS="-lpcre2-posix $LIBS"],
+                [AC_CHECK_LIB(pcre2-posix, regcomp,
+                    [LIBS="-lpcre2-posix $LIBS"],
+                    AC_MSG_ERROR([*** pcre2-posix library not found]))])
         elif test "x${enable_regex_using}" = "xlibc"; then
             AC_MSG_RESULT([Using libc regcomp])
             AC_CHECK_FUNC(regcomp,,

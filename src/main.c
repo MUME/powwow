@@ -528,8 +528,8 @@ void printver(bool verbose)
 #endif
 #ifdef USE_REGEXP
           " regexp "
-  #ifdef USE_REGEXP_PCREPOSIX
-          "(pcreposix)"
+  #ifdef USE_REGEXP_PCRE2POSIX
+          "(pcre2posix)"
   #else
           "(libc)"
   #endif
