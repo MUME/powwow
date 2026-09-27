@@ -1128,6 +1128,7 @@ void tcp_spawn(const char *id, char *cmd)
     CONN_INDEX(i).old_state = NORMAL;
     CONN_INDEX(i).port = 0;
     CONN_INDEX(i).fd = sockets[0];
+    CONN_INDEX(i).fns = &tcp_io_fns;
 
     FD_SET(sockets[0], &fdset);	       /* add socket to select() set */
     tcp_attachcount++;
