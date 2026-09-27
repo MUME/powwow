@@ -72,8 +72,9 @@ STARTING POWWOW
 
 CHARACTER SETS
 
-	Internally, powwow handles text as ISO-8859-1 (Latin-1); your
+	Internally, powwow handles text as Unicode (UTF-8); your
 	terminal may use any character set supported by your locale.
+	Characters your terminal cannot display are shown as '?'.
 	The connection to the MUD can use ISO-8859-1, UTF-8 or US-ASCII.
 
 	By default, a connection starts out as ISO-8859-1. If the server
@@ -93,14 +94,22 @@ CHARACTER SETS
 	#connect lists the character set used by each connection, and
 	a message is printed when it changes (unless #option info is off).
 
-	On a UTF-8 connection, characters that do not exist in ISO-8859-1
-	(such as the euro sign) and invalid UTF-8 are shown as '?'. On
-	a US-ASCII connection, all non-ASCII characters are shown and
-	sent as '?'.
+	Invalid text received from the MUD, such as broken UTF-8 or
+	non-ASCII bytes on a US-ASCII connection, is shown as the Unicode
+	replacement character (U+FFFD). Characters the connection's
+	character set cannot represent (for example, the euro sign on an
+	ISO-8859-1 connection) are sent as '?'.
 
 	#capture, #movie and #record files are written in the character
 	set of the connection, and so are the files used for remote
-	editing (see #identify).
+	editing (see #identify). Definition files and other text files
+	powwow reads or writes (#send, #exe, #var, #write, the help file)
+	use UTF-8; definition files written by older versions of powwow
+	are converted from ISO-8859-1 when loaded, and saved as UTF-8.
+
+	Escapes like \351 denote the ISO-8859-1 character with that
+	octal code (here, e with an acute accent), except in #rawsend and
+	#rawprint, where they denote a raw byte.
 
 QUITTING POWWOW
 
@@ -1886,8 +1895,8 @@ COMMAND LINE EDITING
 	Another possible use is to enter strange characters or strings:
 
 	#bind F10=&insert-string Ro\353ntgen
-	does exactly what you expect: insert "Roëntgen" on the input line
-	( ë is the ASCII char (octal)353 or (decimal)234 )
+	does exactly what you expect: insert "RoÃ«ntgen" on the input line
+	( Ã« is the ASCII char (octal)353 or (decimal)234 )
 	as if you typed it (of course you could also type the first few chars
 	of the name then hit TAB if that name is already in the word completion
 	list...).

@@ -25,8 +25,10 @@
 #include "defines.h"
 
 #ifdef USE_LOCALE
-#include <wchar.h>
+#include <langinfo.h>
 #include <locale.h>
+#include <strings.h>
+#include <wchar.h>
 #endif
 
 #include "main.h"
@@ -35,6 +37,8 @@
 #include "list.h"
 #include "tty.h"
 #include "tcp.h"
+#include "charset.h"
+#include "width.h"
 
 #ifndef USE_SGTTY
 #  ifdef APOLLO
@@ -151,6 +155,9 @@ static struct {
     char      data[4096];           /* buffer for pending data */
     size_t    used;                 /* bytes used of data */
     int       fd;                   /* file descriptor to write to */
+    bool      utf8;                 /* the locale uses UTF-8 */
+    char      pend[UTF8_MAX];       /* incomplete UTF-8 character */
+    int       npend, need;          /* bytes in pend, and expected */
 } tty_write_state = {
     .fd = 1                         /* also before tty_start() */
 };
@@ -209,6 +216,9 @@ void tty_start(void)
     tty_flush();
 
 #ifdef USE_LOCALE
+    const char *codeset = nl_langinfo(CODESET);
+    tty_write_state.utf8 = (strcasecmp(codeset, "UTF-8") == 0
+                            || strcasecmp(codeset, "UTF8") == 0);
     if (wcrtomb(NULL, L'\0', &tty_write_state.mbstate) == (size_t)-1) {
         perror("wcrtomb()");
         abort();
@@ -589,20 +599,9 @@ void tty_gotoxy_opt(int fromcol, int fromline, int tocol, int toline)
 	    }
 	}
 	if (i) {
-	    /*
-	     * if hiliting in effect or prompt contains escape sequences,
-	     * just use tty_gotoxy
-	     */
-	    if (cost + i > gotocost || *edattrbeg || promptlen != col0)
-		break;
-	    if (fromcol < col0 && toline == line0) {
-		strcpy(cp, promptstr+fromcol);
-		cp += promptlen-fromcol;
-		fromcol = col0;
-	    }
-	    my_strncpy(cp, edbuf + (toline - line0) * cols_1 + fromcol - col0,
-		    tocol - fromcol);
-	    cp += tocol - fromcol;
+	    /* moving right would mean reprinting text whose width is
+	     * not one column per byte; just use tty_gotoxy */
+	    break;
 	}
 	*cp = 0;
 	tty_puts(buf);
@@ -611,6 +610,53 @@ void tty_gotoxy_opt(int fromcol, int fromline, int tocol, int toline)
     tty_gotoxy(tocol, toline);
 }
 
+
+/*
+ * screen position of byte offset 'p' of the input line; p <= 0 refers
+ * to the prompt
+ */
+static void input_layout(int p, int *line, int *col)
+{
+    if (p <= 0) {
+        *line = (p + col0) / cols_1 + line0;
+        *col = (p + col0) % cols_1;
+        return;
+    }
+
+    int l = col0 / cols_1, c = col0 % cols_1;
+    const char *s = edbuf, *end = edbuf + p, *lim = edbuf + edlen;
+    while (s < end) {
+        uint32_t cp;
+        s += utf8_get(s, lim - s, &cp);
+        int w = cp_width(cp);
+        if (c + w > cols_1) {
+            /* does not fit; the terminal wraps it */
+            l++;
+            c = 0;
+        }
+        c += w;
+    }
+    if (c >= cols_1) {
+        l++;
+        c = 0;
+    }
+    *line = l + line0;
+    *col = c;
+}
+
+int input_line(int p)
+{
+    int line, col;
+    input_layout(p, &line, &col);
+    return line;
+}
+
+int input_col(int p)
+{
+    int line, col;
+    input_layout(p, &line, &col);
+    return col;
+}
 
 /*
  * GH: change the position on input line (gotoxy there, and set pos)
@@ -642,129 +688,119 @@ void input_moveto(int new_pos)
 }
 
 /*
- * delete n characters at current position (the position is unchanged)
+ * start a new screen line while drawing the input line
+ */
+static void input_newline(int *line)
+{
+#ifdef USE_ANSIBUG
+    if (edattrbg)
+	tty_printf("%s\n%s", edattrend, edattrbeg);
+    else
+#endif
+	tty_putc('\n');
+    if (++*line > lines - 1) {
+	*line = lines - 1;
+	line0--;
+    }
+}
+
+/*
+ * redraw the input line from byte offset 'from', where the cursor is,
+ * to its end, clear the rest of the screen, and put the cursor at pos
+ */
+static void input_redraw_from(int from)
+{
+    int line, col;
+    input_layout(from, &line, &col);
+
+    const char *s = edbuf + from, *end = edbuf + edlen;
+    while (s < end) {
+        uint32_t cp;
+        int n = utf8_get(s, end - s, &cp);
+        int w = cp_width(cp);
+        if (col + w > cols_1) {
+            if (col < cols_1) {
+                /* a wide character did not fit; clear the rest of
+                 * the row, which may hold half of an old one */
+                if (edattrbg)
+                    tty_puts(edattrend);
+                tty_puts(tty_clreoln);
+                if (edattrbg)
+                    tty_puts(edattrbeg);
+            }
+            input_newline(&line);
+            col = 0;
+        }
+        while (n-- > 0)
+            tty_putc(*s++);
+        col += w;
+    }
+    if (col >= cols_1) {
+        input_newline(&line);
+        col = 0;
+    }
+
+    if (edattrbg)
+        tty_puts(edattrend);
+    tty_puts(line < lines - 1 ? tty_clreoscr : tty_clreoln);
+    if (edattrbg)
+        tty_puts(edattrbeg);
+
+    int pline, pcol;
+    input_layout(pos, &pline, &pcol);
+    tty_gotoxy_opt(col, line, pcol, pline);
+}
+
+/*
+ * draw the whole input line; the cursor is assumed directly after the
+ * prompt
+ */
+void input_draw(void)
+{
+    input_redraw_from(0);
+}
+
+/*
+ * shorten 'n' bytes of UTF-8 at 'str' to at most 'max' bytes, without
+ * splitting a character
+ */
+static int input_fit(const char *str, int n, int max)
+{
+    if (n <= max)
+        return n;
+    n = max;
+    while (n > 0 && ((unsigned char)str[n] & 0xc0) == 0x80)
+        n--;
+    return n;
+}
+
+/*
+ * delete n bytes at current position (the position is unchanged)
  * assert(n < edlen - pos)
  */
 void input_delete_nofollow_chars(int n)
 {
-    int r_cost, p = pos, d_cost;
-    int nl = pos - CURCOL(pos);	/* this line's starting pos (can be <= 0) */
-    int cl = CURLINE(pos);	/* current line */
-
-    if (n > edlen - p)
-	n = edlen - p;
+    if (n > edlen - pos)
+	n = edlen - pos;
     if (n <= 0)
 	return;
 
-    d_cost = p + n;
-    if (line_status != 0) {
-	memmove(edbuf + p, edbuf + d_cost, edlen - d_cost + 1);
-	edlen -= n;
-	return;
-    }
+    memmove(edbuf + pos, edbuf + pos + n, edlen - pos - n + 1);
+    edlen -= n;
 
-    memmove(edbuf + p, edbuf + d_cost, edlen - d_cost);
-    memset(edbuf + edlen - n, ' ', n);
-    for (;; tty_putc('\n'), p = nl, cl++) {
-	d_cost = 0;
-	/* FEATURE: ought to be "d_cost = n > gotocost ? -gotocost : -n;"
-	 * since redraw will need to goto back. Of little importance */
-	if ((r_cost = edlen) > (nl += cols_1))
-	    r_cost = nl, d_cost = n + gotocost;
-	r_cost -= p;
-#ifndef USE_VT100
-	/*
-	 * FEATURE: no clreoln is used (it might cost less in the occasion
-	 * we delete more than one char). Simplicity
-	 */
-	if (deletecost && deletecost * n + d_cost < r_cost) {
-#ifdef USE_ANSIBUG
-	    if (edattrbg)
-		tty_puts(edattrend);
-#endif
-	    for (d_cost = n; d_cost; d_cost--)
-	        tty_puts(delchar);
-#ifdef USE_ANSIBUG
-	    if (edattrbg)
-		tty_puts(edattrbeg);
-#endif
-
-	    if (edlen <= nl)
-		break;
-
-	    tty_gotoxy(cols_1 - n, cl);
-	    tty_printf("%.*s", n, edbuf + nl - n);
-	} else
-#endif /* not USE_VT100 */
-	{
-#ifdef USE_ANSIBUG
-	    if (edattrbg && p <= edlen - n && p + r_cost >= edlen - n)
-		tty_printf("%.*s%s%.*s", edlen - p - n, edbuf + p,
-					 edattrend,
-					 r_cost - edlen + p + n, edbuf + edlen - n);
-	    else
-#endif
-		tty_printf("%.*s", r_cost, edbuf + p);
-
-	    p += r_cost;
-
-	    if (edlen <= nl) {
-#ifdef USE_ANSIBUG
-		if (edattrbg)
-		    tty_puts(edattrbeg);
-#endif
-		break;
-	    }
-	}
-    }
-    edbuf[edlen -= n] = '\0';
-    switch(pos - p) {
-      case 1:
-	tty_puts(leftcur);
-	break;
-      case 0:
-	break;
-      default:
-	tty_gotoxy_opt(CURCOL(p), cl, CURCOL(pos), CURLINE(pos));
-	break;
-    }
+    if (line_status == 0)
+        input_redraw_from(pos);
 }
 
 /*
- * GH: print a char on current position (overwrite), advance position
- *     from cancan 2.6.3a
- */
-void input_overtype_follow(char c)
-{
-    if (pos >= edlen)
-	return;
-    edbuf[pos++] = c;
-
-    if (line_status == 0) {
-	tty_putc(c);
-	if (!CURCOL(pos)) {
-#ifdef USE_ANSIBUG
-	    if (edattrbg)
-		tty_printf("%s\n%s", edattrend, edattrbeg);
-	    else
-#endif
-		tty_putc('\n');
-	}
-    }
-}
-
-/*
- * insert n characters at input line current position.
+ * insert n bytes of UTF-8 at input line current position.
  * The position is set to after the inserted characters.
  */
 void input_insert_follow_chars(char *str, int n)
 {
-    int r_cost, i_cost, p = pos;
-    int nl = p - CURCOL(p);	/* next line's starting pos */
-    int cl = CURLINE(p);	/* current line */
+    int p = pos;
 
-    if (edlen + n >= BUFSIZE)
-	n = BUFSIZE - edlen - 1;
+    n = input_fit(str, n, BUFSIZE - edlen - 1);
     if (n <= 0)
 	return;
 
@@ -772,45 +808,26 @@ void input_insert_follow_chars(char *str, int n)
     memmove(edbuf + p, str, n);
     edlen += n; pos += n;
 
-    if (line_status != 0)
-	return;
+    if (line_status == 0)
+        input_redraw_from(p);
+}
 
-    do {
-	i_cost = n;
-	if ((r_cost = edlen) > (nl += cols_1))
-	    r_cost = nl, i_cost += insertfinish;
-	r_cost -= p;
-#ifndef USE_VT100
-	/* FEATURE: insert mode is used only when one char is inserted
-	 (which is probably true > 95% of the time). Simplicity */
-	if (n == 1 && inscharcost && inscharcost + i_cost < r_cost) {
-	    tty_printf("%s%c", inschar, edbuf[p++]);
-	    if (edlen > nl && !wrapglitch) {
-		tty_gotoxy(cols_1, cl);
-		tty_puts(clreoln);
-	    }
-	} else
-#endif /* not USE_VT100 */
-	{
-	    tty_printf("%.*s", r_cost, edbuf + p);  p += r_cost;
-	}
-	if (edlen < nl)
-	    break;
-#ifdef USE_ANSIBUG
-	if (edattrbg)
-	    tty_printf("%s\n%s", edattrend, edattrbeg);
-	else
-#endif
-	    tty_puts("\n");
-	p = nl;
-	if (++cl > lines - 1) {
-	    cl = lines - 1;
-	    line0--;
-	}
-    } while (edlen > nl);
+/*
+ * replace 'len' bytes at byte offset 'from' of the input line with 'n'
+ * bytes of UTF-8 from 'str'; the position is set to after them
+ */
+void input_replace(int from, int len, const char *str, int n)
+{
+    input_moveto(from);
 
-    if (p != pos)
-	tty_gotoxy_opt(CURCOL(p), cl, CURCOL(pos), CURLINE(pos));
+    n = input_fit(str, n, BUFSIZE - 1 - (edlen - len));
+    memmove(edbuf + from + n, edbuf + from + len, edlen - from - len + 1);
+    memcpy(edbuf + from, str, n);
+    edlen += n - len;
+    pos = from + n;
+
+    if (line_status == 0)
+        input_redraw_from(from);
 }
 
 #ifdef USE_LOCALE
@@ -822,14 +839,16 @@ void tty_puts(const char *s)
         tty_putc(*s++);
 }
 
-void tty_putc(char c)
+/* write character 'cp' in the locale's charset */
+static void tty_put_wc(uint32_t cp)
 {
     size_t r;
     int ignore_error = 0;
+    wchar_t wc = cp;
     if (tty_write_state.used + MB_LEN_MAX > sizeof tty_write_state.data)
         tty_flush();
 again:
-    r = wcrtomb(tty_write_state.data + tty_write_state.used, (unsigned char)c,
+    r = wcrtomb(tty_write_state.data + tty_write_state.used, wc,
                 &tty_write_state.mbstate);
     if (r == (size_t)-1) {
         if (ignore_error)
@@ -841,11 +860,52 @@ again:
         /* character cannot be represented; try to write a question
          * mark instead, but ignore any errors */
         ignore_error = 1;
-        c = '?';
+        wc = '?';
         goto again;
     }
     assert(r <= MB_LEN_MAX);
     tty_write_state.used += r;
+}
+
+/* write one byte of UTF-8 text */
+void tty_putc(char c)
+{
+    unsigned char b = c;
+
+    if (tty_write_state.utf8) {
+        if (tty_write_state.used >= sizeof tty_write_state.data)
+            tty_flush();
+        tty_write_state.data[tty_write_state.used++] = b;
+        return;
+    }
+
+    if (tty_write_state.npend > 0) {
+        if ((b & 0xc0) == 0x80) {
+            tty_write_state.pend[tty_write_state.npend++] = b;
+            if (tty_write_state.npend < tty_write_state.need)
+                return;
+            uint32_t cp;
+            utf8_get(tty_write_state.pend, tty_write_state.npend, &cp);
+            tty_write_state.npend = 0;
+            tty_put_wc(cp);
+            return;
+        }
+        /* incomplete character */
+        tty_write_state.npend = 0;
+        tty_put_wc(UNICODE_REPLACEMENT);
+    }
+
+    if (b < 0x80) {
+        tty_put_wc(b);
+        return;
+    }
+    tty_write_state.need = utf8_seqlen(b);
+    if (tty_write_state.need <= 1) {
+        tty_put_wc(UNICODE_REPLACEMENT);
+        return;
+    }
+    tty_write_state.pend[0] = b;
+    tty_write_state.npend = 1;
 }
 
 int tty_printf(const char *format, ...)
@@ -881,9 +941,13 @@ int tty_printf(const char *format, ...)
 static char tty_in_buf[MB_LEN_MAX + 1];
 static size_t tty_in_buf_used = 0;
 
+/* UTF-8 of a character read, not yet returned by tty_read() */
+static char tty_out_buf[UTF8_MAX];
+static size_t tty_out_start = 0, tty_out_used = 0;
+
 int tty_has_chars(void)
 {
-    return tty_in_buf_used != 0;
+    return tty_in_buf_used != 0 || tty_out_used != tty_out_start;
 }
 
 static int safe_mbtowc(wchar_t *pwc, char *s, size_t *n)
@@ -912,57 +976,46 @@ again:
     return r;
 }
 
+/*
+ * read up to 'count' bytes of UTF-8 from the terminal, converting
+ * from the locale's charset
+ */
 int tty_read(char *buf, size_t count)
 {
     int result = 0;
-    int converted;
-    wchar_t wc;
-    int did_read = 0, should_read = 0;
 
-    if (count && tty_in_buf_used) {
-	converted = safe_mbtowc(&wc, tty_in_buf, &tty_in_buf_used);
-	if (converted >= 0)
-	    goto another;
-    }
+    for (;;) {
+        while (count > 0 && tty_out_start < tty_out_used) {
+            *buf++ = tty_out_buf[tty_out_start++];
+            --count;
+            ++result;
+        }
+        if (count == 0)
+            break;
 
-    while (count) {
-	should_read = sizeof tty_in_buf - tty_in_buf_used;
-	did_read = read(tty_read_fd, tty_in_buf + tty_in_buf_used,
-                        should_read);
+        if (tty_in_buf_used > 0) {
+            wchar_t wc;
+            int converted = safe_mbtowc(&wc, tty_in_buf, &tty_in_buf_used);
+            if (converted >= 0) {
+                if (converted == 0)
+                    converted = 1;
+                tty_in_buf_used -= converted;
+                memmove(tty_in_buf, tty_in_buf + converted, tty_in_buf_used);
+                tty_out_start = 0;
+                tty_out_used = utf8_put(wc, tty_out_buf);
+                continue;
+            }
+        }
+        if (result > 0)
+            break;
 
-	if (did_read < 0 && errno == EINTR)
-	    continue;
-	if (did_read <= 0)
-	    break;
-
-	tty_in_buf_used += did_read;
-
-	converted = safe_mbtowc(&wc, tty_in_buf, &tty_in_buf_used);
-	if (converted < 0)
-	    break;
-
-    another:
-	if (converted == 0)
-	    converted = 1;
-
-	if (!(wc & ~0xff)) {
-	    *buf++ = (unsigned char)wc;
-	    --count;
-	    ++result;
-	}
-
-	tty_in_buf_used -= converted;
-	memmove(tty_in_buf, tty_in_buf + converted, tty_in_buf_used);
-
-	if (count == 0)
-	    break;
-
-	converted = safe_mbtowc(&wc, tty_in_buf, &tty_in_buf_used);
-	if (converted >= 0 && tty_in_buf_used)
-	    goto another;
-
-	if (did_read < should_read)
-	    break;
+        int did_read = read(tty_read_fd, tty_in_buf + tty_in_buf_used,
+                            sizeof tty_in_buf - tty_in_buf_used);
+        if (did_read < 0 && errno == EINTR)
+            continue;
+        if (did_read <= 0)
+            break;
+        tty_in_buf_used += did_read;
     }
 
     return result;
@@ -972,15 +1025,20 @@ int tty_read(char *buf, size_t count)
 void tty_gets(char *s, int size)
 {
     wchar_t *ws = alloca(size * sizeof *ws);
+    char *end = s + size - 1;
 
     if (!fgetws(ws, size, stdin))
 	return;
 
-    while (*ws) {
-	if (!(*ws & ~0xff))
-	    *s++ = (unsigned char)*ws;
-	++ws;
+    for (; *ws; ++ws) {
+        char buf[UTF8_MAX];
+        int n = utf8_put(*ws, buf);
+        if (s + n > end)
+            break;
+        memcpy(s, buf, n);
+        s += n;
     }
+    *s = '\0';
 }
 
 void tty_flush(void)

@@ -507,7 +507,7 @@ static void cmd_help(char *arg)
 	return;
     }
 
-    while ((tmp = fgets(line, BUFSIZE, f)) &&
+    while ((tmp = utf8_fgets(line, BUFSIZE, f)) &&
 	   (line[0] != '@' || strncmp(line + 1, arg, strlen(arg))))
 	;
 
@@ -529,7 +529,7 @@ static void cmd_help(char *arg)
     i = sprintf(text, "Help on '%s'\n", line + 1);
 
     /* allow multiple commands to share the same help */
-    while (fgets(line, BUFSIZE, f) && line[0] == '@') ;
+    while (utf8_fgets(line, BUFSIZE, f) && line[0] == '@') ;
 
     do {
 	if ((len = strlen(line)) >= size - i) {
@@ -548,7 +548,7 @@ static void cmd_help(char *arg)
 	}
 	memcpy(text + i, line, len);
 	i += len;
-    } while (fgets(line, BUFSIZE, f) && line[0] != '@');
+    } while (utf8_fgets(line, BUFSIZE, f) && line[0] != '@');
 
     fclose(f);
     text[i] = '\0'; /* safe, there is space */
@@ -1388,7 +1388,7 @@ static void cmd_emulate(char *arg)
 	    return;
 	}
 	status(-1); /* we're pretending we got something from the MUD */
-	while (!error && (!start || i<=end) && fgets(buf, BUFSIZE, fp))
+	while (!error && (!start || i<=end) && utf8_fgets(buf, BUFSIZE, fp))
 	    if (!start || i++>=start)
 		process_remote_input(buf, strlen(buf));
 
@@ -1445,7 +1445,7 @@ static void cmd_exe(char *arg)
 	offset = 0;
 	/* We may go in to a loop if a single function is more than 4k, but if that's
 	 * the case then maybe you should break it down a little bit :p */
-	while (!error && (!start || i<=end) && fgets(buf + offset, BUFSIZE - offset, fp))
+	while (!error && (!start || i<=end) && utf8_fgets(buf + offset, BUFSIZE - offset, fp))
 	    /* If it ends with \\\n then it's a line continuation, so clear
 	     * the \\\n and do another fgets */
 	    if (buf[offset + strlen(buf + offset) - 2] == '\\') {
@@ -1494,7 +1494,7 @@ static void cmd_print(char *arg)
 	    ptrdel(pbuf);
 	    return;
 	}
-	while (!error && (!start || i <= end) && fgets(buf, BUFSIZE, fp))
+	while (!error && (!start || i <= end) && utf8_fgets(buf, BUFSIZE, fp))
 	    if (!start || i++>=start)
 		tty_puts(buf);
 	tty_putc('\n');
@@ -1525,7 +1525,7 @@ static void cmd_send(char *arg)
 	    ptrdel(pbuf);
 	    return;
 	}
-	while (!error && (!start || i<=end) && fgets(buf, BUFSIZE, fp)) {
+	while (!error && (!start || i<=end) && utf8_fgets(buf, BUFSIZE, fp)) {
 	    if ((newline = strchr(buf, '\n')))
 		*newline = '\0';
 
@@ -1553,7 +1553,9 @@ static void cmd_rawsend(char *arg)
     if (*tmp=='(') {
 	ptr pbuf = (ptr)0;
 	arg = tmp + 1;
+	raw_escapes = true;
 	(void)evalp(&pbuf, &arg);
+	raw_escapes = false;
 	if (REAL_ERROR) {
 	    print_error(error);
 	    ptrdel(pbuf);
@@ -1561,7 +1563,7 @@ static void cmd_rawsend(char *arg)
 	    tcp_raw_write(current_connection, ptrdata(pbuf), ptrlen(pbuf));
     } else {
 	int len;
-	if ((len = memunescape(arg, strlen(arg))))
+	if ((len = memunescape(arg, strlen(arg), true)))
 	    tcp_raw_write(current_connection, arg, len);
     }
 }
@@ -1573,7 +1575,9 @@ static void cmd_rawprint(char *arg)
     if (*tmp=='(') {
 	ptr pbuf = (ptr)0;
 	arg = tmp + 1;
+	raw_escapes = true;
 	(void)evalp(&pbuf, &arg);
+	raw_escapes = false;
 	if (REAL_ERROR) {
 	    print_error(error);
 	    ptrdel(pbuf);
@@ -1581,7 +1585,7 @@ static void cmd_rawprint(char *arg)
 	    tty_raw_write(ptrdata(pbuf), ptrlen(pbuf));
     } else {
 	int len;
-	if ((len = memunescape(arg, strlen(arg))))
+	if ((len = memunescape(arg, strlen(arg), true)))
 	    tty_raw_write(arg, len);
     }
 }
@@ -1883,7 +1887,7 @@ static void cmd_var(char *arg)
 	}
 	len = 0;
 	i = 1;
-	while (!error && (!start || i<=end) && fgets(buf2+len, BUFSIZE-len, fp))
+	while (!error && (!start || i<=end) && utf8_fgets(buf2+len, BUFSIZE-len, fp))
 	    if (!start || i++>=start)
 		len += strlen(buf2 + len);
 

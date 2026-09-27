@@ -119,8 +119,9 @@
 
 
 /* macros to find cursor position from input buffer position */
-#define CURLINE(pos)	(((pos) + col0) / cols_1 + line0)
-#define CURCOL(pos)	(((pos) + col0) % cols_1)
+/* screen line and column of byte offset 'pos' of the input line */
+#define CURLINE(pos)	input_line(pos)
+#define CURCOL(pos)	input_col(pos)
 
 #define CLIP(a, min, max) ((a)=(a)<(min) ? (min) : (a)>(max) ? (max) : (a))
 

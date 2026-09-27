@@ -11,6 +11,7 @@
  */
 
 #include <alloca.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -448,31 +449,22 @@ int tcp_unIAC(char *buffer, int len)
 
 /*
  * store data byte 'c' from the remote host at 'p', converting it from
- * the connection's charset; returns the new 'p'
+ * the connection's charset to UTF-8; returns the new 'p'
  */
 static byte *put_data(connsess *conn, byte *p, byte c)
 {
-    switch (conn->charset) {
-    case CS_UTF8:
-        return p + utf8_decode_byte(&conn->u8dec, c, (char *)p);
-    case CS_ASCII:
-        *p++ = c < 0x80 ? c : CHARSET_REPLACEMENT;
-        return p;
-    default:
-        *p++ = c;
-        return p;
-    }
+    return p + charset_decode_byte(conn->charset, &conn->u8dec, c, (char *)p);
 }
 
 /* flush any partial UTF-8 character */
 static byte *flush_data(connsess *conn, byte *p)
 {
-    return p + utf8_decoder_flush(&conn->u8dec, (char *)p);
+    return p + charset_decode_flush(&conn->u8dec, (char *)p);
 }
 
 /*
- * read a maximum of size chars from remote host
- * using the telnet protocol. return chars read.
+ * read from remote host using the telnet protocol, and store at most
+ * maxsize bytes of UTF-8 text in buffer. return bytes stored.
  */
 int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 {
@@ -482,17 +474,18 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     static byte subopt[MAX_SUBOPT];
     static int subchars;
     byte *p, *s, *linestart;
+    static byte rawbuf[BUFSIZE];
 
     /*
-     * make room for a leading \r, and for the extra replacement
-     * character output if a partial UTF-8 character is followed by
-     * an invalid byte; see utf8_decode_byte()
+     * each byte read may become up to three bytes of UTF-8 (U+FFFD);
+     * leave room for a pending \r and a pending partial character
      */
-    int lead = (state == GOT_R) + (conn->u8dec.need != 0);
-    char *ibuffer = (char *)buffer + lead;
-    maxsize -= lead;
+    assert(maxsize >= TCP_READ_MIN);
+    maxsize = (maxsize - 1 - CHARSET_DECODE_MAX) / 3;
+    if (maxsize > sizeof rawbuf)
+        maxsize = sizeof rawbuf;
 
-    while ((i = conn->fns->read(conn, ibuffer, maxsize)) < 0
+    while ((i = conn->fns->read(conn, rawbuf, maxsize)) < 0
            && errno == EINTR)
 	;
 
@@ -510,8 +503,8 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
      * scan through the buffer,
      * interpret telnet protocol escapes and MUME MPI messages
      */
-    p = (byte *)buffer;
-    for (s = linestart = (byte *)ibuffer; i; s++, i--) {
+    p = linestart = (byte *)buffer;
+    for (s = rawbuf; i; s++, i--) {
 	switch (state) {
 	 case NORMAL:
 	 case ALTNORMAL:
@@ -806,8 +799,8 @@ void tcp_write_escape_iac(connsess *conn, const void *data, size_t len)
  */
 void tcp_write_chars(connsess *conn, const char *data, size_t len)
 {
-    char *enc = alloca(2 * len);
-    len = latin1_encode(conn->charset, data, len, enc);
+    char *enc = alloca(len);
+    len = charset_encode(conn->charset, data, len, enc);
     tcp_write_escape_iac(conn, enc, len);
 }
 
@@ -871,10 +864,10 @@ void tcp_write(connsess *conn, const char *data)
 	reprint_writeline(data);
     }
 
-    if (conn->charset != CS_LATIN1) {
-        /* no IACs in the result, so the loop below just copies it */
-        char *enc = alloca(2 * len + 1);
-        len = latin1_encode(conn->charset, data, len, enc);
+    if (conn->charset != CS_UTF8) {
+        /* never longer than the original */
+        char *enc = alloca(len + 1);
+        len = charset_encode(conn->charset, data, len, enc);
         data = enc;
     }
 

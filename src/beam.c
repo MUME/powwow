@@ -377,12 +377,22 @@ void message_edit(char *text, int msglen, char view, char builtin)
     s->key = key;
     s->conn = (view || builtin) ? NULL : current_connection;
     s->cancel = 0;
-    /* the editor gets the title as sent; we display it in ISO 8859-1 */
+    /* the editor gets the title as sent; we keep it as UTF-8 */
     title = my_strdup(descr);
-    if (!builtin && current_connection != NULL
-        && (current_connection->flags & IDEDITOR_UTF8))
-        descr[utf8_to_latin1(descr, strlen(descr))] = '\0';
-    s->descr = my_strdup(descr);
+    if (builtin) {
+        s->descr = my_strdup(descr);
+    } else {
+        size_t dlen = strlen(descr);
+        s->descr = malloc(3 * dlen + 1);
+        if (s->descr != NULL) {
+            if (current_connection != NULL
+                && (current_connection->flags & IDEDITOR_UTF8))
+                dlen = utf8_sanitize(descr, dlen, s->descr);
+            else
+                dlen = latin1_to_utf8(descr, dlen, s->descr);
+            s->descr[dlen] = '\0';
+        }
+    }
     s->file = my_strdup(tmpname);
     free(text);
 

@@ -31,6 +31,12 @@
 #include "tty.h"
 #include "eval.h"
 #include "log.h"
+#include "charset.h"
+#include "width.h"
+
+#ifdef USE_LOCALE
+#  include <wctype.h>
+#endif
 
 static void insert_string(char *arg);
 
@@ -129,6 +135,28 @@ static char *find_partial_esc(char *s)
     return *p == '\0' ? esc : NULL;
 }
 
+/* byte offset of the cell after/before byte offset 'p' of edbuf */
+static int next_cell(int p)
+{
+    return utf8_next_cell(edbuf + p, edbuf + edlen) - edbuf;
+}
+
+static int prev_cell(int p)
+{
+    return utf8_prev_cell(edbuf, edbuf + p) - edbuf;
+}
+
+/* is the character at byte offset 'p' of edbuf part of a word?
+ * all non-ASCII characters are, to behave the same in any locale */
+static int word_at(int p)
+{
+    uint32_t cp;
+    utf8_get(edbuf + p, edlen - p, &cp);
+    if (cp >= 0x80)
+        return 1;
+    return isalnum(cp);
+}
+
 /*
  * redisplay the prompt
  * assume cursor is at beginning of line
@@ -211,37 +239,13 @@ void clear_line(char *dummy)
  */
 void draw_input_line(void)
 {
-    int i, oldline0;
-
     if (line_status == 0 || linemode & LM_NOECHO)
 	return;
 
     tty_puts(edattrbeg);
 
-    if (edlen) {
-	oldline0 = line0;
-	if (edlen < cols_1 - col0) {
-	    tty_puts(edbuf);
-	} else {
-	    tty_printf("%.*s", cols_1 - col0, edbuf);
-	    for (i = cols_1 - col0; i <= edlen; i += cols_1) {
-#ifdef USE_ANSIBUG
-		if (edattrbg)
-		    tty_printf("%s\n%s%.*s", edattrend, edattrbeg, cols_1, edbuf + i);
-		else
-#endif
-		    tty_printf("\n%.*s", cols_1, edbuf + i);
-	    }
-	}
-	line0 = lines - (edlen + col0) / cols_1 - 1;
-	if (line0 > oldline0)
-	    line0 = oldline0;
-	if ((i = CURLINE(pos)) < 0)
-	    line0 -= i;
-	else if (i > lines - 1)
-	    line0 -= i - lines + 1;
-	tty_gotoxy_opt(CURCOL(edlen), CURLINE(edlen), CURCOL(pos), CURLINE(pos));
-    }
+    if (edlen)
+        input_draw();
     line_status = 0;
 }
 
@@ -303,14 +307,12 @@ void transpose_words(char *dummy)
 	while (other_so > 0 && !strchr(DELIM, edbuf[other_so - 1]))
 	    other_so--;
 
-	sprintf(buf, "%.*s%.*s%.*s",
-		this_eo - this_so, edbuf + this_so,
-		this_so - other_eo, edbuf + other_eo,
-		other_eo - other_so, edbuf + other_so);
+	n = sprintf(buf, "%.*s%.*s%.*s",
+		    this_eo - this_so, edbuf + this_so,
+		    this_so - other_eo, edbuf + other_eo,
+		    other_eo - other_so, edbuf + other_so);
 
-	input_moveto(other_so);
-	for (n = 0; buf[n]; input_overtype_follow(buf[n++]))
-	    ;
+	input_replace(other_so, this_eo - other_so, buf, n);
     }
 }
 
@@ -327,30 +329,24 @@ void suspend_key(char *dummy)
  */
 void transpose_chars(char *dummy)
 {
-    int i, j;
-    char c;
-    if (pos > 1 || (pos > 0 && pos < edlen)) {
-        if (pos < edlen) {
-	    j = pos;
-	    i = pos - 1;
-	} else {
-	    j = pos - 1;
-	    i = pos - 2;
-	}
-	c = edbuf[j]; edbuf[j] = edbuf[i]; edbuf[i] = c;
+    /* swap the cells [i, j) and [j, k) */
+    int i, j, k;
+    char buf[2 * BUFSIZE];
 
-	if (line_status == 0) {
-	    tty_gotoxy_opt(CURCOL(pos), CURLINE(pos), CURCOL(i), CURLINE(i));
-	    tty_putc(edbuf[i]);
-	    tty_gotoxy_opt(CURCOL(i+1), CURLINE(i+1), CURCOL(j), CURLINE(j));
-	    tty_putc(edbuf[j]);
-	    if (pos < edlen) {
-		pos++;
-		tty_gotoxy_opt(CURCOL(j+1), CURLINE(j+1), CURCOL(pos), CURLINE(pos));
-	    }
-	} else
-	    pos++;
+    if (pos == 0 || (pos == edlen && prev_cell(pos) == 0))
+        return;
+    if (pos < edlen) {
+        j = pos;
+        k = next_cell(pos);
+    } else {
+        k = pos;
+        j = prev_cell(pos);
     }
+    i = prev_cell(j);
+
+    memcpy(buf, edbuf + j, k - j);
+    memcpy(buf + k - j, edbuf + i, j - i);
+    input_replace(i, k - i, buf, k - i);
 }
 
 /*
@@ -394,7 +390,7 @@ void begin_of_line(char *dummy)
  */
 void del_char_right(char *dummy)
 {
-    input_delete_nofollow_chars(1);
+    input_delete_nofollow_chars(next_cell(pos) - pos);
 }
 
 /*
@@ -403,8 +399,9 @@ void del_char_right(char *dummy)
 void del_char_left(char *dummy)
 {
     if (pos) {
-	input_moveto(pos-1);
-	input_delete_nofollow_chars(1);
+        int p = pos;
+	input_moveto(prev_cell(pos));
+	input_delete_nofollow_chars(p - pos);
     }
 }
 
@@ -526,10 +523,8 @@ void complete_word(char *dummy)
 	    *(p += root_len) &&
 	    (n = strlen(p)) + edlen < BUFSIZE) {
 	    comp_len = n;
-	    for (; k && n; k--, n--)
-		input_overtype_follow(*p++);
-	    if (n > 0)
-		input_insert_follow_chars(p, n);
+	    input_replace(pos, k, p, n);
+	    k = 0;
 	    break;
 	}
     }
@@ -733,10 +728,10 @@ void enter_line(char *dummy)
 void next_word(char *dummy)
 {
     int i;
-    for (i = pos; edbuf[i] && !isalnum(edbuf[i]); i++)
+    for (i = pos; i < edlen && !word_at(i); i = next_cell(i))
 	;
-    while (isalnum(edbuf[i]))
-	i++;
+    while (i < edlen && word_at(i))
+	i = next_cell(i);
     input_moveto(i);
 }
 
@@ -746,10 +741,10 @@ void next_word(char *dummy)
 void prev_word(char *dummy)
 {
     int i;
-    for (i = pos; i && !isalnum(edbuf[i - 1]); i--)
+    for (i = pos; i && !word_at(prev_cell(i)); i = prev_cell(i))
 	;
-    while (i && isalnum(edbuf[i - 1]))
-	i--;
+    while (i && word_at(prev_cell(i)))
+	i = prev_cell(i);
     input_moveto(i);
 }
 
@@ -759,10 +754,10 @@ void prev_word(char *dummy)
 void del_word_right(char *dummy)
 {
     int i;
-    for (i = pos; edbuf[i] && !isalnum(edbuf[i]); i++)
+    for (i = pos; i < edlen && !word_at(i); i = next_cell(i))
 	;
-    while (isalnum(edbuf[i]))
-	i++;
+    while (i < edlen && word_at(i))
+	i = next_cell(i);
     input_delete_nofollow_chars(i - pos);
 }
 
@@ -772,13 +767,50 @@ void del_word_right(char *dummy)
 void del_word_left(char *dummy)
 {
     int i;
-    for (i = pos; i && !isalnum(edbuf[i - 1]); i--)
+    for (i = pos; i && !word_at(prev_cell(i)); i = prev_cell(i))
 	;
-    while (i && isalnum(edbuf[i - 1]))
-	i--;
+    while (i && word_at(prev_cell(i)))
+	i = prev_cell(i);
     i = pos - i;
     input_moveto(pos - i);
     input_delete_nofollow_chars(i);
+}
+
+/*
+ * GH: change the case of the current word, or of the whole line if
+ *     repeated; the UTF-8 length of the text may change
+ */
+static void change_case_word(function_str self, int upper)
+{
+    int opos = pos;
+    int start = pos, end;
+    char buf[2 * BUFSIZE];
+    int n = 0;
+
+    if (last_edit_cmd == self)
+	start = 0;
+    else {
+	while (start > 0 && IS_DELIM(edbuf[start])) start--;
+	while (start > 0 && !IS_DELIM(edbuf[start - 1])) start--;
+    }
+    for (end = start; end < edlen
+             && (!IS_DELIM(edbuf[end]) || last_edit_cmd == self); ) {
+        uint32_t cp;
+        end += utf8_get(edbuf + end, edlen - end, &cp);
+#ifdef USE_LOCALE
+        cp = upper ? towupper(cp) : towlower(cp);
+#else
+        if (cp < 0x80)
+            cp = upper ? toupper(cp) : tolower(cp);
+#endif
+        n += utf8_put(cp, buf + n);
+    }
+    input_replace(start, end - start, buf, n);
+    if (opos >= end)
+        opos += n - (end - start);
+    else if (opos > start)
+        opos = start + n;
+    input_moveto(opos);
 }
 
 /*
@@ -786,20 +818,7 @@ void del_word_left(char *dummy)
  */
 void upcase_word(char *dummy)
 {
-    int opos = pos;
-    int npos = pos;
-
-    if (last_edit_cmd == upcase_word)
-	npos = 0;
-    else {
-	while (npos > 0 && IS_DELIM(edbuf[npos])) npos--;
-	while (npos > 0 && !IS_DELIM(edbuf[npos - 1])) npos--;
-    }
-    input_moveto(npos);
-    while (!IS_DELIM(edbuf[npos]) ||
-	   (last_edit_cmd == upcase_word && edbuf[npos]))
-	input_overtype_follow(toupper(edbuf[npos++]));
-    input_moveto(opos);
+    change_case_word(upcase_word, 1);
 }
 
 /*
@@ -807,21 +826,7 @@ void upcase_word(char *dummy)
  */
 void downcase_word(char *dummy)
 {
-    int opos = pos;
-    int npos = pos;
-
-    if (last_edit_cmd == downcase_word)
-	npos = 0;
-    else {
-	while (npos > 0 && IS_DELIM(edbuf[npos])) npos--;
-	while (npos > 0 && !IS_DELIM(edbuf[npos - 1])) npos--;
-    }
-    input_moveto(npos);
-    while (!IS_DELIM(edbuf[npos]) ||
-	   (last_edit_cmd == downcase_word && edbuf[npos])) {
-	input_overtype_follow(tolower(edbuf[npos++]));
-    }
-    input_moveto(opos);
+    change_case_word(downcase_word, 0);
 }
 
 /*
@@ -879,7 +884,7 @@ void next_line(char *dummy)
  */
 void prev_char(char *dummy)
 {
-    input_moveto(pos-1);
+    input_moveto(prev_cell(pos));
 }
 
 /*
@@ -887,7 +892,7 @@ void prev_char(char *dummy)
  */
 void next_char(char *dummy)
 {
-    input_moveto(pos+1);
+    input_moveto(next_cell(pos));
 }
 
 /*
@@ -929,13 +934,43 @@ void putbackcursor(void)
 }
 
 /*
- * insert a typed character on screen (if it is printable)
+ * insert a typed byte on screen, once it completes a printable
+ * UTF-8 character
  */
 void insert_char(char c)
 {
-    if (((c & 0x80) || (c >= ' ' && c <= '~')) && edlen < BUFSIZE - 2) {
+    static char pend[UTF8_MAX];
+    static int npend, need;
+    unsigned char b = c;
+
+    if (npend > 0 && (b & 0xc0) == 0x80) {
+        pend[npend++] = b;
+        if (npend < need)
+            return;
+    } else {
+        npend = 0;
+        if (b >= 0x80) {
+            need = utf8_seqlen(b);
+            if (need > 1) {
+                pend[npend++] = b;
+                return;
+            }
+            return;             /* invalid */
+        }
+        if (b < ' ' || b > '~')
+            return;             /* control character */
+        pend[npend++] = b;
+    }
+
+    int n = npend;
+    npend = 0;
+    uint32_t cp;
+    if (utf8_get(pend, n, &cp) != n || (cp >= 0x80 && cp < 0xa0))
+        return;                 /* invalid or C1 control */
+
+    if (edlen < BUFSIZE - n - 1) {
 	if (flashback) putbackcursor();
-	input_insert_follow_chars(&c, 1);
+	input_insert_follow_chars(pend, n);
 	if (ISRPAREN(c))
 	    flashparen(c);
     }

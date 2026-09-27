@@ -57,18 +57,23 @@ static int logsize  = 0;	/* size of circular (pointer to string) list */
 static const char *const names[] = { NULL, "line", "prompt", "sleep" };
 
 /*
- * write ISO 8859-1 text to 'f', encoded as 'cs'
+ * write UTF-8 text to 'f', encoded as 'cs'
  */
 static void log_fwrite(const char *str, size_t len, enum charset cs, FILE *f)
 {
-    if (cs == CS_LATIN1) {
+    if (cs == CS_UTF8) {
         fwrite(str, 1, len, f);
         return;
     }
     while (len > 0) {
         char buf[1024];
-        size_t n = MIN2(len, sizeof buf / 2);
-        fwrite(buf, 1, latin1_encode(cs, str, n, buf), f);
+        size_t n = MIN2(len, sizeof buf);
+        /* do not split a character */
+        while (n < len && n > 0 && ((unsigned char)str[n] & 0xc0) == 0x80)
+            n--;
+        if (n == 0)
+            n = MIN2(len, sizeof buf);
+        fwrite(buf, 1, charset_encode(cs, str, n, buf), f);
         str += n;
         len -= n;
     }

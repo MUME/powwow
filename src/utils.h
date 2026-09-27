@@ -16,6 +16,7 @@ static inline bool is_csi_final(unsigned char c)
 char *my_strdup(const char *s);
 char *my_strncpy(char *dst, const char *src, int len);
 int  printstrlen(char *s);
+char *utf8_fgets(char *buf, int size, FILE *f);
 
 void sgr_output_sync(void);
 void sgr_output(const char *s, size_t len);
@@ -25,7 +26,8 @@ void sgr_prompt_draw(void);
 void sgr_prompt_commit(const char *prompt, size_t len);
 
 void ptrunescape(ptr p);
-int  memunescape(char *p, int lenp);
+int  memunescape(char *p, int lenp, bool raw);
+extern bool raw_escapes;
 
 ptr  ptrescape(ptr dst, ptr src, int append);
 ptr  ptrmescape(ptr dst, char *src, int srclen, int append);

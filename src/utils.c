@@ -21,6 +21,7 @@
 # define _DARWIN_C_SOURCE 1
 #endif
 
+#include <alloca.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,11 +42,13 @@
 #include "eval.h"
 #include "log.h"
 #include "tls.h"
+#include "charset.h"
+#include "width.h"
 #include "sgr.h"
 
 enum {
-    SAVEFILEVER = 7,            /* current version */
-    TLS_SAVEFILEVER = 7,        /* version when --tls was added */
+    SAVEFILEVER = 8,            /* current version */
+    UTF8_SAVEFILEVER = 8,       /* version when files became UTF-8 */
 };
 
 static char can_suspend = 0; /* 1 if shell has job control */
@@ -85,31 +88,58 @@ int printstrlen(char *s)
 {
     int l;
     enum { NORM, ESCAPE, BRACKET } state = NORM;
-    for (l = 0; *s; s++) {
+    for (l = 0; *s; ) {
+        uint32_t cp;
+        /* does not read past the terminating NUL */
+        s += utf8_get(s, UTF8_MAX, &cp);
         switch(state) {
 	 case NORM:
-            if (*s == '\033') {
+            if (cp == '\033') {
                 state = ESCAPE;
-            } else if ((*s & 0x80) || *s >= ' ') {
-                l++;
-            } else if (*s == '\b') {
+            } else if (cp == '\b') {
                 if (l > 0)
                     l--;
-            } else if (*s == '\r')
+            } else if (cp == '\r') {
 		l = (l / cols) * cols;
+            } else
+                l += cp_width(cp);
             break;
 
 	 case ESCAPE:
-            state = (*s == '[') ? BRACKET : NORM;
+            state = (cp == '[') ? BRACKET : NORM;
             break;
 
 	 case BRACKET:
-            if (is_csi_final(*s))
+            if (is_csi_final(cp))
 	      state = NORM;
             break;
         }
     }
     return l;
+}
+
+/*
+ * fgets() for UTF-8 text files: invalid UTF-8 is replaced by U+FFFD,
+ * truncating the line at a character boundary if it no longer fits
+ */
+char *utf8_fgets(char *buf, int size, FILE *f)
+{
+    if (!fgets(buf, size, f))
+        return NULL;
+
+    size_t len = strlen(buf);
+    char *tmp = alloca(3 * len + 1);
+    size_t n = utf8_sanitize(buf, len, tmp);
+    if (n == len && memcmp(buf, tmp, len) == 0)
+        return buf;             /* valid */
+    if (n >= (size_t)size) {
+        n = size - 1;
+        while (n > 0 && ((unsigned char)tmp[n] & 0xc0) == 0x80)
+            n--;
+    }
+    memcpy(buf, tmp, n);
+    buf[n] = '\0';
+    return buf;
 }
 
 /*
@@ -183,7 +213,7 @@ char *first_regular(char *p, char c)
 /*
  * remove escapes (backslashes) from a string
  */
-int memunescape(char *p, int lenp)
+int memunescape(char *p, int lenp, bool raw)
 {
     char *start, *s;
     enum { NORM, ESCSINGLE, ESCAPE } state = NORM;
@@ -213,7 +243,13 @@ int memunescape(char *p, int lenp)
 	    if (state == ESCSINGLE && lenp >= 3 &&
 		ISODIGIT(s[0]) && ISODIGIT(s[1]) && ISODIGIT(s[2])) {
 
-		*p++ = ((s[0]-'0') << 6) | ((s[1]-'0') << 3) | (s[2]-'0');
+		int c = ((s[0]-'0') << 6) | ((s[1]-'0') << 3) | (s[2]-'0');
+		/* \ooo is an ISO 8859-1 character, unless raw; either
+		 * way, the output does not overtake the input */
+		if (raw)
+		    *p++ = c;
+		else
+		    p += utf8_put(c & 0xff, p);
 		s += 3, lenp -= 3;
 	    } else
 		*p++ = *s++, lenp--;
@@ -227,16 +263,19 @@ int memunescape(char *p, int lenp)
     return (int)(p - start);
 }
 
+/* if set, \ooo escapes produce raw bytes (for #rawsend and #rawprint) */
+bool raw_escapes = false;
+
 void unescape(char *s)
 {
-    (void)memunescape(s, strlen(s));
+    (void)memunescape(s, strlen(s), raw_escapes);
 }
 
 void ptrunescape(ptr p)
 {
     if (!p)
 	return;
-    p->len = memunescape(ptrdata(p), ptrlen(p));
+    p->len = memunescape(ptrdata(p), ptrlen(p), raw_escapes);
 }
 
 /*
@@ -518,7 +557,7 @@ ptr ptraddmarks(ptr dst, ptr line)
 static void wrap_print(char *s)
 {
     /* ls = last space in *s, lp = last space in *p */
-    char *ls, *lp, *p, c, follow = 1;
+    char *ls, *lp, *p, follow = 1;
     char buf[BUFSIZE]; /* ASSERT(cols<BUFSIZE) */
 
     /* l = left, m = current offset */
@@ -542,35 +581,42 @@ static void wrap_print(char *s)
          * print to the buffer and tallying the length of displayed
          * characters */
         while (m < cols_1 - col0 && *s && *s != '\n') {
-            *p++ = c = *s++;
+            uint32_t cp;
+            int n = utf8_get(s, UTF8_MAX, &cp);
+            int w = state == NORM ? cp_width(cp) : 0;
+            /* a wide character that does not fit goes on the next line */
+            if (m > 0 && m + w > cols_1 - col0)
+                break;
+            memcpy(p, s, n);
+            p += n;
+            s += n;
             switch (state) {
                 case NORM:
-                    if (c == ' ') {
+                    if (cp == ' ') {
                         ls = s;
                         lp = p;
                     }
 
-                    if (c == '\033') {
+                    if (cp == '\033') {
                         state = ESCAPE;
-                    }else if ((c & 0x80) || (c >= ' ' && c <= '~')) {
-                        /* if char is hi (128+) or printable */
-                        m++, l--;
-                    }else if (c == '\b') {
+                    } else if (cp == '\b') {
                         if (m > 0)
                             m--, l++;
-                    }else if (c == '\r') {
+                    } else if (cp == '\r') {
                         ls = lp = NULL;
                         m = 0;
+                    } else {
+                        m += w, l -= w;
                     }
 
                     break;
 
                 case ESCAPE:
-                    state = (c == '[') ? BRACKET : NORM;
+                    state = (cp == '[') ? BRACKET : NORM;
                     break;
 
                 case BRACKET:
-                    if (is_csi_final(c))
+                    if (is_csi_final(cp))
                         state = NORM;
                     break;
             }
@@ -973,6 +1019,8 @@ int read_settings(void)
 {
     FILE *f;
     char *buf, *p, *cmd, old_nice = a_nice;
+    char *line = NULL;          /* current line, as UTF-8 */
+    size_t linesize = 0;
     int failed = 1, n, savefilever = 0, left, len, limit_mem_hit = 0;
     varnode **first;
     ptr ptrbuf;
@@ -1062,9 +1110,26 @@ int read_settings(void)
 	}
 	/* got a full line */
 	*cmd = '\0';
-	cmd = buf;
 	left += len;
 	len = 0;
+
+        /* convert it to UTF-8 */
+        size_t llen = cmd - buf;
+        if (3 * llen + 1 > linesize) {
+            free(line);
+            linesize = 3 * llen + 1;
+            if ((line = malloc(linesize)) == NULL) {
+                linesize = 0;
+                errmsg("malloc");
+                break;
+            }
+        }
+        if (savefilever < UTF8_SAVEFILEVER)
+            llen = latin1_to_utf8(buf, llen, line);
+        else
+            llen = utf8_sanitize(buf, llen, line);
+        line[llen] = '\0';
+        cmd = line;
 
         cmd = skipspace(cmd);
 	if (!*cmd)
@@ -1096,13 +1161,15 @@ int read_settings(void)
 	failed = -1;
     } else if (savefilever > SAVEFILEVER) {
 	PRINTF("#warning: this powwow version is too old!\n");
-    } else if (SAVEFILEVER == TLS_SAVEFILEVER && savefilever == TLS_SAVEFILEVER - 1) {
-        /* no action/warning needed */
+    } else if (savefilever < UTF8_SAVEFILEVER) {
+        PRINTF("#definition file converted from ISO-8859-1 to UTF-8\n");
+	load_missing_stuff(savefilever);
     } else if (savefilever < SAVEFILEVER) {
 	PRINTF("\n#warning: config file is from an older version\n");
 	load_missing_stuff(savefilever);
     }
 
+    free(line);
     fclose(f);
     a_nice = old_nice;
 

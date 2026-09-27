@@ -13,7 +13,7 @@
  *
  * Initially inspired to the Tintin client by Peter Unold,
  * Powwow contains no Tintin code.
- * The original program Cancan, written by Mattias Engdegård (Yorick)
+ * The original program Cancan, written by Mattias EngdegÃ¥rd (Yorick)
  * (f91-men@nada.kth.se) 1992-94,
  * was greatly improved upon by Vivriel, Thuzzle and Ilie and then
  * transformed from Cancan into Powwow by Cosmos who worked
@@ -64,10 +64,12 @@
 #include "tty.h"
 #include "utils.h"
 #include "sgr.h"
+#include "width.h"
 
 #ifdef USE_LOCALE
-  #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fr\363r, D\341in"
-  #define COPYRIGHT      "\251"
+  /* UTF-8 */
+  #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fr\303\263r, D\303\241in"
+  #define COPYRIGHT      "\302\251"
 #else
   #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fror, Dain"
   #define COPYRIGHT      "Copyright"
@@ -556,7 +558,7 @@ static void printmotd(void)
     char line[BUFSIZE];
     FILE *f = fopen(MOTDFILE, "r");
     if (f) {
-        while (fgets(line, BUFSIZE, f))
+        while (utf8_fgets(line, BUFSIZE, f))
 	    tty_puts(line);
 	fclose(f);
     }
@@ -836,8 +838,8 @@ static void sgr_transition(char **buf, size_t *used, size_t *size,
 /*
  * compute the effective prompt string, which may end in \b* or \r:
  * emulate the terminal for \b, \r and ESC [ K, where escape sequences
- * take no room on screen and characters keep the rendition (colors
- * etc.) they were written with
+ * take no room on screen, wide characters take two columns, and
+ * characters keep the rendition (colors etc.) they were written with
  */
 static void effective_prompt(void)
 {
@@ -853,11 +855,15 @@ static void effective_prompt(void)
     if (k == len)
         return;                 /* nothing to emulate */
 
+    /* one cell per terminal column */
+    enum { NARROW, WIDE_LEFT, WIDE_RIGHT };
     struct cell {
-        char   c;
+        char   text[16];        /* UTF-8: a character and combining ones */
+        unsigned char len;      /* bytes in text */
+        unsigned char kind;     /* NARROW, WIDE_LEFT or WIDE_RIGHT */
         int    attr;            /* index into attrs */
-        char  *other;           /* other escapes and controls before c */
-    } *cells = calloc(len, sizeof *cells);
+        char  *other;           /* other escapes and controls before it */
+    } *cells = calloc(2 * len + 2, sizeof *cells);
     struct sgr_state *attrs = malloc((len + 1) * sizeof *attrs);
     char *pend = NULL;          /* other escapes and controls, pending */
     size_t npend = 0, pendsize = 0;
@@ -871,6 +877,20 @@ static void effective_prompt(void)
         return;
     }
     sgr_reset(&cur);
+
+/* overwriting half of a wide character blanks the other half */
+#define UNSPLIT(i) do {                                                 \
+        if ((i) < ncells && cells[i].kind == WIDE_RIGHT && (i) > 0) {   \
+            cells[(i) - 1].kind = NARROW;                               \
+            cells[(i) - 1].text[0] = ' ';                               \
+            cells[(i) - 1].len = 1;                                     \
+        } else if ((i) < ncells && cells[i].kind == WIDE_LEFT           \
+                   && (i) + 1 < ncells) {                               \
+            cells[(i) + 1].kind = NARROW;                               \
+            cells[(i) + 1].text[0] = ' ';                               \
+            cells[(i) + 1].len = 1;                                     \
+        }                                                               \
+    } while (0)
 
     for (size_t p = 0; p < len; ++p) {
         char c = pstr[p];
@@ -889,6 +909,7 @@ static void effective_prompt(void)
                     && (pstr[q] == 'K'
                         && (q == p + 2 || (q == p + 3 && pstr[p + 2] == '0')))) {
                     /* erase to end of line */
+                    UNSPLIT(pos);
                     for (size_t i = pos; i < ncells; ++i)
                         free(cells[i].other);
                     if (ncells > pos)
@@ -911,26 +932,60 @@ static void effective_prompt(void)
         } else if ((unsigned char)c < ' ' || c == '\177') {
             buf_add(&pend, &npend, &pendsize, &c, 1);
         } else {
+            uint32_t cp;
+            int n = utf8_get(pstr + p, len - p, &cp);
+            int w = cp_width(cp);
+            if (w == 0) {
+                if (cp >= 0x300 && pos > 0) {
+                    /* combining character: joins the previous one */
+                    size_t i = pos - 1;
+                    if (cells[i].kind == WIDE_RIGHT && i > 0)
+                        --i;
+                    if (cells[i].len + n <= sizeof cells[i].text) {
+                        memcpy(cells[i].text + cells[i].len, pstr + p, n);
+                        cells[i].len += n;
+                    }
+                } else {
+                    /* e.g. a C1 control character */
+                    buf_add(&pend, &npend, &pendsize, pstr + p, n);
+                }
+                p += n - 1;
+                continue;
+            }
             if (cur_attr < 0) {
                 attrs[nattrs] = cur;
                 cur_attr = nattrs++;
             }
-            struct cell *cp = &cells[pos];
-            if (pos >= ncells) {
-                cp->other = NULL;
-                ncells = pos + 1;
+            UNSPLIT(pos);
+            if (w == 2)
+                UNSPLIT(pos + 1);
+            for (int half = 0; half < w; ++half) {
+                struct cell *cl = &cells[pos];
+                if (pos >= ncells) {
+                    cl->other = NULL;
+                    ncells = pos + 1;
+                }
+                if (half == 0 && npend > 0) {
+                    size_t used = cl->other ? strlen(cl->other) : 0;
+                    size_t size = used ? used + 1 : 0;
+                    buf_add(&cl->other, &used, &size, pend, npend);
+                    npend = 0;
+                }
+                if (half == 0) {
+                    memcpy(cl->text, pstr + p, n);
+                    cl->len = n;
+                    cl->kind = w == 2 ? WIDE_LEFT : NARROW;
+                } else {
+                    cl->len = 0;
+                    cl->kind = WIDE_RIGHT;
+                }
+                cl->attr = cur_attr;
+                ++pos;
             }
-            if (npend > 0) {
-                size_t used = cp->other ? strlen(cp->other) : 0;
-                size_t size = used ? used + 1 : 0;
-                buf_add(&cp->other, &used, &size, pend, npend);
-                npend = 0;
-            }
-            cp->c = c;
-            cp->attr = cur_attr;
-            ++pos;
+            p += n - 1;
         }
     }
+#undef UNSPLIT
 
     /* build the result */
     const char *base = sgr_prompt_base();
@@ -943,10 +998,12 @@ static void effective_prompt(void)
             buf_add(&out, &used, &size, cells[i].other, strlen(cells[i].other));
             free(cells[i].other);
         }
+        if (cells[i].kind == WIDE_RIGHT)
+            continue;           /* drawn with its left half */
         sgr_transition(&out, &used, &size, &emitted, &attrs[cells[i].attr],
                        base);
         emitted = attrs[cells[i].attr];
-        buf_add(&out, &used, &size, &cells[i].c, 1);
+        buf_add(&out, &used, &size, cells[i].text, cells[i].len);
     }
     sgr_transition(&out, &used, &size, &emitted, &cur, base);
     if (npend > 0)
@@ -1269,7 +1326,8 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
     int got, otcp_fd, i;
 
     if (current_connection->fragment) {
-	if ((i = strlen(current_connection->fragment)) >= BUFSIZE-1) {
+	/* leave tcp_read() room to decode; see TCP_READ_MIN */
+	if ((i = strlen(current_connection->fragment)) > BUFSIZE - TCP_READ_MIN) {
 	    i = 0;
 	    common_clear(promptlen && !opt_compact);
 	    tty_printf("#error: ##%s : line too long, discarded\n", current_connection->id);
@@ -1633,8 +1691,16 @@ static void get_user_input(void)
     c[chunk] = '\0';
 
     if (linemode & LM_CHAR) {
-	/* char mode. chunk == 1 */
-	tcp_write_chars(current_connection, c, 1);
+	/* char mode. chunk == 1; send complete UTF-8 characters */
+	static char pend[UTF8_MAX];
+	static int npend;
+	if (npend > 0 && ((unsigned char)*c & 0xc0) != 0x80)
+	    npend = 0;          /* incomplete character */
+	pend[npend++] = *c;
+	if (npend >= utf8_seqlen(pend[0])) {
+	    tcp_write_chars(current_connection, pend, npend);
+	    npend = 0;
+	}
 	if (!(linemode & LM_NOECHO))
 	    tty_putc(*c);
 	last_edit_cmd = (function_str)0;

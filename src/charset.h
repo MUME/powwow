@@ -7,8 +7,8 @@
 #include <stdint.h>
 
 /*
- * Internally, powwow uses ISO 8859-1; these functions convert between
- * that and the encoding used on a remote link.
+ * Internally, powwow uses UTF-8; these functions convert between that
+ * and the encoding used on a remote link, and help handling UTF-8.
  */
 
 /* replacement for characters that cannot be represented */
@@ -32,18 +32,6 @@ const char *charset_name(enum charset cs);
 int charset_lookup(const char *name, size_t len);
 
 void utf8_decoder_reset(struct utf8_decoder *d);
-/* feed one byte; stores 0-2 bytes in 'out' and returns how many */
-int  utf8_decode_byte(struct utf8_decoder *d, unsigned char b, char *out);
-/* flush any incomplete sequence; stores 0-1 bytes in 'out' */
-int  utf8_decoder_flush(struct utf8_decoder *d, char *out);
-/* decode a complete UTF-8 buffer in place; returns the new length */
-size_t utf8_to_latin1(char *buf, size_t len);
-
-/* encode 'len' bytes of ISO 8859-1 text as 'cs' into 'dst', which must
- * have room for 2 * len bytes; returns the number of bytes stored */
-size_t latin1_encode(enum charset cs, const char *src, size_t len,
-                      char *dst);
-
 /*
  * Conversion between remote link charsets and UTF-8
  */
@@ -78,6 +66,8 @@ size_t charset_encode(enum charset cs, const char *src, size_t len,
 /* longest UTF-8 sequence */
 #define UTF8_MAX 4
 
+/* length of a UTF-8 sequence starting with 'lead'; 1 if invalid */
+int utf8_seqlen(unsigned char lead);
 /* decode the character at 's' (at most 'len' bytes); stores it in *cp
  * and returns its length (>= 1 if len > 0); an invalid sequence gives
  * U+FFFD and a length of 1 */

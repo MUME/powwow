@@ -21,9 +21,12 @@ void tty_gotoxy(int col, int line);
 void tty_gotoxy_opt(int fromcol, int fromline, int tocol, int toline);
 
 void input_delete_nofollow_chars(int n);
-void input_overtype_follow(char c);
 void input_insert_follow_chars(char *str, int n);
+void input_replace(int from, int len, const char *str, int n);
 void input_moveto(int new_pos);
+void input_draw(void);
+int  input_line(int p);
+int  input_col(int p);
 
 #ifndef USE_LOCALE
 
