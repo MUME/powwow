@@ -70,6 +70,38 @@ STARTING POWWOW
 	settings changed in one session can be overwritten by a change
 	in another session.
 
+CHARACTER SETS
+
+	Internally, powwow handles text as ISO-8859-1 (Latin-1); your
+	terminal may use any character set supported by your locale.
+	The connection to the MUD can use ISO-8859-1, UTF-8 or US-ASCII.
+
+	By default, a connection starts out as ISO-8859-1. If the server
+	supports the telnet CHARSET option (RFC 2066), powwow negotiates
+	the character set with it: when the server offers a list of
+	character sets, powwow picks the first one it supports in the
+	server's order; if the server offers to negotiate, powwow asks
+	for ISO-8859-1, UTF-8 or US-ASCII, in that order.
+
+	Starting powwow with --utf8 (or -u), or adding --utf8 to #host
+	or #connect, makes the connection start out as UTF-8 (for
+	servers that do not negotiate) and makes powwow prefer UTF-8
+	whenever the server offers it:
+
+	$ powwow --utf8 netaddress portnumber
+
+	#connect lists the character set used by each connection, and
+	a message is printed when it changes (unless #option info is off).
+
+	On a UTF-8 connection, characters that do not exist in ISO-8859-1
+	(such as the euro sign) and invalid UTF-8 are shown as '?'. On
+	a US-ASCII connection, all non-ASCII characters are shown and
+	sent as '?'.
+
+	#capture, #movie and #record files are written in the character
+	set of the connection, and so are the files used for remote
+	editing (see #identify).
+
 QUITTING POWWOW
 
 	At any time, you can type #quit to exit from powwow. Be
@@ -635,8 +667,9 @@ SPECIAL COMMANDS: ALL OTHERS
 	#capture [[>]filename]
 
 	This captures all output from the main MUD connection and your typed
-	commands to a local disk file. To close the file and end the
-	capturing, type #capture without argument.
+	commands to a local disk file, in the connection's character set.
+	To close the file and end the capturing, type #capture without
+	argument.
 	If the filename starts with a '>', new text will be appended to the
 	end of the file instead of overwriting it.
 	You can only capture output to one file at a time.
@@ -651,7 +684,8 @@ SPECIAL COMMANDS: ALL OTHERS
 	Record typed commands to file
 	#record [filename]
 
-	This records all text typed from keyboard to a local disk file.
+	This records all text typed from keyboard to a local disk file,
+	in the character set of the main connection.
 	(output from remote host is not recorded)
 	To close the file and end the recording, type #record without argument.
 	You can only record typed text to one file at a time, but #capture and
@@ -830,6 +864,10 @@ SPECIAL COMMANDS: ALL OTHERS
 	screen, but can also be entered by hand.
 	This command must be issued for the cooperative editing to work
 	on servers that support it (currently only MUME).
+	On UTF-8 and US-ASCII connections, powwow also tells the server
+	that it supports UTF-8, and the texts to edit are UTF-8 encoded;
+	otherwise, they are ISO-8859-1 encoded. If the connection's
+	character set changes later, powwow identifies itself again.
 	The startedit/endedit parameters are commands issued when an editing
 	session starts/ends (for changing your title, emoting etc).
 
@@ -1014,7 +1052,7 @@ SPECIAL COMMANDS: ALL OTHERS
 	your compiler supports it) when powwow was compiled.
 	-----------------------------------------------------------
 	Multiple connections handling commands
-	#connect [session-id [initstr] [host port]]
+	#connect [session-id [initstr] [host port]] [--tls[=options]] [--utf8]
 				connect a new session / list sessions
 	#snoop session-id	toggle output display for session
 	#zap session-id		disconnect a session
@@ -1041,6 +1079,8 @@ SPECIAL COMMANDS: ALL OTHERS
 
 	You can close these sessions with #zap and list them with #connect
 	as usual.
+	Text to and from the command uses UTF-8 if powwow was started
+	with --utf8 (or #host has --utf8), otherwise ISO-8859-1.
 
 	Depending on how lazy you are, you can choose two different ways
 	to have spawned programs print to screen:

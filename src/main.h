@@ -38,8 +38,12 @@ struct hostinfo {
     char name[BUFSIZE];
     int port;
     struct tls_options tlsopt;
+    bool utf8;			/* default for new connections */
 };
 extern struct hostinfo hostinfo;
+
+#define UTF8_FLAG "--utf8"
+#define utf8_flag_str(utf8) ((utf8) ? " " UTF8_FLAG : "")
 
 extern char deffile[], helpfile[], copyfile[];
 

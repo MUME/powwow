@@ -1173,8 +1173,9 @@ int save_settings(void)
 
     failed = fprintf(f, "#savefile-version %d\n", SAVEFILEVER);
     if (failed > 0 && *hostinfo.name)
-	failed = fprintf(f, "#host %s %d%s\n", hostinfo.name, hostinfo.port,
-                         tlsopt_str(&hostinfo.tlsopt));
+	failed = fprintf(f, "#host %s %d%s%s\n", hostinfo.name, hostinfo.port,
+                         tlsopt_str(&hostinfo.tlsopt),
+                         utf8_flag_str(hostinfo.utf8));
 
     if (failed > 0) {
 	if (delim_mode == DELIM_CUSTOM) {

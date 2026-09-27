@@ -700,8 +700,7 @@ void enter_line(char *dummy)
     line0 = CURLINE(edlen);
     if (line0 < lines - 1) line0++;
 
-    if (recordfile)
-	fprintf(recordfile, "%s\n", edbuf);
+    log_record_line(edbuf);
 
     col0 = error = pos = line_status = 0;
 
@@ -975,8 +974,7 @@ void key_run_command(char *cmd)
     status(1);
     error = 0;
 
-    if (recordfile)
-	fprintf(recordfile, "%s\n", edbuf);
+    log_record_line(edbuf);
 
     parse_instruction(cmd, 1, 0, 1);
     history_done = 0;

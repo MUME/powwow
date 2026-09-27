@@ -233,10 +233,12 @@ static void show_help(const char *prog)
 #ifdef HAVE_GETOPT_LONG
 #define HELP_ARG "--help, -h         "
 #define TLS_ARG  "--tls[=TLS-OPTIONS]"
+#define UTF8_ARG "--utf8, -u         "
 #define VER_ARG  "--version, -v      "
 #else
 #define HELP_ARG "-h                "
 #define TLS_ARG  "-t, -T TLS-OPTIONS"
+#define UTF8_ARG "-u                "
 #define VER_ARG  "-v                "
 #endif
 
@@ -254,6 +256,7 @@ static void show_help(const char *prog)
            "Options:\n"
            "  " HELP_ARG "    display this help text\n"
            "  " TLS_ARG  "    enable TLS" TLS_DESC "\n"
+           "  " UTF8_ARG "    assume and prefer UTF-8 on the connection\n"
            "  " VER_ARG  "    display the powwow version\n",
            prog);
 #undef HELP_ARG
@@ -272,15 +275,17 @@ int main(int argc, char **argv)
     static const struct option longopts[] = {
         { "help",    no_argument,       NULL, 'h' },
         { "tls",     optional_argument, NULL, 't' },
+        { "utf8",    no_argument,       NULL, 'u' },
         { "version", no_argument,       NULL, 'v' },
         { NULL }
     };
 #endif
+    bool cmdline_utf8 = false;
     for (int c;;) {
 #ifdef HAVE_GETOPT_LONG
-        c = getopt_long(argc, argv, "ht::v", longopts, NULL);
+        c = getopt_long(argc, argv, "ht::uv", longopts, NULL);
 #else
-        c = getopt(argc, argv, "htT:v");
+        c = getopt(argc, argv, "htT:uv");
 #endif
         if (c == -1)
             break;
@@ -302,6 +307,9 @@ int main(int argc, char **argv)
             }
             break;
         }
+        case 'u':
+            cmdline_utf8 = true;
+            break;
         case 'v': {
             printver(true);
             tty_flush();
@@ -311,6 +319,8 @@ int main(int argc, char **argv)
             abort();
         }
     }
+
+    hostinfo.utf8 = cmdline_utf8;
 
     int nargs = argc - optind;
     if (nargs > 2) {
@@ -454,6 +464,10 @@ under certain conditions; type \"#help copyright\" for details.\n"
 	    read_file = true;
     }
 
+    /* the definition file's #host must not override --utf8 */
+    if (cmdline_utf8)
+        hostinfo.utf8 = true;
+
     nargs = argc - optind;
     if (nargs == 2) {
         /* assume last two args are hostname and port number */
@@ -475,7 +489,7 @@ under certain conditions; type \"#help copyright\" for details.\n"
 
     if (*hostinfo.name)
 	tcp_open("main", (*initstr ? initstr : NULL), hostinfo.name,
-                 hostinfo.port, &hostinfo.tlsopt);
+                 hostinfo.port, &hostinfo.tlsopt, hostinfo.utf8);
 
     if (read_file && !*hostinfo.name && *initstr) {
 	parse_instruction(initstr, 0, 0, 1);

@@ -20,6 +20,7 @@
 #include "defines.h"
 #include "main.h"
 #include "log.h"
+#include "tcp.h"
 #include "tty.h"
 #include "list.h"
 #include "utils.h"
@@ -42,6 +43,7 @@ typedef struct logentry {
     enum linetype kind;
     long msecs;			/* millisecs to sleep if kind == SLEEP */
     char *line;			/* pointer to string in "datalist" circular buffer */
+    enum charset cs;		/* charset to write "line" in */
 } logentry;
 
 logentry *loglist;		/* circular (pointer to string) list */
@@ -55,19 +57,41 @@ static int logsize  = 0;	/* size of circular (pointer to string) list */
 static const char *const names[] = { NULL, "line", "prompt", "sleep" };
 
 /*
+ * write ISO 8859-1 text to 'f', encoded as 'cs'
+ */
+static void log_fwrite(const char *str, size_t len, enum charset cs, FILE *f)
+{
+    if (cs == CS_LATIN1) {
+        fwrite(str, 1, len, f);
+        return;
+    }
+    while (len > 0) {
+        char buf[1024];
+        size_t n = MIN2(len, sizeof buf / 2);
+        fwrite(buf, 1, charset_encode(cs, str, n, buf), f);
+        str += n;
+        len -= n;
+    }
+}
+
+/*
  * flush a single buffer line
  */
 static void log_flushline(int i)
 {
-    if (capturefile)
-	fprintf(capturefile, "%s%s",
-		loglist[i].line, loglist[i].kind == LINE ? "\n" : "");
+    const char *line = loglist[i].line;
+    if (capturefile) {
+        log_fwrite(line, strlen(line), loglist[i].cs, capturefile);
+        if (loglist[i].kind == LINE)
+            fputc('\n', capturefile);
+    }
     if (moviefile) {
 	if (loglist[i].msecs)
 	    fprintf(moviefile, "%s %ld\n",
 		    names[SLEEP], loglist[i].msecs);
-	fprintf(moviefile, "%s %s\n",
-		names[loglist[i].kind], loglist[i].line);
+	fprintf(moviefile, "%s ", names[loglist[i].kind]);
+        log_fwrite(line, strlen(line), loglist[i].cs, moviefile);
+        fputc('\n', moviefile);
     }
 }
 
@@ -159,7 +183,8 @@ void log_resize(int newsize)
 /*
  * add a single line to the buffer
  */
-static void log_writeline(const char *line, int len, int kind, long msecs)
+static void log_writeline(const char *line, int len, int kind, long msecs,
+                          enum charset cs)
 {
     int dst;
 
@@ -182,6 +207,7 @@ static void log_writeline(const char *line, int len, int kind, long msecs)
 
     loglist[logend].kind = kind;
     loglist[logend].msecs = msecs;
+    loglist[logend].cs = cs;
 
     if ((dataend = dst + len) == datasize)
 	dataend = 0;
@@ -193,7 +219,7 @@ static void log_writeline(const char *line, int len, int kind, long msecs)
 /*
  * write to #capture / #movie buffer
  */
-void log_write(const char *str, int len, int newline)
+void log_write(const char *str, int len, int newline, enum charset cs)
 {
     char *next;
     long diff;
@@ -216,17 +242,19 @@ void log_write(const char *str, int len, int newline)
 	}
 
 	if (datasize)
-	    log_writeline(str, i, last && !newline ? PROMPT : LINE, diff);
+	    log_writeline(str, i, last && !newline ? PROMPT : LINE, diff, cs);
 	else {
 	    if (moviefile) {
 		if (diff)
 		    fprintf(moviefile, "%s %ld\n",
 			names[SLEEP], diff);
-		fprintf(moviefile, "%s %.*s\n",
-			names[last && !newline ? PROMPT : LINE], i, str);
+		fprintf(moviefile, "%s ",
+			names[last && !newline ? PROMPT : LINE]);
+                log_fwrite(str, i, cs, moviefile);
+                fputc('\n', moviefile);
 	    }
 	    if (capturefile) {
-                fwrite(str, 1, i, capturefile);
+                log_fwrite(str, i, cs, capturefile);
                 if (newline) {
                     fputc('\n', capturefile);
                     newline = 0;
@@ -239,6 +267,19 @@ void log_write(const char *str, int len, int newline)
 	    str = next + 1;
 	}
     } while (next && len > 0);
+}
+
+/*
+ * write a line to the #record file, in the main connection's charset
+ */
+void log_record_line(const char *line)
+{
+    if (!recordfile)
+        return;
+    log_fwrite(line, strlen(line),
+               main_connection ? main_connection->charset : CS_LATIN1,
+               recordfile);
+    fputc('\n', recordfile);
 }
 
 static char reprintlist[BUFSIZE];	/* circular string list */

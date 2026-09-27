@@ -6,6 +6,7 @@
 int process_message(char *buf, int len);
 void cancel_edit(editsess *sp);
 void abort_edit_fd(struct connsess *conn);
+void mpi_identify(struct connsess *conn);
 void message_edit(char *text, int msglen, char view, char builtin);
 void sig_chld_bottomhalf(void);
 

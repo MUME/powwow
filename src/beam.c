@@ -51,6 +51,25 @@ static void write_message(char *s)
 }
 
 /*
+ * identify for remote editing; announce UTF-8 support unless the
+ * connection uses ISO 8859-1
+ */
+void mpi_identify(connsess *conn)
+{
+    static const char latin1[] = MPI "I\n";
+    static const char utf8[] = MPI "I1\n1";
+
+    if (conn->charset == CS_LATIN1) {
+        tcp_raw_write(conn, latin1, sizeof latin1 - 1);
+        conn->flags &= ~IDEDITOR_UTF8;
+    } else {
+        tcp_raw_write(conn, utf8, sizeof utf8 - 1);
+        conn->flags |= IDEDITOR_UTF8;
+    }
+    conn->flags |= IDEDITOR;
+}
+
+/*
  * Process editing protocol message from buf with len remaining chars.
  * Return number of characters used in the message.
  */
@@ -298,7 +317,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
     int tmpfd, i, childpid;
     unsigned int key;
     editsess *s;
-    char *editor, *descr;
+    char *editor, *descr, *title;
     char *args[4];
     int waitforeditor;
 
@@ -358,6 +377,11 @@ void message_edit(char *text, int msglen, char view, char builtin)
     s->key = key;
     s->conn = (view || builtin) ? NULL : current_connection;
     s->cancel = 0;
+    /* the editor gets the title as sent; we display it in ISO 8859-1 */
+    title = my_strdup(descr);
+    if (!builtin && current_connection != NULL
+        && (current_connection->flags & IDEDITOR_UTF8))
+        descr[utf8_to_latin1(descr, strlen(descr))] = '\0';
     s->descr = my_strdup(descr);
     s->file = my_strdup(tmpname);
     free(text);
@@ -394,17 +418,19 @@ void message_edit(char *text, int msglen, char view, char builtin)
     switch(childpid = fork()) {		/* let's get schizophrenic */
       case 0:
 	sprintf(command_str, "%s %s", editor, s->file);
-        setenv("TITLE", s->descr, 1);
+        setenv("TITLE", title, 1);
 	execvp(args[0], args);
 	syserr("execve");
 	break;
       case -1:
 	errmsg("fork");
+	free(title);
 	free(s->descr);
 	free(s->file);
 	free(s);
 	return;
     }
+    free(title);
     s->pid = childpid;
     if (waitforeditor) {
 	while ((i = waitpid(childpid, (int*)NULL, 0)) == -1 && errno == EINTR)

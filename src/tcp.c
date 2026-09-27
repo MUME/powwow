@@ -10,6 +10,7 @@
  *
  */
 
+#include <alloca.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -72,53 +73,150 @@ fd_set fdset;			/* set of descriptors to select() on */
 enum {
     CHARSET_REQUEST = 1,
     CHARSET_ACCEPTED = 2,
-    CHARSET_REJECTED = 3
+    CHARSET_REJECTED = 3,
+    CHARSET_TTABLE_IS = 4,
+    CHARSET_TTABLE_REJECTED = 5,
+    CHARSET_TTABLE_ACK = 6,
+    CHARSET_TTABLE_NAK = 7
 };
 
-static void charset_request_subopt(char *str)
+static void charset_request_subopt(connsess *conn, const char *str,
+                                   size_t len)
 {
-    byte sep = str[0];
-    if (sep == 0)
-        return;
-
-    for (char *start = str + 1; *start; ) {
-        char *end = strchr(start, sep);
-        size_t nlen = end == NULL ? strlen(start) : end - start;
-
-        /* supported charset names; powwow can only do ISO 8859-1 */
-#define N(s) { .str = s, .len = sizeof s - 1 }
-        static const struct {
-            const char *str;
-            size_t len;
-        } csets[] = {
-            N("ISO_8859-1:1987"),
-            N("ISO-8859-1")
-        };
-#undef N
-
-        for (int i = 0; i < sizeof csets / sizeof csets[0]; ++i)
-            if (nlen == csets[i].len
-                && memcmp(start, csets[i].str, nlen) == 0) {
-                static const char head[] = {
-                    IAC, SB, TELOPT_CHARSET, CHARSET_ACCEPTED
-                };
-                tcp_raw_write(current_connection, head, sizeof head);
-
-                tcp_write_escape_iac(current_connection, csets[i].str,
-                                     csets[i].len);
-
-                static const char tail[] = { IAC, SE };
-                tcp_raw_write(current_connection, tail, sizeof tail);
-                return;
-            }
-
-        ++start;
+    /* skip optional "[TTABLE]" and version; we never use translation
+     * tables, but the server may offer them */
+    static const char ttable[] = "[TTABLE]";
+    if (len > sizeof ttable - 1
+        && memcmp(str, ttable, sizeof ttable - 1) == 0) {
+        str += sizeof ttable; /* includes the version octet */
+        len -= sizeof ttable;
     }
 
-    static const char reject[] = {
-        IAC, SB, TELOPT_CHARSET, CHARSET_REJECTED, IAC, SE
+    if (len == 0)
+        return;
+    char sep = *str++;
+    --len;
+
+    /* conn->cs_flags & CS_REQ_PENDING: both sides sent REQUEST; the
+     * server will reject ours, so we answer this one as usual */
+    conn->cs_flags &= ~CS_REQ_PENDING;
+
+    const char *chosen = NULL;
+    size_t chosen_len = 0;
+    int chosen_cs = -1;
+    for (const char *start = str, *end = str + len; start < end; ) {
+        const char *next = memchr(start, sep, end - start);
+        if (next == NULL)
+            next = end;
+        int cs = charset_lookup(start, next - start);
+        if (cs >= 0
+            && (chosen == NULL
+                || (conn->prefer_utf8 && cs == CS_UTF8
+                    && chosen_cs != CS_UTF8))) {
+            chosen = start;
+            chosen_len = next - start;
+            chosen_cs = cs;
+        }
+        start = next + 1;
+    }
+
+    if (chosen == NULL) {
+        static const char reject[] = {
+            IAC, SB, TELOPT_CHARSET, CHARSET_REJECTED, IAC, SE
+        };
+        tcp_raw_write(conn, reject, sizeof reject);
+        return;
+    }
+
+    static const char head[] = {
+        IAC, SB, TELOPT_CHARSET, CHARSET_ACCEPTED
     };
-    tcp_raw_write(current_connection, reject, sizeof reject);
+    tcp_raw_write(conn, head, sizeof head);
+    /* echo the server's spelling of the name */
+    tcp_write_escape_iac(conn, chosen, chosen_len);
+    static const char tail[] = { IAC, SE };
+    tcp_raw_write(conn, tail, sizeof tail);
+
+    tcp_set_charset(conn, chosen_cs, "negotiated");
+}
+
+/* the answer to our own CHARSET REQUEST */
+static void charset_reply_subopt(connsess *conn, byte type,
+                                 const char *str, size_t len)
+{
+    if (!(conn->cs_flags & CS_REQ_PENDING))
+        return;                 /* e.g., rejected after a collision */
+    conn->cs_flags &= ~CS_REQ_PENDING;
+
+    switch (type) {
+    case CHARSET_ACCEPTED: {
+        int cs = charset_lookup(str, len);
+        if (cs < 0)
+            PRINTF("#warning: server accepted unknown charset \"%.*s\"\n",
+                   (int)len, str);
+        else
+            tcp_set_charset(conn, cs, "negotiated");
+        break;
+    }
+    case CHARSET_REJECTED:
+        break;
+    default:
+        PRINTF("#warning: unexpected CHARSET TTABLE message\n");
+        break;
+    }
+}
+
+/*
+ * RFC 2066: a REQUEST may be sent by the side that sent WILL CHARSET
+ * and received DO CHARSET.  We only send one when the server has also
+ * offered WILL CHARSET, and at most once per connection.
+ */
+static void maybe_send_charset_request(connsess *conn)
+{
+    const unsigned char need = CS_SRV_WILL | CS_WILL_SENT | CS_DO_RCVD;
+    if ((conn->cs_flags & need) != need || (conn->cs_flags & CS_REQ_SENT))
+        return;
+
+    static const char head[] = {
+        IAC, SB, TELOPT_CHARSET, CHARSET_REQUEST
+    };
+    static const char utf8_first[] = ";UTF-8;ISO-8859-1;US-ASCII";
+    static const char latin1_first[] = ";ISO-8859-1;UTF-8;US-ASCII";
+    static const char tail[] = { IAC, SE };
+
+    tcp_raw_write(conn, head, sizeof head);
+    if (conn->prefer_utf8)
+        tcp_raw_write(conn, utf8_first, sizeof utf8_first - 1);
+    else
+        tcp_raw_write(conn, latin1_first, sizeof latin1_first - 1);
+    tcp_raw_write(conn, tail, sizeof tail);
+    conn->cs_flags |= CS_REQ_SENT | CS_REQ_PENDING;
+#ifdef TELOPTS
+    tty_printf("[sent SB CHARSET REQUEST %s]\n",
+               conn->prefer_utf8 ? utf8_first : latin1_first);
+#endif
+}
+
+/*
+ * change the charset used on a connection
+ */
+void tcp_set_charset(connsess *conn, enum charset cs, const char *why)
+{
+    /* any partial character is lost */
+    utf8_decoder_reset(&conn->u8dec);
+
+    if (conn->charset == cs)
+        return;
+    conn->charset = cs;
+
+    if (opt_info) {
+        PRINTF("#charset: %s (%s)\n", charset_name(cs), why);
+    }
+
+    /* keep the MPI charset in sync with the connection */
+    if ((conn->flags & IDEDITOR)
+        && !(conn->flags & IDEDITOR_UTF8) != (cs == CS_LATIN1))
+        mpi_identify(conn);
 }
 
 /*
@@ -126,7 +224,7 @@ static void charset_request_subopt(char *str)
  * so far, only terminal type is processed but future extensions are
  * window size, X display location, etc.
  */
-static void dosubopt(byte *str)
+static void dosubopt(connsess *conn, byte *str, size_t len)
 {
     if (str[0] == TELOPT_TTYPE) {
 	if (str[1] == 1) {
@@ -135,25 +233,29 @@ static void dosubopt(byte *str)
 	    tty_printf("[got SB TERMINAL TYPE SEND]\n");
 #endif
             static const char head[] = { IAC, SB, TELOPT_TTYPE, TELQUAL_IS };
-            tcp_raw_write(current_connection, head, sizeof head);
+            tcp_raw_write(conn, head, sizeof head);
 
             const char *term = getenv("TERM");
 	    if (term == NULL)
                 term = "unknown";
-            size_t len = strlen(term);
-            if (len > 256)
-                len = 256;      /* cap to something sensible */
+            size_t tlen = strlen(term);
+            if (tlen > 256)
+                tlen = 256;     /* cap to something sensible */
 
-            tcp_write_escape_iac(current_connection, term, len);
+            tcp_write_escape_iac(conn, term, tlen);
 
             static const char tail[] = { IAC, SE };
-            tcp_raw_write(current_connection, tail, sizeof tail);
+            tcp_raw_write(conn, tail, sizeof tail);
 #ifdef TELOPTS
 	    tty_printf("[sent SB TERMINAL TYPE IS %s]\n", term);
 #endif
 	}
-    } else if (str[0] == TELOPT_CHARSET && str[1] == CHARSET_REQUEST)
-        charset_request_subopt((char *)str + 2);
+    } else if (str[0] == TELOPT_CHARSET && len >= 2) {
+        if (str[1] == CHARSET_REQUEST)
+            charset_request_subopt(conn, (char *)str + 2, len - 2);
+        else
+            charset_reply_subopt(conn, str[1], (char *)str + 2, len - 2);
+    }
 }
 
 /*
@@ -345,6 +447,30 @@ int tcp_unIAC(char *buffer, int len)
 }
 
 /*
+ * store data byte 'c' from the remote host at 'p', converting it from
+ * the connection's charset; returns the new 'p'
+ */
+static byte *put_data(connsess *conn, byte *p, byte c)
+{
+    switch (conn->charset) {
+    case CS_UTF8:
+        return p + utf8_decode_byte(&conn->u8dec, c, (char *)p);
+    case CS_ASCII:
+        *p++ = c < 0x80 ? c : CHARSET_REPLACEMENT;
+        return p;
+    default:
+        *p++ = c;
+        return p;
+    }
+}
+
+/* flush any partial UTF-8 character */
+static byte *flush_data(connsess *conn, byte *p)
+{
+    return p + utf8_decoder_flush(&conn->u8dec, (char *)p);
+}
+
+/*
  * read a maximum of size chars from remote host
  * using the telnet protocol. return chars read.
  */
@@ -357,12 +483,14 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     static int subchars;
     byte *p, *s, *linestart;
 
-    char *ibuffer = buffer;
-    if (state == GOT_R) {
-        /* make room for the leading \r */
-        ++ibuffer;
-        --maxsize;
-    }
+    /*
+     * make room for a leading \r, and for the extra replacement
+     * character output if a partial UTF-8 character is followed by
+     * an invalid byte; see utf8_decode_byte()
+     */
+    int lead = (state == GOT_R) + (conn->u8dec.need != 0);
+    char *ibuffer = (char *)buffer + lead;
+    maxsize -= lead;
 
     while ((i = conn->fns->read(conn, ibuffer, maxsize)) < 0
            && errno == EINTR)
@@ -399,6 +527,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 		state = GOTIAC;
 		break;
 	     case '\r':
+		p = flush_data(conn, p);
 		/* start counting \r, unless just got \n */
 		if (state == NORMAL || state == ALTNORMAL) {
 		    /*
@@ -411,19 +540,21 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 		    state = ALTNORMAL;
 		break;
 	     case '\n':
+		p = flush_data(conn, p);
 		state = GOT_N;
 		*p++ = *s;
 		linestart = p;
 		break;
 	     case '\0':
 		/* skip NULs */
+		p = flush_data(conn, p);
 		break;
 	     default:
 		/* first, flush any missing \r */
 		if (state == GOT_R)
 		  *p++ = '\r';
 
-		*p++ = *s;
+		p = put_data(conn, p, *s);
 
 		/* check for MUME MPI messages: */
 		if (p - linestart == MPILEN && !memcmp(linestart, MPI, MPILEN)) {
@@ -461,12 +592,13 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 		subchars = 0;
 		break;
 	     case IAC:
-		*p++ = IAC;
+		p = put_data(conn, p, IAC);
 		state = old_state;
 		break;
 	     case GA:
 		/* I should handle GA as end-of-prompt marker one day */
 		/* one day has come ;) - Max */
+		p = flush_data(conn, p);
 		prompt_set_iac((char*)p);
 		state = old_state;
 		break;
@@ -501,6 +633,17 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 		tty_special_keys();
 		sendopt(DO, *s);
 		break;
+	     case TELOPT_CHARSET:
+		/* let the server send REQUESTs, and offer to send our own */
+		if (!(conn->cs_flags & CS_SRV_WILL))
+		    sendopt(DO, *s);
+		conn->cs_flags |= CS_SRV_WILL;
+		if (!(conn->cs_flags & CS_WILL_SENT)) {
+		    sendopt(WILL, *s);
+		    conn->cs_flags |= CS_WILL_SENT;
+		}
+		maybe_send_charset_request(conn);
+		break;
 	     default:
 		/* don't accept other options */
 		sendopt(DONT, *s);
@@ -516,6 +659,14 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 	    if (*s == TELOPT_ECHO) {
 		/* host no longer echoes, we do it instead */
 		linemode &= ~LM_NOECHO;
+	    }
+	    if (*s == TELOPT_CHARSET) {
+		/* only acknowledge if it was enabled */
+		if (conn->cs_flags & CS_SRV_WILL)
+		    sendopt(DONT, *s);
+		conn->cs_flags &= ~CS_SRV_WILL;
+		state = old_state;
+		break;
 	    }
 	    /* accept any WONT */
 	    sendopt(DONT, *s);
@@ -539,7 +690,10 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 		tcp_write_tty_size();
 		break;
             case TELOPT_CHARSET:
-                sendopt(WILL, *s);
+                if (!(conn->cs_flags & CS_WILL_SENT))
+                    sendopt(WILL, *s);
+                conn->cs_flags |= CS_WILL_SENT | CS_DO_RCVD;
+                maybe_send_charset_request(conn);
                 break;
 	     default:
 		/* accept nothing else */
@@ -556,6 +710,15 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 	    if (*s == TELOPT_SGA) {
 		linemode &= ~LM_CHAR;
 		tty_special_keys();
+	    }
+	    if (*s == TELOPT_CHARSET) {
+		/* only acknowledge if it was enabled; a refusal of our
+		 * unsolicited WILL needs no answer */
+		if (conn->cs_flags & CS_DO_RCVD)
+		    sendopt(WONT, *s);
+		conn->cs_flags &= ~(CS_WILL_SENT | CS_DO_RCVD | CS_REQ_PENDING);
+		state = old_state;
+		break;
 	    }
 	    sendopt(WONT, *s);
 	    state = old_state;
@@ -577,7 +740,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 		state = GOTSB;
 	    } else if (*s == SE) {
 		subopt[subchars] = '\0';
-		dosubopt(subopt);
+		dosubopt(conn, subopt, subchars);
 		state = old_state;
 	    } else {
 		/* problem! I haven't the foggiest idea of what to do here.
@@ -592,7 +755,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     conn->old_state = old_state;
 
     if (!(current_connection->flags & SPAWN)) {
-        log_write(buffer, (char *)p - (char *)buffer, 0);
+        log_write(buffer, (char *)p - (char *)buffer, 0, conn->charset);
     }
 
     return (char *)p - (char *)buffer;
@@ -691,10 +854,17 @@ void tcp_write(connsess *conn, const char *data)
 
     if (main_connection != NULL && main_connection == conn) {
 	if (linemode & LM_NOECHO)
-	    log_write("", 0, 1); /* log a newline only */
+	    log_write("", 0, 1, conn->charset); /* log a newline only */
 	else
-	    log_write(data, len, 1);
+	    log_write(data, len, 1, conn->charset);
 	reprint_writeline(data);
+    }
+
+    if (conn->charset != CS_LATIN1) {
+        /* no IACs in the result, so the loop below just copies it */
+        char *enc = alloca(2 * len + 1);
+        len = charset_encode(conn->charset, data, len, enc);
+        data = enc;
     }
 
     /* must be AFTER reprint_writeline() */
@@ -823,20 +993,22 @@ void tcp_show(void)
 
     for (i=0; i<conn_max_index; i++)
 	if (CONN_INDEX(i).id && !(CONN_INDEX(i).flags & SPAWN)) {
-	    tty_printf("MUD %sactive %s ##%s\t (%s %d)\n",
+	    tty_printf("MUD %sactive %s ##%s\t (%s %d, %s)\n",
 		       CONN_INDEX(i).flags & ACTIVE ? "   " : "non",
                        (&CONN_INDEX(i) == main_connection
                         ? "(default)" : "         "),
 		       CONN_INDEX(i).id,
-		       CONN_INDEX(i).host, CONN_INDEX(i).port);
+		       CONN_INDEX(i).host, CONN_INDEX(i).port,
+		       charset_name(CONN_INDEX(i).charset));
 	}
     for (i=0; i<conn_max_index; i++)
 	if (CONN_INDEX(i).id && (CONN_INDEX(i).flags & SPAWN)) {
-	    tty_printf("CMD %sactive %s ##%s\t (%s)\n",
+	    tty_printf("CMD %sactive %s ##%s\t (%s, %s)\n",
 		       CONN_INDEX(i).flags & ACTIVE ? "   " : "non",
 		       (&CONN_INDEX(i) == main_connection
                         ? "(default)" : "         "),
-		       CONN_INDEX(i).id, CONN_INDEX(i).host);
+		       CONN_INDEX(i).id, CONN_INDEX(i).host,
+		       charset_name(CONN_INDEX(i).charset));
 	}
 }
 
@@ -889,7 +1061,7 @@ static const struct io_fns tcp_io_fns = {
  * open another connection
  */
 void tcp_open(const char *id, char *initstring, const char *host,
-              int port, const struct tls_options *tlsopt)
+              int port, const struct tls_options *tlsopt, bool utf8)
 {
     if (tcp_count + tcp_attachcount >= MAX_CONNECTS) {
 	PRINTF("#too many open connections.\n");
@@ -935,7 +1107,9 @@ void tcp_open(const char *id, char *initstring, const char *host,
         .old_state = NORMAL,
         .port      = port,
         .fd        = newtcp_fd,
-        .fns       = &tcp_io_fns
+        .fns       = &tcp_io_fns,
+        .prefer_utf8 = utf8,
+        .charset   = utf8 ? CS_UTF8 : CS_LATIN1
     };
 
     if (tlsopt->use_tls && !tls_upgrade(&CONN_INDEX(i), tlsopt)) {
@@ -1136,6 +1310,10 @@ void tcp_spawn(const char *id, char *cmd)
     CONN_INDEX(i).port = 0;
     CONN_INDEX(i).fd = sockets[0];
     CONN_INDEX(i).fns = &tcp_io_fns;
+    CONN_INDEX(i).cs_flags = 0;
+    CONN_INDEX(i).prefer_utf8 = hostinfo.utf8;
+    CONN_INDEX(i).charset = hostinfo.utf8 ? CS_UTF8 : CS_LATIN1;
+    utf8_decoder_reset(&CONN_INDEX(i).u8dec);
 
     FD_SET(sockets[0], &fdset);	       /* add socket to select() set */
     tcp_attachcount++;

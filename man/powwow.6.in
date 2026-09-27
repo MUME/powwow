@@ -51,6 +51,10 @@ assume the host name to be \fIHOST\fR when validating the CA
 certificate
 .RE
 .TP
+\fB\-u\fR, \fB\-\-utf8\fR
+start the connection in UTF-8 and prefer UTF-8 when negotiating the
+character set with the server
+.TP
 \fB\-v\fR, \fB\-\-version\fR
 display the powwow version and exit
 .PP
@@ -79,6 +83,14 @@ finish.
 
 When launched, the editor program will have its TITLE environment
 variable set to the document title sent from the MUD.
+
+.B powwow
+handles text internally as ISO-8859-1.  The connection to the server
+can use ISO-8859-1, UTF-8 or US-ASCII, as negotiated using the telnet
+CHARSET option (RFC 2066) or selected with
+.BR \-\-utf8 .
+Characters that cannot be represented are shown as \[oq]?\[cq].
+Captured, recorded and edited files use the connection's character set.
 
 .SH AUTHOR
 .PP
