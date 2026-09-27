@@ -68,7 +68,7 @@ static void log_fwrite(const char *str, size_t len, enum charset cs, FILE *f)
     while (len > 0) {
         char buf[1024];
         size_t n = MIN2(len, sizeof buf / 2);
-        fwrite(buf, 1, charset_encode(cs, str, n, buf), f);
+        fwrite(buf, 1, latin1_encode(cs, str, n, buf), f);
         str += n;
         len -= n;
     }

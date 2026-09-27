@@ -807,7 +807,7 @@ void tcp_write_escape_iac(connsess *conn, const void *data, size_t len)
 void tcp_write_chars(connsess *conn, const char *data, size_t len)
 {
     char *enc = alloca(2 * len);
-    len = charset_encode(conn->charset, data, len, enc);
+    len = latin1_encode(conn->charset, data, len, enc);
     tcp_write_escape_iac(conn, enc, len);
 }
 
@@ -874,7 +874,7 @@ void tcp_write(connsess *conn, const char *data)
     if (conn->charset != CS_LATIN1) {
         /* no IACs in the result, so the loop below just copies it */
         char *enc = alloca(2 * len + 1);
-        len = charset_encode(conn->charset, data, len, enc);
+        len = latin1_encode(conn->charset, data, len, enc);
         data = enc;
     }
 
