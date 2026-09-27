@@ -1634,12 +1634,7 @@ static void get_user_input(void)
 
     if (linemode & LM_CHAR) {
 	/* char mode. chunk == 1 */
-	while ((i = current_connection->fns->write(
-                    current_connection, c, 1)) < 0
-               && errno == EINTR)
-	    ;
-	if (i != 1)
-	    syserr("write to socket");
+	tcp_write_chars(current_connection, c, 1);
 	if (!(linemode & LM_NOECHO))
 	    tty_putc(*c);
 	last_edit_cmd = (function_str)0;

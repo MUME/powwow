@@ -801,6 +801,17 @@ void tcp_write_escape_iac(connsess *conn, const void *data, size_t len)
 }
 
 /*
+ * send characters typed in character mode: convert them to the
+ * connection's charset and escape IACs, but add no newline
+ */
+void tcp_write_chars(connsess *conn, const char *data, size_t len)
+{
+    char *enc = alloca(2 * len);
+    len = charset_encode(conn->charset, data, len, enc);
+    tcp_write_escape_iac(conn, enc, len);
+}
+
+/*
  * Send current terminal size (RFC 1073)
  */
 void tcp_write_tty_size(void)
