@@ -43,6 +43,7 @@ void redraw_line(char *dummy);
 void redraw_line_noprompt(char *dummy);
 void transpose_words(char *dummy);
 void transpose_chars(char *dummy);
+void suspend_key(char *dummy);
 void kill_to_eol(char *dummy);
 void end_of_line(char *dummy);
 void begin_of_line(char *dummy);

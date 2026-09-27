@@ -180,7 +180,6 @@
 
 typedef unsigned char byte;
 
-typedef void (*function_any) ();	/* generic function pointer */
 
 typedef void (*function_int)(int i);
 

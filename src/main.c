@@ -176,7 +176,7 @@ int now_updated;		   /* current time is up to date */
 vtime start_time;                  /* time of powwow timer startup */
 vtime ref_time;                    /* time corresponding to timer == 0 */
 
-function_any last_edit_cmd;	   /* GH: keep track of for repeated cmds */
+function_str last_edit_cmd;	   /* GH: keep track of for repeated cmds */
 
 clock_t start_clock, cpu_clock;
 
@@ -1491,7 +1491,7 @@ static void get_user_input(void)
 	    syserr("write to socket");
 	if (!(linemode & LM_NOECHO))
 	    tty_putc(*c);
-	last_edit_cmd = (function_any)0;
+	last_edit_cmd = (function_str)0;
     } else if (linemode & LM_NOECHO) {
 	/* sending password (line mode, no echo). chunk == 1 */
 	if ((*c != '\n' && *c != '\r') && edlen < BUFSIZE - 2)
@@ -1507,7 +1507,7 @@ static void get_user_input(void)
 	    typed[nchars = 0] = 0;
 	}
 	edbuf[pos = edlen] = '\0';
-	last_edit_cmd = (function_any)0;
+	last_edit_cmd = (function_str)0;
     } else {
 	/* normal mode (line mode, echo). chunk == BUFSIZE */
 	int done = 0;
@@ -1541,7 +1541,7 @@ static void get_user_input(void)
 		     *     the rest in the input buffer
 		     */
 		    i = 1;
-		    last_edit_cmd = (function_any)0;
+		    last_edit_cmd = (function_str)0;
 		    insert_char(typed[0]);
 		    while (i < nchars) {
 			typed[i - 1] = typed[i];
@@ -1553,7 +1553,7 @@ static void get_user_input(void)
 		    if (flashback)
 			putbackcursor();
 		    p->funct(p->call_data);
-		    last_edit_cmd = (function_any)p->funct; /* GH: keep track of last command */
+		    last_edit_cmd = p->funct; /* GH: keep track of last command */
 		    nchars = 0;
 		}
 	    }

@@ -455,7 +455,7 @@ void tty_add_initial_binds(void)
 {
     struct b_init_node {
 	char *label, *seq;
-	function_any funct;
+	function_str funct;
     };
     static struct b_init_node b_init[] = {
 	{ "LF",		"\n",		enter_line },
@@ -474,7 +474,7 @@ void tty_add_initial_binds(void)
 	{ "C-p",	"\020",		prev_line },
 	{ "C-t",	"\024",		transpose_chars },
 	{ "C-w",	"\027",		to_history },
-	{ "C-z",	"\032",		suspend_powwow },
+	{ "C-z",	"\032",		suspend_key },
 	{ "M-Tab",	"\033\t",	complete_line },
 	{ "M-b",	"\033b",	prev_word },
 	{ "M-d",	"\033d",	del_word_right },

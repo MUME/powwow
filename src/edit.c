@@ -63,7 +63,7 @@ edit_function internal_functions[] = {
     {"&kill-to-eol", kill_to_eol, },
     {"&transpose", transpose_chars, },
     {"&transpose-words", transpose_words, },
-    {"&suspend", (function_str)suspend_powwow, }, /* yep, it's an hack */
+    {"&suspend", suspend_key, },
     {"&del-word-left", del_word_left, },
     {"&del-word-right", del_word_right, },
     {"&prev-word", prev_word, },
@@ -310,6 +310,14 @@ void transpose_words(char *dummy)
 }
 
 /*
+ * suspend powwow (key binding)
+ */
+void suspend_key(char *dummy)
+{
+    suspend_powwow(0);
+}
+
+/*
  * transpose two characters to the left
  */
 void transpose_chars(char *dummy)
@@ -492,7 +500,7 @@ void complete_word(char *dummy)
     int k, n;
 
     /* find word start */
-    if (last_edit_cmd == (function_any)complete_word && comp_len) {
+    if (last_edit_cmd == complete_word && comp_len) {
 	k = comp_len;
 	input_moveto(pos - k);
 	n = pos - root_len;
@@ -552,7 +560,7 @@ void complete_line(char *dummy)
     static int curr_line = MAX_HIST-1, root_len = 0, first_line = 0;
     int i;
 
-    if (last_edit_cmd != (function_any)complete_line) {
+    if (last_edit_cmd != complete_line) {
 	root_len = edlen;
 	first_line = curr_line = curline;
     }
@@ -777,7 +785,7 @@ void upcase_word(char *dummy)
     int opos = pos;
     int npos = pos;
 
-    if (last_edit_cmd == (function_any)upcase_word)
+    if (last_edit_cmd == upcase_word)
 	npos = 0;
     else {
 	while (npos > 0 && IS_DELIM(edbuf[npos])) npos--;
@@ -785,7 +793,7 @@ void upcase_word(char *dummy)
     }
     input_moveto(npos);
     while (!IS_DELIM(edbuf[npos]) ||
-	   (last_edit_cmd == (function_any)upcase_word && edbuf[npos]))
+	   (last_edit_cmd == upcase_word && edbuf[npos]))
 	input_overtype_follow(toupper(edbuf[npos++]));
     input_moveto(opos);
 }
@@ -798,7 +806,7 @@ void downcase_word(char *dummy)
     int opos = pos;
     int npos = pos;
 
-    if (last_edit_cmd == (function_any)downcase_word)
+    if (last_edit_cmd == downcase_word)
 	npos = 0;
     else {
 	while (npos > 0 && IS_DELIM(edbuf[npos])) npos--;
@@ -806,7 +814,7 @@ void downcase_word(char *dummy)
     }
     input_moveto(npos);
     while (!IS_DELIM(edbuf[npos]) ||
-	   (last_edit_cmd == (function_any)downcase_word && edbuf[npos])) {
+	   (last_edit_cmd == downcase_word && edbuf[npos])) {
 	input_overtype_follow(tolower(edbuf[npos++]));
     }
     input_moveto(opos);
