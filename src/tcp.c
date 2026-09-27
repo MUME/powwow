@@ -1030,6 +1030,13 @@ void tcp_close(const char *id)
 	tcp_attachcount--;
     else
 	tcp_count--;
+    conn->flags = 0;
+    conn->state = NORMAL;
+    conn->old_state = NORMAL;
+    conn->port = 0;
+    free(conn->host); conn->host = NULL;
+    free(conn->id);   conn->id = NULL;
+    free(conn->fragment); conn->fragment = NULL;
 
     /* recalculate conn_max_index */
     int i = conn - conn_list;
