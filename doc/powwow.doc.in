@@ -1640,7 +1640,8 @@ INLINE CALCULATOR:
 	  .? number of chars in a string
 	  :? number of words in a string
 	   ? position of first occurrence of second string in the first
-	   * convert first char of a string into its ASCII code or vice versa
+	   * convert first char of a string into its Unicode code point
+	     or vice versa: *"\351" gives 233, *8364 gives the euro sign
 	   % convert string into its numeric value or vice versa
 
 	operators between a string and a number:
@@ -1662,6 +1663,10 @@ INLINE CALCULATOR:
 	     >: n     last n words
 
 	     and similarly for .< .> <. >.
+
+	  Characters are counted as Unicode code points: .?"caf\351" is
+	  4, and an accent written as a separate combining character
+	  counts as a character of its own.
 
 	  *  repeat a string n times: "ab" * 3 gives "ababab"
 	  *= usual shortcut: `$x *= n' is the same as `$x = $x * n'

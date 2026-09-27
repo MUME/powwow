@@ -34,6 +34,7 @@
 #include "tty.h"
 #include "edit.h"
 #include "eval.h"
+#include "charset.h"
 
 #ifdef USE_RANDOM
 #  define get_random random
@@ -797,6 +798,9 @@ static int exe_op(operator *op)
 
 	srclen = ptrlen(src);
 	ssrc = ptrdata(src);
+	/* the point operators count characters, not bytes */
+	int nchars = utf8_count(ssrc, srclen);
+#define BYTES(n) ((int)utf8_offset(ssrc, srclen, (n)))
 
 	switch ((int)*op) {
 	  case (int)colon_less:
@@ -884,36 +888,35 @@ static int exe_op(operator *op)
 			      ptrlen(start) - (ssrc+srclen+1 - ptrdata(start)));
 	    break;
 	  case (int)point:
-	    j = o2.num <= srclen ? o2.num-1 : srclen;
-	    dst = ptrmcpy(dst, ssrc+j, 1);
+	    j = BYTES(o2.num <= nchars ? o2.num-1 : nchars);
+	    dst = ptrmcpy(dst, ssrc+j, BYTES(o2.num <= nchars ? o2.num : nchars) - j);
 	    break;
 	  case (int)point_less:
-	    j = o2.num < srclen ? o2.num : srclen;
+	    j = BYTES(o2.num < nchars ? o2.num : nchars);
 	    if (danger)
 		ptrtrunc(dst, j);
 	    else
 		dst = ptrmcpy(dst, ssrc, j);
 	    break;
 	  case (int)less_point:
-	    j = srclen-o2.num+1;
-	    if (j < 0)
-		j = 0;
+	    j = nchars-o2.num+1;
+	    j = j < 0 ? 0 : BYTES(j);
 	    if (danger)
 		ptrtrunc(dst, j);
 	    else
 		dst = ptrmcpy(dst, ssrc, j);
 	    break;
 	  case (int)point_greater:
-	    j = o2.num-1 < srclen ? o2.num-1 : srclen;
+	    j = BYTES(o2.num-1 < nchars ? o2.num-1 : nchars);
 	    dst = ptrmcpy(dst, ssrc+j, srclen-j);
 	    break;
 	  case (int)greater_point:
-	    j = srclen-o2.num;
-	    if (j < 0)
-		j = 0;
+	    j = nchars-o2.num;
+	    j = j < 0 ? 0 : BYTES(j);
 	    dst = ptrmcpy(dst, ssrc+j, srclen-j);
 	    break;
 	}
+#undef BYTES
 	check_delete(&o2);
 	o1.txt = dst;
 	if (!REAL_ERROR) {
@@ -965,7 +968,7 @@ static int exe_op(operator *op)
 	    }
 	}
 	else
-	    o1.num=srclen;
+	    o1.num=utf8_count(ssrc, srclen);
 
 	check_delete(&o1);
 	o1.type=TYPE_NUM;
@@ -992,7 +995,7 @@ static int exe_op(operator *op)
 
 	if (!error) {
 	    if ((ssrc = ptrfind(src, dst)))
-		i = (int)(ssrc - ptrdata(src)) + 1;
+		i = (int)utf8_count(ptrdata(src), ssrc - ptrdata(src)) + 1;
 	    else
 		i = 0;
 	    o1.type = TYPE_NUM;
@@ -1119,8 +1122,11 @@ static int exe_op(operator *op)
 		sprintf(buf, "%ld", o1.num);
 		o1.txt = ptrmcpy(o1.txt, buf, strlen(buf));
 	    } else {
-		char buf = (char)o1.num;
-		o1.txt = ptrmcpy(o1.txt, &buf, 1);
+		/* character with that code point */
+		char buf[UTF8_MAX];
+		uint32_t cp = o1.num < 0 || o1.num > 0x10ffff
+		    ? UNICODE_REPLACEMENT : (uint32_t)o1.num;
+		o1.txt = ptrmcpy(o1.txt, buf, utf8_put(cp, buf));
 	    }
 	    if (REAL_ERROR) break;
 	    o1.type = TYPE_TXT;
@@ -1133,9 +1139,12 @@ static int exe_op(operator *op)
 		else
 		    o1.num = 0;
 	    } else {
-		if (o1.txt && ptrlen(o1.txt))
-		    o1.num = (long)(byte)*ptrdata(o1.txt);
-		else
+		if (o1.txt && ptrlen(o1.txt)) {
+		    /* code point of the first character */
+		    uint32_t cp;
+		    utf8_get(ptrdata(o1.txt), ptrlen(o1.txt), &cp);
+		    o1.num = cp;
+		} else
 		    o1.num = 0;
 	    }
 	    check_delete(&o1);
