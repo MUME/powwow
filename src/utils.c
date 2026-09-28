@@ -104,7 +104,7 @@ int printstrlen(char *s)
             break;
 
 	 case BRACKET:
-            if (isalpha(*s))
+            if (is_csi_final(*s))
 	      state = NORM;
             break;
         }
@@ -570,7 +570,7 @@ static void wrap_print(char *s)
                     break;
 
                 case BRACKET:
-                    if (isalpha(c))
+                    if (is_csi_final(c))
                         state = NORM;
                     break;
             }

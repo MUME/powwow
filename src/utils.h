@@ -3,6 +3,16 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
+/*
+ * is 'c' the final byte of a control sequence (ESC [ ... final), as
+ * opposed to a parameter or intermediate byte? (ECMA-48; independent
+ * of the locale, unlike isalpha())
+ */
+static inline bool is_csi_final(unsigned char c)
+{
+    return c >= 0x40 && c <= 0x7e;
+}
+
 char *my_strdup(const char *s);
 char *my_strncpy(char *dst, const char *src, int len);
 int  printstrlen(char *s);

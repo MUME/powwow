@@ -113,16 +113,20 @@ int lookup_edit_function(function_str funct)
 /* return pointer to any unterminated escape code at the end of s */
 static char *find_partial_esc(char *s)
 {
-    size_t len = strlen(s);
-    char *end = s + len;
-    while (end > s) {
-        char c = *--end;
-        if (c == '\033')
-            return end;
-        if (isalpha(c))
-            return NULL;
-    }
-    return NULL;
+    char *esc = strrchr(s, '\033');
+    if (esc == NULL)
+        return NULL;
+
+    unsigned char *p = (unsigned char *)esc + 1;
+    if (*p == '\0')
+        return esc;             /* lone ESC */
+    if (*p != '[')
+        return NULL;            /* two-character escape */
+    /* control sequence: parameter and intermediate bytes, then a
+     * final byte */
+    for (++p; *p >= 0x20 && *p <= 0x3f; ++p)
+        ;
+    return *p == '\0' ? esc : NULL;
 }
 
 /*
