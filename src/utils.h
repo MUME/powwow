@@ -7,6 +7,12 @@ char *my_strdup(const char *s);
 char *my_strncpy(char *dst, const char *src, int len);
 int  printstrlen(char *s);
 
+void sgr_output_sync(void);
+void sgr_output(const char *s, size_t len);
+void sgr_prompt_start(void);
+void sgr_prompt_draw(void);
+void sgr_prompt_commit(const char *prompt, size_t len);
+
 void ptrunescape(ptr p);
 int  memunescape(char *p, int lenp);
 

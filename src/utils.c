@@ -41,6 +41,7 @@
 #include "eval.h"
 #include "log.h"
 #include "tls.h"
+#include "sgr.h"
 
 enum {
     SAVEFILEVER = 7,            /* current version */
@@ -596,6 +597,55 @@ static void wrap_print(char *s)
 }
 
 /*
+ * Graphic rendition (colors etc.) of the text from the MUD:
+ * sgr_stream is in effect after the last text printed for good, and
+ * sgr_prompt where the current prompt starts.  Drawing a prompt, which
+ * may be erased and redrawn later, may change the terminal's rendition;
+ * then sgr_dirty is set, and the rendition is restored before printing
+ * more text.
+ */
+static struct sgr_state sgr_stream, sgr_prompt;
+static bool sgr_dirty;
+
+/* restore the rendition of the text from the MUD, if needed */
+void sgr_output_sync(void)
+{
+    if (!sgr_dirty)
+        return;
+    tty_puts(tty_modenorm);
+    tty_puts(sgr_stream.seq);
+    sgr_dirty = false;
+}
+
+/* text from the MUD was printed */
+void sgr_output(const char *s, size_t len)
+{
+    sgr_apply(&sgr_stream, s, len);
+}
+
+/* a prompt starts at the current position of the text from the MUD */
+void sgr_prompt_start(void)
+{
+    sgr_prompt = sgr_stream;
+}
+
+/* the prompt is about to be drawn: restore the rendition at its start */
+void sgr_prompt_draw(void)
+{
+    tty_puts(tty_modenorm);
+    tty_puts(sgr_prompt.seq);
+    sgr_dirty = true;
+}
+
+/* the prompt stays on screen: the text from the MUD continues after it */
+void sgr_prompt_commit(const char *prompt, size_t len)
+{
+    sgr_stream = sgr_prompt;
+    sgr_apply(&sgr_stream, prompt, len);
+    sgr_dirty = true;
+}
+
+/*
  * add marks to line and print.
  * if newline, also print a final \n
  */
@@ -614,6 +664,8 @@ void smart_print(char *line, char newline)
 
 	buf = ptrdata(ptrbuf);
 
+	sgr_output_sync();
+	sgr_output(buf, ptrlen(ptrbuf));
 	if (opt_wrap)
 	    wrap_print(buf);
 	else {

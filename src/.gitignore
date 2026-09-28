@@ -3,3 +3,6 @@
 /powwow
 /powwow-movieplay
 /powwow-muc
+*.log
+*.trs
+/test_sgr

@@ -830,6 +830,8 @@ static int grab_prompt(char *linestart, int len, int islast)
     char *p;
     int is_iac_prompt = surely_isprompt = 0;
 
+    sgr_prompt_start();
+
     /* recognize IAC GA as end-of-prompt marker */
     if ((current_connection->flags & IDPROMPT)) {
 	if ((p = prompt_get_iac()) && p > linestart && p <= linestart+len)
@@ -942,6 +944,7 @@ static void process_singleline(char **pbuf, int *psize)
 	 */
 	if (surely_isprompt && promptlen && prompt_status == 1) {
 	    draw_prompt(); tty_putc('\n'); col0 = 0;
+	    sgr_prompt_commit(promptstr, promptlen);
 	}
 	surely_isprompt = 0;
 	promptzero();
@@ -1003,6 +1006,9 @@ static int process_first_fragment(char *buf, int got)
     if (*buf == '\n') {
 	char deleteprompt = 0, matched = 0;
 
+	/* the text from the MUD continues after the prompt */
+	sgr_prompt_commit(promptstr, promptlen);
+
 	if (opt_compact) {
 	    /* in compact mode, skip the first \n */
 	    deleteprompt = 1;
@@ -1058,6 +1064,7 @@ static int process_first_fragment(char *buf, int got)
 	    clear_input_line(opt_compact);
 	    if (!spinning && !opt_compact)
 		tty_putc('\n'), col0 = 0;
+	    sgr_prompt_commit(promptstr, promptlen);
 	    promptzero();
        	} else {
 	    ptr *pp, p = (ptr)0;
@@ -1224,6 +1231,8 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
     if (linemode & LM_CHAR) {
 	/* char-by-char mode: just display output, no fuss */
 	clear_input_line(0);
+	sgr_output_sync();
+	sgr_output(buf, got);
 	tty_puts(buf);
 	return;
     }

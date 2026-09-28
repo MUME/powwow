@@ -144,6 +144,7 @@ void draw_prompt(void)
         esc = find_partial_esc(pstr);
         if (esc)
             *esc = 0;
+        sgr_prompt_draw();
         tty_puts(pstr);
 	col0 = printstrlen(pstr);
         if (esc)
