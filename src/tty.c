@@ -151,7 +151,9 @@ static struct {
     char      data[4096];           /* buffer for pending data */
     size_t    used;                 /* bytes used of data */
     int       fd;                   /* file descriptor to write to */
-} tty_write_state;
+} tty_write_state = {
+    .fd = 1                         /* also before tty_start() */
+};
 #endif  /* USE_LOCALE */
 
 #ifdef USE_SGTTY
@@ -207,7 +209,6 @@ void tty_start(void)
     tty_flush();
 
 #ifdef USE_LOCALE
-    tty_write_state.fd = 1;
     if (wcrtomb(NULL, L'\0', &tty_write_state.mbstate) == (size_t)-1) {
         perror("wcrtomb()");
         abort();
