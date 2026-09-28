@@ -1,12 +1,11 @@
 .\" -*-nroff-*-
-.TH POWWOW 6 "April 2025" "powwow @PACKAGE_VERSION@"
+.TH POWWOW 6 2026-09-28 "powwow @PACKAGE_VERSION@"
 .SH NAME
 powwow \- telnet protocol client for MUD playing
 .SH SYNOPSIS
 .B powwow
 .RI "[" options "] [" definition-file "] [" host " " port "]"
 .SH DESCRIPTION
-.PP
 .B powwow
 is a client program that implements the telnet protocol, adding some
 bells and whistles to the standard
@@ -17,73 +16,57 @@ such as
 .PP
 .B powwow
 is either invoked with
-.i host
+.I host
 and
-.i port,
+.IR port ,
 and then does not save any definitions, or with a
-.i definition-file,
+.IR definition-file ,
 which is supposed to contain various definitions as well as the name
 of the host and the port number.  If the definition-file does not
 exist, the user is prompted for the host name and port number which
 are saved in the new file.  The definition file can be edited with any
 text editor, and is updated whenever a definition (action, alias,
-etc.) is changed.  If the environment variable POWWOWDIR is defined,
+etc.) is changed.  If the environment variable
+.B POWWOWDIR
+is defined,
 .B powwow
 will look there first for definition files (and create new ones
 there).
-
-Available options:
-
-.TP
-\fB\-h\fR, \fB\-\-help\fR
-display help text and exit
-.TP
-\fB\-\-tls\fR[=\fItls-options\fR]
-enable encrypted TLS connections; additional \fItls-options\fR,
-separated by colons (\[oq]:\[cq]), are:
-.RS
-.TP
-.B no-verify
-do not validate the CA certificate
-.TP
-.B host=\fIHOST\fR
-assume the host name to be \fIHOST\fR when validating the CA
-certificate
-.RE
-.TP
-\fB\-u\fR, \fB\-\-utf8\fR
-start the connection in UTF-8 and prefer UTF-8 when negotiating the
-character set with the server
-.TP
-\fB\-v\fR, \fB\-\-version\fR
-display the powwow version and exit
 .PP
 Lines that begin with \[oq]#\[cq] are assumed to be special commands
 to be processed locally.  Help is available with the
 .I #help
-command.  There is also a more detailed manual somewhere.  Notably,
+command; the complete manual is the file
+.IR powwow.doc ,
+installed in the same directory as the help text.  Notably,
 semicolons (\[oq];\[cq]) separate commands on a single line.  To send
-a literal semicolon, prefix it with a backslash: \[oq]\\\;\[cq].
-
+a literal semicolon, prefix it with a backslash: \[oq]\e;\[cq].
+.PP
 .B powwow
 also supports the MUME editing protocol for editing texts locally.
 The name of the editor is taken from the environment variable
-POWWOWEDITOR or EDITOR.
+.B POWWOWEDITOR
+or
+.BR EDITOR ;
 .BR vi (1)
-is used by default.  For text viewing, POWWOWPAGER is searched, then
-PAGER and
+is used by default.  For text viewing,
+.B POWWOWPAGER
+is searched, then
+.B PAGER
+and
 .BR more (1)
 is used by default.
-
+.PP
 If the first character of the editor is \[oq]&\[cq] (which is then
 skipped), the editor is assumed to run in another window and
-.I powwow
+.B powwow
 will run concurrently with the editor without waiting for it to
 finish.
-
-When launched, the editor program will have its TITLE environment
-variable set to the document title sent from the MUD.
-
+.PP
+When launched, the editor program will have its
+.B TITLE
+environment variable set to the document title sent from the MUD.
+.PP
 .B powwow
 handles text internally as Unicode (UTF-8), and converts it to and
 from the character set of the terminal's locale.  The connection to the
@@ -95,38 +78,49 @@ are shown or sent as \[oq]?\[cq].
 Captured, recorded and edited files use the connection's character set;
 definition files are UTF-8, and older ISO-8859-1 ones are converted when
 loaded.
-
-.SH AUTHOR
-.PP
-Massimiliano Ghilardi <max@Linuz.sns.it> and Gustav H\[oa]llberg are
-the people that added many new features to an existing client,
-.I Cancan
-and transformed it into
-.IR powwow .
-Mattias Engdeg\[oa]rd (f91-men@nada.kth.se) was the original author of
-Cancan but many other people have contributed at least as much,
-including Finn Arne Gangstad (finnag@pvv.unit.no), David Gay
-(dgay@di.epfl.ch), Gary Dezern (gdezern@satelnet.org) and Lai-Chang
-Woo (vivriel@scs.com.sg).
-
-.I powwow
-moved to hoopajoo.net in 2005, and is now maintained by Steve Slaven
-<bpk@hoopajoo.net>, please send bug reports and patches to that
-address.
-
-The
-.I powwow
-WWW page is: http://hoopajoo.net/projects/powwow.html
-
-.I powwow
-was originally inspired by Peter Unold's
-.I Tintin
-client, but now only bears a very remote resemblance to the original.
-It aims to be a simple but very interactive client, and contains
-features that are interesting for \[lq]immortal\[rq] players, in
-particular on MUME, though any mud player should benefit from
-.I powwow
-as well.
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+display help text and exit
+.TP
+\fB\-\-tls\fR[=\fItls-options\fR]
+enable encrypted TLS connections; additional
+.IR tls-options ,
+separated by colons (\[oq]:\[cq]), are:
+.RS
+.TP
+.B no-verify
+do not validate the CA certificate
+.TP
+.BI host= HOST
+assume the host name to be
+.I HOST
+when validating the CA certificate
+.RE
+.TP
+.BR \-u ", " \-\-utf8
+start the connection in UTF-8 and prefer UTF-8 when negotiating the
+character set with the server
+.TP
+.BR \-v ", " \-\-version
+display the
+.B powwow
+version and exit
+.SH ENVIRONMENT
+.TP
+.B TERM
+Your terminal type.
+.TP
+.B POWWOWDIR
+Where
+.B powwow
+will store and search for its files by default.
+.TP
+.BR POWWOWEDITOR " or " EDITOR
+Name of editor to use.
+.TP
+.BR POWWOWPAGER " or " PAGER
+Name of pager to use.
 .SH FILES
 .TP \w'$\[lC]POWWOWDIR\[rC]/*\ \ \ 'u
 powwow
@@ -134,29 +128,66 @@ The binary.
 .TP
 $\[lC]POWWOWDIR\[rC]/*
 Definition files for aliases, etc.
-.SH ENVIRONMENT
-.TP
-.B TERM
-Your terminal type.
-.TP
-.B POWWOWDIR
-Where powwow will store and search for its files by default.
-.TP
-.BR POWWOWEDITOR " or " EDITOR
-Name of editor to use.
-.TP
-.BR POWWOWPAGER " or " PAGER
-Name of pager to use.
-.SH SEE ALSO
-.BR telnet "(1), " more "(1), " vi (1)
 .SH DIAGNOSTICS
-Most diagnostics are self-explanatory.  Some are even more
-self-explanatory than others, namely those who crash the program.
-There is a diagnostic report called \[oq]core\[cq] which is not
-currently in human-readable form.  The messages from
-.I powwow
-are generally prefixed with a \[oq]#\[cq] to separate them from output
-from the remote host.
+Messages from
+.B powwow
+are prefixed with a \[oq]#\[cq] to separate them from the output
+of the remote host.
 .SH BUGS
+Report bugs and send patches to the maintainer; see
+.BR AUTHORS .
+.SH AUTHORS
+.MT max@Linuz.sns.it
+Massimiliano Ghilardi
+.ME
+and Gustav H\[oa]llberg are the people that added many new features
+to an existing client,
+.B Cancan
+and transformed it into
+.BR powwow .
+.MT f91-men@nada.kth.se
+Mattias Engdeg\[oa]rd
+.ME
+was the original author of Cancan but many other people have
+contributed at least as much, including
+.MT finnag@pvv.unit.no
+Finn Arne Gangstad
+.ME ,
+.MT dgay@di.epfl.ch
+David Gay
+.ME ,
+.MT gdezern@satelnet.org
+Gary Dezern
+.ME
+and
+.MT vivriel@scs.com.sg
+Lai-Chang Woo
+.ME .
 .PP
-Are you kidding?
+.B powwow
+moved to hoopajoo.net in 2005, and is now maintained by
+.MT bpk@hoopajoo.net
+Steve Slaven
+.ME ;
+please send bug reports and patches to that address.
+.PP
+.UR http://hoopajoo.net/projects/powwow.html
+The
+.B powwow
+WWW page
+.UE
+has more information.
+.PP
+.B powwow
+was originally inspired by Peter Unold's
+.I Tintin
+client, but now only bears a very remote resemblance to the original.
+It aims to be a simple but very interactive client, and contains
+features that are interesting for \[lq]immortal\[rq] players, in
+particular on MUME, though any mud player should benefit from
+.B powwow
+as well.
+.SH SEE ALSO
+.BR telnet (1),
+.BR more (1),
+.BR vi (1)
