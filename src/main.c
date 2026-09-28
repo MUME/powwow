@@ -1321,7 +1321,12 @@ static void common_clear(int newline)
  */
 static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
 {
-    char buffer[BUFSIZE + 2];        /* allow for a terminating \0 later */
+    /*
+     * tcp_read() stores up to three bytes of UTF-8 per byte read;
+     * make room for reading BUFSIZE bytes at a time.  Allow for a
+     * terminating \0 later.
+     */
+    char buffer[TCP_READ_EXPANSION * BUFSIZE + 2];
     char *buf = buffer, *newline;
     int got, otcp_fd, i;
 
@@ -1340,7 +1345,7 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
     } else
 	i = 0;
 
-    got = tcp_read(current_connection, buf, BUFSIZE - i);
+    got = tcp_read(current_connection, buf, TCP_READ_EXPANSION * BUFSIZE - i);
     if (!got)
 	return;
     if (!FD_ISSET(current_connection->fd, fdset)

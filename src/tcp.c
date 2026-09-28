@@ -481,7 +481,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
      * leave room for a pending \r and a pending partial character
      */
     assert(maxsize >= TCP_READ_MIN);
-    maxsize = (maxsize - 1 - CHARSET_DECODE_MAX) / 3;
+    maxsize = (maxsize - 1 - CHARSET_DECODE_MAX) / TCP_READ_EXPANSION;
     if (maxsize > sizeof rawbuf)
         maxsize = sizeof rawbuf;
 

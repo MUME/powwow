@@ -90,6 +90,8 @@ extern fd_set fdset;               /* set of descriptors to select() on */
 
 /* smallest useful maxsize for tcp_read() */
 #define TCP_READ_MIN 64
+/* tcp_read() stores up to about this many bytes per byte read */
+#define TCP_READ_EXPANSION 3
 int  tcp_read(connsess *conn, void *buffer, size_t maxsize);
 void tcp_raw_write(connsess *conn, const void *data, size_t len);
 void tcp_write_escape_iac(connsess *conn, const void *data, size_t len);
