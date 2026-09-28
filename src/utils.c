@@ -92,6 +92,9 @@ int printstrlen(char *s)
                 state = ESCAPE;
             } else if ((*s & 0x80) || *s >= ' ') {
                 l++;
+            } else if (*s == '\b') {
+                if (l > 0)
+                    l--;
             } else if (*s == '\r')
 		l = (l / cols) * cols;
             break;
@@ -552,6 +555,9 @@ static void wrap_print(char *s)
                     }else if ((c & 0x80) || (c >= ' ' && c <= '~')) {
                         /* if char is hi (128+) or printable */
                         m++, l--;
+                    }else if (c == '\b') {
+                        if (m > 0)
+                            m--, l++;
                     }else if (c == '\r') {
                         ls = lp = NULL;
                         m = 0;
@@ -627,6 +633,12 @@ void sgr_output(const char *s, size_t len)
 void sgr_prompt_start(void)
 {
     sgr_prompt = sgr_stream;
+}
+
+/* the rendition where the prompt starts */
+const char *sgr_prompt_base(void)
+{
+    return sgr_prompt.seq;
 }
 
 /* the prompt is about to be drawn: restore the rendition at its start */

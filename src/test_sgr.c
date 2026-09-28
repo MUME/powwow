@@ -50,6 +50,20 @@ int main(void)
     check("incomplete", E "[1m" E "[3", E "[1m");
     check("full reset", E "[1m" E "c", "");
 
+    /* the reset flag */
+    struct sgr_state rs;
+    sgr_reset(&rs);
+    sgr_apply(&rs, E "[1m", 4);
+    if (rs.reset) {
+        printf("FAIL reset flag set without a reset\n");
+        ++failures;
+    }
+    sgr_apply(&rs, E "[0;4m", 6);
+    if (!rs.reset || strcmp(rs.seq, E "[4m") != 0) {
+        printf("FAIL reset flag not set after a reset\n");
+        ++failures;
+    }
+
     /* overflow drops the oldest sequences */
     char big[4096] = "";
     for (int i = 0; i < 100; ++i)

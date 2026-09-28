@@ -17,6 +17,15 @@ void sgr_reset(struct sgr_state *st)
 {
     st->len = 0;
     st->seq[0] = '\0';
+    st->reset = 0;
+}
+
+/* a reset sequence was seen */
+static void sgr_clear(struct sgr_state *st)
+{
+    st->len = 0;
+    st->seq[0] = '\0';
+    st->reset = 1;
 }
 
 /* append "ESC [ params m", dropping the oldest sequences if needed */
@@ -79,7 +88,7 @@ static void sgr_params(struct sgr_state *st, const char *params, size_t plen)
     }
 
     if (after_reset) {
-        sgr_reset(st);
+        sgr_clear(st);
         if (after_reset < end)
             sgr_append(st, after_reset, end - after_reset);
     } else {
@@ -97,7 +106,7 @@ void sgr_apply(struct sgr_state *st, const char *s, size_t len)
             return;
         s = esc + 1;
         if (*s == 'c') {
-            sgr_reset(st);      /* full reset */
+            sgr_clear(st);      /* full reset */
             continue;
         }
         if (*s != '[')

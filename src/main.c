@@ -63,6 +63,7 @@
 #include "tls.h"
 #include "tty.h"
 #include "utils.h"
+#include "sgr.h"
 
 #ifdef USE_LOCALE
   #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fr\363r, D\341in"
@@ -778,51 +779,178 @@ static char *prompt_get_iac(void)
 }
 
 
-/* compute the effective prompt string; may end in \b* or \r */
+/* append 'len' bytes to the buffer at *buf of *size bytes, *used used */
+static void buf_add(char **buf, size_t *used, size_t *size,
+                    const char *s, size_t len)
+{
+    if (*used + len + 1 > *size) {
+        *size = 2 * (*used + len + 1);
+        *buf = realloc(*buf, *size);
+        if (*buf == NULL) {
+            *used = *size = 0;
+            return;
+        }
+    }
+    memcpy(*buf + *used, s, len);
+    *used += len;
+    (*buf)[*used] = '\0';
+}
+
+/*
+ * append the SGR sequences that change the rendition from 'from' to
+ * 'to'; both are relative to 'base', the rendition where the prompt
+ * starts
+ */
+static void sgr_transition(char **buf, size_t *used, size_t *size,
+                           const struct sgr_state *from,
+                           const struct sgr_state *to, const char *base)
+{
+    static const char reset[] = "\033[0m";
+
+    if (to->reset == from->reset && to->len >= from->len
+        && memcmp(to->seq, from->seq, from->len) == 0) {
+        /* just more sequences */
+        buf_add(buf, used, size, to->seq + from->len, to->len - from->len);
+        return;
+    }
+    buf_add(buf, used, size, reset, sizeof reset - 1);
+    if (!to->reset)
+        buf_add(buf, used, size, base, strlen(base));
+    buf_add(buf, used, size, to->seq, to->len);
+}
+
+/*
+ * compute the effective prompt string, which may end in \b* or \r:
+ * emulate the terminal for \b, \r and ESC [ K, where escape sequences
+ * take no room on screen and characters keep the rendition (colors
+ * etc.) they were written with
+ */
 static void effective_prompt(void)
 {
-    char *const pstr = promptstr;
-    char *dst = pstr;
+    const char *const pstr = promptstr;
     const size_t len = promptlen;
-    size_t pos = 0, maxpos = 0, p;
-    for (p = 0; p < len; ++p) {
+
+    size_t k;
+    for (k = 0; k < len; ++k)
+        if (pstr[k] == '\b' || pstr[k] == '\r'
+            || (pstr[k] == '\033' && len - k >= 3
+                && pstr[k + 1] == '[' && pstr[k + 2] == 'K'))
+            break;
+    if (k == len)
+        return;                 /* nothing to emulate */
+
+    struct cell {
+        char   c;
+        int    attr;            /* index into attrs */
+        char  *other;           /* other escapes and controls before c */
+    } *cells = calloc(len, sizeof *cells);
+    struct sgr_state *attrs = malloc((len + 1) * sizeof *attrs);
+    char *pend = NULL;          /* other escapes and controls, pending */
+    size_t npend = 0, pendsize = 0;
+    size_t pos = 0, ncells = 0, nattrs = 0;
+    struct sgr_state cur;
+    int cur_attr = -1;          /* index of cur in attrs, if any */
+
+    if (cells == NULL || attrs == NULL) {
+        free(cells);
+        free(attrs);
+        return;
+    }
+    sgr_reset(&cur);
+
+    for (size_t p = 0; p < len; ++p) {
         char c = pstr[p];
         if (c == '\b') {
             if (pos > 0)
                 --pos;
-            continue;
-        }
-        if (c == '\r') {
+        } else if (c == '\r') {
             pos = 0;
-            continue;
+        } else if (c == '\033') {
+            size_t q = p + 1;
+            if (q < len && pstr[q] == '[') {
+                /* CSI: parameter bytes, then a final byte */
+                for (++q; q < len && pstr[q] >= 0x20 && pstr[q] <= 0x3f; ++q)
+                    ;
+                if (q < len
+                    && (pstr[q] == 'K'
+                        && (q == p + 2 || (q == p + 3 && pstr[p + 2] == '0')))) {
+                    /* erase to end of line */
+                    for (size_t i = pos; i < ncells; ++i)
+                        free(cells[i].other);
+                    if (ncells > pos)
+                        ncells = pos;
+                    p = q;
+                    continue;
+                }
+                if (q < len && pstr[q] == 'm') {
+                    sgr_apply(&cur, pstr + p, q + 1 - p);
+                    cur_attr = -1;
+                    p = q;
+                    continue;
+                }
+            }
+            /* some other (possibly incomplete) escape sequence */
+            if (q < len)
+                ++q;
+            buf_add(&pend, &npend, &pendsize, pstr + p, q - p);
+            p = q - 1;
+        } else if ((unsigned char)c < ' ' || c == '\177') {
+            buf_add(&pend, &npend, &pendsize, &c, 1);
+        } else {
+            if (cur_attr < 0) {
+                attrs[nattrs] = cur;
+                cur_attr = nattrs++;
+            }
+            struct cell *cp = &cells[pos];
+            if (pos >= ncells) {
+                cp->other = NULL;
+                ncells = pos + 1;
+            }
+            if (npend > 0) {
+                size_t used = cp->other ? strlen(cp->other) : 0;
+                size_t size = used ? used + 1 : 0;
+                buf_add(&cp->other, &used, &size, pend, npend);
+                npend = 0;
+            }
+            cp->c = c;
+            cp->attr = cur_attr;
+            ++pos;
         }
-        if (c == '\033'
-            && len - p > 2 && pstr[p + 1] == '[' && pstr[p + 2] == 'K') {
-            if (dst == pstr)
-                dst = strdup(pstr);
-            maxpos = pos;
-            memset(dst + pos, 0, len - pos);
-            p += 2;
-            continue;
+    }
+
+    /* build the result */
+    const char *base = sgr_prompt_base();
+    char *out = NULL;
+    size_t used = 0, size = 0;
+    struct sgr_state emitted;
+    sgr_reset(&emitted);
+    for (size_t i = 0; i < ncells; ++i) {
+        if (cells[i].other) {
+            buf_add(&out, &used, &size, cells[i].other, strlen(cells[i].other));
+            free(cells[i].other);
         }
-        dst[pos++] = c;
-        if (pos > maxpos)
-            maxpos = pos;
+        sgr_transition(&out, &used, &size, &emitted, &attrs[cells[i].attr],
+                       base);
+        emitted = attrs[cells[i].attr];
+        buf_add(&out, &used, &size, &cells[i].c, 1);
     }
-    if (dst != pstr) {
-        memcpy(pstr, dst, pos);
-        free(dst);
+    sgr_transition(&out, &used, &size, &emitted, &cur, base);
+    if (npend > 0)
+        buf_add(&out, &used, &size, pend, npend);
+    if (pos < ncells) {
+        /* the cursor is not at the end: move it back */
+        if (pos == 0)
+            buf_add(&out, &used, &size, "\r", 1);
+        else
+            for (size_t i = pos; i < ncells; ++i)
+                buf_add(&out, &used, &size, "\b", 1);
     }
-    size_t nbs = maxpos - pos;
-    if (nbs == 0)
-        ;
-    else if (pos == 0)
-        pstr[maxpos++] = '\r';
-    else {
-        memset(pstr + maxpos, '\b', nbs);
-        maxpos += nbs;
-    }
-    ptrsetlen(prompt->str, maxpos);
+
+    prompt->str = ptrmcpy(prompt->str, out ? out : "", used);
+    free(out);
+    free(pend);
+    free(cells);
+    free(attrs);
 }
 
 static int grab_prompt(char *linestart, int len, int islast)
