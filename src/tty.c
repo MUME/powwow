@@ -612,10 +612,10 @@ void tty_gotoxy_opt(int fromcol, int fromline, int tocol, int toline)
 
 
 /*
- * screen position of byte offset 'p' of the input line; p <= 0 refers
- * to the prompt
+ * screen position where the text before byte offset 'p' of the input
+ * line ends; p <= 0 refers to the prompt
  */
-static void input_layout(int p, int *line, int *col)
+static void input_layout_end(int p, int *line, int *col)
 {
     if (p <= 0) {
         *line = (p + col0) / cols_1 + line0;
@@ -644,6 +644,23 @@ static void input_layout(int p, int *line, int *col)
     *col = c;
 }
 
+/*
+ * screen position of the cell at byte offset 'p' of the input line,
+ * where the cursor is when it is there: a wide character that does not
+ * fit at the end of a row is on the next one
+ */
+static void input_layout(int p, int *line, int *col)
+{
+    input_layout_end(p, line, col);
+    if (p >= 0 && p < edlen && *col > 0) {
+        size_t n = utf8_cell_len(edbuf + p, edlen - p);
+        if (*col + utf8_cell_width(edbuf + p, n) > cols_1) {
+            ++*line;
+            *col = 0;
+        }
+    }
+}
+
 int input_line(int p)
 {
     int line, col;
@@ -662,6 +679,20 @@ int input_col(int p)
  * GH: change the position on input line (gotoxy there, and set pos)
  *     from cancan 2.6.3a
  */
+/*
+ * move the cursor from pos to 'toline', 'tocol', scrolling the input
+ * line if that is off the screen
+ */
+static void input_cursor_to(int toline, int tocol)
+{
+    int fromline = CURLINE(pos);
+    if (toline < 0)
+	line0 -= toline, toline = 0;
+    else if (toline > lines - 1)
+	line0 -= toline - lines + 1, toline = lines - 1;
+    tty_gotoxy_opt(CURCOL(pos), fromline, tocol, toline);
+}
+
 void input_moveto(int new_pos)
 {
     /*
@@ -676,14 +707,8 @@ void input_moveto(int new_pos)
     if (new_pos == pos)
 	return;
 
-    if (line_status == 0) {
-	int fromline = CURLINE(pos), toline = CURLINE(new_pos);
-	if (toline < 0)
-	    line0 -= toline, toline = 0;
-	else if (toline > lines - 1)
-	    line0 -= toline - lines + 1, toline = lines - 1;
-	tty_gotoxy_opt(CURCOL(pos), fromline, CURCOL(new_pos), toline);
-    }
+    if (line_status == 0)
+	input_cursor_to(CURLINE(new_pos), CURCOL(new_pos));
     pos = new_pos;
 }
 
@@ -705,13 +730,14 @@ static void input_newline(int *line)
 }
 
 /*
- * redraw the input line from byte offset 'from', where the cursor is,
- * to its end, clear the rest of the screen, and put the cursor at pos
+ * redraw the input line from byte offset 'from' to its end, clear the
+ * rest of the screen, and put the cursor at pos; the cursor must be
+ * where the text before 'from' ends (see input_redraw_goto)
  */
 static void input_redraw_from(int from)
 {
     int line, col;
-    input_layout(from, &line, &col);
+    input_layout_end(from, &line, &col);
 
     const char *s = edbuf + from, *end = edbuf + edlen;
     while (s < end) {
@@ -783,6 +809,20 @@ static int input_redraw_start(int p)
 }
 
 /*
+ * move the cursor from pos to where the text before byte offset 'from'
+ * ends, to redraw from there; that is not where the cell at 'from' is
+ * if it is a wide character that wrapped to the next row
+ */
+static void input_redraw_goto(int from)
+{
+    if (line_status == 0) {
+        int line, col;
+        input_layout_end(from, &line, &col);
+        input_cursor_to(line, col);
+    }
+}
+
+/*
  * delete n bytes at current position (the position is unchanged)
  * assert(n < edlen - pos)
  */
@@ -795,7 +835,7 @@ void input_delete_nofollow_chars(int n)
     if (n <= 0)
 	return;
 
-    input_moveto(from);
+    input_redraw_goto(from);
     memmove(edbuf + p, edbuf + p + n, edlen - p - n + 1);
     edlen -= n;
     pos = p;
@@ -816,7 +856,7 @@ void input_insert_follow_chars(char *str, int n)
     if (n <= 0)
 	return;
 
-    input_moveto(from);
+    input_redraw_goto(from);
     memmove(edbuf + p + n, edbuf + p, edlen + 1 - p);
     memmove(edbuf + p, str, n);
     edlen += n; pos = p + n;
@@ -833,7 +873,7 @@ void input_replace(int from, int len, const char *str, int n)
 {
     int start = input_redraw_start(from);
 
-    input_moveto(start);
+    input_redraw_goto(start);
 
     n = input_fit(str, n, BUFSIZE - 1 - (edlen - len));
     memmove(edbuf + from + n, edbuf + from + len, edlen - from - len + 1);
