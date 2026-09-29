@@ -660,7 +660,7 @@ static void mainloop(void)
 	    redraw_everything();
 	    tty_flush();
 
-            compute_sleeptime(&timeout, ncache_read_fds > 0);
+            compute_sleeptime(&timeout, ncache_read_fds > 0 || tty_has_chars());
 
 	    error = now_updated = 0;
 
@@ -673,7 +673,12 @@ static void mainloop(void)
 
 	if (err < 0)
 	    syserr("select");
-        else if (ncache_read_fds > 0) {
+        if (tty_has_chars() && !FD_ISSET(tty_read_fd, &readfds)) {
+            /* keys already read from the terminal */
+            FD_SET(tty_read_fd, &readfds);
+            ++err;
+        }
+        if (ncache_read_fds > 0) {
             for (int fd = 0; ncache_read_fds > 0; ++fd) {
                 if (FD_ISSET(fd, &cache_read_fds)) {
                     FD_CLR(fd, &cache_read_fds);

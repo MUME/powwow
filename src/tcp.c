@@ -495,7 +495,9 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 	return 0;
     }
     if (i < 0) {
-	errmsg("read from socket");
+        /* e.g., a TLS record without data, such as a session ticket */
+        if (errno != EAGAIN && errno != EWOULDBLOCK)
+            errmsg("read from socket");
 	return 0;
     }
 

@@ -38,6 +38,7 @@ int  input_col(int p);
 #define tty_gets(s, size)       fgets((s), (size), stdin)
 #define tty_flush()             fflush(stdout)
 #define tty_raw_write(s,size)   do { tty_flush(); write(1, (s), (size)); } while (0)
+#define tty_has_chars()         0
 
 #else /* USE_LOCALE */
 
