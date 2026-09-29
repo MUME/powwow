@@ -320,7 +320,9 @@ ptr ptrmescape(ptr dst, char *src, int srclen, int append)
 	}
 	if (!srclen) break;
 
-	if (*src < ' ' || *src > '~') {
+	/* write control characters as \ooo, but non-ASCII UTF-8 as
+	 * is: \ooo reads back as an ISO 8859-1 character */
+	if ((byte)*src < ' ' || *src == '\177') {
 	    sprintf(p, "\\%03o", (int)(byte)*src++);
 	    len = strlen(p);
 	    dst->len += len, p += len, srclen--;
@@ -1410,7 +1412,7 @@ int save_settings(void)
     fclose(f);
 
     if (error)
-	errmsg("malloc");
+	print_error(error);
     else if (failed <= 0)
 	fail_msg();
     else {
