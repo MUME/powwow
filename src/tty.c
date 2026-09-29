@@ -612,6 +612,22 @@ void tty_gotoxy_opt(int fromcol, int fromline, int tocol, int toline)
 
 
 /*
+ * does the cell of 'n' bytes at 's', 'w' columns wide, fit in a row
+ * of the screen at column 'col'?
+ */
+int tty_cell_fits(int col, const char *s, size_t n, int w)
+{
+    /*
+     * Terminal.app draws only the first characters of a grapheme
+     * cluster that ends in the last column, and the rest (a VS16, or
+     * what follows a ZWJ) on the next row: keep those out of it
+     */
+    if (col > 0 && col + w == cols && n > (size_t)utf8_seqlen(*s))
+        return 0;
+    return col + w <= cols_1;
+}
+
+/*
  * screen position where the text before byte offset 'p' of the input
  * line ends; p <= 0 refers to the prompt
  */
@@ -628,13 +644,13 @@ static void input_layout_end(int p, int *line, int *col)
     while (s < end) {
         size_t n = utf8_cell_len(s, end - s);
         int w = utf8_cell_width(s, n);
-        s += n;
-        if (c + w > cols_1) {
-            /* does not fit; the terminal wraps it */
+        if (!tty_cell_fits(c, s, n, w)) {
+            /* does not fit; drawn on the next row */
             l++;
             c = 0;
         }
         c += w;
+        s += n;
     }
     if (c >= cols_1) {
         l++;
@@ -654,7 +670,8 @@ static void input_layout(int p, int *line, int *col)
     input_layout_end(p, line, col);
     if (p >= 0 && p < edlen && *col > 0) {
         size_t n = utf8_cell_len(edbuf + p, edlen - p);
-        if (*col + utf8_cell_width(edbuf + p, n) > cols_1) {
+        if (!tty_cell_fits(*col, edbuf + p, n,
+                           utf8_cell_width(edbuf + p, n))) {
             ++*line;
             *col = 0;
         }
@@ -765,7 +782,7 @@ static void input_redraw_from(int from)
     while (s < end) {
         size_t n = utf8_cell_len(s, end - s);
         int w = utf8_cell_width(s, n);
-        if (col + w > cols_1) {
+        if (!tty_cell_fits(col, s, n, w)) {
             if (col < cols_1) {
                 /* a wide character did not fit; blank the rest of
                  * the row, which may hold half of an old one (with

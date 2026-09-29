@@ -19,6 +19,7 @@ void tty_add_walk_binds(void);
 void tty_add_initial_binds(void);
 void tty_gotoxy(int col, int line);
 void tty_gotoxy_opt(int fromcol, int fromline, int tocol, int toline);
+int  tty_cell_fits(int col, const char *s, size_t n, int w);
 
 void input_delete_nofollow_chars(int n);
 void input_insert_follow_chars(char *str, int n);

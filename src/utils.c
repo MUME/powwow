@@ -590,7 +590,7 @@ static void wrap_print(char *s)
             utf8_get(s, n, &cp);
             int w = state == NORM ? utf8_cell_width(s, n) : 0;
             /* a wide character that does not fit goes on the next line */
-            if (m > 0 && m + w > cols_1 - col0)
+            if (m > 0 && !tty_cell_fits(col0 + m, s, n, w))
                 break;
             memcpy(p, s, n);
             p += n;
