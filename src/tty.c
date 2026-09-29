@@ -624,11 +624,11 @@ static void input_layout(int p, int *line, int *col)
     }
 
     int l = col0 / cols_1, c = col0 % cols_1;
-    const char *s = edbuf, *end = edbuf + p, *lim = edbuf + edlen;
+    const char *s = edbuf, *end = edbuf + p;
     while (s < end) {
-        uint32_t cp;
-        s += utf8_get(s, lim - s, &cp);
-        int w = cp_width(cp);
+        size_t n = utf8_cell_len(s, end - s);
+        int w = utf8_cell_width(s, n);
+        s += n;
         if (c + w > cols_1) {
             /* does not fit; the terminal wraps it */
             l++;
@@ -715,9 +715,8 @@ static void input_redraw_from(int from)
 
     const char *s = edbuf + from, *end = edbuf + edlen;
     while (s < end) {
-        uint32_t cp;
-        int n = utf8_get(s, end - s, &cp);
-        int w = cp_width(cp);
+        size_t n = utf8_cell_len(s, end - s);
+        int w = utf8_cell_width(s, n);
         if (col + w > cols_1) {
             if (col < cols_1) {
                 /* a wide character did not fit; clear the rest of
@@ -775,21 +774,34 @@ static int input_fit(const char *str, int n, int max)
 }
 
 /*
+ * start of the cell before byte offset 'p' of the input line: a change
+ * at 'p' may join text to that cell, so it must be redrawn too
+ */
+static int input_redraw_start(int p)
+{
+    return utf8_prev_cell(edbuf, edbuf + p) - edbuf;
+}
+
+/*
  * delete n bytes at current position (the position is unchanged)
  * assert(n < edlen - pos)
  */
 void input_delete_nofollow_chars(int n)
 {
+    int p = pos, from = input_redraw_start(pos);
+
     if (n > edlen - pos)
 	n = edlen - pos;
     if (n <= 0)
 	return;
 
-    memmove(edbuf + pos, edbuf + pos + n, edlen - pos - n + 1);
+    input_moveto(from);
+    memmove(edbuf + p, edbuf + p + n, edlen - p - n + 1);
     edlen -= n;
+    pos = p;
 
     if (line_status == 0)
-        input_redraw_from(pos);
+        input_redraw_from(from);
 }
 
 /*
@@ -798,18 +810,19 @@ void input_delete_nofollow_chars(int n)
  */
 void input_insert_follow_chars(char *str, int n)
 {
-    int p = pos;
+    int p = pos, from = input_redraw_start(pos);
 
     n = input_fit(str, n, BUFSIZE - edlen - 1);
     if (n <= 0)
 	return;
 
+    input_moveto(from);
     memmove(edbuf + p + n, edbuf + p, edlen + 1 - p);
     memmove(edbuf + p, str, n);
-    edlen += n; pos += n;
+    edlen += n; pos = p + n;
 
     if (line_status == 0)
-        input_redraw_from(p);
+        input_redraw_from(from);
 }
 
 /*
@@ -818,7 +831,9 @@ void input_insert_follow_chars(char *str, int n)
  */
 void input_replace(int from, int len, const char *str, int n)
 {
-    input_moveto(from);
+    int start = input_redraw_start(from);
+
+    input_moveto(start);
 
     n = input_fit(str, n, BUFSIZE - 1 - (edlen - len));
     memmove(edbuf + from + n, edbuf + from + len, edlen - from - len + 1);
@@ -827,7 +842,7 @@ void input_replace(int from, int len, const char *str, int n)
     pos = from + n;
 
     if (line_status == 0)
-        input_redraw_from(from);
+        input_redraw_from(start);
 }
 
 #ifdef USE_LOCALE

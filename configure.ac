@@ -67,6 +67,13 @@ AC_ARG_ENABLE(tls,
     [],
     [enable_tls=yes])
 
+AC_ARG_WITH([libgrapheme],
+    AS_HELP_STRING([--without-libgrapheme],
+        [do not use libgrapheme to find grapheme clusters (emoji
+         sequences, flags, ...); default: use it if available]),
+    [],
+    [with_libgrapheme=check])
+
 AS_IF([ test "${enable_tls}" != no ],
     [ AC_DEFINE(USE_TLS, 1, [Define to enable TLS using GnuTLS.]) ])
 
@@ -109,6 +116,19 @@ AS_IF([test "x${enable_tls}" = xyes], [
         AC_MSG_ERROR([cannot find gnutls]))
     AC_CHECK_HEADER(gnutls/gnutls.h, ,
         AC_MSG_ERROR([cannot find gnutls/gnutls.h])) ])
+
+AS_IF([test "x${with_libgrapheme}" != xno], [
+    have_libgrapheme=no
+    AC_CHECK_HEADER(grapheme.h,
+        [AC_SEARCH_LIBS(grapheme_next_character_break_utf8, grapheme,
+            [have_libgrapheme=yes])])
+    AS_IF([test "x${have_libgrapheme}" = xyes],
+        [with_libgrapheme=yes
+         AC_DEFINE([HAVE_LIBGRAPHEME], 1,
+            [Define to 1 to use libgrapheme for grapheme clusters.])],
+        [test "x${with_libgrapheme}" = xcheck || \
+            AC_MSG_ERROR([cannot find libgrapheme])
+         with_libgrapheme=no]) ])
 
 # Checks for header files.
 AC_CHECK_HEADER([locale.h],
@@ -187,6 +207,7 @@ Plugin directory:   $(eval eval eval echo "${plugindir}")
 enable-vt100:       ${enable_vt100}
 enable-regex:       ${enable_regex} (${enable_regex_using})
 enable-tls:         ${enable_tls}
+with-libgrapheme:   ${with_libgrapheme}
 enable-sort:        ${enable_sort}
 enable-shell:       ${enable_shell}
 enable-ansi-bug:    ${enable_ansi_bug}

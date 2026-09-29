@@ -75,6 +75,15 @@ CHARACTER SETS
 	Internally, powwow handles text as Unicode (UTF-8); your
 	terminal may use any character set supported by your locale.
 	Characters your terminal cannot display are shown as '?'.
+
+	The line editor moves over and deletes whole grapheme clusters,
+	such as a letter with combining accents, a flag, or emoji joined
+	into one (like a family); it assumes the terminal draws each of
+	them as a unit, as wide as its first character, or two columns
+	wide for emoji and flags. Without libgrapheme (see "configure
+	--with-libgrapheme"), only combining characters are joined to the
+	character before them.
+
 	The connection to the MUD can use ISO-8859-1, UTF-8 or US-ASCII.
 
 	By default, a connection starts out as ISO-8859-1. If the server

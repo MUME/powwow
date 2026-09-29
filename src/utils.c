@@ -88,10 +88,13 @@ int printstrlen(char *s)
 {
     int l;
     enum { NORM, ESCAPE, BRACKET } state = NORM;
+    const char *end = s + strlen(s);
     for (l = 0; *s; ) {
         uint32_t cp;
-        /* does not read past the terminating NUL */
-        s += utf8_get(s, UTF8_MAX, &cp);
+        size_t n = utf8_cell_len(s, end - s);
+        utf8_get(s, n, &cp);
+        int w = utf8_cell_width(s, n);
+        s += n;
         switch(state) {
 	 case NORM:
             if (cp == '\033') {
@@ -102,7 +105,7 @@ int printstrlen(char *s)
             } else if (cp == '\r') {
 		l = (l / cols) * cols;
             } else
-                l += cp_width(cp);
+                l += w;
             break;
 
 	 case ESCAPE:
@@ -559,6 +562,7 @@ static void wrap_print(char *s)
     /* ls = last space in *s, lp = last space in *p */
     char *ls, *lp, *p, follow = 1;
     char buf[BUFSIZE]; /* ASSERT(cols<BUFSIZE) */
+    const char *end = s + strlen(s);
 
     /* l = left, m = current offset */
     int l, m;
@@ -582,8 +586,9 @@ static void wrap_print(char *s)
          * characters */
         while (m < cols_1 - col0 && *s && *s != '\n') {
             uint32_t cp;
-            int n = utf8_get(s, UTF8_MAX, &cp);
-            int w = state == NORM ? cp_width(cp) : 0;
+            size_t n = utf8_cell_len(s, end - s);
+            utf8_get(s, n, &cp);
+            int w = state == NORM ? utf8_cell_width(s, n) : 0;
             /* a wide character that does not fit goes on the next line */
             if (m > 0 && m + w > cols_1 - col0)
                 break;

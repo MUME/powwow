@@ -11,9 +11,13 @@
 #include "../config.h"
 
 #include <ctype.h>
+#include <stdbool.h>
 #ifdef USE_LOCALE
 #  include <wchar.h>
 #  include <wctype.h>
+#endif
+#ifdef HAVE_LIBGRAPHEME
+#  include <grapheme.h>
 #endif
 
 #include "charset.h"
@@ -39,6 +43,90 @@ int cp_width(uint32_t cp)
 #endif
 }
 
+#ifndef HAVE_LIBGRAPHEME
+static bool is_combining(uint32_t cp)
+{
+    return cp >= 0x300 && cp_width(cp) == 0;
+}
+#endif
+
+static bool is_control(uint32_t cp)
+{
+    return cp < 0x20 || cp == 0x7f;
+}
+
+static bool is_regional_indicator(uint32_t cp)
+{
+    return cp >= 0x1f1e6 && cp <= 0x1f1ff;
+}
+
+void cell_start(struct cell_state *c, uint32_t cp)
+{
+    c->first = c->prev = cp;
+    c->gstate = 0;
+    c->width = cp_width(cp);
+}
+
+bool cell_add(struct cell_state *c, uint32_t cp)
+{
+    if (is_control(c->prev) || is_control(cp))
+        return false;           /* also keep CR LF apart */
+#ifdef HAVE_LIBGRAPHEME
+    uint_least16_t gstate = c->gstate;
+    if (grapheme_is_character_break(c->prev, cp, &gstate))
+        return false;
+    c->gstate = gstate;
+#else
+    /* combining characters, and characters after a ZWJ as in emoji
+     * sequences */
+    if (!is_combining(cp) && c->prev != 0x200d)
+        return false;
+#endif
+    c->prev = cp;
+    /*
+     * like the terminals that draw grapheme clusters as a unit: the
+     * width of the first character, but emoji presentation (VS16) and
+     * flags (pairs of regional indicators) take two columns
+     */
+    if (c->width == 1
+        && (cp == 0xfe0f
+            || (is_regional_indicator(c->first) && is_regional_indicator(cp))))
+        c->width = 2;
+    return true;
+}
+
+/* read the cell at 's' into 'c'; returns its length */
+static size_t cell_read(struct cell_state *c, const char *s, size_t len)
+{
+    uint32_t cp;
+    if (len == 0) {
+        cell_start(c, 0);
+        return 0;
+    }
+    size_t n = utf8_get(s, len, &cp);
+    cell_start(c, cp);
+    while (n < len) {
+        int k = utf8_get(s + n, len - n, &cp);
+        if (!cell_add(c, cp))
+            break;
+        n += k;
+    }
+    return n;
+}
+
+size_t utf8_cell_len(const char *s, size_t len)
+{
+    struct cell_state c;
+    return cell_read(&c, s, len);
+}
+
+int utf8_cell_width(const char *s, size_t len)
+{
+    struct cell_state c;
+    cell_read(&c, s, len);
+    return c.width;
+}
+
 int utf8_width(const char *s, size_t len)
 {
     enum { NORM, ESCAPE, BRACKET } state = NORM;
@@ -46,14 +134,15 @@ int utf8_width(const char *s, size_t len)
     int w = 0;
 
     while (s < end) {
-        uint32_t cp;
-        int n = utf8_get(s, end - s, &cp);
+        struct cell_state c;
+        size_t n = cell_read(&c, s, end - s);
+        uint32_t cp = c.first;
         switch (state) {
         case NORM:
             if (cp == '\033')
                 state = ESCAPE;
             else
-                w += cp_width(cp);
+                w += c.width;
             break;
         case ESCAPE:
             state = cp == '[' ? BRACKET : NORM;
@@ -68,35 +157,31 @@ int utf8_width(const char *s, size_t len)
     return w;
 }
 
-static int is_combining(uint32_t cp)
-{
-    return cp >= 0x300 && cp_width(cp) == 0;
-}
-
 const char *utf8_next_cell(const char *s, const char *end)
 {
-    uint32_t cp;
     if (s >= end)
         return end;
-    s += utf8_get(s, end - s, &cp);
-    while (s < end) {
-        int n = utf8_get(s, end - s, &cp);
-        if (!is_combining(cp))
-            break;
-        s += n;
-    }
-    return s;
+    return s + utf8_cell_len(s, end - s);
 }
 
 const char *utf8_prev_cell(const char *start, const char *s)
 {
-    while (s > start) {
-        const char *p = utf8_prev(start, s);
-        uint32_t cp;
-        utf8_get(p, s - p, &cp);
-        s = p;
-        if (!is_combining(cp))
-            break;
+    if (s <= start)
+        return start;
+    /*
+     * find a cell boundary before 's' and scan forward from it: there
+     * is one before a printable ASCII character that follows another
+     * ASCII character (or begins the text)
+     */
+    const char *p = s - 1;
+    while (p > start && !((unsigned char)p[-1] < 0x80
+                          && (unsigned char)*p >= 0x20
+                          && (unsigned char)*p < 0x80))
+        --p;
+    for (;;) {
+        const char *q = p + utf8_cell_len(p, s - p);
+        if (q >= s)
+            return p;
+        p = q;
     }
-    return s;
 }

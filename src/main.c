@@ -835,6 +835,27 @@ static void sgr_transition(char **buf, size_t *used, size_t *size,
     buf_add(buf, used, size, to->seq, to->len);
 }
 
+/* one cell per terminal column, for effective_prompt() */
+enum { NARROW, WIDE_LEFT, WIDE_RIGHT };
+struct cell {
+    char  *text;                /* UTF-8: a grapheme cluster */
+    size_t len, size;           /* bytes used and allocated in text */
+    struct cell_state cs;       /* the cluster, to join more text to it */
+    unsigned char kind;         /* NARROW, WIDE_LEFT or WIDE_RIGHT */
+    int    attr;                /* index into attrs */
+    char  *other;               /* other escapes and controls before it */
+};
+
+/* make the 'n' bytes at 's', one character, the text of 'cl' */
+static void cell_set(struct cell *cl, const char *s, size_t n)
+{
+    uint32_t cp;
+    utf8_get(s, n, &cp);
+    cell_start(&cl->cs, cp);
+    cl->len = 0;
+    buf_add(&cl->text, &cl->len, &cl->size, s, n);
+}
+
 /*
  * compute the effective prompt string, which may end in \b* or \r:
  * emulate the terminal for \b, \r and ESC [ K, where escape sequences
@@ -855,15 +876,8 @@ static void effective_prompt(void)
     if (k == len)
         return;                 /* nothing to emulate */
 
-    /* one cell per terminal column */
-    enum { NARROW, WIDE_LEFT, WIDE_RIGHT };
-    struct cell {
-        char   text[16];        /* UTF-8: a character and combining ones */
-        unsigned char len;      /* bytes in text */
-        unsigned char kind;     /* NARROW, WIDE_LEFT or WIDE_RIGHT */
-        int    attr;            /* index into attrs */
-        char  *other;           /* other escapes and controls before it */
-    } *cells = calloc(2 * len + 2, sizeof *cells);
+    const size_t maxcells = 2 * len + 2;
+    struct cell *cells = calloc(maxcells, sizeof *cells);
     struct sgr_state *attrs = malloc((len + 1) * sizeof *attrs);
     char *pend = NULL;          /* other escapes and controls, pending */
     size_t npend = 0, pendsize = 0;
@@ -882,13 +896,11 @@ static void effective_prompt(void)
 #define UNSPLIT(i) do {                                                 \
         if ((i) < ncells && cells[i].kind == WIDE_RIGHT && (i) > 0) {   \
             cells[(i) - 1].kind = NARROW;                               \
-            cells[(i) - 1].text[0] = ' ';                               \
-            cells[(i) - 1].len = 1;                                     \
+            cell_set(&cells[(i) - 1], " ", 1);                          \
         } else if ((i) < ncells && cells[i].kind == WIDE_LEFT           \
                    && (i) + 1 < ncells) {                               \
             cells[(i) + 1].kind = NARROW;                               \
-            cells[(i) + 1].text[0] = ' ';                               \
-            cells[(i) + 1].len = 1;                                     \
+            cell_set(&cells[(i) + 1], " ", 1);                          \
         }                                                               \
     } while (0)
 
@@ -935,20 +947,33 @@ static void effective_prompt(void)
             uint32_t cp;
             int n = utf8_get(pstr + p, len - p, &cp);
             int w = cp_width(cp);
-            if (w == 0) {
-                if (cp >= 0x300 && pos > 0) {
-                    /* combining character: joins the previous one */
-                    size_t i = pos - 1;
-                    if (cells[i].kind == WIDE_RIGHT && i > 0)
-                        --i;
-                    if (cells[i].len + n <= sizeof cells[i].text) {
-                        memcpy(cells[i].text + cells[i].len, pstr + p, n);
-                        cells[i].len += n;
+            size_t i = pos - 1;
+            if (pos > 0 && cells[i].kind == WIDE_RIGHT && i > 0)
+                --i;
+            if (pos > 0 && cell_add(&cells[i].cs, cp)) {
+                /* e.g. a combining character: joins the previous cell */
+                buf_add(&cells[i].text, &cells[i].len, &cells[i].size,
+                        pstr + p, n);
+                if (cells[i].kind == NARROW && i + 1 == pos
+                    && cells[i].cs.width == 2) {
+                    /* e.g. VS16 made it an emoji, two columns wide */
+                    UNSPLIT(pos);
+                    if (pos >= ncells) {
+                        cells[pos].other = NULL;
+                        ncells = pos + 1;
                     }
-                } else {
-                    /* e.g. a C1 control character */
-                    buf_add(&pend, &npend, &pendsize, pstr + p, n);
+                    cells[i].kind = WIDE_LEFT;
+                    cells[pos].len = 0;
+                    cells[pos].kind = WIDE_RIGHT;
+                    cells[pos].attr = cells[i].attr;
+                    ++pos;
                 }
+                p += n - 1;
+                continue;
+            }
+            if (w == 0) {
+                /* e.g. a C1 control character */
+                buf_add(&pend, &npend, &pendsize, pstr + p, n);
                 p += n - 1;
                 continue;
             }
@@ -972,8 +997,7 @@ static void effective_prompt(void)
                     npend = 0;
                 }
                 if (half == 0) {
-                    memcpy(cl->text, pstr + p, n);
-                    cl->len = n;
+                    cell_set(cl, pstr + p, n);
                     cl->kind = w == 2 ? WIDE_LEFT : NARROW;
                 } else {
                     cl->len = 0;
@@ -1003,7 +1027,8 @@ static void effective_prompt(void)
         sgr_transition(&out, &used, &size, &emitted, &attrs[cells[i].attr],
                        base);
         emitted = attrs[cells[i].attr];
-        buf_add(&out, &used, &size, cells[i].text, cells[i].len);
+        if (cells[i].len > 0)
+            buf_add(&out, &used, &size, cells[i].text, cells[i].len);
     }
     sgr_transition(&out, &used, &size, &emitted, &cur, base);
     if (npend > 0)
@@ -1020,6 +1045,8 @@ static void effective_prompt(void)
     prompt->str = ptrmcpy(prompt->str, out ? out : "", used);
     free(out);
     free(pend);
+    for (size_t i = 0; i < maxcells; ++i)
+        free(cells[i].text);
     free(cells);
     free(attrs);
 }
