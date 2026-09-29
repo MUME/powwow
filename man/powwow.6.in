@@ -70,9 +70,9 @@ environment variable set to the document title sent from the MUD.
 .B powwow
 handles text internally as Unicode (UTF-8), and converts it to and
 from the character set of the terminal's locale.  The connection to the
-server can use ISO-8859-1, UTF-8 or US-ASCII, as negotiated using the
-telnet CHARSET option (RFC 2066) or selected with
-.BR \-\-utf8 .
+server can use UTF-8 (the default), ISO-8859-1 or US-ASCII, as negotiated
+using the telnet CHARSET option (RFC 2066) or selected with
+.BR \-\-latin1 .
 Invalid input is shown as U+FFFD; characters that cannot be represented
 are shown or sent as \[oq]?\[cq].
 Captured, recorded and edited files use the connection's character set;
@@ -98,9 +98,14 @@ assume the host name to be
 when validating the CA certificate
 .RE
 .TP
+.BR \-l ", " \-\-latin1
+start the connection in ISO-8859-1 and prefer ISO-8859-1 when negotiating
+the character set with the server
+.TP
 .BR \-u ", " \-\-utf8
 start the connection in UTF-8 and prefer UTF-8 when negotiating the
-character set with the server
+character set with the server (the default); this overrides the character
+set of the definition file's host
 .TP
 .BR \-v ", " \-\-version
 display the

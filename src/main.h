@@ -38,12 +38,16 @@ struct hostinfo {
     char name[BUFSIZE];
     int port;
     struct tls_options tlsopt;
-    bool utf8;			/* default for new connections */
+    bool utf8;			/* UTF-8, else ISO-8859-1 */
 };
 extern struct hostinfo hostinfo;
+/* the charset of connections without --utf8 or --latin1: UTF-8, unless
+ * powwow was started with --latin1 */
+extern bool default_utf8;
 
-#define UTF8_FLAG "--utf8"
-#define utf8_flag_str(utf8) ((utf8) ? " " UTF8_FLAG : "")
+#define UTF8_FLAG   "--utf8"
+#define LATIN1_FLAG "--latin1"
+#define charset_flag_str(utf8) ((utf8) ? " " UTF8_FLAG : " " LATIN1_FLAG)
 
 extern char deffile[], helpfile[], copyfile[];
 

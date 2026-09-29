@@ -74,7 +74,7 @@ typedef struct connsess {
     char state;
     char old_state;
     unsigned char cs_flags;	/* CHARSET option state */
-    bool prefer_utf8;		/* --utf8 given for this connection */
+    bool prefer_utf8;		/* starts as and prefers UTF-8 */
     enum charset charset;	/* current encoding of this link */
     struct utf8_decoder u8dec;	/* partial sequence across reads */
 } connsess;

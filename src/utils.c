@@ -1149,7 +1149,13 @@ int read_settings(void)
             }
 	    *--p = ' ';
 	}
+        /* connections were ISO-8859-1 unless --utf8 was given (a
+         * #host without it) when files were not UTF-8 yet */
+        bool saved_default_utf8 = default_utf8;
+        if (savefilever < UTF8_SAVEFILEVER)
+            default_utf8 = false;
 	parse_user_input(cmd, 1);
+        default_utf8 = saved_default_utf8;
         if (error != 0) {
             PRINTF("#error: loading save-file failed\n");
             break;
@@ -1247,7 +1253,7 @@ int save_settings(void)
     if (failed > 0 && *hostinfo.name)
 	failed = fprintf(f, "#host %s %d%s%s\n", hostinfo.name, hostinfo.port,
                          tlsopt_str(&hostinfo.tlsopt),
-                         utf8_flag_str(hostinfo.utf8));
+                         charset_flag_str(hostinfo.utf8));
 
     if (failed > 0) {
 	if (delim_mode == DELIM_CUSTOM) {

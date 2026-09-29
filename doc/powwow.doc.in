@@ -86,19 +86,27 @@ CHARACTER SETS
 
 	The connection to the MUD can use ISO-8859-1, UTF-8 or US-ASCII.
 
-	By default, a connection starts out as ISO-8859-1. If the server
+	By default, a connection starts out as UTF-8. If the server
 	supports the telnet CHARSET option (RFC 2066), powwow negotiates
 	the character set with it: when the server offers a list of
-	character sets, powwow picks the first one it supports in the
-	server's order; if the server offers to negotiate, powwow asks
-	for ISO-8859-1, UTF-8 or US-ASCII, in that order.
+	character sets, powwow picks UTF-8 if it is in the list, else
+	the first one it supports in the server's order; if the server
+	offers to negotiate, powwow asks for UTF-8, ISO-8859-1 or
+	US-ASCII, in that order.
 
-	Starting powwow with --utf8 (or -u), or adding --utf8 to #host
-	or #connect, makes the connection start out as UTF-8 (for
-	servers that do not negotiate) and makes powwow prefer UTF-8
-	whenever the server offers it:
+	For servers that use ISO-8859-1 without negotiating, start
+	powwow with --latin1 (or -l), or add --latin1 to #host or
+	#connect: the connection then starts out as ISO-8859-1, and
+	powwow prefers ISO-8859-1 over UTF-8 when negotiating.
 
-	$ powwow --utf8 netaddress portnumber
+	$ powwow --latin1 netaddress portnumber
+
+	--utf8 (or -u) selects the default, UTF-8, for example to
+	override the #host of a definition file, or on #connect when
+	powwow was started with --latin1. Definition files save the
+	character set with #host; in files written by powwow versions
+	that did not use UTF-8 by default, a #host without --utf8 means
+	ISO-8859-1.
 
 	#connect lists the character set used by each connection, and
 	a message is printed when it changes (unless #option info is off).
@@ -1076,7 +1084,8 @@ SPECIAL COMMANDS: ALL OTHERS
 	your compiler supports it) when powwow was compiled.
 	-----------------------------------------------------------
 	Multiple connections handling commands
-	#connect [session-id [initstr] [host port]] [--tls[=options]] [--utf8]
+	#connect [session-id [initstr] [host port]] [--tls[=options]]
+		 [--utf8|--latin1]
 				connect a new session / list sessions
 	#snoop session-id	toggle output display for session
 	#zap session-id		disconnect a session
@@ -1103,8 +1112,9 @@ SPECIAL COMMANDS: ALL OTHERS
 
 	You can close these sessions with #zap and list them with #connect
 	as usual.
-	Text to and from the command uses UTF-8 if powwow was started
-	with --utf8 (or #host has --utf8), otherwise ISO-8859-1.
+	Text to and from the command uses the character set of #host:
+	UTF-8 unless powwow was started with --latin1 (or #host has
+	--latin1), in which case it uses ISO-8859-1.
 
 	Depending on how lazy you are, you can choose two different ways
 	to have spawned programs print to screen:

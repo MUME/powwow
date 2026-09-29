@@ -102,6 +102,8 @@ static void charset_request_subopt(connsess *conn, const char *str,
      * server will reject ours, so we answer this one as usual */
     conn->cs_flags &= ~CS_REQ_PENDING;
 
+    /* take the server's first known charset, unless it also offers ours */
+    const int want = conn->prefer_utf8 ? CS_UTF8 : CS_LATIN1;
     const char *chosen = NULL;
     size_t chosen_len = 0;
     int chosen_cs = -1;
@@ -111,9 +113,7 @@ static void charset_request_subopt(connsess *conn, const char *str,
             next = end;
         int cs = charset_lookup(start, next - start);
         if (cs >= 0
-            && (chosen == NULL
-                || (conn->prefer_utf8 && cs == CS_UTF8
-                    && chosen_cs != CS_UTF8))) {
+            && (chosen == NULL || (cs == want && chosen_cs != want))) {
             chosen = start;
             chosen_len = next - start;
             chosen_cs = cs;

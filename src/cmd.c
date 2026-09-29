@@ -764,6 +764,21 @@ static void cmd_history(char *arg)
 	show_history(-num);
 }
 
+/*
+ * if 'arg' is --utf8 or --latin1, store the charset it selects in *utf8
+ * and return true
+ */
+static bool parse_charset_flag(const char *arg, bool *utf8)
+{
+    if (strcmp(arg, UTF8_FLAG) == 0)
+        *utf8 = true;
+    else if (strcmp(arg, LATIN1_FLAG) == 0)
+        *utf8 = false;
+    else
+        return false;
+    return true;
+}
+
 static void cmd_host(char *arg)
 {
     arg = skipspace(arg);
@@ -775,13 +790,11 @@ static void cmd_host(char *arg)
             arg = split_first_word(buf, BUFSIZE, arg);
 	    int port = atoi(buf);
             struct tls_options tlsopt = { 0 };
-            bool utf8 = false;
+            bool utf8 = default_utf8;
             while (*(arg = skipspace(arg))) {
                 arg = split_first_word(buf, BUFSIZE, arg);
-                if (strcmp(buf, UTF8_FLAG) == 0) {
-                    utf8 = true;
+                if (parse_charset_flag(buf, &utf8))
                     continue;
-                }
                 const char *targ = buf;
                 if (!parse_tls_flag(&tlsopt, &targ, true)
                     || !tlsopt.use_tls)
@@ -795,20 +808,21 @@ static void cmd_host(char *arg)
 
 	    if (opt_info)
 		PRINTF("#host set to: %s %d%s%s\n", hostinfo.name, hostinfo.port,
-                       tlsopt_str(&hostinfo.tlsopt), utf8_flag_str(utf8));
+                       tlsopt_str(&hostinfo.tlsopt), charset_flag_str(utf8));
             return;
 	}
     } else if (*hostinfo.name) {
 	fmt_next_edit("#host %s %d%s%s",
                       hostinfo.name, hostinfo.port,
                       tlsopt_str(&hostinfo.tlsopt),
-                      utf8_flag_str(hostinfo.utf8));
+                      charset_flag_str(hostinfo.utf8));
         return;
     }
 
 fail:
     error = NOT_SUPPORTED_ERROR;
-    PRINTF("#syntax: #host hostname port [--tls[=options]] [" UTF8_FLAG "]\n");
+    PRINTF("#syntax: #host hostname port [--tls[=options]]"
+           " [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
 }
 
 static void cmd_request(char *arg)
@@ -2344,15 +2358,17 @@ static void cmd_color(char *arg)
 #endif
 
 /*
- * consume any --tls and --utf8 flags starting at *argp, leaving *argp
- * at the next non-flag argument
+ * consume any --tls, --utf8 and --latin1 flags starting at *argp,
+ * leaving *argp at the next non-flag argument; *utf8 is set to 1 for
+ * --utf8 and 0 for --latin1
  */
 static bool maybe_flag_args(char **argp, struct tls_options *tlsopt,
-                            bool *utf8)
+                            int *utf8)
 {
     while (*argp != NULL && **argp) {
-        if (strcmp(*argp, UTF8_FLAG) == 0) {
-            *utf8 = true;
+        bool u;
+        if (parse_charset_flag(*argp, &u)) {
+            *utf8 = u;
         } else {
             if (tlsopt->use_tls)
                 return true;
@@ -2381,7 +2397,7 @@ static void cmd_connect(char *arg)
     }
 
     struct tls_options tlsopt = { .use_tls = false };
-    bool utf8 = false;
+    int utf8 = -1;              /* no --utf8 or --latin1 */
 
     int argc = 1;
     char *s1 = strtok(arg, " ");
@@ -2413,24 +2429,28 @@ static void cmd_connect(char *arg)
 	if (*hostinfo.name)
 	    tcp_open(s1, s2, hostinfo.name, hostinfo.port,
                      tlsopt.use_tls ? &tlsopt : &hostinfo.tlsopt,
-                     utf8 || hostinfo.utf8);
+                     utf8 >= 0 ? utf8 : hostinfo.utf8);
 	else {
 	    PRINTF("#connect: no host defined!\n#syntax: #connect session-id"
                    " [init-str] [hostname] [port] [--tls[=tls-options]]"
-                   " [" UTF8_FLAG "]\n");
+                   " [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
 	}
     } else if (argc == 3) {
+        if (utf8 < 0)
+            utf8 = default_utf8;
 	if (!*hostinfo.name) {
 	    my_strncpy(hostinfo.name, s2, BUFSIZE-1);
 	    hostinfo.port = atoi(s3);
             hostinfo.tlsopt = tlsopt;
             hostinfo.utf8 = utf8;
 	}
-	tcp_open(s1, NULL, s2, atoi(s3), &tlsopt, utf8 || hostinfo.utf8);
+	tcp_open(s1, NULL, s2, atoi(s3), &tlsopt, utf8);
     } else {
         char *s5 = strtok(NULL, " ");
         if (!maybe_flag_args(&s5, &tlsopt, &utf8))
             return;
+        if (utf8 < 0)
+            utf8 = default_utf8;
 
 	if (!*hostinfo.name) {
 	    my_strncpy(hostinfo.name, s3, BUFSIZE-1);
@@ -2438,7 +2458,7 @@ static void cmd_connect(char *arg)
             hostinfo.tlsopt = tlsopt;
             hostinfo.utf8 = utf8;
 	}
-	tcp_open(s1, s2, s3, atoi(s4), &tlsopt, utf8 || hostinfo.utf8);
+	tcp_open(s1, s2, s3, atoi(s4), &tlsopt, utf8);
     }
 #endif /* TERM */
 }

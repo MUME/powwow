@@ -141,6 +141,7 @@ char opt_autoclear = 1;	/* 1 = clear input line before executing commands
 			 */
 
 struct hostinfo hostinfo;
+bool default_utf8 = true;
 
 static char powwow_dir[BUFSIZE];   /* default path to definition files */
 char deffile[BUFSIZE];             /* name and path of definition file */
@@ -236,11 +237,13 @@ static void show_help(const char *prog)
 #define HELP_ARG "--help, -h         "
 #define TLS_ARG  "--tls[=TLS-OPTIONS]"
 #define UTF8_ARG "--utf8, -u         "
+#define LAT1_ARG "--latin1, -l       "
 #define VER_ARG  "--version, -v      "
 #else
 #define HELP_ARG "-h                "
 #define TLS_ARG  "-t, -T TLS-OPTIONS"
 #define UTF8_ARG "-u                "
+#define LAT1_ARG "-l                "
 #define VER_ARG  "-v                "
 #endif
 
@@ -258,7 +261,9 @@ static void show_help(const char *prog)
            "Options:\n"
            "  " HELP_ARG "    display this help text\n"
            "  " TLS_ARG  "    enable TLS" TLS_DESC "\n"
-           "  " UTF8_ARG "    assume and prefer UTF-8 on the connection\n"
+           "  " UTF8_ARG "    assume and prefer UTF-8 on the connection"
+           " (default)\n"
+           "  " LAT1_ARG "    assume and prefer ISO-8859-1 on the connection\n"
            "  " VER_ARG  "    display the powwow version\n",
            prog);
 #undef HELP_ARG
@@ -277,17 +282,18 @@ int main(int argc, char **argv)
     static const struct option longopts[] = {
         { "help",    no_argument,       NULL, 'h' },
         { "tls",     optional_argument, NULL, 't' },
+        { "latin1",  no_argument,       NULL, 'l' },
         { "utf8",    no_argument,       NULL, 'u' },
         { "version", no_argument,       NULL, 'v' },
         { NULL }
     };
 #endif
-    bool cmdline_utf8 = false;
+    int cmdline_utf8 = -1;      /* --utf8: 1, --latin1: 0 */
     for (int c;;) {
 #ifdef HAVE_GETOPT_LONG
-        c = getopt_long(argc, argv, "ht::uv", longopts, NULL);
+        c = getopt_long(argc, argv, "hlt::uv", longopts, NULL);
 #else
-        c = getopt(argc, argv, "htT:uv");
+        c = getopt(argc, argv, "hltT:uv");
 #endif
         if (c == -1)
             break;
@@ -309,8 +315,11 @@ int main(int argc, char **argv)
             }
             break;
         }
+        case 'l':
+            cmdline_utf8 = 0;
+            break;
         case 'u':
-            cmdline_utf8 = true;
+            cmdline_utf8 = 1;
             break;
         case 'v': {
             printver(true);
@@ -322,7 +331,8 @@ int main(int argc, char **argv)
         }
     }
 
-    hostinfo.utf8 = cmdline_utf8;
+    default_utf8 = cmdline_utf8 != 0;
+    hostinfo.utf8 = default_utf8;
 
     int nargs = argc - optind;
     if (nargs > 2) {
@@ -466,9 +476,9 @@ under certain conditions; type \"#help copyright\" for details.\n"
 	    read_file = true;
     }
 
-    /* the definition file's #host must not override --utf8 */
-    if (cmdline_utf8)
-        hostinfo.utf8 = true;
+    /* the definition file's #host must not override --utf8/--latin1 */
+    if (cmdline_utf8 >= 0)
+        hostinfo.utf8 = cmdline_utf8;
 
     nargs = argc - optind;
     if (nargs == 2) {
