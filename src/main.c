@@ -75,8 +75,9 @@
   #define COPYRIGHT      "Copyright"
 #endif
 
-#define POWWOW_VERSION VERSION                          \
-    ", " COPYRIGHT " 2000-2005 by Cosmos\n"             \
+#define POWWOW_VERSION_LINE                             \
+    "Powwow version " VERSION ", " COPYRIGHT " 2000-2005 by Cosmos"
+#define POWWOW_CREDITS                                  \
     COPYRIGHT " 2005 by bpk - http://hoopajoo.net\n"    \
     "(contributions by " POWWOW_HACKERS ")"
 
@@ -239,12 +240,14 @@ static void show_help(const char *prog)
 #define UTF8_ARG "--utf8, -u         "
 #define LAT1_ARG "--latin1, -l       "
 #define VER_ARG  "--version, -v      "
+#define VER_DESC "display the powwow version (twice: with details)"
 #else
 #define HELP_ARG "-h                "
 #define TLS_ARG  "-t, -T TLS-OPTIONS"
 #define UTF8_ARG "-u                "
 #define LAT1_ARG "-l                "
 #define VER_ARG  "-v                "
+#define VER_DESC "display the powwow version (-vv: with details)"
 #endif
 
 #ifdef USE_TLS
@@ -264,7 +267,7 @@ static void show_help(const char *prog)
            "  " UTF8_ARG "    assume and prefer UTF-8 on the connection"
            " (default)\n"
            "  " LAT1_ARG "    assume and prefer ISO-8859-1 on the connection\n"
-           "  " VER_ARG  "    display the powwow version\n",
+           "  " VER_ARG  "    " VER_DESC "\n",
            prog);
 #undef HELP_ARG
 #undef TLS_DESC
@@ -289,6 +292,7 @@ int main(int argc, char **argv)
     };
 #endif
     int cmdline_utf8 = -1;      /* --utf8: 1, --latin1: 0 */
+    int nversion = 0;           /* number of --version */
     for (int c;;) {
 #ifdef HAVE_GETOPT_LONG
         c = getopt_long(argc, argv, "hlt::uv", longopts, NULL);
@@ -321,14 +325,18 @@ int main(int argc, char **argv)
         case 'u':
             cmdline_utf8 = 1;
             break;
-        case 'v': {
-            printver(true);
-            tty_flush();
-            exit(EXIT_SUCCESS);
-        }
+        case 'v':
+            ++nversion;
+            break;
         default:
             abort();
         }
+    }
+
+    if (nversion > 0) {
+        printver(nversion > 1 ? 2 : 0);
+        tty_flush();
+        exit(EXIT_SUCCESS);
     }
 
     default_utf8 = cmdline_utf8 != 0;
@@ -430,7 +438,7 @@ int main(int argc, char **argv)
     printmotd();
 #endif
 
-    printver(false);
+    printver(1);
 
     if (nargs == 0) {
 	tty_printf(
@@ -519,10 +527,13 @@ under certain conditions; type \"#help copyright\" for details.\n"
 /*
  * show current version
  */
-void printver(bool verbose)
+void printver(int level)
 {
-    tty_printf("Powwow version %s\n", POWWOW_VERSION);
-    if (!verbose)
+    tty_printf("%s\n", POWWOW_VERSION_LINE);
+    if (level < 1)
+        return;
+    tty_printf("%s\n", POWWOW_CREDITS);
+    if (level < 2)
         return;
 
     tty_printf("\nOptions: "

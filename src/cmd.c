@@ -1376,7 +1376,7 @@ static void cmd_time(char *arg)
 
 static void cmd_ver(char *arg)
 {
-    printver(true);
+    printver(2);
 }
 
 static void cmd_emulate(char *arg)

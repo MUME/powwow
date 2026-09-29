@@ -110,7 +110,9 @@ set of the definition file's host
 .BR \-v ", " \-\-version
 display the
 .B powwow
-version and exit
+version and exit; given twice, also display the credits and the options
+.B powwow
+was compiled with
 .SH ENVIRONMENT
 .TP
 .B TERM
