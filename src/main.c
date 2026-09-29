@@ -1794,6 +1794,7 @@ static void get_user_input(void)
 		    if (--nchars)
 			done = 0;
 		} else if (p->seqlen == nchars) {
+		    insert_flush();
 		    if (flashback)
 			putbackcursor();
 		    p->funct(p->call_data);
@@ -1802,6 +1803,7 @@ static void get_user_input(void)
 		}
 	    }
 	}
+	insert_flush();
     }
 }
 

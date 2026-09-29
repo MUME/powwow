@@ -61,6 +61,7 @@ void clear_line(char *dummy);
 void enter_line(char *dummy);
 void putbackcursor(void);
 void insert_char(char c);
+void insert_flush(void);
 void next_word(char *dummy);
 void prev_word(char *dummy);
 void del_word_right(char *dummy);

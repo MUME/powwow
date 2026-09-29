@@ -698,16 +698,20 @@ int input_col(int p)
  */
 /*
  * move the cursor from pos to 'toline', 'tocol', scrolling the input
- * line if that is off the screen
+ * line if that is off the screen; with 'absolute', do not rely on the
+ * cursor being at pos
  */
-static void input_cursor_to(int toline, int tocol)
+static void input_cursor_to(int toline, int tocol, bool absolute)
 {
     int fromline = CURLINE(pos);
     if (toline < 0)
 	line0 -= toline, toline = 0;
     else if (toline > lines - 1)
 	line0 -= toline - lines + 1, toline = lines - 1;
-    tty_gotoxy_opt(CURCOL(pos), fromline, tocol, toline);
+    if (absolute)
+        tty_gotoxy(tocol, toline);
+    else
+        tty_gotoxy_opt(CURCOL(pos), fromline, tocol, toline);
 }
 
 void input_moveto(int new_pos)
@@ -725,7 +729,7 @@ void input_moveto(int new_pos)
 	return;
 
     if (line_status == 0)
-	input_cursor_to(CURLINE(new_pos), CURCOL(new_pos));
+	input_cursor_to(CURLINE(new_pos), CURCOL(new_pos), false);
     pos = new_pos;
 }
 
@@ -848,14 +852,16 @@ static int input_redraw_start(int p)
 /*
  * move the cursor from pos to where the text before byte offset 'from'
  * ends, to redraw from there; that is not where the cell at 'from' is
- * if it is a wide character that wrapped to the next row
+ * if it is a wide character that wrapped to the next row.  Move there
+ * directly: if the terminal drew some text with another width than we
+ * think, the redraw then repairs it
  */
 static void input_redraw_goto(int from)
 {
     if (line_status == 0) {
         int line, col;
         input_layout_end(from, &line, &col);
-        input_cursor_to(line, col);
+        input_cursor_to(line, col, true);
     }
 }
 
@@ -1030,8 +1036,10 @@ int tty_printf(const char *format, ...)
     return res;
 }
 
-static char tty_in_buf[MB_LEN_MAX + 1];
-static size_t tty_in_buf_used = 0;
+/* bytes read from the terminal, not yet converted: a whole paste, so
+ * that it is inserted at once (see insert_flush) */
+static char tty_in_buf[BUFSIZE];
+static size_t tty_in_start = 0, tty_in_used = 0;
 
 /* UTF-8 of a character read, not yet returned by tty_read() */
 static char tty_out_buf[UTF8_MAX];
@@ -1039,7 +1047,7 @@ static size_t tty_out_start = 0, tty_out_used = 0;
 
 int tty_has_chars(void)
 {
-    return tty_in_buf_used != 0 || tty_out_used != tty_out_start;
+    return tty_in_used != tty_in_start || tty_out_used != tty_out_start;
 }
 
 static int safe_mbtowc(wchar_t *pwc, char *s, size_t *n)
@@ -1085,14 +1093,16 @@ int tty_read(char *buf, size_t count)
         if (count == 0)
             break;
 
-        if (tty_in_buf_used > 0) {
+        if (tty_in_used > tty_in_start) {
             wchar_t wc;
-            int converted = safe_mbtowc(&wc, tty_in_buf, &tty_in_buf_used);
+            size_t avail = tty_in_used - tty_in_start;
+            int converted = safe_mbtowc(&wc, tty_in_buf + tty_in_start,
+                                        &avail);
+            tty_in_used = tty_in_start + avail;
             if (converted >= 0) {
                 if (converted == 0)
                     converted = 1;
-                tty_in_buf_used -= converted;
-                memmove(tty_in_buf, tty_in_buf + converted, tty_in_buf_used);
+                tty_in_start += converted;
                 tty_out_start = 0;
                 tty_out_used = utf8_put(wc, tty_out_buf);
                 continue;
@@ -1101,13 +1111,18 @@ int tty_read(char *buf, size_t count)
         if (result > 0)
             break;
 
-        int did_read = read(tty_read_fd, tty_in_buf + tty_in_buf_used,
-                            sizeof tty_in_buf - tty_in_buf_used);
+        /* keep an incomplete character at the start of the buffer */
+        memmove(tty_in_buf, tty_in_buf + tty_in_start,
+                tty_in_used - tty_in_start);
+        tty_in_used -= tty_in_start;
+        tty_in_start = 0;
+        int did_read = read(tty_read_fd, tty_in_buf + tty_in_used,
+                            sizeof tty_in_buf - tty_in_used);
         if (did_read < 0 && errno == EINTR)
             continue;
         if (did_read <= 0)
             break;
-        tty_in_buf_used += did_read;
+        tty_in_used += did_read;
     }
 
     return result;

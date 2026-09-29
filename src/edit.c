@@ -937,6 +937,25 @@ void putbackcursor(void)
  * insert a typed byte on screen, once it completes a printable
  * UTF-8 character
  */
+/* characters typed, to insert at once (see insert_flush) */
+static char insbuf[BUFSIZE];
+static int ninsbuf;
+
+/*
+ * insert the characters typed so far; inserting all the characters
+ * read at once draws a pasted grapheme cluster whole, as some terminals
+ * (Terminal.app) draw its beginning with another width
+ */
+void insert_flush(void)
+{
+    if (ninsbuf == 0)
+        return;
+    if (flashback) putbackcursor();
+    input_insert_follow_chars(insbuf, ninsbuf);
+    ninsbuf = 0;
+}
+
+/* insert typed character (byte) 'c' before the next insert_flush() */
 void insert_char(char c)
 {
     static char pend[UTF8_MAX];
@@ -968,11 +987,13 @@ void insert_char(char c)
     if (utf8_get(pend, n, &cp) != n || (cp >= 0x80 && cp < 0xa0))
         return;                 /* invalid or C1 control */
 
-    if (edlen < BUFSIZE - n - 1) {
-	if (flashback) putbackcursor();
-	input_insert_follow_chars(pend, n);
-	if (ISRPAREN(c))
+    if (edlen + ninsbuf < BUFSIZE - n - 1) {
+        memcpy(insbuf + ninsbuf, pend, n);
+        ninsbuf += n;
+	if (ISRPAREN(c)) {
+            insert_flush();
 	    flashparen(c);
+        }
     }
 }
 
@@ -991,8 +1012,10 @@ static void insert_string(char *arg)
     if (len > 1) {
 	if (flashback) putbackcursor();
 	input_insert_follow_chars(buf, len);
-    } else if (len == 1)
+    } else if (len == 1) {
 	insert_char(buf[0]); /* also flash matching parentheses */
+        insert_flush();
+    }
 }
 
 /*
