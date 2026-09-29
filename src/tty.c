@@ -730,6 +730,28 @@ static void input_newline(int *line)
 }
 
 /*
+ * erase the screen from the cursor, at 'line', 'col', to the end of the
+ * input line
+ */
+static void input_erase_below(int line, int col)
+{
+    if (edattrbg)
+        tty_puts(edattrend);
+    if (wrapglitch && col == cols - 1) {
+        /*
+         * iTerm2 erases the character before the last column too, if
+         * the last column held the right half of a wide character
+         * whose left half was overwritten: overwrite that half first
+         * (the cursor stays in the last column)
+         */
+        tty_putc(' ');
+    }
+    tty_puts(line < lines - 1 ? tty_clreoscr : tty_clreoln);
+    if (edattrbg)
+        tty_puts(edattrbeg);
+}
+
+/*
  * redraw the input line from byte offset 'from' to its end, clear the
  * rest of the screen, and put the cursor at pos; the cursor must be
  * where the text before 'from' ends (see input_redraw_goto)
@@ -745,11 +767,13 @@ static void input_redraw_from(int from)
         int w = utf8_cell_width(s, n);
         if (col + w > cols_1) {
             if (col < cols_1) {
-                /* a wide character did not fit; clear the rest of
-                 * the row, which may hold half of an old one */
+                /* a wide character did not fit; blank the rest of
+                 * the row, which may hold half of an old one (with
+                 * spaces: see input_erase_below) */
                 if (edattrbg)
                     tty_puts(edattrend);
-                tty_puts(tty_clreoln);
+                for (; col < cols_1; col++)
+                    tty_putc(' ');
                 if (edattrbg)
                     tty_puts(edattrbeg);
             }
@@ -765,11 +789,7 @@ static void input_redraw_from(int from)
         col = 0;
     }
 
-    if (edattrbg)
-        tty_puts(edattrend);
-    tty_puts(line < lines - 1 ? tty_clreoscr : tty_clreoln);
-    if (edattrbg)
-        tty_puts(edattrbeg);
+    input_erase_below(line, col);
 
     int pline, pcol;
     input_layout(pos, &pline, &pcol);
