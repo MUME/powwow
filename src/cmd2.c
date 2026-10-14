@@ -588,7 +588,6 @@ void parse_action(char *str, int onprompt)
 	    /* '=': list action */
         } else if (assign == '='){
             if (np && *np) {
-		int len = (int)strlen((*np)->label);
 		fmt_next_edit("#%s %c%c%s %s=%s", ONPROMPT,
                               action_chars[(*np)->type],
                               (*np)->active ? '+' : '-',
@@ -1350,10 +1349,7 @@ void parse_bind(char *arg)
     } else {
         np = *(npp = lookup_key(name));
         if (np) {
-	    char *seqname;
-	    int seqlen;
-	    seqname = seq_name(np->sequence, np->seqlen);
-	    seqlen = strlen(seqname);
+	    char *seqname = seq_name(np->sequence, np->seqlen);
 
 	    if (np->funct == key_run_command)
 		fmt_next_edit("#bind %s %s=%s", name, seqname, np->call_data);

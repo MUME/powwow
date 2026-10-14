@@ -1381,7 +1381,7 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
      */
     char buffer[TCP_READ_EXPANSION * BUFSIZE + 2];
     char *buf = buffer, *newline;
-    int got, otcp_fd, i;
+    int i;
 
     if (current_connection->fragment) {
 	/* leave tcp_read() room to decode; see TCP_READ_MIN */
@@ -1398,7 +1398,7 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
     } else
 	i = 0;
 
-    got = tcp_read(current_connection, buf, TCP_READ_EXPANSION * BUFSIZE - i);
+    int got = tcp_read(current_connection, buf, TCP_READ_EXPANSION * BUFSIZE - i);
     if (!got)
 	return;
     if (!FD_ISSET(current_connection->fd, fdset)
