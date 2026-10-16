@@ -4,48 +4,9 @@ AM_INIT_AUTOMAKE
 
 AC_CANONICAL_HOST
 
-AC_ARG_ENABLE(vt100,
-	AC_HELP_STRING([--enable-vt100],
-			[Hard code VT100 escape sequences; use if you have no termcap [[default=no]]]),
-        ,
-        [enable_vt100="no"]
-)
-AS_IF([ test "${enable_vt100}" = yes ],
-      [ AC_DEFINE(USE_VT100) ])
-
-AC_ARG_ENABLE(regex,
-
-        AS_HELP_STRING([--enable-regex],
-            [Enable regular expressions [[default=yes]]])
-        []
-        [yes            - find first available: pcreposix, libc]
-        [pcreposix      - use pcreposix]
-        [libc           - use libc]
-        ,,
-        [enable_regex="yes"]
-)
-
-AC_ARG_ENABLE(sort,
-	AC_HELP_STRING([--enable-sort],
-			[Sort aliases and actions [[default=no]]]),
-        ,
-        [enable_sort="no"]
-)
-AS_IF([ test "${enable_sort}" = yes ],
-      [ AC_DEFINE(DO_SORT) ])
-
-AC_ARG_ENABLE(noshell,
-	AC_HELP_STRING([--enable-noshell],
-			[Disables the "#!" command [[default=no]]]),
-        ,
-        [enable_noshell="no"]
-)
-AS_IF([ test "${enable_noshell}" = yes ],
-      [ AC_DEFINE(NO_SHELL) ])
-
 AC_ARG_ENABLE(ansibug,
 	AC_HELP_STRING([--enable-ansibug],
-		       [Enables fixes for "#mark" ansi bugs on some terminals [[default=no]]]),
+		       [Enables fixes for "#mark" ansi bugs on some terminals [default=no]]),
         ,
         [enable_ansibug="no"]
 )
@@ -63,6 +24,55 @@ AS_IF([ test -z "${enable_bsd}" ],
 AS_IF([ test "${enable_bsd}" = yes ],
       [ AC_DEFINE(USE_SGTTY)
         AC_DEFINE(BSD_LIKE) ])
+
+# locale stuff tries to convert server output -> UTF-8
+#
+AC_ARG_ENABLE(locale,
+	AS_HELP_STRING([--enable-locale], [Use locale for converting server output to UTF-8. [default=no]]),
+    ,
+    [enable_locale="no"]
+)
+AS_IF([ test "x${enable_locale}" = "xyes" ],
+      [ AC_DEFINE(USE_LOCALE) ])
+
+AC_ARG_ENABLE(noshell,
+	AC_HELP_STRING([--enable-noshell],
+			[Disables the "#!" command [default=no]]),
+        ,
+        [enable_noshell="no"]
+)
+AS_IF([ test "${enable_noshell}" = yes ],
+      [ AC_DEFINE(NO_SHELL) ])
+
+AC_ARG_ENABLE(regex,
+
+        AS_HELP_STRING([--enable-regex],
+            [Enable regular expressions [default=yes]])
+        []
+        [yes            - find first available: pcreposix, libc]
+        [pcreposix      - use pcreposix]
+        [libc           - use libc]
+        ,,
+        [enable_regex="yes"]
+)
+
+AC_ARG_ENABLE(sort,
+	AC_HELP_STRING([--enable-sort],
+			[Sort aliases and actions [default=no]]),
+        ,
+        [enable_sort="no"]
+)
+AS_IF([ test "${enable_sort}" = yes ],
+      [ AC_DEFINE(DO_SORT) ])
+
+AC_ARG_ENABLE(vt100,
+	AC_HELP_STRING([--enable-vt100],
+			[Hard code VT100 escape sequences; use if you have no termcap [default=no]]),
+        ,
+        [enable_vt100="no"]
+)
+AS_IF([ test "${enable_vt100}" = yes ],
+      [ AC_DEFINE(USE_VT100) ])
 
 AC_MSG_CHECKING([man page encoding])
 if test -z "${MAN_PAGE_ENCODING}"; then
@@ -107,8 +117,6 @@ AC_SUBST(dl_ldflags)
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h unistd.h])
-AC_CHECK_HEADER([locale.h],
-    [AC_CHECK_FUNC([putwc],[AC_DEFINE(USE_LOCALE)])])
 
 if test "x${enable_regex}" = "xno"; then
     AC_MSG_RESULT([Regex support disabled])
@@ -179,12 +187,13 @@ User binaries:      $(eval eval eval echo "${bindir}")
 Data directory:     $(eval eval eval echo "${datadir}/${PACKAGE}")
 Plugin directory:   $(eval eval eval echo "${plugindir}")
 
-enable-vt100:       ${enable_vt100}
-enable-regex:       ${enable_regex} (${enable_regex_using})
-enable-sort:        ${enable_sort}
-enable-noshell:     ${enable_noshell}
 enable-ansibug:     ${enable_ansibug}
 enable-bsd:         ${enable_bsd}
+enable-locale:      ${enable_locale}
+enable-noshell:     ${enable_noshell}
+enable-regex:       ${enable_regex} (${enable_regex_using})
+enable-sort:        ${enable_sort}
+enable-vt100:       ${enable_vt100}
 
 Man page encoding:  ${MAN_PAGE_ENCODING}
 
