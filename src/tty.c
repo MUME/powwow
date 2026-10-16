@@ -9,6 +9,9 @@
  *  (at your option) any later version.
  *
  */
+
+/* clang-format off */
+
 #include <alloca.h>
 #include <assert.h>
 #include <errno.h>
@@ -20,7 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <termcap.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -29,13 +31,9 @@
 #include <locale.h>
 #endif
 
-#include "defines.h"
-#include "main.h"
-#include "edit.h"
-#include "utils.h"
-#include "list.h"
-#include "tty.h"
-#include "tcp.h"
+#ifndef USE_VT100
+#include <termcap.h>
+#endif
 
 #ifndef USE_SGTTY
 #  ifdef APOLLO
@@ -70,6 +68,14 @@
 #  define O_CBREAK CBREAK
 #endif
 
+#include "defines.h"
+#include "main.h"
+#include "edit.h"
+#include "utils.h"
+#include "list.h"
+#include "tty.h"
+#include "tcp.h"
+
 #if defined(TCSETS) || defined(TCSETATTR)
 #  ifndef TCSETS		/* cc for HP-UX  SHOULD define this... */
 #    define TCSETS TCSETATTR
@@ -91,8 +97,6 @@ typedef struct termio termiostruct;
 #    define O_SUSP SUSP
 #  endif
 #endif
-
-/* int ioctl(); */
 
 #ifdef USE_VT100	/* hard-coded vt100 features if no termcap: */
 
