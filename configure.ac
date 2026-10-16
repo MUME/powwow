@@ -35,15 +35,6 @@ AC_ARG_ENABLE(locale,
 AS_IF([ test "x${enable_locale}" = "xyes" ],
       [ AC_DEFINE(USE_LOCALE) ])
 
-AC_ARG_ENABLE(noshell,
-	AC_HELP_STRING([--enable-noshell],
-			[Disables the "#!" command [default=no]]),
-        ,
-        [enable_noshell="no"]
-)
-AS_IF([ test "${enable_noshell}" = yes ],
-      [ AC_DEFINE(NO_SHELL) ])
-
 AC_ARG_ENABLE(regex,
 
         AS_HELP_STRING([--enable-regex],
@@ -55,6 +46,15 @@ AC_ARG_ENABLE(regex,
         ,,
         [enable_regex="yes"]
 )
+
+AC_ARG_ENABLE(noshell,
+	AC_HELP_STRING([--enable-shell],
+			[Enable the "#!" command [default=yes]]),
+        ,
+        [enable_shell="yes"]
+)
+AS_IF([ test "${enable_shell}" = yes ],
+      [ AC_DEFINE(USE_SHELL) ])
 
 AC_ARG_ENABLE(sort,
 	AC_HELP_STRING([--enable-sort],
@@ -190,8 +190,8 @@ Plugin directory:   $(eval eval eval echo "${plugindir}")
 enable-ansibug:     ${enable_ansibug}
 enable-bsd:         ${enable_bsd}
 enable-locale:      ${enable_locale}
-enable-noshell:     ${enable_noshell}
 enable-regex:       ${enable_regex} (${enable_regex_using})
+enable-shell:       ${enable_shell}
 enable-sort:        ${enable_sort}
 enable-vt100:       ${enable_vt100}
 
