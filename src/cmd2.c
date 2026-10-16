@@ -16,6 +16,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h> /* strcasecmp() */
 #include <stdlib.h>
 #include <signal.h>
 #include <ctype.h>
@@ -25,9 +26,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <errno.h>
-
-int strcasecmp();
-int select();
 
 #include "defines.h"
 #include "main.h"

@@ -14,11 +14,13 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <termcap.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -44,7 +46,9 @@
  * many warnings, but seems to be necessary at times. works anyway.
  */
 #    include <termios.h>
-#    include <termio.h>
+#    ifndef __linux__
+#      include <termio.h>
+#    endif
 #  endif
 /* #else USE_SGTTY */
 #endif
@@ -105,12 +109,6 @@ static char kpadstart[] = "", kpadend[] = "", begoln[] = "\r",
 static int len_begoln = 1, len_leftcur = 3, len_upcur = 3, gotocost = 8;
 
 #else /* not USE_VT100, termcap function declarations */
-
-int tgetent();
-int tgetnum();
-int tgetflag();
-char *tgetstr();
-char *tgoto();
 
 /* terminal escape sequences */
 static char kpadstart[CAPLEN], kpadend[CAPLEN],
@@ -446,6 +444,11 @@ void tty_add_walk_binds(void)
     add_keynode("KP9", "\033Oy", 0, key_run_command, "u");
 }
 
+static void suspend_powwow_str(char * arg) {
+  (void)arg;
+  suspend_powwow(SIGTSTP);
+}
+
 /*
  * initialize the key binding list
  */
@@ -453,7 +456,7 @@ void tty_add_initial_binds(void)
 {
     struct b_init_node {
 	char *label, *seq;
-	function_any funct;
+	function_str funct;
     };
     static struct b_init_node b_init[] = {
 	{ "LF",		"\n",		enter_line },
@@ -472,7 +475,7 @@ void tty_add_initial_binds(void)
 	{ "C-p",	"\020",		prev_line },
 	{ "C-t",	"\024",		transpose_chars },
 	{ "C-w",	"\027",		to_history },
-	{ "C-z",	"\032",		suspend_powwow },
+	{ "C-z",	"\032",		suspend_powwow_str },
 	{ "M-Tab",	"\033\t",	complete_line },
 	{ "M-b",	"\033b",	prev_word },
 	{ "M-d",	"\033d",	del_word_right },
@@ -483,7 +486,7 @@ void tty_add_initial_binds(void)
 	{ "M-l",	"\033l",	downcase_word },
 	{ "M-BS",	"\033\b",	del_word_left },
 	{ "M-Del",	"\033\177",	del_word_left },
-	{ "",		"",		0 }
+	{ "",		"",		NULL }
     };
     struct b_init_node *p = b_init;
     do {

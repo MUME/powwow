@@ -26,7 +26,9 @@
  * many warnings, but seems to be necessary at times. works anyway.
  */
 #  include <termios.h>
-#  include <termio.h>
+#  ifndef __linux__
+#    include <termio.h>
+#  endif
 # endif
 /* #else USE_SGTTY */
 #endif
