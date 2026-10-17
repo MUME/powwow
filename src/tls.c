@@ -260,7 +260,7 @@ bool parse_tls_flag(struct tls_options *dst, const char **argp,
 const char *tlsopt_str(const struct tls_options *tlsopt)
 {
     if (!tlsopt->use_tls)
-        return "";
+        return " " NO_TLS_FLAG;
 
     static char *buf;
     free(buf);

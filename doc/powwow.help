@@ -149,7 +149,7 @@ Attributes: one or more of bold, blink, inverse, underline and/or
 black, red, green, yellow, blue, magenta, cyan, white and
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, none.
 @host
-#host [hostname port [--tls[=options]] [--utf8|--latin1]]
+#host [hostname port [--tls[=options]|--no-tls] [--utf8|--latin1]]
 
 Sets the default host that powwow shall try to connect to when you use
 #connect.
@@ -158,6 +158,10 @@ shown (provided that you have specified them).
 --latin1 makes connections to the host start out as ISO-8859-1 and
 prefer it over UTF-8 when negotiating; --utf8, the default unless
 powwow was started with --latin1, does the same for UTF-8.
+--no-tls makes connections to the host unencrypted; --tls, the default
+unless powwow was started with --no-tls, makes them use TLS.
+(In definition files written by older versions of powwow, a #host
+without --tls means --no-tls.)
 Available TLS options are:
   no-verify    do not verify the CA certificate
   host=<host>  assume the CA certificate host name is <host>
@@ -169,7 +173,8 @@ Available TLS options are:
 Set your standard foreground and background to the colours you specify.
 #color  		sets default colors
 @connect
-#connect [session-id] [initstr] [address port] [--tls[=options]]
+#connect [session-id] [initstr] [address port]
+         [--tls[=options]|--no-tls]
          [--utf8|--latin1]
 
 Connect a new session.
@@ -182,7 +187,8 @@ If no address/port is defined, you either get connected to the default
 host and port (if you have no open connection) or a list of open
 connections is shown.
 
-For documentation on the --tls, --utf8 and --latin1 options, see
+For documentation on the --tls, --no-tls, --utf8 and --latin1 options,
+see
 '#help host'.
 
 Last opened session will be the default one.

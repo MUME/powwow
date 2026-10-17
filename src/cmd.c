@@ -145,7 +145,7 @@ cmdstruct default_commands[] =
     C("history",    cmd_history,
       "[{number|(expr)}]\tlist/execute commands in history"),
     C("host",       cmd_host,
-      "[hostname port [--tls[=options]]]]\tset/show address of default host"),
+      "[hostname port [--tls[=options]|--no-tls]]]\tset/show address of default host"),
     C("identify",   cmd_identify,
       "[startact [endact]]\tsend MUME client identification"),
     C("if",         cmd_if,
@@ -789,16 +789,21 @@ static void cmd_host(char *arg)
             char buf[BUFSIZE];
             arg = split_first_word(buf, BUFSIZE, arg);
 	    int port = atoi(buf);
-            struct tls_options tlsopt = { 0 };
+            struct tls_options tlsopt = { .use_tls = default_tls };
             bool utf8 = default_utf8;
             while (*(arg = skipspace(arg))) {
                 arg = split_first_word(buf, BUFSIZE, arg);
                 if (parse_charset_flag(buf, &utf8))
                     continue;
+                if (strcmp(buf, NO_TLS_FLAG) == 0) {
+                    tlsopt = (struct tls_options){ .use_tls = false };
+                    continue;
+                }
+                struct tls_options t = { .use_tls = false };
                 const char *targ = buf;
-                if (!parse_tls_flag(&tlsopt, &targ, true)
-                    || !tlsopt.use_tls)
+                if (!parse_tls_flag(&t, &targ, true) || !t.use_tls)
                     goto fail;
+                tlsopt = t;
             }
 
 	    my_strncpy(hostinfo.name, hostname, BUFSIZE - 1);
@@ -821,7 +826,7 @@ static void cmd_host(char *arg)
 
 fail:
     error = NOT_SUPPORTED_ERROR;
-    PRINTF("#syntax: #host hostname port [--tls[=options]]"
+    PRINTF("#syntax: #host hostname port [--tls[=options]|" NO_TLS_FLAG "]"
            " [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
 }
 
@@ -2358,28 +2363,33 @@ static void cmd_color(char *arg)
 #endif
 
 /*
- * consume any --tls, --utf8 and --latin1 flags starting at *argp,
- * leaving *argp at the next non-flag argument; *utf8 is set to 1 for
- * --utf8 and 0 for --latin1
+ * consume any --tls, --no-tls, --utf8 and --latin1 flags starting at
+ * *argp, leaving *argp at the next non-flag argument; *tls is set to 1
+ * for --tls and 0 for --no-tls, *utf8 to 1 for --utf8 and 0 for --latin1
  */
 static bool maybe_flag_args(char **argp, struct tls_options *tlsopt,
-                            int *utf8)
+                            int *tls, int *utf8)
 {
     while (*argp != NULL && **argp) {
         bool u;
         if (parse_charset_flag(*argp, &u)) {
             *utf8 = u;
         } else {
-            if (tlsopt->use_tls)
+            if (*tls >= 0)
                 return true;
 
-            const char *targ = *argp;
-            if (!parse_tls_flag(tlsopt, &targ, true)) {
-                PRINTF("#connect: invalid argument '%s'\n", *argp);
-                return false;
+            if (strcmp(*argp, NO_TLS_FLAG) == 0) {
+                *tls = 0;
+            } else {
+                const char *targ = *argp;
+                if (!parse_tls_flag(tlsopt, &targ, true)) {
+                    PRINTF("#connect: invalid argument '%s'\n", *argp);
+                    return false;
+                }
+                if (!tlsopt->use_tls)
+                    return true;
+                *tls = 1;
             }
-            if (!tlsopt->use_tls)
-                return true;
         }
         *argp = strtok(NULL, " ");
     }
@@ -2397,15 +2407,16 @@ static void cmd_connect(char *arg)
     }
 
     struct tls_options tlsopt = { .use_tls = false };
+    int tls = -1;               /* no --tls or --no-tls */
     int utf8 = -1;              /* no --utf8 or --latin1 */
 
     int argc = 1;
     char *s1 = strtok(arg, " ");
-    if (!maybe_flag_args(&s1, &tlsopt, &utf8))
+    if (!maybe_flag_args(&s1, &tlsopt, &tls, &utf8))
         return;
 
     char *s2 = strtok(NULL, " ");
-    if (!maybe_flag_args(&s2, &tlsopt, &utf8))
+    if (!maybe_flag_args(&s2, &tlsopt, &tls, &utf8))
         return;
 
     char *s3 = NULL, *s4 = NULL;
@@ -2413,12 +2424,12 @@ static void cmd_connect(char *arg)
     if (s2 && *s2) {
         argc++;
         s3 = strtok(NULL, " ");
-        if (!maybe_flag_args(&s3, &tlsopt, &utf8))
+        if (!maybe_flag_args(&s3, &tlsopt, &tls, &utf8))
             return;
         if (s3 && *s3) {
             argc++;
             s4 = strtok(NULL, " ");
-            if (!maybe_flag_args(&s4, &tlsopt, &utf8))
+            if (!maybe_flag_args(&s4, &tlsopt, &tls, &utf8))
                 return;
             if (s4 && *s4)
                 argc++;
@@ -2428,14 +2439,17 @@ static void cmd_connect(char *arg)
     if (argc <= 2) {
 	if (*hostinfo.name)
 	    tcp_open(s1, s2, hostinfo.name, hostinfo.port,
-                     tlsopt.use_tls ? &tlsopt : &hostinfo.tlsopt,
+                     tls >= 0 ? &tlsopt : &hostinfo.tlsopt,
                      utf8 >= 0 ? utf8 : hostinfo.utf8);
 	else {
 	    PRINTF("#connect: no host defined!\n#syntax: #connect session-id"
-                   " [init-str] [hostname] [port] [--tls[=tls-options]]"
+                   " [init-str] [hostname] [port]"
+                   " [--tls[=tls-options]|" NO_TLS_FLAG "]"
                    " [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
 	}
     } else if (argc == 3) {
+        if (tls < 0)
+            tlsopt.use_tls = default_tls;
         if (utf8 < 0)
             utf8 = default_utf8;
 	if (!*hostinfo.name) {
@@ -2447,8 +2461,10 @@ static void cmd_connect(char *arg)
 	tcp_open(s1, NULL, s2, atoi(s3), &tlsopt, utf8);
     } else {
         char *s5 = strtok(NULL, " ");
-        if (!maybe_flag_args(&s5, &tlsopt, &utf8))
+        if (!maybe_flag_args(&s5, &tlsopt, &tls, &utf8))
             return;
+        if (tls < 0)
+            tlsopt.use_tls = default_tls;
         if (utf8 < 0)
             utf8 = default_utf8;
 

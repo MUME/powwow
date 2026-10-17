@@ -104,9 +104,9 @@ CHARACTER SETS
 	--utf8 (or -u) selects the default, UTF-8, for example to
 	override the #host of a definition file, or on #connect when
 	powwow was started with --latin1. Definition files save the
-	character set with #host; in files written by powwow versions
-	that did not use UTF-8 by default, a #host without --utf8 means
-	ISO-8859-1.
+	character set with #host; a #host without --utf8 or --latin1,
+	as in files written by older versions of powwow, means UTF-8
+	(unless powwow was started with --latin1).
 
 	#connect lists the character set used by each connection, and
 	a message is printed when it changes (unless #option info is off).
@@ -1084,7 +1084,8 @@ SPECIAL COMMANDS: ALL OTHERS
 	your compiler supports it) when powwow was compiled.
 	-----------------------------------------------------------
 	Multiple connections handling commands
-	#connect [session-id [initstr] [host port]] [--tls[=options]]
+	#connect [session-id [initstr] [host port]]
+		 [--tls[=options]|--no-tls]
 		 [--utf8|--latin1]
 				connect a new session / list sessions
 	#snoop session-id	toggle output display for session

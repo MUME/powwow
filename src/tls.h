@@ -7,6 +7,9 @@ struct connsess;
 struct tls_options;
 bool tls_upgrade(struct connsess *conn, const struct tls_options *tlsopt);
 
+#define NO_TLS_FLAG "--no-tls"
+
+/* does not handle NO_TLS_FLAG */
 bool parse_tls_flag(struct tls_options *dst, const char **argp,
                     bool require_prefix);
 const char *tlsopt_str(const struct tls_options *tlsopt);

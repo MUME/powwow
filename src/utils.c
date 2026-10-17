@@ -1151,13 +1151,13 @@ int read_settings(void)
             }
 	    *--p = ' ';
 	}
-        /* connections were ISO-8859-1 unless --utf8 was given (a
-         * #host without it) when files were not UTF-8 yet */
-        bool saved_default_utf8 = default_utf8;
+        /* connections did not use TLS unless --tls was given (a #host
+         * without it) when files were not UTF-8 yet */
+        bool saved_default_tls = default_tls;
         if (savefilever < UTF8_SAVEFILEVER)
-            default_utf8 = false;
+            default_tls = false;
 	parse_user_input(cmd, 1);
-        default_utf8 = saved_default_utf8;
+        default_tls = saved_default_tls;
         if (error != 0) {
             PRINTF("#error: loading save-file failed\n");
             break;

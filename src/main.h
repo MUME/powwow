@@ -46,6 +46,9 @@ extern struct hostinfo hostinfo;
 /* the charset of connections without --utf8 or --latin1: UTF-8, unless
  * powwow was started with --latin1 */
 extern bool default_utf8;
+/* whether connections without --tls or --no-tls use TLS: yes, unless
+ * powwow was started with --no-tls or built without TLS support */
+extern bool default_tls;
 
 #define UTF8_FLAG   "--utf8"
 #define LATIN1_FLAG "--latin1"

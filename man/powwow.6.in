@@ -84,7 +84,8 @@ loaded.
 display help text and exit
 .TP
 \fB\-\-tls\fR[=\fItls-options\fR]
-enable encrypted TLS connections; additional
+use encrypted TLS connections (the default); this overrides the TLS
+setting of the definition file's host; additional
 .IR tls-options ,
 separated by colons (\[oq]:\[cq]), are:
 .RS
@@ -97,6 +98,10 @@ assume the host name to be
 .I HOST
 when validating the CA certificate
 .RE
+.TP
+.BR \-n ", " \-\-no\-tls
+use unencrypted connections; this overrides the TLS setting of the
+definition file's host
 .TP
 .BR \-l ", " \-\-latin1
 start the connection in ISO-8859-1 and prefer ISO-8859-1 when negotiating
