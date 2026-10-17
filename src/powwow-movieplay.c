@@ -15,8 +15,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-void millisec_sleep(msec)
-long msec;
+/* clang-format off */
+
+void millisec_sleep(long msec)
 {
     struct timeval t;
     t.tv_sec = msec / 1000;
@@ -24,8 +25,7 @@ long msec;
     select(0, NULL, NULL, NULL, &t);
 }
 
-int main(argc, argv)
-int argc; char *argv[];
+int main(int argc, char *argv[])
 {
     FILE *infile, *outfile;
     char buf[4096];

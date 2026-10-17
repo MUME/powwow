@@ -12,6 +12,8 @@
  *
  */
 
+/* clang-format off */
+
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
@@ -62,7 +64,7 @@ static void F(help), F(shell), F(action), F(add),
   F(rawsend), F(rawprint), F(rebind), F(rebindall), F(rebindALL),
   F(record), F(request), F(reset), F(retrace),
   F(save), F(send), F(setvar), F(snoop), F(spawn), F(stop),
-  F(time), F(var), F(ver), F(while), F(write),
+  F(substitute), F(time), F(var), F(ver), F(while), F(write),
   F(eval), F(zap), F(module), F(group), F(speedwalk), F(groupdelim);
 
 #ifdef BUG_TELNET
@@ -83,7 +85,7 @@ cmdstruct default_commands[] =
       "[keys|math|command]\tthis text, or help on specified topic"),
     C("17", (function_str)0,
       "command\t\t\trepeat \"command\" 17 times"),
-#ifndef NO_SHELL
+#ifdef USE_SHELL
     C("!",          cmd_shell,
       "shell-command\t\texecute a shell command using /bin/sh"),
 #endif
@@ -227,6 +229,8 @@ cmdstruct default_commands[] =
       "connect-id command\ttalk with a shell command"),
     C("speedwalk",  cmd_speedwalk,
       "[speedwalk sequence]\texecute a speedwalk sequence explicitly"),
+    C("substitute",       cmd_substitute,
+      "[string[=[text]]]\tdelete/list/define substitutions"),
     C("stop",       cmd_stop,
       "\t\t\t\tremove all delayed commands from active list"),
     C("time",       cmd_time,
@@ -566,7 +570,7 @@ static void cmd_clear(char *arg)
     }
 }
 
-#ifndef NO_SHELL
+#ifdef USE_SHELL
 static void cmd_shell(char *arg)
 {
     if (!*arg) {
@@ -1281,6 +1285,12 @@ static void cmd_reset(char *arg)
 	if (!all)
 	    return;
     }
+    if (all || !strcmp(arg, "substitute")) {
+        while (substitutions)
+	    delete_substnode(&substitutions);
+	if (!all)
+	    return;
+    }
     if (all || !strcmp(arg, "var")) {
         int n;
 	varnode **first;
@@ -1333,6 +1343,14 @@ static void cmd_stop(char *arg)
     if (opt_info) {
 	PRINTF("#all delayed labels are now disabled.\n");
     }
+}
+
+static void cmd_substitute(char *arg)
+{
+    if (!*arg)
+	show_substitutions();
+    else
+	parse_substitute(arg);
 }
 
 static void cmd_time(char *arg)
@@ -2709,5 +2727,3 @@ static void cmd_put(char *arg)
 	put_history(arg);
     ptrdel(pbuf);
 }
-
-

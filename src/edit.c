@@ -10,6 +10,8 @@
  *
  */
 
+/* clang-format off */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -133,7 +135,7 @@ void draw_prompt(void)
         char *esc, *pstr;
 	int e = error;
 	error = 0;
-	marked_prompt = ptraddmarks(marked_prompt, prompt->str);
+	marked_prompt = ptraddsubst_and_marks(marked_prompt, prompt->str);
 	if (MEM_ERROR) { promptzero(); errmsg("malloc(prompt)"); return; }
 
         /* if prompt ends in unterminated escape code, do not print
@@ -490,7 +492,7 @@ void complete_word(char *dummy)
     int k, n;
 
     /* find word start */
-    if (last_edit_cmd == (function_any)complete_word && comp_len) {
+    if (last_edit_cmd == complete_word && comp_len) {
 	k = comp_len;
 	input_moveto(pos - k);
 	n = pos - root_len;
@@ -550,7 +552,7 @@ void complete_line(char *dummy)
     static int curr_line = MAX_HIST-1, root_len = 0, first_line = 0;
     int i;
 
-    if (last_edit_cmd != (function_any)complete_line) {
+    if (last_edit_cmd != complete_line) {
 	root_len = edlen;
 	first_line = curr_line = curline;
     }
@@ -762,7 +764,7 @@ void upcase_word(char *dummy)
     int opos = pos;
     int npos = pos;
 
-    if (last_edit_cmd == (function_any)upcase_word)
+    if (last_edit_cmd == upcase_word)
 	npos = 0;
     else {
 	while (npos > 0 && IS_DELIM(edbuf[npos])) npos--;
@@ -770,7 +772,7 @@ void upcase_word(char *dummy)
     }
     input_moveto(npos);
     while (!IS_DELIM(edbuf[npos]) ||
-	   (last_edit_cmd == (function_any)upcase_word && edbuf[npos]))
+	   (last_edit_cmd == upcase_word && edbuf[npos]))
 	input_overtype_follow(toupper(edbuf[npos++]));
     input_moveto(opos);
 }
@@ -783,7 +785,7 @@ void downcase_word(char *dummy)
     int opos = pos;
     int npos = pos;
 
-    if (last_edit_cmd == (function_any)downcase_word)
+    if (last_edit_cmd == downcase_word)
 	npos = 0;
     else {
 	while (npos > 0 && IS_DELIM(edbuf[npos])) npos--;
@@ -791,7 +793,7 @@ void downcase_word(char *dummy)
     }
     input_moveto(npos);
     while (!IS_DELIM(edbuf[npos]) ||
-	   (last_edit_cmd == (function_any)downcase_word && edbuf[npos])) {
+	   (last_edit_cmd == downcase_word && edbuf[npos])) {
 	input_overtype_follow(tolower(edbuf[npos++]));
     }
     input_moveto(opos);
@@ -958,4 +960,3 @@ void edit_bootstrap(void)
 {
     default_completions();
 }
-

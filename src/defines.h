@@ -215,14 +215,24 @@ typedef struct aliasnode {
     int active;
 } aliasnode;
 
-typedef struct marknode {
-    struct marknode *next;
+typedef struct basenode {
     char *pattern;
-    int attrcode;
-    char *start, *end;
+    char *start, *end; // temporary data: start/end of current line match
     char mbeg;
     char wild;
+} basenode;
+
+typedef struct marknode {
+    struct marknode *next;
+    basenode b;
+    int attrcode;
 } marknode;
+
+typedef struct substnode {
+    struct substnode *next;
+    basenode b;
+    char *replacement;
+} substnode;
 
 typedef struct triggernode {
     struct triggernode *next;
@@ -303,4 +313,3 @@ typedef struct editsess {
 } editsess;
 
 #endif /* _DEFINES_H_ */
-

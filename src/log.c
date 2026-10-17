@@ -14,15 +14,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "defines.h"
-#include "main.h"
-#include "log.h"
-#include "tty.h"
 #include "list.h"
+#include "log.h"
+#include "main.h"
+#include "tty.h"
 #include "utils.h"
+
+/* clang-format off */
 
 vtime movie_last;		     /* time movie_file was last written */
 FILE *capturefile = (FILE *)NULL;    /* capture file or NULL */
@@ -195,7 +197,7 @@ static void log_writeline(const char *line, int len, int kind, long msecs)
  */
 void log_write(const char *str, int len, int newline)
 {
-    char *next;
+    const char *next;
     long diff;
     int i, last = 0;
 
