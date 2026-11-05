@@ -26,9 +26,9 @@ catrw_SOURCES = catrw.c
 check_PROGRAMS = test_charset test_sgr
 test_charset_SOURCES = test_charset.c charset.c width.c
 test_sgr_SOURCES = test_sgr.c sgr.c
-TESTS = test_charset test_sgr
+TESTS = test_charset test_sgr test_commands.sh
 
-EXTRA_DIST = plugtest.c
+EXTRA_DIST = plugtest.c test_commands.sh
 
 plugtest.so: plugtest.c
 	gcc -shared -o plugtest.so plugtest.c
