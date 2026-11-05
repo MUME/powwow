@@ -12,6 +12,7 @@
  *
  */
 
+/* clang-format off */
 
 #include <limits.h>
 #include <stdio.h>
@@ -1162,7 +1163,7 @@ static int get_one_char(int timeout)
     timeoutbuf.tv_usec = timeout * uSEC_PER_mSEC;
     n = select(tty_read_fd + 1, &fds, NULL, NULL,
                timeout ? &timeoutbuf : NULL);
-    if (n == -1 && errno == EINTR)
+    if (n == 0 || (n == -1 && errno == EINTR))
 	return -1;
     if (n == -1) {
 	errmsg("select");
