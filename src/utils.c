@@ -393,6 +393,8 @@ static int match_mark(marknode *mp, char *src)
 
     /* shortcut for #marks without wildcards */
     if (!mp->wild) {
+	if (mbeg != 0 && strncmp(src, pat, strlen(pat)) != 0)
+	    return 0;
 	if ((nsrc = strstr(src, pat))) {
 	    mp->start = nsrc;
 	    mp->end = nsrc + strlen(pat);
