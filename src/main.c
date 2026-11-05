@@ -1110,7 +1110,7 @@ static int grab_prompt(char *linestart, int len, int islast)
     sgr_prompt_start();
 
     /* recognize IAC GA as end-of-prompt marker */
-    if ((current_connection->flags & IDPROMPT)) {
+    if (current_connection != NULL && (current_connection->flags & IDPROMPT)) {
 	if ((p = prompt_get_iac()) && p > linestart && p <= linestart+len)
 	    iac_f++, is_iac_prompt = len = p - linestart;
 	else if (!islast)
