@@ -226,7 +226,7 @@ static void log_writeline(const char *line, int len, int kind, long msecs,
  */
 void log_write(const char *str, int len, int newline, enum charset cs)
 {
-    char *next;
+    const char *next;
     long diff;
     int i, last = 0;
 
