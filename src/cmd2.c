@@ -1052,20 +1052,25 @@ static int get_one_char(int timeout)
     fd_set fds;
     int n;
     char c;
+    /* tty_read() may hold characters that select() cannot see */
+    bool buffered = tty_has_chars() != 0;
 
  again:
+    if (buffered)
+        goto read_tty;
     FD_ZERO(&fds);
     FD_SET(tty_read_fd, &fds);
     timeoutbuf.tv_sec = 0;
     timeoutbuf.tv_usec = timeout * uSEC_PER_mSEC;
     n = select(tty_read_fd + 1, &fds, NULL, NULL,
                timeout ? &timeoutbuf : NULL);
-    if (n == -1 && errno == EINTR)
+    if (n == 0 || (n == -1 && errno == EINTR))
 	return -1;
     if (n == -1) {
 	errmsg("select");
 	return -1;
     }
+ read_tty:
     do {
         n = tty_read(&c, 1);
     } while (n < 0 && errno == EINTR);
@@ -1076,9 +1081,11 @@ static int get_one_char(int timeout)
 	    errmsg("read from tty");
         return -1;
     }
-    /* n == 0 */
-    if (timeout == 0)
-	goto again;
+    /* n == 0: at most an incomplete character was buffered, so wait for more */
+    if (timeout == 0 || buffered) {
+        buffered = false;
+        goto again;
+    }
     return -1;
 }
 
