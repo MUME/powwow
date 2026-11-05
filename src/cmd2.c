@@ -881,8 +881,8 @@ void show_marks(void)
 	       (markers && !markers->next) ? " is" : "s are",
 	       markers ? ':' : '.');
     for (p = markers; p; p = p->next)
-	tty_printf("#mark %s%s=%s\n", p->mbeg ? "^" : "",
-		   p->pattern, attr_name(p->attrcode));
+	tty_printf("#mark %s%s=%s\n", p->b.mbeg != 0 ? "^" : "",
+		   p->b.pattern, attr_name(p->attrcode));
 }
 
 
@@ -896,7 +896,7 @@ void parse_mark(char *str)
     char mbeg = 0;
 
     if (*str == '=') {
-	PRINTF("#marker must be non-null.\n");
+	PRINTF("#marker must be non-empty.\n");
 	return;
     }
     p = first_regular(str, '=');
@@ -908,10 +908,10 @@ void parse_mark(char *str)
         if ((n = *np)) {
 	    ptr pbuf = (ptr)0;
 	    char *name;
-	    pbuf = ptrmescape(pbuf, n->pattern, strlen(n->pattern), 0);
+	    pbuf = ptrmescape(pbuf, n->b.pattern, strlen(n->b.pattern), 0);
 	    if (MEM_ERROR) { ptrdel(pbuf); return; }
             name = attr_name(n->attrcode);
-            fmt_next_edit("#mark %s%s=%s", n->mbeg ? "^" : "",
+            fmt_next_edit("#mark %s%s=%s", n->b.mbeg != 0 ? "^" : "",
                           pbuf ? ptrdata(pbuf) : "", name);
 	    ptrdel(pbuf);
         } else {
@@ -950,8 +950,8 @@ void parse_mark(char *str)
         } else if (!*p)
 	    if ((n = *np)) {
 		if (opt_info) {
-		    PRINTF("#deleting mark: %s%s=%s\n", n->mbeg ? "^" : "",
-			   n->pattern, attr_name(n->attrcode));
+		    PRINTF("#deleting mark: %s%s=%s\n", n->b.mbeg != 0 ? "^" : "",
+			   n->b.pattern, attr_name(n->attrcode));
 		}
 		delete_marknode(np);
 	    } else {
@@ -974,6 +974,121 @@ void parse_mark(char *str)
 		tty_printf(" mark: %s%s=%s\n", mbeg ? "^" : "",
 			   pattern, attr_name(attrcode));
         }
+    }
+}
+
+
+/*
+ * show defined substitutions
+ */
+void show_substitutions(void)
+{
+    PRINTF("#%s substitution%s defined%c\n",
+           substitutions != NULL ? "the following" : "no",
+           (substitutions != NULL && substitutions->next == NULL) ? " is" : "s are",
+           substitutions != NULL ? ':' : '.');
+
+    ptr pbuf = NULL;
+    for (substnode *p = substitutions; p != NULL; p = p->next) {
+        pbuf = ptrsubstdef(pbuf, p->b.mbeg, p->b.pattern, p->replacement);
+        if (MEM_ERROR)
+          break;
+        tty_printf("#substitute %s\n", ptrdata(pbuf));
+    }
+    ptrdel(pbuf);
+}
+
+/*
+ * tell the user what happened to a substitution
+ */
+static void subst_info(const char *what, char mbeg, char *pattern, char *replacement)
+{
+    if (opt_info == 0)
+      return;
+
+    ptr pbuf = ptrsubstdef(NULL, mbeg, pattern, replacement);
+    if (!MEM_ERROR)
+      PRINTF("#%s substitution: %s\n", what, ptrdata(pbuf));
+    ptrdel(pbuf);
+}
+
+/*
+ * parse arguments to the #substitute command
+ */
+void parse_substitute(char *str)
+{
+    if (*str == '=') {
+        PRINTF("#substitute must be non-empty.\n");
+        return;
+    }
+
+    char *p = first_regular(str, '=');
+    char mbeg = 0;
+    if (*str == '^') {
+        mbeg = 1;
+        ++str;
+    }
+
+    if (*p == '\0') {
+        unescape(str);
+        substnode *n = *lookup_subst(str, mbeg);
+        if (n == NULL) {
+            PRINTF("#unknown substitution, cannot show: \"%s\"\n", str);
+            return;
+        }
+        ptr pbuf = ptrsubstdef(NULL, n->b.mbeg, n->b.pattern, n->replacement);
+        if (!MEM_ERROR)
+          fmt_next_edit("#substitute %s", ptrdata(pbuf));
+        ptrdel(pbuf);
+        return;
+    }
+
+    *p = '\0';
+    ++p;
+
+    char pattern[BUFSIZE];
+    my_strncpy(pattern, str, BUFSIZE-1);
+    unescape(pattern);
+    if (*pattern == '\0') {
+        PRINTF("#substitute must be non-empty.\n");
+        return;
+    }
+
+    char wild = 0;
+    for (const char *q = pattern; *q != '\0'; ++q) {
+        if (!ISMARKWILDCARD(*q))
+          continue;
+        wild = 1;
+        if (ISMARKWILDCARD(q[1])) {
+            error = SYNTAX_ERROR;
+            PRINTF("#error: two wildcards (& or $) may not be next to eachother\n");
+            return;
+        }
+    }
+
+    substnode **np = lookup_subst(pattern, mbeg);
+    substnode *n = *np;
+    unescape(p);
+    if (*p == '\0') {
+        if (n == NULL) {
+            PRINTF("#unknown substitution, cannot delete: \"%s%s\"\n",
+                   mbeg != 0 ? "^" : "", pattern);
+            return;
+        }
+        subst_info("deleting", n->b.mbeg, n->b.pattern, n->replacement);
+        delete_substnode(np);
+    } else if (n != NULL) {
+        char *replacement = my_strdup(p);
+        if (replacement == NULL) {
+            errmsg("malloc");
+            return;
+        }
+        free(n->replacement);
+        n->replacement = replacement;
+        subst_info("changed", mbeg, pattern, p);
+    } else {
+        add_substnode(pattern, p, mbeg, wild);
+        subst_info("new", mbeg, pattern, p);
     }
 }
 

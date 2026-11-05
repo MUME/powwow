@@ -158,7 +158,8 @@ aliasnode *sortedaliases;          /* head of (ASCII) sorted alias list */
 actionnode *actions;               /* head of action list */
 promptnode *prompts;               /* head of prompt list */
 marknode *markers;                 /* head of mark list */
-int a_nice = 0;                    /* default priority of new actions/marks */
+substnode *substitutions;          /* head of substitution list */
+int a_nice = 0;                    /* default priority of new actions/marks/substitutions */
 keynode *keydefs;                  /* head of key binding list */
 delaynode *delays;                 /* head of delayed commands list */
 delaynode *dead_delays;            /* head of dead-delayed commands list */

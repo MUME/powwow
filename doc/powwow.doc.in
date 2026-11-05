@@ -620,6 +620,7 @@ SPECIAL COMMANDS: ALL OTHERS
 	in		(same thing)
 	mark		clear all markers
 	prompt		clear all prompts
+	substitute	clear all substitutions
 	var		clear all variables
 	-----------------------------------------------------------
 	Mark certain output
@@ -643,6 +644,31 @@ SPECIAL COMMANDS: ALL OTHERS
 	#mark ^You=yellow		(mark `You' in yellow only if it appears
 					 at the beginning of a line)
 	#mark \^=on blue		(mark a literal ^ )
+	-----------------------------------------------------------
+	Replace text in certain output
+	#substitute [pattern[=[text]]]
+
+	This command replaces a part of a line in your output with some other
+	text. It only changes what you see: actions, prompts and the like still
+	work on the original text. Substitutions are applied before #mark, so
+	marks can match the replaced text. Replaced text is not searched again
+	for other substitutions.
+
+	Wildcards and a leading ^ are allowed in the pattern, as in #mark. The
+	characters ; { } ( ) " = in the text must be escaped with a backslash.
+	As #nice does for marks, it also sets the place of new substitutions in
+	the list.
+
+	Examples:
+	#substitute orc=goblin		(show `orc' as `goblin')
+	#substitute orc			(lets you edit the above definition)
+	#substitute orc=		(`orc' is no longer replaced)
+	#substitute			(lists all substitutions)
+	#substitute ^You=I		(replace `You' only if it appears at
+					 the beginning of a line)
+	#substitute {&}=hidden		(replace any string in { }
+					 note that also the { } are replaced)
+	#substitute hp=hit points\; ok	(the text is `hit points; ok')
 	-----------------------------------------------------------
 	#module [module name]
 

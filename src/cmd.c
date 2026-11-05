@@ -64,7 +64,7 @@ static void F(help), F(shell), F(action), F(add),
   F(rawsend), F(rawprint), F(rebind), F(rebindall), F(rebindALL),
   F(record), F(request), F(reset), F(retrace),
   F(save), F(send), F(setvar), F(snoop), F(spawn), F(stop),
-  F(time), F(var), F(ver), F(while), F(write),
+  F(substitute), F(time), F(var), F(ver), F(while), F(write),
   F(eval), F(zap), F(module), F(group), F(speedwalk), F(groupdelim);
 
 #ifdef BUG_TELNET
@@ -231,6 +231,8 @@ cmdstruct default_commands[] =
       "[speedwalk sequence]\texecute a speedwalk sequence explicitly"),
     C("stop",       cmd_stop,
       "\t\t\t\tremove all delayed commands from active list"),
+    C("substitute", cmd_substitute,
+      "[string[=[text]]]\tdelete/list/define substitutions"),
     C("time",       cmd_time,
       "\t\t\t\tprint current time and date"),
     C("var",        cmd_var,
@@ -1267,7 +1269,7 @@ static void cmd_reset(char *arg)
     arg = skipspace(arg);
     if (!*arg) {
         PRINTF("#reset: must specify one of:\n");
-        tty_puts(" alias, action, bind, in (or at), mark, prompt, var, all.\n");
+        tty_puts(" alias, action, bind, in (or at), mark, prompt, substitute, var, all.\n");
 	return;
     }
     all = !strcmp(arg, "all");
@@ -1313,6 +1315,12 @@ static void cmd_reset(char *arg)
 	    delete_promptnode(&prompts);
 	if (!all)
 	    return;
+    }
+    if (all != 0 || strcmp(arg, "substitute") == 0) {
+        while (substitutions != NULL)
+          delete_substnode(&substitutions);
+        if (all == 0)
+          return;
     }
     if (all || !strcmp(arg, "var")) {
         int n;
@@ -1366,6 +1374,14 @@ static void cmd_stop(char *arg)
     if (opt_info) {
 	PRINTF("#all delayed labels are now disabled.\n");
     }
+}
+
+static void cmd_substitute(char *arg)
+{
+    if (*arg == '\0')
+      show_substitutions();
+    else
+      parse_substitute(arg);
 }
 
 static void cmd_time(char *arg)

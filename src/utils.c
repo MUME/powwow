@@ -384,26 +384,26 @@ void escape_specials(char *dst, char *src)
  * if 1, start and end contain the match bounds
  * if 0, start and end are undefined on return
  */
-static int match_mark(marknode *mp, char *src)
+static int match_mark_or_subst(basenode *bp, char *src)
 {
-    char *pat = mp->pattern;
+    char *pat = bp->pattern;
     char *npat=0, *npat2=0, *nsrc=0, *prm=0, *endprm=0, *tmp, c;
     static char mpat[BUFSIZE];
-    int mbeg = mp->mbeg, mword = 0, p;
+    int mbeg = bp->mbeg, mword = 0, p;
 
     /* shortcut for #marks without wildcards */
-    if (!mp->wild) {
+    if (bp->wild == 0) {
 	if (mbeg != 0 && strncmp(src, pat, strlen(pat)) != 0)
 	    return 0;
 	if ((nsrc = strstr(src, pat))) {
-	    mp->start = nsrc;
-	    mp->end = nsrc + strlen(pat);
+	    bp->start = nsrc;
+	    bp->end = nsrc + strlen(pat);
 	    return 1;
 	}
 	return 0;
     }
 
-    mp->start = NULL;
+    bp->start = NULL;
 
     if (ISMARKWILDCARD(*pat))
 	mbeg = - mbeg - 1;  /* pattern starts with '&' or '$' */
@@ -415,8 +415,8 @@ static int match_mark(marknode *mp, char *src)
 	    prm = src;
 	    if (c == '$')
 		mword = 1;
-	    else if (!mp->start)
-		mp->start = src;
+	    else if (bp->start == NULL)
+		bp->start = src;
 	    ++pat;
 	}
 
@@ -441,17 +441,17 @@ static int match_mark(marknode *mp, char *src)
 		mbeg = 0;  /* reset mbeg to stop further start match */
 	    }
 	    endprm = nsrc;
-	    if (!mp->start) {
+	    if (bp->start == NULL) {
 		if (prm)
-		    mp->start = src;
+		    bp->start = src;
 		else
-		    mp->start = nsrc;
+		    bp->start = nsrc;
 	    }
-	    mp->end = nsrc + strlen(mpat);
+	    bp->end = nsrc + strlen(mpat);
 	} else if (prm)           /* end of pattern space */
-	    mp->end = endprm = prm + strlen(prm);
+	    bp->end = endprm = prm + strlen(prm);
 	else
-	    mp->end = src;
+	    bp->end = src;
 
 
 	/* post-processing of param */
@@ -469,11 +469,11 @@ static int match_mark(marknode *mp, char *src)
 			else
 			    p = -1;
 		    }
-		    mp->start = prm += p + 1;
+		    bp->start = prm += p + 1;
 		} else if (!*pat) {
 		    /* '$' at end of pattern, take first word */
 		    if ((tmp = memchrs(prm, strlen(prm), DELIM, DELIM_LEN)))
-			mp->end = endprm = tmp;
+			bp->end = endprm = tmp;
 		} else {
 			/* match only if param is single-worded */
 		    if (memchrs(prm, endprm - prm, DELIM, DELIM_LEN))
@@ -493,7 +493,7 @@ static int match_mark(marknode *mp, char *src)
 /*
  * add marks to line. write in dst.
  */
-ptr ptrmaddmarks(ptr dst, char *line, int len)
+static ptr ptrmaddmarks(ptr dst, char *line, int len)
 {
     marknode *mp, *mfirst;
     char begin[CAPLEN], end[CAPLEN], *lineend = line + len;
@@ -505,19 +505,21 @@ ptr ptrmaddmarks(ptr dst, char *line, int len)
 	return dst;
 
     for (mp = markers; mp; mp = mp->next)
-	mp->start = NULL;
+	mp->b.start = NULL;
 
     do {
 	mfirst = NULL;
 	for (mp = markers; mp; mp = mp->next) {
-	    if (mp->start && mp->start >= line)
+	    if (mp->b.start != NULL && mp->b.start >= line)
 		matched = 1;
 	    else {
-		if (!(matched = (!mp->mbeg || start) && match_mark(mp, line)))
-		    mp->start = lineend;
+		matched = ((mp->b.mbeg == 0 || start != 0)
+			   && match_mark_or_subst(&mp->b, line) != 0);
+		if (matched == 0)
+		    mp->b.start = lineend;
 	    }
-	    if (matched && mp->start < lineend &&
-		(!mfirst || mp->start < mfirst->start))
+	    if (matched != 0 && mp->b.start < lineend &&
+		(mfirst == NULL || mp->b.start < mfirst->b.start))
 		mfirst = mp;
 	}
 
@@ -525,7 +527,7 @@ ptr ptrmaddmarks(ptr dst, char *line, int len)
 	    start = 0;
 	    attr_string(mfirst->attrcode, begin, end);
 
-	    dst = ptrmcat(dst, line, matchlen = mfirst->start - line);
+	    dst = ptrmcat(dst, line, matchlen = mfirst->b.start - line);
 	    if (MEM_ERROR) break;
 	    line += matchlen;
 	    len -= matchlen;
@@ -533,7 +535,7 @@ ptr ptrmaddmarks(ptr dst, char *line, int len)
 	    dst = ptrmcat(dst, begin, strlen(begin));
 	    if (MEM_ERROR) break;
 
-	    dst = ptrmcat(dst, line, matchlen = mfirst->end - mfirst->start);
+	    dst = ptrmcat(dst, line, matchlen = mfirst->b.end - mfirst->b.start);
 	    if (MEM_ERROR) break;
 	    line += matchlen;
 	    len -= matchlen;
@@ -549,10 +551,109 @@ ptr ptrmaddmarks(ptr dst, char *line, int len)
     return dst;
 }
 
-ptr ptraddmarks(ptr dst, ptr line)
+/*
+ * add substitutions to line. write in dst.
+ */
+static ptr ptrmaddsubst(ptr dst, char *line, int len)
+{
+    ptrzero(dst);
+
+    if (line == NULL || len <= 0)
+      return dst;
+
+    for (substnode *sp = substitutions; sp != NULL; sp = sp->next)
+      sp->b.start = NULL;
+
+    char *lineend = line + len;
+    bool start = true;
+
+    for (;;) {
+        substnode *sfirst = NULL;
+        for (substnode *sp = substitutions; sp != NULL; sp = sp->next) {
+            bool matched = sp->b.start != NULL && sp->b.start >= line;
+            if (!matched) {
+                matched = ((sp->b.mbeg == 0 || start)
+                           && match_mark_or_subst(&sp->b, line) != 0);
+                if (!matched)
+                  sp->b.start = lineend;
+            }
+            /* an empty match would never advance through the line */
+            if (matched && sp->b.start < lineend && sp->b.end > sp->b.start
+                && (sfirst == NULL || sp->b.start < sfirst->b.start))
+              sfirst = sp;
+        }
+
+        if (sfirst == NULL)
+          break;
+        start = false;
+
+        int matchlen = sfirst->b.start - line;
+        dst = ptrmcat(dst, line, matchlen);
+        if (MEM_ERROR)
+          break;
+        line += matchlen;
+        len -= matchlen;
+
+        dst = ptrmcat(dst, sfirst->replacement, strlen(sfirst->replacement));
+        if (MEM_ERROR)
+          break;
+        matchlen = sfirst->b.end - sfirst->b.start;
+        line += matchlen;
+        len -= matchlen;
+    }
+
+    if (!MEM_ERROR)
+      dst = ptrmcat(dst, line, len);
+
+    return dst;
+}
+
+/*
+ * add substitutions and markers to line. write in dst.
+ */
+ptr ptrmaddsubst_and_marks(ptr dst, char *line, int len)
+{
+    if (substitutions == NULL)
+      return ptrmaddmarks(dst, line, len);
+    if (markers == NULL)
+      return ptrmaddsubst(dst, line, len);
+
+    static ptr ptrbuf = NULL;
+    ptrbuf = ptrmaddsubst(ptrbuf, line, len);
+    if (MEM_ERROR || ptrbuf == NULL) {
+        ptrzero(dst);
+        return dst;
+    }
+    return ptrmaddmarks(dst, ptrdata(ptrbuf), ptrlen(ptrbuf));
+}
+
+/*
+ * write a substitution in dst as the argument of #substitute that defines it
+ */
+ptr ptrsubstdef(ptr dst, char mbeg, char *pattern, char *replacement)
+{
+    if (mbeg != 0)
+      dst = ptrmcpy(dst, "^", 1);
+    else if (*pattern == '^') /* so it does not read back as an anchor */
+      dst = ptrmcpy(dst, "\\", 1);
+    else
+      ptrzero(dst);
+    if (MEM_ERROR)
+      return dst;
+
+    dst = ptrmescape(dst, pattern, strlen(pattern), 1);
+    if (MEM_ERROR)
+      return dst;
+    dst = ptrmcat(dst, "=", 1);
+    if (MEM_ERROR)
+      return dst;
+    return ptrmescape(dst, replacement, strlen(replacement), 1);
+}
+
+ptr ptraddsubst_and_marks(ptr dst, ptr line)
 {
     if (line)
-	return ptrmaddmarks(dst, ptrdata(line), ptrlen(line));
+	return ptrmaddsubst_and_marks(dst, ptrdata(line), ptrlen(line));
     ptrzero(dst);
     return dst;
 }
@@ -713,7 +814,7 @@ void sgr_prompt_commit(const char *prompt, size_t len)
 }
 
 /*
- * add marks to line and print.
+ * add substitutions and marks to line and print.
  * if newline, also print a final \n
  */
 void smart_print(char *line, char newline)
@@ -726,7 +827,7 @@ void smart_print(char *line, char newline)
 	    ptrbuf = ptrnew(PARAMLEN);
 	    if (MEM_ERROR) break;
 	}
-	ptrbuf = ptrmaddmarks(ptrbuf, line, strlen(line));
+	ptrbuf = ptrmaddsubst_and_marks(ptrbuf, line, strlen(line));
 	if (MEM_ERROR || !ptrbuf) break;
 
 	buf = ptrdata(ptrbuf);
@@ -1068,6 +1169,8 @@ int read_settings(void)
 	delete_marknode(&markers);
     while (keydefs)
 	delete_keynode(&keydefs);
+    while (substitutions != NULL)
+      delete_substnode(&substitutions);
     for (n = 0; n < MAX_HASH; n++) {
 	while (named_vars[0][n])
 	    delete_varnode(&named_vars[0][n], 0);
@@ -1310,10 +1413,19 @@ int save_settings(void)
     }
 
     for (mp = markers; mp && failed > 0; mp = mp->next) {
-	pp = ptrmescape(pp, mp->pattern, strlen(mp->pattern), 0);
+	pp = ptrmescape(pp, mp->b.pattern, strlen(mp->b.pattern), 0);
 	if (MEM_ERROR) { failed = -1; break; }
-	failed = fprintf(f, "#mark %s%s=%s\n", mp->mbeg ? "^" : "",
+	failed = fprintf(f, "#mark %s%s=%s\n", mp->b.mbeg != 0 ? "^" : "",
 			     ptrdata(pp), attr_name(mp->attrcode));
+    }
+
+    for (substnode *sp = substitutions; sp != NULL && failed > 0; sp = sp->next) {
+        pp = ptrsubstdef(pp, sp->b.mbeg, sp->b.pattern, sp->replacement);
+        if (MEM_ERROR) {
+            failed = -1;
+            break;
+        }
+        failed = fprintf(f, "#substitute %s\n", ptrdata(pp));
     }
     /* save value of global variables */
 

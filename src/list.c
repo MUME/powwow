@@ -23,6 +23,7 @@
 #include "feature/regex.h"
 #include "utils.h"
 #include "cmd2.h"
+#include "list.h"
 #include "tty.h"
 #include "eval.h"
 
@@ -99,7 +100,7 @@ int rev_time_sort(defnode *node1, defnode *node2)
 /*
  * compute the hash value of a name
  */
-int hash(char *name, int optlen)
+int hash(const char *name, int optlen)
 {
     int h = 0, i = 0;
     if (optlen < 0)
@@ -206,12 +207,13 @@ void add_marknode(char *pattern, int attrcode, char mbeg, char wild)
 	errmsg("malloc");
 	return;
     }
-    new->pattern = my_strdup(pattern);
+    new->next = NULL;
+    new->b.pattern = my_strdup(pattern);
+    new->b.start = new->b.end = NULL;
+    new->b.mbeg = mbeg;
+    new->b.wild = wild;
     new->attrcode = attrcode;
-    new->start = new->end = NULL;
-    new->mbeg = mbeg;
-    new->wild = wild;
-    if (!new->pattern) {
+    if (new->b.pattern == NULL) {
 	errmsg("malloc");
 	free(new);
 	return;
@@ -221,6 +223,37 @@ void add_marknode(char *pattern, int attrcode, char mbeg, char wild)
 #else
     for (p=&markers, i=1; *p && (a_nice==0 || i<a_nice); p = &(*p)->next, i++)
 	;
+    new->next = *p;
+    *p = new;
+#endif
+}
+
+
+/*
+ * add a node to the substitution list
+ */
+void add_substnode(char *pattern, char *replacement, char mbeg, char wild)
+{
+    substnode *new = malloc(sizeof(*new));
+    if (new == NULL) {
+        errmsg("malloc");
+        return;
+    }
+    *new = (substnode){
+        .b = { .pattern = my_strdup(pattern), .mbeg = mbeg, .wild = wild },
+        .replacement = my_strdup(replacement)
+    };
+    if (new->b.pattern == NULL || new->replacement == NULL) {
+        errmsg("malloc");
+        delete_substnode(&new);
+        return;
+    }
+#ifdef USE_LIST_SORT
+    add_node((defnode*)new, (defnode**)&substitutions, ascii_sort);
+#else
+    substnode **p = &substitutions;
+    for (int i = 1; *p != NULL && (a_nice == 0 || i < a_nice); ++i)
+      p = &(*p)->next;
     new->next = *p;
     *p = new;
 #endif
@@ -487,14 +520,27 @@ actionnode **lookup_prompt(char *label)
 }
 
 /*
- * look up an marker node by pattern:
+ * look up a marker node by pattern:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
 marknode **lookup_marker(char *pattern, char mbeg)
 {
     marknode **p = &markers;
-    while (*p && (mbeg != (*p)->mbeg || strcmp(pattern, (*p)->pattern)))
+    while (*p && (mbeg != (*p)->b.mbeg || strcmp(pattern, (*p)->b.pattern)))
 	p = &(*p)->next;
+    return p;
+}
+
+/*
+ * look up a substitution node by pattern:
+ * return pointer to pointer to node or a pointer to NULL if nothing found
+ */
+substnode **lookup_subst(char *pattern, char mbeg)
+{
+    substnode **p = &substitutions;
+    while (*p != NULL
+           && (mbeg != (*p)->b.mbeg || strcmp(pattern, (*p)->b.pattern) != 0))
+      p = &(*p)->next;
     return p;
 }
 
@@ -505,7 +551,6 @@ marknode **lookup_marker(char *pattern, char mbeg)
 keynode **lookup_key(char *name)
 {
     keynode **p = &keydefs;
-
     while (*p && strcmp(name, (*p)->name))
 	p = &(*p)->next;
     return p;
@@ -596,9 +641,21 @@ void delete_promptnode(promptnode **base)
 void delete_marknode(marknode **base)
 {
     marknode *p = *base;
-    if (p->pattern) free(p->pattern);
+    if (p->b.pattern != NULL) free(p->b.pattern);
     *base = p->next;
     free((void*)p);
+}
+
+/*
+ * delete a substnode, given a pointer to its precessor's pointer
+ */
+void delete_substnode(substnode **base)
+{
+    substnode *p = *base;
+    free(p->b.pattern);
+    free(p->replacement);
+    *base = p->next;
+    free(p);
 }
 
 /*

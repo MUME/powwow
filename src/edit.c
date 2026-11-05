@@ -167,7 +167,7 @@ void draw_prompt(void)
         char *esc, *pstr;
 	int e = error;
 	error = 0;
-	marked_prompt = ptraddmarks(marked_prompt, prompt->str);
+	marked_prompt = ptraddsubst_and_marks(marked_prompt, prompt->str);
 	if (MEM_ERROR) { promptzero(); errmsg("malloc(prompt)"); return; }
 
         /* if prompt ends in unterminated escape code, do not print

@@ -97,6 +97,7 @@ bind		clear all key bindings and restart with default
 at		clear all delayed commands
 in		(same thing)
 mark		clear all markers
+substitute	clear all substitutions
 var		clear all variables
 @mark
 #mark [text[=[attribute]]]
@@ -114,6 +115,21 @@ Wildcards are allowed ($ for a single word, & for any string). Examples:
 #mark Sizzler=				(Sizzler is no longer put in bold)
 #mark					(lists all markers)
 #mark *&*=inverse			(mark in reverse any string in * *)
+@substitute
+#substitute [text[=[new text]]]
+
+This command replaces a text in your output with some other text. It only
+changes what you see: actions and the like still work on the original text.
+It is applied before #mark. Wildcards are allowed as in #mark ($ for a single
+word, & for any string), and ^ matches only at the beginning of a line.
+The characters ; { } ( ) " = in the new text must be escaped with a backslash.
+Examples:
+
+#substitute orc=goblin			(show orc as goblin)
+#substitute orc				(lets you edit the above definition)
+#substitute orc=			(orc is no longer replaced)
+#substitute				(lists all substitutions)
+#substitute ^You=I			(replace You only at start of a line)
 @module
 #module [module name]
 
