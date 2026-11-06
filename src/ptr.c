@@ -189,16 +189,22 @@ ptr *ptrmcat(ptr *dst, const char *src, int len)
 		len = 0;
 	    newmax = limit_mem;
 	}
+	if (overlap != 0 && newmax < ptrmax(dst)) {
+            /* src may not survive shrinking dst */
+            memmove(ptrdata(dst) + ptrlen(dst), src, len);
+            src = ptrdata(dst) + ptrlen(dst);
+	}
+	const size_t src_offset = overlap != 0 ? src - ptrdata(dst) : 0;
 	if ((p = (ptr *)realloc((void *)dst, newmax + PTR_OVERHEAD))) {
 	    if (overlap)
-	        src = ptrdata(p) + (src - ptrdata(dst));
+	        src = ptrdata(p) + src_offset;
 	    if (!dst)
 		p->len = 0;
 	    p->max = newmax;
 	    dst = p;
 	} else if ((p = ptrdup2(dst, newmax))) {
 	    if (overlap)
-	        src = ptrdata(p) + (src - ptrdata(dst));
+	        src = ptrdata(p) + src_offset;
 	    ptrdel(&dst);
 	    dst = p;
 	} else {
@@ -277,16 +283,22 @@ ptr *ptrmcpy(ptr *dst, const char *src, int len)
 	    newmax = limit_mem;
 	}
 
+	if (overlap != 0 && newmax < ptrmax(dst)) {
+            /* src may not survive shrinking dst */
+            memmove(ptrdata(dst), src, len);
+            src = ptrdata(dst);
+	}
+	const size_t src_offset = overlap != 0 ? src - ptrdata(dst) : 0;
 	if ((p = (ptr *)realloc((void *)dst, newmax + PTR_OVERHEAD))) {
 	    if (overlap)
-	        src = ptrdata(p) + (src - ptrdata(dst));
+	        src = ptrdata(p) + src_offset;
 	    if (!dst)
 		p->len = 0;
 	    p->max = newmax;
 	    dst = p;
 	} else if ((p = ptrdup2(dst, newmax))) {
 	    if (overlap)
-	        src = ptrdata(p) + (src - ptrdata(dst));
+	        src = ptrdata(p) + src_offset;
 	    ptrdel(&dst);
 	    dst = p;
 	} else {
