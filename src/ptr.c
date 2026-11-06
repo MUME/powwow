@@ -327,6 +327,8 @@ ptr *ptrpad(ptr *p, int len)
 	else
 	    return ptrnew(len);
     }
+    if (len < -ptrlen(p))
+	len = -ptrlen(p);
     if (len > ptrmax(p) - ptrlen(p)) {
 	/* must realloc the ptr */
 	if (len > PTR_MAX - ptrlen(p))  {
@@ -361,7 +363,7 @@ ptr *ptrsetlen(ptr *p, int len)
 	    return p;
 	}
     }
-    return ptrpad(p, len - ptrlen(p));
+    return ptrpad(p, (len > 0 ? len : 0) - ptrlen(p));
 }
 
 /*
