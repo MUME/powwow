@@ -854,10 +854,7 @@ void tcp_write(connsess *conn, const char *data)
         return;
     }
 
-    const char *iacs;
-    char *out;
-    int len, space, iacp;
-    len = strlen(data);
+    size_t len = strlen(data);
 
     if (main_connection != NULL && main_connection == conn) {
 	if (linemode & LM_NOECHO)
@@ -886,12 +883,12 @@ void tcp_write(connsess *conn, const char *data)
 	output_connection = conn;
     }
 
-    out = output_buffer + output_len;
-    space = BUFSIZE - output_len;
+    char *out = output_buffer + output_len;
+    size_t space = BUFSIZE - output_len;
 
     while (len) {
-	iacs = memchr(data, IAC, len);
-	iacp = iacs ? iacs - data : len;
+	const char *iacs = memchr(data, IAC, len);
+	size_t iacp = iacs != NULL ? (size_t)(iacs - data) : len;
 
 	if (iacp == 0) {
 	    /* we're at the IAC, send it */
@@ -900,14 +897,19 @@ void tcp_write(connsess *conn, const char *data)
 		out = output_buffer;
 		space = BUFSIZE;
 	    }
-	    *out++ = (char)IAC; *out++ = (char)IAC; output_len += 2; space -= 2;
-	    data++; len--;
+	    *out++ = (char)IAC;
+	    *out++ = (char)IAC;
+	    output_len += 2;
+	    space -= 2;
+	    ++data;
+	    --len;
 	    continue;
 	}
 
 	while (space < iacp) {
 	    memcpy(out, data, space);
-	    data += space; len -= space;
+	    data += space;
+	    len -= space;
 	    iacp -= space;
 	    output_len = BUFSIZE;
 
@@ -918,8 +920,11 @@ void tcp_write(connsess *conn, const char *data)
 
 	if (iacp /* && space >= iacp */ ) {
 	    memcpy(out, data, iacp);
-	    out += iacp; output_len += iacp; space -= iacp;
-	    data += iacp; len -= iacp;
+	    out += iacp;
+	    output_len += iacp;
+	    space -= iacp;
+	    data += iacp;
+	    len -= iacp;
 	}
     }
     if (!space) {
