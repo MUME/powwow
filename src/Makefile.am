@@ -22,10 +22,11 @@ install-exec-hook:
 noinst_PROGRAMS = follow
 follow_SOURCES = follow.c
 
-check_PROGRAMS = test_charset test_sgr
+check_PROGRAMS = test_charset test_ptr test_sgr
 test_charset_SOURCES = test_charset.c charset.c width.c
+test_ptr_SOURCES = test_ptr.c ptr.c
 test_sgr_SOURCES = test_sgr.c sgr.c
-TESTS = test_charset test_sgr test_commands.sh
+TESTS = test_charset test_ptr test_sgr test_commands.sh
 
 EXTRA_DIST = plugtest.c test_commands.sh
 
