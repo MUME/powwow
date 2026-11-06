@@ -949,7 +949,7 @@ static void cmd_at(char *arg)
     int num, hour = -1, minute = -1, second = -1;
     delaynode **p;
     long millisec;
-    ptr pbuf = (ptr)0;
+    ptr *pbuf = (ptr *)0;
 
     arg = skipspace(arg);
     if (!*arg) {
@@ -984,7 +984,7 @@ static void cmd_at(char *arg)
     (void)evalp(&pbuf, &arg);
     if (REAL_ERROR) {
 	print_error(error);
-	ptrdel(pbuf);
+	ptrdel(&pbuf);
 	return;
     }
     if (pbuf) {
@@ -993,7 +993,7 @@ static void cmd_at(char *arg)
 	if (!*buf || !isdigit(*buf)) {
 	    PRINTF("#at: ");
 	    print_error(error=NO_NUM_VALUE_ERROR);
-	    ptrdel(pbuf);
+	    ptrdel(&pbuf);
 	    return;
 	}
 	num = atoi(buf);
@@ -1007,10 +1007,10 @@ static void cmd_at(char *arg)
 	PRINTF("#at: #error: invalid time \"%s\"\n",
 	       pbuf && buf ? buf : (char *)"");
 	error=OUT_RANGE_ERROR;
-	ptrdel(pbuf);
+	ptrdel(&pbuf);
 	return;
     }
-    ptrdel(pbuf);
+    ptrdel(&pbuf);
 
     if (*arg == ')') {        /* skip the ')' */
 	if (*++arg == ' ')
@@ -1340,7 +1340,7 @@ static void cmd_reset(char *arg)
 
 	for (n = 0; n < NUMVAR; n++) {
 	    *var[n].num = 0;
-	    ptrdel(*var[n].str);
+	    ptrdel(var[n].str);
 	    *var[n].str = NULL;
 	}
 	if (!all)
@@ -1406,7 +1406,7 @@ static void cmd_emulate(char *arg)
     FILE *fp;
     long start, end, i = 1;
     int len;
-    ptr pbuf = (ptr)0;
+    ptr *pbuf = (ptr *)0;
 
     arg = redirect(arg, &pbuf, &kind, "emulate", 0, &start, &end);
     if (REAL_ERROR || !arg)
@@ -1419,7 +1419,7 @@ static void cmd_emulate(char *arg)
 	if (!fp) {
 	    PRINTF("#emulate: #error opening \"%s\"\n", arg);
 	    print_error(error=SYNTAX_ERROR);
-	    ptrdel(pbuf);
+	    ptrdel(&pbuf);
 	    return;
 	}
 	status(-1); /* we're pretending we got something from the MUD */
@@ -1435,7 +1435,7 @@ static void cmd_emulate(char *arg)
 	arg[++len] = '\0';
 	process_remote_input(arg, len);
     }
-    ptrdel(pbuf);
+    ptrdel(&pbuf);
 }
 
 static void cmd_eval(char *arg)
@@ -1461,7 +1461,7 @@ static void cmd_exe(char *arg)
     char *clear;
     long offset, start, end, i = 1;
     FILE *fp;
-    ptr pbuf = (ptr)0;
+    ptr *pbuf = (ptr *)0;
 
     arg = redirect(arg, &pbuf, &kind, "exe", 0, &start, &end);
     if (REAL_ERROR || !arg)
@@ -1474,7 +1474,7 @@ static void cmd_exe(char *arg)
 	if (!fp) {
 	    PRINTF("#exe: #error opening \"%s\"\n", arg);
 	    error = SYNTAX_ERROR;
-	    ptrdel(pbuf);
+	    ptrdel(&pbuf);
 	    return;
 	}
 	offset = 0;
@@ -1499,7 +1499,7 @@ static void cmd_exe(char *arg)
 	if (kind == '!') pclose(fp); else fclose(fp);
     } else
 	parse_user_input(arg, 0);
-    ptrdel(pbuf);
+    ptrdel(&pbuf);
 }
 
 static void cmd_print(char *arg)
@@ -1507,7 +1507,7 @@ static void cmd_print(char *arg)
     char kind;
     long start, end, i = 1;
     FILE *fp;
-    ptr pbuf = (ptr)0;
+    ptr *pbuf = (ptr *)0;
 
     clear_input_line(opt_compact);
 
@@ -1526,7 +1526,7 @@ static void cmd_print(char *arg)
 	if (!fp) {
 	    PRINTF("#print: #error opening \"%s\"\n", arg);
 	    error=SYNTAX_ERROR;
-	    ptrdel(pbuf);
+	    ptrdel(&pbuf);
 	    return;
 	}
 	while (!error && (!start || i <= end) && utf8_fgets(buf, BUFSIZE, fp))
@@ -1537,7 +1537,7 @@ static void cmd_print(char *arg)
 	if (kind == '!') pclose(fp); else fclose(fp);
     } else
 	smart_print(arg, 1);
-    ptrdel(pbuf);
+    ptrdel(&pbuf);
 }
 
 static void cmd_send(char *arg)
@@ -1545,7 +1545,7 @@ static void cmd_send(char *arg)
     char *newline, kind;
     long start, end, i = 1;
     FILE *fp;
-    ptr pbuf = (ptr)0;
+    ptr *pbuf = (ptr *)0;
 
     arg = redirect(arg, &pbuf, &kind, "send", 0, &start, &end);
     if (REAL_ERROR ||!arg)
@@ -1557,7 +1557,7 @@ static void cmd_send(char *arg)
 	if (!fp) {
 	    PRINTF("#send: #error opening \"%s\"\n", arg);
 	    error = SYNTAX_ERROR;
-	    ptrdel(pbuf);
+	    ptrdel(&pbuf);
 	    return;
 	}
 	while (!error && (!start || i<=end) && utf8_fgets(buf, BUFSIZE, fp)) {
@@ -1578,7 +1578,7 @@ static void cmd_send(char *arg)
 	}
 	tcp_write(current_connection, arg);
     }
-    ptrdel(pbuf);
+    ptrdel(&pbuf);
 }
 
 static void cmd_rawsend(char *arg)
@@ -1586,14 +1586,14 @@ static void cmd_rawsend(char *arg)
     char *tmp = skipspace(arg);
 
     if (*tmp=='(') {
-	ptr pbuf = (ptr)0;
+	ptr *pbuf = (ptr *)0;
 	arg = tmp + 1;
 	raw_escapes = true;
 	(void)evalp(&pbuf, &arg);
 	raw_escapes = false;
 	if (REAL_ERROR) {
 	    print_error(error);
-	    ptrdel(pbuf);
+	    ptrdel(&pbuf);
 	} else if (pbuf)
 	    tcp_raw_write(current_connection, ptrdata(pbuf), ptrlen(pbuf));
     } else {
@@ -1608,14 +1608,14 @@ static void cmd_rawprint(char *arg)
     char *tmp = skipspace(arg);
 
     if (*tmp=='(') {
-	ptr pbuf = (ptr)0;
+	ptr *pbuf = (ptr *)0;
 	arg = tmp + 1;
 	raw_escapes = true;
 	(void)evalp(&pbuf, &arg);
 	raw_escapes = false;
 	if (REAL_ERROR) {
 	    print_error(error);
-	    ptrdel(pbuf);
+	    ptrdel(&pbuf);
 	} else if (pbuf)
 	    tty_raw_write(ptrdata(pbuf), ptrlen(pbuf));
     } else {
@@ -1628,7 +1628,7 @@ static void cmd_rawprint(char *arg)
 
 static void cmd_write(char *arg)
 {
-    ptr p1 = (ptr)0, p2 = (ptr)0;
+    ptr *p1 = (ptr *)0, *p2 = (ptr *)0;
     char *tmp = skipspace(arg), kind;
     FILE *fp;
 
@@ -1681,8 +1681,8 @@ write_cleanup:
     if (REAL_ERROR)
 	print_error(error);
 write_cleanup2:
-    ptrdel(p1);
-    ptrdel(p2);
+    ptrdel(&p1);
+    ptrdel(&p2);
 }
 
 static void cmd_var(char *arg)
@@ -1692,7 +1692,7 @@ static void cmd_var(char *arg)
     FILE *fp;
     long start, end, i = 1;
     int len, idx;
-    ptr pbuf = (ptr)0;
+    ptr *pbuf = (ptr *)0;
 
     arg = skipspace(arg);
     expr = first_regular(arg, '=');
@@ -1765,7 +1765,7 @@ static void cmd_var(char *arg)
 	    if (REAL_ERROR) {
 		PRINTF("#var: ");
 		print_error(error);
-		ptrdel(pbuf);
+		ptrdel(&pbuf);
 		return;
 	    }
 	    if (pbuf)
@@ -1779,7 +1779,7 @@ static void cmd_var(char *arg)
 		if (sscanf(buf, "%d%c", &idx, &err_det)==1) {
 		    if (idx < -NUMVAR || idx >= NUMPARAM) {
 			print_error(error=OUT_RANGE_ERROR);
-			ptrdel(pbuf);
+			ptrdel(&pbuf);
 			return;
 		    }
 		} else {
@@ -1803,7 +1803,7 @@ static void cmd_var(char *arg)
 			named_var = add_varnode(buf, kind);
 			if (REAL_ERROR) {
 			    print_error(error);
-			    ptrdel(pbuf);
+			    ptrdel(&pbuf);
 			    return;
 			}
 			if (opt_info) {
@@ -1812,7 +1812,7 @@ static void cmd_var(char *arg)
 			}
 		    } else {
 			print_error(error=UNDEFINED_VARIABLE_ERROR);
-			ptrdel(pbuf);
+			ptrdel(&pbuf);
 			return;
 		    }
 		}
@@ -1845,7 +1845,7 @@ static void cmd_var(char *arg)
 	*VAR[idx].str = ptrnew(PARAMLEN);
 	if (MEM_ERROR) {
 	    print_error(error);
-	    ptrdel(pbuf);
+	    ptrdel(&pbuf);
 	    return;
 	}
     }
@@ -1865,14 +1865,14 @@ static void cmd_var(char *arg)
 	/* R.I.P. unnamed variables */
 	    if (*VAR[idx].str) {
 		if (idx < 0) {
-		    ptrdel(*VAR[idx].str);
+		    ptrdel(VAR[idx].str);
 		    *VAR[idx].str = 0;
 		} else
 		    ptrzero(*VAR[idx].str);
 	    }
 	} else
 	    *VAR[idx].num = 0;
-	ptrdel(pbuf);
+	ptrdel(&pbuf);
 	return;
     } else if (!right) {
 	/* no right-hand expression, just show */
@@ -1881,7 +1881,7 @@ static void cmd_var(char *arg)
 		pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
 		if (REAL_ERROR) {
 		    print_error(error);
-		    ptrdel(pbuf);
+		    ptrdel(&pbuf);
 		    return;
 		}
 		fmt_next_edit("#($%s = \"%s\")",
@@ -1902,7 +1902,7 @@ static void cmd_var(char *arg)
                               *VAR[idx].num);
 	    }
 	}
-	ptrdel(pbuf);
+	ptrdel(&pbuf);
 	return;
     }
 
@@ -1917,7 +1917,7 @@ static void cmd_var(char *arg)
 	if (!fp) {
 	    PRINTF("#var: #error opening \"%s\"\n", arg);
 	    error=SYNTAX_ERROR;
-	    ptrdel(pbuf);
+	    ptrdel(&pbuf);
 	    return;
 	}
 	len = 0;
@@ -1959,7 +1959,7 @@ static void cmd_var(char *arg)
 	if (MEM_ERROR)
 	    print_error(error);
     }
-    ptrdel(pbuf);
+    ptrdel(&pbuf);
 }
 
 static void cmd_setvar(char *arg)
@@ -2760,7 +2760,7 @@ static void cmd_load(char *arg)
     }
 }
 
-static char *trivial_eval(ptr *pbuf, char *arg, char *name)
+static char *trivial_eval(ptr **pbuf, char *arg, char *name)
 {
     char *tmp = skipspace(arg);
 
@@ -2790,7 +2790,7 @@ static char *trivial_eval(ptr *pbuf, char *arg, char *name)
 
 static void do_cmd_add(char *arg, int is_static)
 {
-    ptr pbuf = (ptr)0;
+    ptr *pbuf = (ptr *)0;
     char buf[BUFSIZE];
 
     arg = trivial_eval(&pbuf, arg, "add");
@@ -2800,7 +2800,7 @@ static void do_cmd_add(char *arg, int is_static)
 	    if (strlen(buf) >= MIN_WORDLEN)
 		(is_static ? put_static_word : put_word)(buf);
 	}
-    ptrdel(pbuf);
+    ptrdel(&pbuf);
 }
 
 static void cmd_add(char *arg)
@@ -2815,11 +2815,11 @@ static void cmd_addstatic(char *arg)
 
 static void cmd_put(char *arg)
 {
-    ptr pbuf = (ptr)0;
+    ptr *pbuf = (ptr *)0;
     arg = trivial_eval(&pbuf, arg, "put");
     if (!REAL_ERROR && *arg)
 	put_history(arg);
-    ptrdel(pbuf);
+    ptrdel(&pbuf);
 }
 
 

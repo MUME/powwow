@@ -47,7 +47,7 @@
 typedef struct {
   int  type;
   long num;      /* used for numeric types or as index for all variables */
-  ptr  txt;      /* used for text types */
+  ptr  *txt;      /* used for text types */
 } object;
 
 #define LEFT  1
@@ -454,7 +454,7 @@ static int check_object(object *obj)
 static void check_delete(object *obj)
 {
     if (obj->type==TYPE_TXT && obj->txt) {
-	ptrdel(obj->txt);
+	ptrdel(&obj->txt);
 	obj->txt = NULL;
     }
 }
@@ -463,7 +463,7 @@ static int exe_op(operator *op)
 {
     object o1, o2, *p=NULL;
     long *l, rnd, delta;
-    ptr src = NULL, dst = NULL, start = NULL;
+    ptr *src = NULL, *dst = NULL, *start = NULL;
     int srclen;
     char *ssrc, *tmp;
     int ret=0, i=0, j=0, danger=0;
@@ -1353,11 +1353,11 @@ static int _eval(int mindepth)
     return 1;
 }
 
-int eval_any(long *lres, ptr *pres, char **what)
+int eval_any(long *lres, ptr **pres, char **what)
 {
     int printmode;
     long val;
-    ptr txt;
+    ptr *txt;
     object res;
 
     if (pres)
@@ -1449,18 +1449,18 @@ int eval_any(long *lres, ptr *pres, char **what)
     return res.type;
 }
 
-int evalp(ptr *res, char **what)
+int evalp(ptr **res, char **what)
 {
     return eval_any((long *)0, res, what);
 }
 
 int evall(long *res, char **what)
 {
-    return eval_any(res, (ptr *)0, what);
+    return eval_any(res, (ptr **)0, what);
 }
 
 int evaln(char **what)
 {
-    return eval_any((long *)0, (ptr *)0, what);
+    return eval_any((long *)0, (ptr **)0, what);
 }
 

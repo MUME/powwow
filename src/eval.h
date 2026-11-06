@@ -41,8 +41,8 @@
 #define PRINT_AS_PTR  1
 #define PRINT_AS_LONG 2
 
-int  eval_any(long *lres, ptr *pres, char **what);
-int  evalp(            ptr *pres, char **what);
+int  eval_any(long *lres, ptr **pres, char **what);
+int  evalp(            ptr **pres, char **what);
 int  evall(long *lres,            char **what);
 int  evaln(                       char **what);
 

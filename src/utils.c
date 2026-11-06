@@ -274,7 +274,7 @@ void unescape(char *s)
     (void)memunescape(s, strlen(s), raw_escapes);
 }
 
-void ptrunescape(ptr p)
+void ptrunescape(ptr *p)
 {
     if (!p)
 	return;
@@ -284,7 +284,7 @@ void ptrunescape(ptr p)
 /*
  * add escapes (backslashes) to src
  */
-ptr ptrmescape(ptr dst, char *src, int srclen, int append)
+ptr *ptrmescape(ptr *dst, char *src, int srclen, int append)
 {
     int len;
     char *p;
@@ -337,7 +337,7 @@ ptr ptrmescape(ptr dst, char *src, int srclen, int append)
     return dst;
 }
 
-ptr ptrescape(ptr dst, ptr src, int append)
+ptr *ptrescape(ptr *dst, ptr *src, int append)
 {
     if (!src) {
 	if (!append)
@@ -493,7 +493,7 @@ static int match_mark_or_subst(basenode *bp, char *src)
 /*
  * add marks to line. write in dst.
  */
-static ptr ptrmaddmarks(ptr dst, char *line, int len)
+static ptr *ptrmaddmarks(ptr *dst, char *line, int len)
 {
     marknode *mp, *mfirst;
     char begin[CAPLEN], end[CAPLEN], *lineend = line + len;
@@ -554,7 +554,7 @@ static ptr ptrmaddmarks(ptr dst, char *line, int len)
 /*
  * add substitutions to line. write in dst.
  */
-static ptr ptrmaddsubst(ptr dst, char *line, int len)
+static ptr *ptrmaddsubst(ptr *dst, char *line, int len)
 {
     ptrzero(dst);
 
@@ -611,14 +611,14 @@ static ptr ptrmaddsubst(ptr dst, char *line, int len)
 /*
  * add substitutions and markers to line. write in dst.
  */
-ptr ptrmaddsubst_and_marks(ptr dst, char *line, int len)
+ptr *ptrmaddsubst_and_marks(ptr *dst, char *line, int len)
 {
     if (substitutions == NULL)
       return ptrmaddmarks(dst, line, len);
     if (markers == NULL)
       return ptrmaddsubst(dst, line, len);
 
-    static ptr ptrbuf = NULL;
+    static ptr *ptrbuf = NULL;
     ptrbuf = ptrmaddsubst(ptrbuf, line, len);
     if (MEM_ERROR || ptrbuf == NULL) {
         ptrzero(dst);
@@ -630,7 +630,7 @@ ptr ptrmaddsubst_and_marks(ptr dst, char *line, int len)
 /*
  * write a substitution in dst as the argument of #substitute that defines it
  */
-ptr ptrsubstdef(ptr dst, char mbeg, char *pattern, char *replacement)
+ptr *ptrsubstdef(ptr *dst, char mbeg, char *pattern, char *replacement)
 {
     if (mbeg != 0)
       dst = ptrmcpy(dst, "^", 1);
@@ -650,7 +650,7 @@ ptr ptrsubstdef(ptr dst, char mbeg, char *pattern, char *replacement)
     return ptrmescape(dst, replacement, strlen(replacement), 1);
 }
 
-ptr ptraddsubst_and_marks(ptr dst, ptr line)
+ptr *ptraddsubst_and_marks(ptr *dst, ptr *line)
 {
     if (line)
 	return ptrmaddsubst_and_marks(dst, ptrdata(line), ptrlen(line));
@@ -819,7 +819,7 @@ void sgr_prompt_commit(const char *prompt, size_t len)
  */
 void smart_print(char *line, char newline)
 {
-    static ptr ptrbuf = NULL;
+    static ptr *ptrbuf = NULL;
     static char *buf;
 
     do {
@@ -1133,7 +1133,7 @@ int read_settings(void)
     size_t linesize = 0;
     int failed = 1, n, savefilever = 0, left, len, limit_mem_hit = 0;
     varnode **first;
-    ptr ptrbuf;
+    ptr *ptrbuf;
 
     if (!*deffile) {
 	PRINTF("#warning: no save-file defined!\n");
@@ -1185,7 +1185,7 @@ int read_settings(void)
 
     for (n = 0; n < NUMVAR; n++) {
 	*var[n].num = 0;
-	ptrdel(*var[n].str);
+	ptrdel(var[n].str);
 	*var[n].str = NULL;
     }
 
@@ -1292,7 +1292,7 @@ int read_settings(void)
     a_nice = old_nice;
 
     if (ptrbuf)
-	ptrdel(ptrbuf);
+	ptrdel(&ptrbuf);
 
     tty_flush();
     return failed;
@@ -1322,7 +1322,7 @@ int save_settings(void)
     marknode *mp;
     keynode *kp;
     varnode *vp;
-    ptr pp = (ptr)0;
+    ptr *pp = (ptr *)0;
     int i, flag, failed = 1;
 
     if (REAL_ERROR) {
@@ -1539,7 +1539,7 @@ int save_settings(void)
     }
 
     if (pp)
-	ptrdel(pp);
+	ptrdel(&pp);
 
     return failed > 0 ? 1 : -1;
 }

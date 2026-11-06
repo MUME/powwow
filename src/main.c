@@ -100,8 +100,8 @@ static int  search_action_or_prompt(char *line, char clearline, char copyprompt)
 
 static void set_params(char *line, int *match_s, int *match_e);
 static void parse_commands(char *command, char *arg);
-static int  subst_param(ptr *buf, char *src);
-static int  jit_subst_vars(ptr *buf, char *src);
+static int  subst_param(ptr **buf, char *src);
+static int  jit_subst_vars(ptr **buf, char *src);
 
 
 /*        GLOBALS                */
@@ -174,11 +174,11 @@ static unnamedvar global_var[NUMTOT]; /* global unnamed vars */
 
 vars *var;			   /* vector of all vars */
 
-ptr globptr[2];			   /* global ptr buffer */
+ptr *globptr[2];			   /* global ptr buffer */
 char globptrok = 1|2;		   /* x&i = 0 if globptr[i] is in use */
 
 varnode *prompt;		   /* $prompt is always set */
-ptr marked_prompt;		   /* $prompt with marks added */
+ptr *marked_prompt;		   /* $prompt with marks added */
 static varnode *last_line;	   /* $line is always set to
 				    * the last line processed */
 
@@ -769,7 +769,7 @@ void status(int s)
 static void exec_delays(void)
 {
     delaynode *dying;
-    ptr *pbuf, buf = (ptr)0;
+    ptr **pbuf, *buf = (ptr *)0;
 
     if (!delays)
 	return;
@@ -1344,7 +1344,7 @@ static int process_first_fragment(char *buf, int got)
 	    sgr_prompt_commit(promptstr, promptlen);
 	    promptzero();
        	} else {
-	    ptr *pp, p = (ptr)0;
+	    ptr **pp, *p = (ptr *)0;
 	    char *dummy;
 	    int dummyint;
 
@@ -1569,7 +1569,7 @@ static int match_regexp_action(void *regexp, char *line, int *match_s, int *matc
 static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 {
     char mpat[BUFSIZE], *npat=0, *npat2=0, *src=line, *nsrc=0, c;
-    ptr *pbuf, buf = (ptr)0;
+    ptr **pbuf, *buf = (ptr *)0;
     char *tmp, *realpat = pat;
     int mbeg = 0, mword = 0, prm = -1;
 
@@ -1869,7 +1869,7 @@ static char *split_words(char *str)
 {
     int i;
     char *end;
-    ptr *prm;
+    ptr **prm;
 
     *VAR[0].str = ptrmcpy(*VAR[0].str, str, strlen(str));
     for (i = 1; i < NUMPARAM; i++) {
@@ -1899,8 +1899,8 @@ static void free_allparams(void)
 
     for (i=1; i<MAX_STACK; i++) {
 	for (j=0; j<NUMPARAM; j++) {
-	    ptrdel(paramstk.p[i][j].str);
-	    paramstk.p[i][j].str = (ptr)0;
+	    ptrdel(&paramstk.p[i][j].str);
+	    paramstk.p[i][j].str = (ptr *)0;
 	}
     }
     for (j=0; j<NUMPARAM; j++) {
@@ -1938,7 +1938,7 @@ void pop_params(void)
 	return;
     }
     for (i=0; i<NUMPARAM; i++) {
-	ptrdel(*VAR[i].str); *VAR[i].str = (ptr)0;
+	ptrdel(VAR[i].str); *VAR[i].str = (ptr *)0;
 	VAR[i].num = &paramstk.p[paramstk.curr][i].num;
 	VAR[i].str = &paramstk.p[paramstk.curr][i].str;
     }
@@ -2020,8 +2020,8 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
     char *buf, *arg, *end, *ret;
     char last_is_sep = 0;
     int len, copied = 0;
-    ptr p1 = (ptr)0, p2 = (ptr)0;
-    ptr *pbuf, *pbusy, *tmp;
+    ptr *p1 = (ptr *)0, *p2 = (ptr *)0;
+    ptr **pbuf, **pbusy, **tmp;
 
     if (error) return NULL;
 
@@ -2247,7 +2247,7 @@ static void parse_commands(char *command, char *arg)
  * return 0 if dst not filled. if returned 0 and not error,
  * there was nothing to substitute.
  */
-static int subst_param(ptr *buf, char *src)
+static int subst_param(ptr **buf, char *src)
 {
     int done, i;
     char *dst, *tmp, kind;
@@ -2327,7 +2327,7 @@ static int subst_param(ptr *buf, char *src)
  * there was nothing to substitute.
  */
 
-static int jit_subst_vars(ptr *buf, char *src)
+static int jit_subst_vars(ptr **buf, char *src)
 {
     int i, done, kind;
     char *tmp, *name, *dst, c;
@@ -2419,12 +2419,12 @@ static int jit_subst_vars(ptr *buf, char *src)
 	    }
 	} else if (src[0] == '#' && src[1] == '{') {
 	    int max, n;
-	    ptr pbuf = (ptr)0;
+	    ptr *pbuf = (ptr *)0;
 
 	    src += 2;
 	    (void)evalp(&pbuf, &src);
 	    if (REAL_ERROR) {
-		ptrdel(pbuf);
+		ptrdel(&pbuf);
 		return 0;
 	    }
 	    if (pbuf) {
@@ -2432,14 +2432,14 @@ static int jit_subst_vars(ptr *buf, char *src)
 		n = dst - ptrdata(*buf);
 		*buf = ptrpad(*buf, max);
 		if (REAL_ERROR) {
-		    ptrdel(pbuf);
+		    ptrdel(&pbuf);
 		    return 0;
 		}
 		dst = ptrdata(*buf) + n;
 		memcpy(dst, ptrdata(pbuf), max);
 		dst += max;
 	    }
-	    ptrdel(pbuf);
+	    ptrdel(&pbuf);
 
 	    if (*src)
 		src = skipspace(src);

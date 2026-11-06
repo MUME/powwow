@@ -470,7 +470,7 @@ void parse_action(char *str, int onprompt)
 
             p = skipspace(p);
             if (*p == '(') {
-		ptr pbuf = (ptr)0;
+		ptr *pbuf = (ptr *)0;
 		p++;
 		kind = evalp(&pbuf, &p);
 		if (!REAL_ERROR && kind != TYPE_TXT)
@@ -478,12 +478,12 @@ void parse_action(char *str, int onprompt)
 		if (REAL_ERROR) {
 		    PRINTF("#%s: ", ONPROMPT);
 		    print_error(error=NO_STRING_ERROR);
-		    ptrdel(pbuf);
+		    ptrdel(&pbuf);
 		    return;
 		}
 		if (pbuf) {
 		    my_strncpy(pattern, ptrdata(pbuf), BUFSIZE-1);
-		    ptrdel(pbuf);
+		    ptrdel(&pbuf);
 		} else
 		    pattern[0] = '\0';
 		if (*p)
@@ -906,14 +906,14 @@ void parse_mark(char *str)
         unescape(str);
         np = lookup_marker(str, mbeg);
         if ((n = *np)) {
-	    ptr pbuf = (ptr)0;
+	    ptr *pbuf = (ptr *)0;
 	    char *name;
 	    pbuf = ptrmescape(pbuf, n->b.pattern, strlen(n->b.pattern), 0);
-	    if (MEM_ERROR) { ptrdel(pbuf); return; }
+	    if (MEM_ERROR) { ptrdel(&pbuf); return; }
             name = attr_name(n->attrcode);
             fmt_next_edit("#mark %s%s=%s", n->b.mbeg != 0 ? "^" : "",
                           pbuf ? ptrdata(pbuf) : "", name);
-	    ptrdel(pbuf);
+	    ptrdel(&pbuf);
         } else {
             PRINTF("#unknown marker, cannot show: \"%s\"\n", str);
         }
@@ -988,14 +988,14 @@ void show_substitutions(void)
            (substitutions != NULL && substitutions->next == NULL) ? " is" : "s are",
            substitutions != NULL ? ':' : '.');
 
-    ptr pbuf = NULL;
+    ptr *pbuf = NULL;
     for (substnode *p = substitutions; p != NULL; p = p->next) {
         pbuf = ptrsubstdef(pbuf, p->b.mbeg, p->b.pattern, p->replacement);
         if (MEM_ERROR)
           break;
         tty_printf("#substitute %s\n", ptrdata(pbuf));
     }
-    ptrdel(pbuf);
+    ptrdel(&pbuf);
 }
 
 /*
@@ -1006,10 +1006,10 @@ static void subst_info(const char *what, char mbeg, char *pattern, char *replace
     if (opt_info == 0)
       return;
 
-    ptr pbuf = ptrsubstdef(NULL, mbeg, pattern, replacement);
+    ptr *pbuf = ptrsubstdef(NULL, mbeg, pattern, replacement);
     if (!MEM_ERROR)
       PRINTF("#%s substitution: %s\n", what, ptrdata(pbuf));
-    ptrdel(pbuf);
+    ptrdel(&pbuf);
 }
 
 /*
@@ -1036,10 +1036,10 @@ void parse_substitute(char *str)
             PRINTF("#unknown substitution, cannot show: \"%s\"\n", str);
             return;
         }
-        ptr pbuf = ptrsubstdef(NULL, n->b.mbeg, n->b.pattern, n->replacement);
+        ptr *pbuf = ptrsubstdef(NULL, n->b.mbeg, n->b.pattern, n->replacement);
         if (!MEM_ERROR)
           fmt_next_edit("#substitute %s", ptrdata(pbuf));
-        ptrdel(pbuf);
+        ptrdel(&pbuf);
         return;
     }
 
@@ -1546,7 +1546,7 @@ void parse_rebind(char *arg)
  * if needed, use/malloc "pbuf" as buffer (on error, also free pbuf)
  * return resulting char *
  */
-char *redirect(char *arg, ptr *pbuf, char *kind, char *name, int also_num, long *start, long *end)
+char *redirect(char *arg, ptr **pbuf, char *kind, char *name, int also_num, long *start, long *end)
 {
     char *tmp = skipspace(arg), k;
     int type, i;
@@ -1573,7 +1573,7 @@ char *redirect(char *arg, ptr *pbuf, char *kind, char *name, int also_num, long 
 	if (REAL_ERROR) {
 	    PRINTF("#%s: ", name);
 	    print_error(error);
-	    ptrdel(*pbuf);
+	    ptrdel(pbuf);
 	    return NULL;
 	}
 	for (i=0; i<2; i++) if (*arg == CMDSEP) {
@@ -1595,7 +1595,7 @@ char *redirect(char *arg, ptr *pbuf, char *kind, char *name, int also_num, long 
 	    if (REAL_ERROR) {
 		PRINTF("#%s: ", name);
 		print_error(error);
-		ptrdel(*pbuf);
+		ptrdel(pbuf);
 		return NULL;
 	    }
 	    if (i)
@@ -1606,7 +1606,7 @@ char *redirect(char *arg, ptr *pbuf, char *kind, char *name, int also_num, long 
 	if (*arg != ')') {
 	    PRINTF("#%s: ", name);
 	    print_error(error=MISSING_PAREN_ERROR);
-	    ptrdel(*pbuf);
+	    ptrdel(pbuf);
 	    return NULL;
 	}
 	if (!*pbuf) {
@@ -1615,7 +1615,7 @@ char *redirect(char *arg, ptr *pbuf, char *kind, char *name, int also_num, long 
 	    ptrzero(*pbuf);
 	    if (REAL_ERROR) {
 		print_error(error);
-		ptrdel(*pbuf);
+		ptrdel(pbuf);
 		return NULL;
 	    }
 	}
@@ -1633,7 +1633,7 @@ void show_vars(void)
 {
     varnode *v;
     int i, type;
-    ptr p = (ptr)0;
+    ptr *p = (ptr *)0;
 
     PRINTF("#the following variables are defined:\n");
 
@@ -1667,7 +1667,7 @@ void show_vars(void)
 		tty_printf("#($%d = \"%s\")\n", i, ptrdata(p));
 	}
     }
-    ptrdel(p);
+    ptrdel(&p);
 }
 
 void show_delaynode(delaynode *p, int in_or_at)

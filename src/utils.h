@@ -25,16 +25,16 @@ const char *sgr_prompt_base(void);
 void sgr_prompt_draw(void);
 void sgr_prompt_commit(const char *prompt, size_t len);
 
-void ptrunescape(ptr p);
+void ptrunescape(ptr *p);
 int  memunescape(char *p, int lenp, bool raw);
 extern bool raw_escapes;
 
-ptr  ptrescape(ptr dst, ptr src, int append);
-ptr  ptrmescape(ptr dst, char *src, int srclen, int append);
+ptr  *ptrescape(ptr *dst, ptr *src, int append);
+ptr  *ptrmescape(ptr *dst, char *src, int srclen, int append);
 
-ptr  ptraddsubst_and_marks(ptr dst, ptr line);
-ptr  ptrmaddsubst_and_marks(ptr dst, char *line, int len);
-ptr  ptrsubstdef(ptr dst, char mbeg, char *pattern, char *replacement);
+ptr  *ptraddsubst_and_marks(ptr *dst, ptr *line);
+ptr  *ptrmaddsubst_and_marks(ptr *dst, char *line, int len);
+ptr  *ptrsubstdef(ptr *dst, char mbeg, char *pattern, char *replacement);
 
 void put_marks(char *dst, char *line);
 void smart_print(char *line, char newline);

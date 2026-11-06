@@ -61,7 +61,7 @@ extern int olines;		/* previous terminal window size */
 extern int line0, col0;		/* origin of input line */
 
 extern varnode *prompt;		/* $prompt is always set */
-extern ptr marked_prompt;	/* $prompt with marks added */
+extern ptr *marked_prompt;	/* $prompt with marks added */
 
 #define promptstr    (ptrdata(prompt->str))
 #define promptlen    (ptrlen(prompt->str))
@@ -100,10 +100,10 @@ extern int max_named_vars;
 extern vars *var;
 #define VAR (var+NUMVAR)
 
-extern ptr globptr[];
+extern ptr *globptr[];
 extern char globptrok;
 #define TAKE_PTR(pbuf, buf) do { if (globptrok & 1) globptrok &= ~1, pbuf = globptr; else if (globptrok & 2) globptrok &= ~2, pbuf = globptr + 1; else pbuf = &buf; } while(0)
-#define DROP_PTR(pbuf)      do { if (*pbuf == *globptr) globptrok |= 1; else if (*pbuf == *(globptr+1))	globptrok |= 2;	else ptrdel(*pbuf); } while(0)
+#define DROP_PTR(pbuf)      do { if (*pbuf == *globptr) globptrok |= 1; else if (*pbuf == *(globptr+1))	globptrok |= 2;	else ptrdel(pbuf); *pbuf = NULL; } while(0)
 
 extern vtime now, start_time, ref_time;
 extern int now_updated;

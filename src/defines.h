@@ -292,12 +292,12 @@ typedef struct varnode {        /* for named variables */
     struct varnode *snext;
     int index;
     long num;
-    ptr  str;
+    ptr  *str;
 } varnode;
 
 typedef struct {                /* for unnamed vars */
     long num;
-    ptr  str;
+    ptr  *str;
 } unnamedvar;
 
 typedef struct {		/* stack of local vars */
@@ -307,7 +307,7 @@ typedef struct {		/* stack of local vars */
 
 typedef struct {		/* pointers to all variables */
     long *num;
-    ptr  *str;
+    ptr  **str;
 } vars;
 
 /* editing session control */

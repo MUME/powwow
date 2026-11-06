@@ -22,7 +22,7 @@ void show_binds(char edit);
 void parse_bind(char *arg);
 void parse_rebind(char *arg);
 
-char *redirect(char *arg, ptr *pbuf, char *kind, char *name, int also_num, long *start, long *end);
+char *redirect(char *arg, ptr **pbuf, char *kind, char *name, int also_num, long *start, long *end);
 
 void show_vars(void);
 void show_delaynode(delaynode *p, int in_or_at);

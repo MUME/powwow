@@ -457,7 +457,7 @@ varnode *add_varnode(char *name, int type)
 	return NULL;
     }
     new->num = 0;
-    new->str = (ptr)0;
+    new->str = (ptr *)0;
     new->index = m = NUMPARAM + num_named_vars[type];
 
     if (type)
@@ -698,7 +698,7 @@ void delete_varnode(varnode **base, int type)
     else
 	return;
     if (p->name) free(p->name);
-    if (type && p->str) ptrdel(p->str);
+    if (type != 0 && p->str != NULL) ptrdel(&p->str);
     free((void*)p);
 
     i = NUMPARAM + --num_named_vars[type];
