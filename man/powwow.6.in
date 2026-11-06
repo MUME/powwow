@@ -69,13 +69,13 @@ environment variable set to the document title sent from the MUD.
 .PP
 .B powwow
 handles text internally as Unicode (UTF-8), and converts it to and
-from the character set of the terminal's locale.  The connection to the
+from the character set of the terminal\[cq]s locale.  The connection to the
 server can use UTF-8 (the default), ISO-8859-1 or US-ASCII, as negotiated
 using the telnet CHARSET option (RFC 2066) or selected with
 .BR \-\-latin1 .
 Invalid input is shown as U+FFFD; characters that cannot be represented
 are shown or sent as \[oq]?\[cq].
-Captured, recorded and edited files use the connection's character set;
+Captured, recorded and edited files use the connection\[cq]s character set;
 definition files are UTF-8, and older ISO-8859-1 ones are converted when
 loaded.
 .SH OPTIONS
@@ -85,7 +85,7 @@ display help text and exit
 .TP
 \fB\-\-tls\fR[=\fItls-options\fR]
 use encrypted TLS connections (the default); this overrides the TLS
-setting of the definition file's host; additional
+setting of the definition file\[cq]s host; additional
 .IR tls-options ,
 separated by colons (\[oq]:\[cq]), are:
 .RS
@@ -101,7 +101,7 @@ when validating the CA certificate
 .TP
 .BR \-n ", " \-\-no\-tls
 use unencrypted connections; this overrides the TLS setting of the
-definition file's host
+definition file\[cq]s host
 .TP
 .BR \-l ", " \-\-latin1
 start the connection in ISO-8859-1 and prefer ISO-8859-1 when negotiating
@@ -110,7 +110,7 @@ the character set with the server
 .BR \-u ", " \-\-utf8
 start the connection in UTF-8 and prefer UTF-8 when negotiating the
 character set with the server (the default); this overrides the character
-set of the definition file's host
+set of the definition file\[cq]s host
 .TP
 .BR \-v ", " \-\-version
 display the
@@ -160,7 +160,9 @@ and transformed it into
 .MT f91-men@nada.kth.se
 Mattias Engdeg\[oa]rd
 .ME
-was the original author of Cancan but many other people have
+was the original author of
+.B Cancan
+but many other people have
 contributed at least as much, including
 .MT finnag@pvv.unit.no
 Finn Arne Gangstad
@@ -181,11 +183,12 @@ Steve Slaven contributed as the maintainer from 2005.
 .B powwow
 is maintained at
 .UR https://github.com/MUME/powwow
+GitHub
 .UE .
 .PP
 .B powwow
-was originally inspired by Peter Unold's
-.I Tintin
+was originally inspired by Peter Unold\[cq]s
+.B Tintin
 client, but now only bears a very remote resemblance to the original.
 It aims to be a simple but very interactive client, and contains
 features that are interesting for \[lq]immortal\[rq] players, in
