@@ -10,6 +10,7 @@
  *
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,6 +27,8 @@ enum
 {
     /* the header, and the terminating '\0' */
     PTR_OVERHEAD = sizeof(ptr) + 1,
+    /* the largest max that can be allocated */
+    PTR_MAX = INT_MAX - PTR_OVERHEAD,
 };
 
 /*
@@ -40,7 +43,7 @@ ptr *ptrnew(int max)
 	;
     else if (limit_mem && max > limit_mem)
 	error = MEM_LIMIT_ERROR;
-    else if (max < 0 || max + PTR_OVERHEAD < max) /* overflow! */
+    else if (max < 0 || max > PTR_MAX) /* overflow! */
 	error = NO_MEM_ERROR;
     else if ((p = (ptr *)malloc(max + PTR_OVERHEAD))) {
 	p->max = max;
@@ -62,7 +65,7 @@ ptr *ptrdup2(const ptr *src, int newmax)
 
     if (newmax == 0)
 	;
-    else if (newmax < 0 || newmax + PTR_OVERHEAD < newmax)
+    else if (newmax < 0 || newmax > PTR_MAX)
 	error = NO_MEM_ERROR;
     else if (limit_mem && newmax > limit_mem)
 	error = MEM_LIMIT_ERROR;
@@ -137,7 +140,7 @@ ptr *ptrmcat(ptr *dst, const char *src, int len)
 
     if (!src || len <= 0)
 	return dst;
-    if (len + PTR_OVERHEAD < 0) {
+    if (len > PTR_MAX - (dst != NULL ? ptrlen(dst) : 0)) {
 	/* overflow! */
 	error = NO_MEM_ERROR;
 	return dst;
@@ -153,12 +156,6 @@ ptr *ptrmcat(ptr *dst, const char *src, int len)
 	if (ptrmax(dst) > PARAMLEN && ptrmax(dst)/4 > ptrlen(dst) + len)
 	    /* we're wasting space, shrink dst */
 	    mustalloc = 1;
-    }
-
-    if (failmax + PTR_OVERHEAD < 0)  {
-	/* overflow! */
-	error = NO_MEM_ERROR;
-	return dst;
     }
 
     if (mustalloc) {
@@ -178,7 +175,7 @@ ptr *ptrmcat(ptr *dst, const char *src, int len)
 	}
 	if (failmax < PARAMLEN / 2)
 	    newmax = PARAMLEN;
-	else if (failmax / 1024 < PARAMLEN && failmax + PARAMLEN + PTR_OVERHEAD > 0)
+	else if (failmax / 1024 < PARAMLEN && failmax <= PTR_MAX - PARAMLEN)
 	    newmax = failmax + PARAMLEN;
 	else
 	    newmax = failmax;
@@ -240,7 +237,7 @@ ptr *ptrmcpy(ptr *dst, const char *src, int len)
 	    ptrzero(dst);
 	return dst;
     }
-    if (failmax + PTR_OVERHEAD < 0)  {
+    if (len > PTR_MAX) {
 	/* overflow! */
 	error = NO_MEM_ERROR;
 	return dst;
@@ -273,7 +270,7 @@ ptr *ptrmcpy(ptr *dst, const char *src, int len)
 	}
 	if (failmax < PARAMLEN / 2)
 	    newmax = PARAMLEN;
-	else if (failmax / 1024 < PARAMLEN && failmax + PARAMLEN + PTR_OVERHEAD > 0)
+	else if (failmax / 1024 < PARAMLEN && failmax <= PTR_MAX - PARAMLEN)
 	    newmax = failmax + PARAMLEN;
 	else
 	    newmax = failmax;
@@ -332,12 +329,12 @@ ptr *ptrpad(ptr *p, int len)
     }
     if (len > ptrmax(p) - ptrlen(p)) {
 	/* must realloc the ptr */
-	len += ptrlen(p);
-	if (len < 0)  {
+	if (len > PTR_MAX - ptrlen(p))  {
 	    /* overflow! */
 	    error = NO_MEM_ERROR;
 	    return p;
 	}
+	len += ptrlen(p);
 	/*
 	 * cheat: we use ptrmcpy with src==dst
 	 * and do an out-of-boud read of src.
