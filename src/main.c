@@ -1848,8 +1848,10 @@ static void get_user_input(void)
 		    insert_flush();
 		    if (flashback)
 			putbackcursor();
-		    p->funct(p->call_data);
-		    last_edit_cmd = p->funct; /* GH: keep track of last command */
+		    /* the command may delete p, for example with #load */
+		    function_str funct = p->funct;
+		    funct(p->call_data);
+		    last_edit_cmd = funct; /* GH: keep track of last command */
 		    nchars = 0;
 		}
 	    }
