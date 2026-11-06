@@ -152,7 +152,8 @@ int main(int argc, char *argv[]) {
 
     set_terminal();
     while(c!=0x1b) {
-	read(0, &c, 1);
+	if (read(0, &c, 1) != 1)
+	    break;
 	if (c == 0x0a || c == 0x0d) {
 	    if (fgets(buf, 512, f))
 		fputs(buf, stdout);

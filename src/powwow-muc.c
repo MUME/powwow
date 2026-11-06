@@ -86,7 +86,8 @@ int main( int argc, char *argv[] ) {
 	looping = 1;
 	while( looping ) {
 		memset( line, 0, sizeof line );
-		fgets( line, sizeof line, in );
+		if( fgets( line, sizeof(line), in ) == NULL )
+			line[ 0 ] = 0;
 
 		/* get file pos */
 		new_pos = curr_pos = ftell( in );
@@ -287,7 +288,8 @@ int main( int argc, char *argv[] ) {
 
 			/* read to next newline so we don't break up
 			   lines seeking around */
-			fgets( line, sizeof line, in );
+			if( fgets( line, sizeof(line), in ) == NULL )
+				line[ 0 ] = 0;
 			new_pos = ftell( in );
 
 			/* Make a note of moving */
