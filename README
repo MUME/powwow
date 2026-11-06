@@ -42,8 +42,8 @@ COMPILING
 	making the #help feature work out of the box without modifying any
 	settings or flags.
 
-	If you require changes to the build process, please e-mail the problems
-	(and hopefully solution) to me at bpk@hoopajoo.net.  Also please
+	If you require changes to the build process, please report the problems
+	(and hopefully solution) at https://github.com/MUME/powwow.  Also please
 	include your system information (uname -a, etc)
 
 	There are also some other options that may be turned on or off or
@@ -136,17 +136,9 @@ AUTHORS OF POWWOW
 
 	Massimiliano Ghilardi <max@Linuz.sns.it>, alias Cosmos, is the original
 	author, and Gustav Hållberg contributed a lot of new features.
+	Steve Slaven contributed as the maintainer from 2005.
 
-	powwow moved to hoopajoo.net in 2005, and is now maintained by
-	Steve Slaven <bpk@hoopajoo.net>
-
-	The powwow WWW page is: http://hoopajoo.net/projects/powwow.html
-
-	If you forgot where you downloaded powwow from, you can get it from
-	the above address.
-
-	To learn more about MUME, have a look at http://www.mume.org
-	which also explains how to connect.
+	powwow is maintained at https://github.com/MUME/powwow
 
 COPYRIGHT
 

@@ -176,19 +176,12 @@ and
 Lai-Chang Woo
 .ME .
 .PP
-.B powwow
-moved to hoopajoo.net in 2005, and is now maintained by
-.MT bpk@hoopajoo.net
-Steve Slaven
-.ME ;
-please send bug reports and patches to that address.
+Steve Slaven contributed as the maintainer from 2005.
 .PP
-.UR http://hoopajoo.net/projects/powwow.html
-The
 .B powwow
-WWW page
-.UE
-has more information.
+is maintained at
+.UR https://github.com/MUME/powwow
+.UE .
 .PP
 .B powwow
 was originally inspired by Peter Unold's

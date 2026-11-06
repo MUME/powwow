@@ -22,7 +22,7 @@
  * Many new features added by Dain.
  * As usual, all the developers are in debt to countless users
  * for suggestions and debugging.
- * Maintance was taken over by Steve Slaven (bpk@hoopajoo.net) in 2005
+ * Maintenance was taken over by Steve Slaven in 2005.
  */
 
 #include <getopt.h>
