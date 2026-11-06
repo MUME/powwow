@@ -573,15 +573,15 @@ void printver(int level)
 	       " termios,"
 #endif
 #ifdef USE_REGEXP
-          " regexp "
+	       " regexp "
   #ifdef USE_REGEXP_PCRE2POSIX
-          "(pcre2posix)"
+	       "(pcre2posix)"
   #else
-          "(libc)"
+	       "(libc)"
   #endif
-          ","
+	       ","
 #else
-          " no regexp,"
+	       " no regexp,"
 #endif
 #ifdef USE_LOCALE
 	       " locale,"
@@ -678,7 +678,7 @@ static void mainloop(void)
 	    tcp_flush();
 
 	    if (!(pos <= edlen)) {
-		PRINTF("\n#*ARGH* assertion failed (pos <= edlen): mail bpk@hoopajoo.net\n");
+		PRINTF("\n#*ARGH* assertion failed (pos <= edlen)\n");
 		pos = edlen;
 	    }
 
