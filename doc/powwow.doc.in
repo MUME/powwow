@@ -1468,9 +1468,7 @@ SPECIAL COMMANDS: ALL OTHERS
 	to multiple windows using #write. This is more a UNIX topic rather
 	than a powwow-specific one, but that's it. Here is a brief summary:
 
-	First, compile the `catrw' mini-program i.e. type
-	$ make_it catrw
-	if the above worked, type
+	First, type
 	$ mkfifo fifo
 	This will create a special file named `fifo' in the directory
 	(any other name would do, of course)
@@ -1478,8 +1476,10 @@ SPECIAL COMMANDS: ALL OTHERS
 	you're using, but for X11 terminals the following works:
 	$ xterm &
 	On the second window, type
-	$ exec catrw fifo
-	(in case this gives you an error, try just `catrw fifo')
+	$ exec cat <> fifo
+	(in case this gives you an error, try just `cat <> fifo')
+	The `<>' opens the fifo for both reading and writing, so `cat' keeps
+	waiting for more text instead of exiting when powwow closes the fifo.
 	Now return to the first window and start powwow normally.
 	To send text to the second window from within powwow, type:
 	#write ("some text"; "fifo")
@@ -1489,13 +1489,6 @@ SPECIAL COMMANDS: ALL OTHERS
 	Of course you may now want to send text automatically
 	to the second window: just use #write ( <your-text> ; "fifo")
 	from within an #alias, #action or whatever you like.
-
-	P.S.:
-	for experienced users: if you are using the `bash' shell,
-	you don't need `catrw' as you can use
-	$ exec cat <> fifo
-	instead of the above
-	$ exec catrw fifo
 	-----------------------------------------------------------
 	Set/show internal variables
 	#setvar name[={number|(expr)}]

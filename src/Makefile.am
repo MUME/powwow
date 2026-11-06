@@ -19,9 +19,8 @@ install-exec-hook:
 	 rm -f powwow-movie2ascii$(EXEEXT) && \
 	 $(LN_S) powwow-movieplay$(EXEEXT) powwow-movie2ascii$(EXEEXT))
 
-noinst_PROGRAMS = catrw follow
+noinst_PROGRAMS = follow
 follow_SOURCES = follow.c
-catrw_SOURCES = catrw.c
 
 check_PROGRAMS = test_charset test_sgr
 test_charset_SOURCES = test_charset.c charset.c width.c
