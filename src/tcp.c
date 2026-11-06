@@ -854,7 +854,8 @@ void tcp_write(connsess *conn, const char *data)
         return;
     }
 
-    char *iacs, *out;
+    const char *iacs;
+    char *out;
     int len, space, iacp;
     len = strlen(data);
 
