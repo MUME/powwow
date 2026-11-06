@@ -174,9 +174,6 @@ static unnamedvar global_var[NUMTOT]; /* global unnamed vars */
 
 vars *var;			   /* vector of all vars */
 
-ptr *globptr[2];			   /* global ptr buffer */
-char globptrok = 1|2;		   /* x&i = 0 if globptr[i] is in use */
-
 varnode *prompt;		   /* $prompt is always set */
 ptr *marked_prompt;		   /* $prompt with marks added */
 static varnode *last_line;	   /* $line is always set to
@@ -435,8 +432,6 @@ int main(int argc, char **argv)
 	&& (marked_prompt = ptrnew(PARAMLEN))
 	&& (last_line = add_varnode("last_line", 1))
 	&& (last_line->str = ptrnew(PARAMLEN))
-	&& (globptr[0] = ptrnew(PARAMLEN))
-	&& (globptr[1] = ptrnew(PARAMLEN))
 	&& !MEM_ERROR)
 	;
     else
@@ -769,7 +764,7 @@ void status(int s)
 static void exec_delays(void)
 {
     delaynode *dying;
-    ptr **pbuf, *buf = (ptr *)0;
+    ptr *buf = NULL;
 
     if (!delays)
 	return;
@@ -789,8 +784,6 @@ static void exec_delays(void)
 	}
     }
 
-    TAKE_PTR(pbuf, buf);
-
     while (delays && cmp_vtime(&delays->when, &now) <= 0) {
 	dying = delays;           /* remove delayed command from active list */
 	delays = dying->next;     /* and put it in the dead one  */
@@ -809,16 +802,16 @@ static void exec_delays(void)
 
 	    error = 0;
 
-	    *pbuf = ptrmcpy(*pbuf, dying->command, strlen(dying->command));
+	    buf = ptrmcpy(buf, dying->command, strlen(dying->command));
 	    if (MEM_ERROR)
 		errmsg("malloc (#in/#at)");
 	    else {
-		parse_instruction(ptrdata(*pbuf), 0, 0, 1);
+		parse_instruction(ptrdata(buf), 0, 0, 1);
 		history_done = 0;
 	    }
 	}
     }
-    DROP_PTR(pbuf);
+    ptrdel(&buf);
 }
 
 
@@ -1344,26 +1337,23 @@ static int process_first_fragment(char *buf, int got)
 	    sgr_prompt_commit(promptstr, promptlen);
 	    promptzero();
        	} else {
-	    ptr **pp, *p = (ptr *)0;
+	    ptr *p = NULL;
 	    char *dummy;
 	    int dummyint;
 
 	    /* ok, merge this junk with the prompt */
-	    TAKE_PTR(pp, p);
-	    *pp = ptrcpy(*pp, prompt->str);
-	    *pp = ptrmcat(*pp, buf, lineend - buf);
+	    p = ptrcpy(p, prompt->str);
+	    p = ptrmcat(p, buf, lineend - buf);
 
-	    if (MEM_ERROR) { print_error(error); DROP_PTR(pp); return 0; }
-	    if (!*pp) {
-                DROP_PTR(pp);
-                return 0;
-	    }
-	    dummy = ptrdata(*pp);
-	    dummyint = ptrlen(*pp);
+	    if (MEM_ERROR) { print_error(error); ptrdel(&p); return 0; }
+	    if (p == NULL)
+		return 0;
+	    dummy = ptrdata(p);
+	    dummyint = ptrlen(p);
 	    /* this also sets last_line or prompt->str : */
 	    clear_input_line(1);
 	    process_singleline(&dummy, &dummyint);
-	    DROP_PTR(pp);
+	    ptrdel(&p);
 
 	    processed = lineend - buf;
 	}
@@ -1572,17 +1562,15 @@ static int match_regexp_action(void *regexp, char *line, int *match_s, int *matc
 static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 {
     char mpat[BUFSIZE], *npat=0, *npat2=0, *src=line, *nsrc=0, c;
-    ptr **pbuf, *buf = (ptr *)0;
+    ptr *buf = NULL;
     char *tmp, *realpat = pat;
     int mbeg = 0, mword = 0, prm = -1;
 
-    TAKE_PTR(pbuf, buf);
-
-    if (jit_subst_vars(pbuf, pat))
-	pat = ptrdata(*pbuf);
+    if (jit_subst_vars(&buf, pat))
+	pat = ptrdata(buf);
     if (REAL_ERROR) {
 	print_error(error);
-	DROP_PTR(pbuf);
+	ptrdel(&buf);
 	return 0;
     }
     unescape(pat);
@@ -1612,7 +1600,7 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 		    p += *tmp++ - '0';
 		}
 		if (p <= 0 || p >= NUMPARAM) {
-		    DROP_PTR(pbuf);
+		    ptrdel(&buf);
 		    return 0;
 		}
 		prm = p;
@@ -1622,7 +1610,7 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 	    } else {
 		PRINTF("#error: bad action pattern \"%s\"\n#missing digit after \"%s\"\n",
 		       realpat, pat);
-		DROP_PTR(pbuf);
+		ptrdel(&buf);
 		return 0;
 	    }
 	}
@@ -1641,12 +1629,12 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 	if (*mpat) {
 	    nsrc = strstr(src, mpat);
 	    if (!nsrc) {
-		DROP_PTR(pbuf);
+		ptrdel(&buf);
 		return 0;
 	    }
 	    if (mbeg > 0) {
 		if (nsrc != src) {
-		    DROP_PTR(pbuf);
+		    ptrdel(&buf);
 		    return 0;
 		}
 		mbeg = 0;  /* reset mbeg to stop further start match */
@@ -1681,7 +1669,7 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 		if (memchrs(line + match_s[prm],
 			    match_e[prm] - match_s[prm],
 			    DELIM, DELIM_LEN)) {
-		    DROP_PTR(pbuf);
+		    ptrdel(&buf);
 		    return 0;
 		}
 	    }
@@ -1691,7 +1679,7 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 	src = nsrc + strlen(mpat);
 	pat = npat;
     }
-    DROP_PTR(pbuf);
+    ptrdel(&buf);
 
     match_s[0] = 0; match_e[0] = strlen(line);
     return 1;
@@ -2023,8 +2011,7 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
     char *buf, *arg, *end, *ret;
     char last_is_sep = 0;
     int len, copied = 0;
-    ptr *p1 = (ptr *)0, *p2 = (ptr *)0;
-    ptr **pbuf, **pbusy, **tmp;
+    ptr *pbuf = NULL, *pbusy = NULL, *tmp;
 
     if (error) return NULL;
 
@@ -2050,28 +2037,25 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
     }
 
     /*
-     * using two buffers, p1 and p2, for four strings:
+     * using two buffers, pbuf and pbusy, for four strings:
      * result of subs_param, result of jit_subst_vars, result of
      * unescape and first word of line.
      *
      * So care is required to avoid clashes.
      */
-    TAKE_PTR(pbuf, p1);
-    TAKE_PTR(pbusy, p2);
-
-    if (subs && subst_param(pbuf, line)) {
-	line = *pbuf ? ptrdata(*pbuf) : "";
+    if (subs && subst_param(&pbuf, line)) {
+	line = pbuf != NULL ? ptrdata(pbuf) : "";
 	SWAP2(pbusy, pbuf, tmp);
 	copied = 1;
     }
-    if (jit_subs && jit_subst_vars(pbuf, line)) {
-	line = *pbuf ? ptrdata(*pbuf) : "";
+    if (jit_subs && jit_subst_vars(&pbuf, line)) {
+	line = pbuf != NULL ? ptrdata(pbuf) : "";
 	SWAP2(pbusy, pbuf, tmp);
 	copied = 1;
     }
     if (!copied) {
-	*pbuf = ptrmcpy(*pbuf, line, strlen(line));
-	line = *pbuf ? ptrdata(*pbuf) : "";
+	pbuf = ptrmcpy(pbuf, line, strlen(line));
+	line = pbuf != NULL ? ptrdata(pbuf) : "";
 	SWAP2(pbusy, pbuf, tmp);
     }
     if (subs || jit_subs)
@@ -2085,7 +2069,7 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
 
     if (REAL_ERROR) {
 	print_error(error);
-	DROP_PTR(pbuf); DROP_PTR(pbusy);
+	ptrdel(&pbuf); ptrdel(&pbusy);
 	return NULL;
     }
     /* run-time debugging */
@@ -2101,9 +2085,9 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
 	arg = skipspace(line);
 
 	if (arg[0] == '#' && arg[1] == '#') { /* send to other connection */
-	    *pbuf = ptrsetlen(*pbuf, len = strlen(arg));
+	    pbuf = ptrsetlen(pbuf, len = strlen(arg));
 	    if (REAL_ERROR) { print_error(error); break; }
-	    buf = ptrdata(*pbuf);
+	    buf = ptrdata(pbuf);
 	    line = split_first_word(buf, len+1, arg + 2);
 	    /* now (pbuf) is used too: first word of line */
 	    /* line contains the rest */
@@ -2143,10 +2127,10 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
 	    int oneword;
 	    /* initial spaces are NOT skipped this time */
 
-	    *pbuf = ptrsetlen(*pbuf, len = strlen(line));
+	    pbuf = ptrsetlen(pbuf, len = strlen(line));
 	    if (REAL_ERROR) { print_error(error); break; }
 
-	    buf = ptrdata(*pbuf);
+	    buf = ptrdata(pbuf);
 	    arg = split_first_word(buf, len+1, line);
 	    /* buf contains the first word, arg points to arguments */
 
@@ -2188,7 +2172,7 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
 
     if (old_conn != NULL)
         current_connection = old_conn;
-    DROP_PTR(pbuf); DROP_PTR(pbusy);
+    ptrdel(&pbuf); ptrdel(&pbusy);
     return !REAL_ERROR ? ret : NULL;
 }
 
