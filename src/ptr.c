@@ -419,27 +419,14 @@ char *ptrchr(ptr p, char c)
  * find last occurrence of c in p
  * return NULL if none found.
  */
-char *memrchr(char *p, int lenp, char c)
-{
-    char *v, *s = p;
-
-    if (!p || lenp<=0)
-	return NULL;
-
-    v = s + lenp - 1;
-    while (v != s && *v != c) {
-	v--;
-    }
-    if (v != s)
-	return v;
-    else
-	return NULL;
-}
-
 char *ptrrchr(ptr p, char c)
 {
-    if (p)
-	return memrchr(ptrdata(p), ptrlen(p), c);
+    if (p != NULL) {
+        for (int i = ptrlen(p) - 1; i >= 0; --i)
+            if (ptrdata(p)[i] == c)
+                return ptrdata(p) + i;
+        return NULL;
+    }
     return (char*)p; /* shortcut for NULL */
 }
 
