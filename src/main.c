@@ -1353,14 +1353,17 @@ static int process_first_fragment(char *buf, int got)
 	    *pp = ptrcpy(*pp, prompt->str);
 	    *pp = ptrmcat(*pp, buf, lineend - buf);
 
-	    if (MEM_ERROR) { print_error(error); return 0; }
-	    if (!*pp)
-		return 0;
+	    if (MEM_ERROR) { print_error(error); DROP_PTR(pp); return 0; }
+	    if (!*pp) {
+                DROP_PTR(pp);
+                return 0;
+	    }
 	    dummy = ptrdata(*pp);
 	    dummyint = ptrlen(*pp);
 	    /* this also sets last_line or prompt->str : */
 	    clear_input_line(1);
 	    process_singleline(&dummy, &dummyint);
+	    DROP_PTR(pp);
 
 	    processed = lineend - buf;
 	}
