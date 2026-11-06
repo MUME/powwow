@@ -24,7 +24,6 @@
 
 enum
 {
-    PTR_SIG = 91887,
     /* the header, and the terminating '\0' */
     PTR_OVERHEAD = sizeof(ptr) + 1,
 };
@@ -44,7 +43,6 @@ ptr *ptrnew(int max)
     else if (max < 0 || max + PTR_OVERHEAD < max) /* overflow! */
 	error = NO_MEM_ERROR;
     else if ((p = (ptr *)malloc(max + PTR_OVERHEAD))) {
-	p->signature = PTR_SIG;
 	p->max = max;
 	ptrdata(p)[p->len = 0] = '\0';
     } else
@@ -71,7 +69,6 @@ ptr *ptrdup2(const ptr *src, int newmax)
     else if (!src)
 	p = ptrnew(newmax);
     else if ((p = malloc(newmax + PTR_OVERHEAD))) {
-	p->signature = PTR_SIG;
 	p->max = newmax;
 	if (newmax > ptrlen(src))
 	    newmax = ptrlen(src);
@@ -92,8 +89,7 @@ ptr *ptrdup(const ptr *src)
 /* delete (free) a ptr, and set it to NULL */
 void ptrdel(ptr **p)
 {
-    if (*p != NULL && (*p)->signature == PTR_SIG)
-	free(*p);
+    free(*p);
     *p = NULL;
 }
 
@@ -194,8 +190,6 @@ ptr *ptrmcat(ptr *dst, const char *src, int len)
 	    newmax = limit_mem;
 	}
 	if ((p = (ptr *)realloc((void *)dst, newmax + PTR_OVERHEAD))) {
-            if (dst == NULL)
-                p->signature = PTR_SIG;
 	    if (overlap)
 	        src = ptrdata(p) + (src - ptrdata(dst));
 	    if (!dst)
@@ -284,8 +278,6 @@ ptr *ptrmcpy(ptr *dst, const char *src, int len)
 	}
 
 	if ((p = (ptr *)realloc((void *)dst, newmax + PTR_OVERHEAD))) {
-            if (dst == NULL)
-                p->signature = PTR_SIG;
 	    if (overlap)
 	        src = ptrdata(p) + (src - ptrdata(dst));
 	    if (!dst)

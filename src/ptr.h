@@ -10,8 +10,6 @@ typedef struct
 {
     int len;			/* chars in data, excluding the final '\0' */
     int max;			/* capacity of data, excluding the final '\0' */
-    int signature;		/* PTR_SIG, if allocated by ptrnew() etc.;
-				   ptrdel() does not free it otherwise */
     char data[];		/* the contents, which may contain '\0';
 				   data[len] is always '\0' */
 } ptr;
@@ -39,7 +37,7 @@ ptr  *ptrnew(int max);
 ptr  *ptrdup2(const ptr *src, int newmax);
 ptr  *ptrdup(const ptr *src);
 
-/* free *p, if it is a ptr, and set *p to NULL */
+/* free *p and set it to NULL */
 void  ptrdel(ptr **p);
 
 void  ptrzero(ptr *p);
