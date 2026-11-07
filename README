@@ -8,7 +8,7 @@ Files you should have received:
 
 	README		This text.
 	ChangeLog.old	Changes in older releases.
-	powwow.doc	Complete documentation. READ this!
+	powwow.md	Complete documentation. READ this!
 	configure	A shell script that will create a Makefile
 			suitable for your system
 	src/*.[ch]	Sources.

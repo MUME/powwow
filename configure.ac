@@ -198,7 +198,7 @@ AC_ARG_WITH([plugindir],
 
 AC_SUBST(plugindir)
 
-AC_CONFIG_FILES([Makefile src/Makefile doc/powwow.doc doc/Makefile
+AC_CONFIG_FILES([Makefile src/Makefile doc/powwow.md doc/Makefile
     man/powwow.6 man/Makefile])
 AC_OUTPUT
 

@@ -37,7 +37,7 @@ Lines that begin with \[oq]#\[cq] are assumed to be special commands
 to be processed locally.  Help is available with the
 .I #help
 command; the complete manual is the file
-.IR powwow.doc ,
+.IR powwow.md ,
 installed in the same directory as the help text.  Notably,
 semicolons (\[oq];\[cq]) separate commands on a single line.  To send
 a literal semicolon, prefix it with a backslash: \[oq]\e;\[cq].

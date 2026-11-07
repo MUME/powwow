@@ -8,7 +8,7 @@ improve powwow, fix bugs or just have fun:
   ok, use your own style as long as it's clear and consistent.
 
 * Document your changes! Describe them in the commit message, and update the
-  doc files (doc/powwow.doc.in, doc/powwow.help, man/powwow.6.in and README)
+  doc files (doc/powwow.md.in, doc/powwow.help, man/powwow.6.in and README)
   when they are affected.
 
 * Run "make -j8 tidy" to check the sources with clang-tidy, or
