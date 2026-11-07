@@ -132,18 +132,6 @@ static void add_sortednode(sortednode *newnode, sortednode **base, function_sort
     *base = newnode;
 }
 
-void reverse_list(defnode **base)
-{
-    defnode *node = *base, *list = NULL, *tmp;
-    while (node) {
-	tmp = node->next;
-	node->next = list;
-	list = node;
-	node = tmp;
-    }
-    *base = list;
-}
-
 void reverse_sortedlist(sortednode **base)
 {
     sortednode *node = *base, *list = NULL, *tmp;
