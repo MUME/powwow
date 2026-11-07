@@ -13,6 +13,9 @@ TERM=xterm
 LC_ALL=C
 export HOME TERM LC_ALL
 unset POWWOWDIR POWWOWHELP
+POWWOWHELP=${srcdir:-.}/../doc
+POWWOWPAGER=cat
+export POWWOWHELP POWWOWPAGER
 
 esc=$(printf '\033')
 cr=$(printf '\r')
@@ -196,5 +199,12 @@ if [ "$(getconf LONG_BIT)" -ge 64 ]; then
     has '3000000000'
     has '-3000000000'
 fi
+
+run 'help prefers an exact match' '#help in' ''
+has '#in [label [(delay in millisec.) [command]]]'
+lacks 'Normally, powwow prints on screen some messages each time you'
+
+run 'help on a command without an entry' '#help nosuchcommand'
+has '#no entry for "nosuchcommand" in the help file.'
 
 exit $failed

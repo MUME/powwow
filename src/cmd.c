@@ -430,6 +430,24 @@ static void cmd_groupdelim(char *arg) {
     }
 }
 
+/*
+ * find the help entry for 'arg', leaving its first line in 'line'; with
+ * 'exact' false, 'arg' can be an abbreviation of the name of the entry
+ */
+static bool find_help_entry(FILE *f, char *line, int size, const char *arg,
+			    bool exact)
+{
+    const size_t len = strlen(arg);
+
+    rewind(f);
+    while (utf8_fgets(line, size, f) != NULL) {
+	if (line[0] == '@' && strncmp(line + 1, arg, len) == 0
+	    && (!exact || line[len + 1] == '\n' || line[len + 1] == '\0'))
+	    return true;
+    }
+    return false;
+}
+
 static void cmd_help(char *arg)
 {
     int i, size;
@@ -510,11 +528,9 @@ static void cmd_help(char *arg)
 	return;
     }
 
-    while ((tmp = utf8_fgets(line, BUFSIZE, f)) &&
-	   (line[0] != '@' || strncmp(line + 1, arg, strlen(arg))))
-	;
-
-    if (!tmp) {
+    /* an exact match comes first: otherwise "in" would find "info" */
+    if (!find_help_entry(f, line, BUFSIZE, arg, true)
+	&& !find_help_entry(f, line, BUFSIZE, arg, false)) {
 	PRINTF("#no entry for \"%s\" in the help file.\n", arg);
 	fclose(f);
 	return;
