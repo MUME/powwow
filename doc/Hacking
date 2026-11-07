@@ -11,6 +11,11 @@ improve powwow, fix bugs or just have fun:
   doc files (doc/powwow.doc.in, doc/powwow.help, man/powwow.6.in and README)
   when they are affected.
 
+* Run "make -j8 tidy" to check the sources with clang-tidy, or
+  "make -C src foo.tidy" to check only foo.c. The checks are listed in
+  .clang-tidy. Warnings do not make the target fail. Before making a function
+  static because of misc-use-internal-linkage, make sure no plugin needs it.
+
 Report from cancan's "Hacking":
 
 *******************************************************************************
