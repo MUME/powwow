@@ -1867,10 +1867,10 @@ static char *split_words(char *str)
 	*VAR[i].num = 0;
 	prm = VAR[i].str;
 	/* skip multiple span of DELIM */
-	while (*str && strchr(DELIM, *str))
+	while (*str && IS_DELIM(*str))
 	    str++;
 	end = str;
-	while (*end && !strchr(DELIM, *end))
+	while (*end && !IS_DELIM(*end))
 	    end++;
 	*prm = ptrmcpy(*prm, str, end-str);
 	str = end;

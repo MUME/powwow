@@ -284,27 +284,27 @@ void transpose_words(char *dummy)
 
 	this_eo = this_so = pos;
 	/* optionally traceback to find a word */
-	while (this_so && strchr(DELIM, edbuf[this_so]))
+	while (this_so && IS_DELIM(edbuf[this_so]))
 	    this_so--;
 
 	/* now find where the current word ends */
-	while (this_eo < edlen && !strchr(DELIM, edbuf[this_eo]))
+	while (this_eo < edlen && !IS_DELIM(edbuf[this_eo]))
 	    this_eo++;
 
 	/* found a word; now find its start */
-	while (this_so > 0 && !strchr(DELIM, edbuf[this_so - 1]))
+	while (this_so > 0 && !IS_DELIM(edbuf[this_so - 1]))
 	    this_so--;
 
 	if (this_so < 2)
 	    return;		/* impossible that there's another word */
 
 	other_so = this_so - 1;
-	while (other_so >= 0 && strchr(DELIM, edbuf[other_so]))
+	while (other_so >= 0 && IS_DELIM(edbuf[other_so]))
 	    other_so--;
 	if (other_so < 0)
 	    return;
 	other_eo = other_so + 1;
-	while (other_so > 0 && !strchr(DELIM, edbuf[other_so - 1]))
+	while (other_so > 0 && !IS_DELIM(edbuf[other_so - 1]))
 	    other_so--;
 
 	n = sprintf(buf, "%.*s%.*s%.*s",
