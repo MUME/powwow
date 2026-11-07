@@ -140,4 +140,11 @@ has 'hello'
 run 'bind reads a whole key sequence' '#bind foo=bar' "$esc[A"
 has '#new key binding: foo ^[[A=bar'
 
+run 'word operators skip trailing delimiters' '#print ("foo bar  baz  " >: 1)
+#print ("foo bar  baz  " <: 2)
+#print ("foo bar  baz  " >: 2)'
+has 'baz  '
+has 'foo bar '
+has 'bar  baz  '
+
 exit $failed

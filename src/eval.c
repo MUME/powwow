@@ -857,7 +857,7 @@ static int exe_op(operator *op)
 	    o2.num--;
 	    while (o2.num && srclen) {
 		/* skip span of multiple word delimeters */
-		while (srclen && memchr(DELIM, ssrc[srclen], DELIM_LEN))
+		while (srclen && memchr(DELIM, ssrc[srclen - 1], DELIM_LEN))
 		    srclen--;
 		/* skip whole words */
 		if (srclen && (tmp=memrchrs(ssrc, srclen, DELIM, DELIM_LEN)))
@@ -873,7 +873,7 @@ static int exe_op(operator *op)
 	  case (int)greater_colon:
 	    while (o2.num && srclen) {
 		/* skip span of multiple word delimeters */
-		while (srclen && memchr(DELIM, ssrc[srclen], DELIM_LEN))
+		while (srclen && memchr(DELIM, ssrc[srclen - 1], DELIM_LEN))
 		    srclen--;
 		/* skip whole words */
 		if (srclen && (tmp=memrchrs(ssrc, srclen, DELIM, DELIM_LEN)))
