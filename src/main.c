@@ -201,7 +201,7 @@ int line0;                /* screen line where the input line starts */
 char edbuf[BUFSIZE];      /* line editing buffer */
 int edlen;                /* length of current input line */
 int pos = 0;              /* cursor position in line */
-char surely_isprompt = 0; /* !=0 if last #prompt set #isprompt */
+int surely_isprompt = 0; /* !=0 if last #prompt set #isprompt */
 char verbatim = 0;        /* 1 = don't expand aliases or process semicolons */
 char prefixstr[BUFSIZE];  /* inserted in the editing buffer each time */
 char inserted_next[BUFSIZE];/* inserted in buffer just once */

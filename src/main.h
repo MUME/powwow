@@ -67,7 +67,7 @@ extern ptr *marked_prompt;	/* $prompt with marks added */
 #define promptlen    (ptrlen(prompt->str))
 #define promptzero() (prompt_status = 0, ptrzero(prompt->str))
 
-extern char surely_isprompt;    /* 1 if #prompt set #isprompt */
+extern int surely_isprompt;     /* !=0 if #prompt set #isprompt */
 extern char edbuf[];		/* input line buffer */
 extern int edlen;		/* characters in edbuf */
 extern int pos;			/* cursor position in edbuf */
