@@ -165,4 +165,24 @@ run 'upcase a word at the end of a line' '#bind foo=&upcase-word' \
 "
 has 'foo BAR '
 
+run '#var numbers' '#var @x=-5
+#print (@x)
+#var @y=99999999999999999999
+#print (@y)
+#var @z=abc
+#print (@z)'
+has '-5'
+has '0'
+has '#var: #error: operand or index out of range.'
+lacks '99999999999999999999'
+
+if [ "$(getconf LONG_BIT)" -ge 64 ]; then
+    run '#var numbers beyond int' '#var @x=3000000000
+#print (@x)
+#var @y=-3000000000
+#print (@y)'
+    has '3000000000'
+    has '-3000000000'
+fi
+
 exit $failed

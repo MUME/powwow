@@ -1935,24 +1935,21 @@ static void cmd_var(char *arg)
 
     if (type == TYPE_NUM_VAR) {
 	arg = skipspace(arg);
-	type = 1;
-	len = 0;
 
-	if (*arg == '-')
-	    arg++, type = -1;
-	else if (*arg == '+')
-	    arg++;
+	char *num_end;
+	errno = 0;
+	long num = strtol(arg, &num_end, 10);
 
-	if (isdigit(kind=*arg)) while (isdigit(kind)) {
-	    len*=10;
-	    len+=(kind-'0');
-	    kind=*++arg;
-	}
-	else {
+	if (errno == ERANGE) {
 	    PRINTF("#var: ");
-	    print_error(error=NO_NUM_VALUE_ERROR);
+	    print_error(error=OUT_RANGE_ERROR);
+	} else {
+	    if (num_end == arg) {
+		PRINTF("#var: ");
+		print_error(error=NO_NUM_VALUE_ERROR);
+	    }
+	    *VAR[idx].num = num;
 	}
-	*VAR[idx].num = len * type;
     }
     else {
 	*VAR[idx].str = ptrmcpy(*VAR[idx].str, arg, strlen(arg));
