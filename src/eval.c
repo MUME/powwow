@@ -126,7 +126,7 @@ char *error_msg[] = {
 	"invalid variable name",
 };
 
-operator_list op_list[] = {
+static operator_list op_list[] = {
     { 0, 0,     0,	    "",     null		},
 
     { 1, LEFT,  BINARY,     ",",    comma		},

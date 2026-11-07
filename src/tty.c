@@ -150,7 +150,7 @@ int tty_read_fd = 0;
 static int wrapglitch = 0;
 
 #ifdef USE_LOCALE
-FILE *tty_read_stream;
+static FILE *tty_read_stream;
 static int orig_read_fd_fl;
 static struct {
     mbstate_t mbstate;              /* multibyte output shift state */

@@ -79,7 +79,7 @@ cmdstruct *commands = NULL;
 #define C(name, func, help) { NULL, name, help, func, NULL }
 
 /* The builtin commands */
-cmdstruct default_commands[] =
+static cmdstruct default_commands[] =
 {
     C("help",       cmd_help,
       "[keys|math|command]\tthis text, or help on specified topic"),
@@ -249,7 +249,7 @@ cmdstruct default_commands[] =
     { NULL }
 };
 
-char *_cmd_sort_name( cmdstruct *cmd ) {
+static char *_cmd_sort_name( cmdstruct *cmd ) {
 	if( cmd -> sortname == NULL )
 		return( cmd -> name );
 	else

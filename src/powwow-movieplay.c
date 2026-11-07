@@ -15,7 +15,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-void millisec_sleep(long msec)
+static void millisec_sleep(long msec)
 {
     struct timeval t;
     t.tv_sec = msec / 1000;

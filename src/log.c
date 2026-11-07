@@ -46,7 +46,7 @@ typedef struct logentry {
     enum charset cs;		/* charset to write "line" in */
 } logentry;
 
-logentry *loglist;		/* circular (pointer to string) list */
+static logentry *loglist;		/* circular (pointer to string) list */
 
 static int logstart = 0;	/* index to first loglist used */
 static int logend   = 0;	/* index one past last loglist used */

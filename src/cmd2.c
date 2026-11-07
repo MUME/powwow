@@ -1179,7 +1179,7 @@ static int get_one_char(int timeout)
 /*
  * print an escape sequence in human-readably form.
  */
-void print_seq(char *seq, int len)
+static void print_seq(char *seq, int len)
 {
     while (len--) {
 	unsigned char ch = *(seq++);
@@ -1244,7 +1244,7 @@ char *seq_name(char *seq, int len)
  * read a single escape sequence from the keyboard
  * prompting user for it; return static pointer
  */
-char *read_seq(char *name, int *len)
+static char *read_seq(char *name, int *len)
 {
     static char seq[CAPLEN];
     int i = 1, tmp;

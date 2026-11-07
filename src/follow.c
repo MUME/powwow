@@ -94,7 +94,7 @@ static termiostruct ttybsave;
  * Set the terminal to character-at-a-time-without-echo mode, and save the
  * original state in ttybsave
  */
-void set_terminal()
+static void set_terminal()
 {
 #ifdef USE_SGTTY
     struct sgttyb ttyb;
@@ -124,7 +124,7 @@ void set_terminal()
 /*
  * Reset the terminal to its original state
  */
-void reset_terminal()
+static void reset_terminal()
 {
 #ifdef USE_SGTTY
     ioctl(0, TIOCSETP, &ttybsave);
