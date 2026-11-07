@@ -110,6 +110,11 @@ AC_SEARCH_LIBS(dlopen,[dl],[
     dl_ldflags="-rdynamic"])
 AC_SUBST(dl_ldflags)
 
+# plugins use symbols from the powwow binary, which macOS must allow
+plugin_ldflags=
+test -n "${is_darwin}" && plugin_ldflags="-Wl,-undefined,dynamic_lookup"
+AC_SUBST(plugin_ldflags)
+
 AS_IF([test "x${enable_tls}" = xyes], [
     AC_SEARCH_LIBS(gnutls_global_init, gnutls, [
         AC_DEFINE([HAVE_GNUTLS], 1,

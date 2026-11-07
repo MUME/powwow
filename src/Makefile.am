@@ -31,4 +31,9 @@ TESTS = test_charset test_ptr test_sgr test_commands.sh
 EXTRA_DIST = plugtest.c test_commands.sh
 
 plugtest.so: plugtest.c
-	gcc -shared -o plugtest.so plugtest.c
+	$(CC) -c -fPIC $(DEFS) $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) \
+		$(CPPFLAGS) $(CFLAGS) -o plugtest.o $(srcdir)/plugtest.c
+	$(CC) -shared $(CFLAGS) $(plugin_ldflags) $(LDFLAGS) \
+		-o plugtest.so plugtest.o
+
+CLEANFILES = plugtest.so

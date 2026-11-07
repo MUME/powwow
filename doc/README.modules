@@ -3,10 +3,14 @@ it run:
 
 make plugtest.so
 
-from your powwow source directory.  This will build a test plugin that
-can be loaded using:
+from the src directory, after running configure.  This will build a test
+plugin that can be loaded, if you run powwow from the src directory, using:
 
 #module plugtest
+
+From another directory, give its path relative to that directory and
+without the .so, such as "#module src/plugtest" from the top of the source
+tree.  Absolute paths do not work.
 
 If it works, when you do "#help" you will see a new command called
 "#plugtest" that is listed.  It will just echo the arguments back
