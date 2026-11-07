@@ -1356,7 +1356,7 @@ int eval_any(long *lres, ptr **pres, char **what)
     int printmode;
     long val;
     ptr *txt;
-    object res;
+    object res = { 0 };
 
     if (pres)
 	printmode = PRINT_AS_PTR;
