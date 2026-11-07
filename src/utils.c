@@ -21,6 +21,7 @@
 # define _DARWIN_C_SOURCE 1
 #endif
 
+#include <assert.h>
 #include <alloca.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -530,6 +531,7 @@ static ptr *ptrmaddmarks(ptr *dst, char *line, int len)
 	    start = 0;
 	    attr_string(mfirst->attrcode, begin, end);
 
+	    assert(mfirst->b.start != NULL);
 	    dst = ptrmcat(dst, line, matchlen = mfirst->b.start - line);
 	    if (MEM_ERROR) break;
 	    line += matchlen;
@@ -590,6 +592,7 @@ static ptr *ptrmaddsubst(ptr *dst, char *line, int len)
           break;
         start = false;
 
+        assert(sfirst->b.start != NULL);
         int matchlen = sfirst->b.start - line;
         dst = ptrmcat(dst, line, matchlen);
         if (MEM_ERROR)

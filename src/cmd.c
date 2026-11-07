@@ -12,6 +12,7 @@
  *
  */
 
+#include <assert.h>
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
@@ -2648,6 +2649,7 @@ static void cmd_option(char *arg)
             if (strncmp("list", p, len) == 0) {
                 tty_puts("#list of options:\n");
                 for (i = 0; options[i].name; ++i) {
+                    assert(options[i].option != NULL);
                     tty_printf("#option %c%-12s    %s\n",
                                *options[i].option ? '+' : '-',
                                options[i].name,

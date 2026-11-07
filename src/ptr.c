@@ -305,7 +305,8 @@ ptr *ptrmcpy(ptr *dst, const char *src, int len)
 	}
     }
     if (ptrdata(dst) != src)
-	memmove(ptrdata(dst), src, len);
+	/* src was moved along with dst above if it pointed inside dst */
+	memmove(ptrdata(dst), src, len); /* NOLINT(clang-analyzer-unix.Malloc) */
     dst->len = len;
     ptrdata(dst)[ptrlen(dst)] = '\0';
     return dst;

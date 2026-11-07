@@ -25,6 +25,7 @@
  * Maintenance was taken over by Steve Slaven in 2005.
  */
 
+#include <assert.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <string.h>
@@ -854,6 +855,7 @@ static void buf_add(char **buf, size_t *used, size_t *size,
         }
         *buf = new_buf;
     }
+    assert(*buf != NULL);
     memcpy(*buf + *used, s, len);
     *used += len;
     (*buf)[*used] = '\0';

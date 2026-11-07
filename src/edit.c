@@ -10,6 +10,7 @@
  *
  */
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -479,6 +480,7 @@ static int compl_next_word(int i)
 
 static char *compl_get_word(int i)
 {
+    assert(i < MAX_WORDS);
     return i < 0 ? static_words.words[-i - 1] : words[i].word;
 }
 
