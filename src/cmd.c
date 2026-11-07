@@ -92,7 +92,7 @@ static cmdstruct default_commands[] =
     C("add",        cmd_add,
       "{string|(expr)}\tadd the string to word completion list"),
     C("addstatic",  cmd_addstatic,
-      "{string|(expr)}\tadd the string to the static word completion list"),
+      "{string|(expr)}\tadd the string to the static completion list"),
     C("alias",      cmd_alias,
       "[name[=[text]]]\tdelete/list/define aliases"),
     C("at",         cmd_at,
