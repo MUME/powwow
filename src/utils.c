@@ -350,7 +350,7 @@ ptr *ptrescape(ptr *dst, ptr *src, int append)
 /*
  * add escapes to protect special characters from being escaped.
  */
-void escape_specials(char *dst, char *src)
+void escape_specials(char *dst, const char *src)
 {
     enum { NORM, ESCAPE } state;
     while (*src) {

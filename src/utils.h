@@ -47,7 +47,7 @@ char *split_first_word(char *dst, int dstlen, char *src);
 char *first_valid(char *p, char ch);
 char *first_regular(char *p, char c);
 void unescape(char *s);
-void escape_specials(char *dst, char *src);
+void escape_specials(char *dst, const char *src);
 char *skipspace(char *p);
 void exit_powwow(void);
 void suspend_powwow(int signum);
