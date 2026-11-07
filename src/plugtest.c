@@ -18,7 +18,8 @@ static void plugtest( char *arg );
 
 static cmdstruct mycommand = { NULL, "plugtest", "test command", plugtest, NULL };
 
-void powwow_init() {
+/* found using dlsym(), so it cannot be static */
+void powwow_init() { /* NOLINT(misc-use-internal-linkage) */
 	tty_printf( "Init plugtest.so!\n" );
 
 	cmd_add_command( &mycommand );

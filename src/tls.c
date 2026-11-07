@@ -80,7 +80,7 @@ static ssize_t tls_read(connsess *conn, void *data, size_t len)
 
 static bool tls_can_read(connsess *conn)
 {
-    return gnutls_record_check_pending(conn->tls->session);
+    return gnutls_record_check_pending(conn->tls->session) != 0;
 }
 
 static const struct io_fns tls_io_fns = {
