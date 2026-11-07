@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 AC_INIT([powwow],[1.3.0])
-AM_INIT_AUTOMAKE([-Wall])
+AM_INIT_AUTOMAKE([foreign -Wall])
 
 AC_CONFIG_HEADERS([config.h])
 
