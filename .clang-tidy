@@ -1,0 +1,26 @@
+---
+# Checks that would force rewriting the coding style of the existing code
+# are deliberately not enabled. --config-file does not inherit clang-tidy's
+# default checks, so they are listed here.
+Checks:
+  - clang-diagnostic-*
+  - clang-analyzer-*
+  - -clang-analyzer-deadcode.DeadStores
+  - -clang-analyzer-optin.performance.Padding
+  - -clang-analyzer-optin.taint.*
+  - -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+  - -clang-analyzer-security.insecureAPI.rand
+  - -clang-analyzer-security.MmapWriteExec
+  - -clang-analyzer-unix.Errno
+  - -clang-analyzer-unix.Stream
+  - -clang-diagnostic-invalid-source-encoding
+  - bugprone-implicit-widening-of-multiplication-result
+  - bugprone-macro-parentheses
+  - bugprone-suspicious-realloc-usage
+  - misc-use-internal-linkage
+  - readability-duplicate-include
+  - readability-inconsistent-declaration-parameter-name
+  - readability-misleading-indentation
+  - readability-named-parameter
+  - readability-redundant-control-flow
+HeaderFilterRegex: 'src/[^/]*\.h$'
