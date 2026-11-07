@@ -57,7 +57,6 @@
 #include "list.h"
 #include "log.h"
 #include "main.h"
-#include "main.h"
 #include "map.h"
 #include "tcp.h"
 #include "tls.h"
