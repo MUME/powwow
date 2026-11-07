@@ -37,3 +37,14 @@ plugtest.so: plugtest.c
 		-o plugtest.so plugtest.o
 
 CLEANFILES = plugtest.so
+
+SUFFIXES = .tidy
+.c.tidy:
+	$(AM_V_at)$(CLANG_TIDY) --quiet --config-file=$(top_srcdir)/.clang-tidy \
+		$(CLANG_TIDY_FLAGS) $< \
+		-- $(DEFS) $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS)
+
+# "make -j8 tidy" checks everything, "make foo.tidy" checks only foo.c
+tidy: $(SOURCES:.c=.tidy) plugtest.tidy
+
+.PHONY: tidy

@@ -2,9 +2,15 @@ SUBDIRS=src doc man
 
 pkgdata_DATA = COPYING
 
+EXTRA_DIST = .clang-tidy
+
 # check the markup of the man page (needs mandoc)
 lint:
 	cd man && $(MAKE) $(AM_MAKEFLAGS) lint
+
+# check the sources (needs clang-tidy)
+tidy:
+	cd src && $(MAKE) $(AM_MAKEFLAGS) tidy
 
 help:
 	@echo 'Usage: make [TARGET]'
@@ -18,6 +24,7 @@ help:
 	@echo '  all               build everything (the default)'
 	@echo '  check             build and run the tests'
 	@echo '  lint              check the markup of the man page (needs mandoc)'
+	@echo '  tidy              check the sources (needs clang-tidy)'
 	@echo '  install           install the programs and data files'
 	@echo '  install-strip     like install, but strip the programs'
 	@echo '  uninstall         remove the installed files'
@@ -28,4 +35,4 @@ help:
 	@echo '  distcheck         create a source tarball and check that it works'
 	@echo '  help              show this list'
 
-.PHONY: lint help
+.PHONY: lint tidy help

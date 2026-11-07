@@ -89,6 +89,8 @@ case "x${ac_prog_cc_stdc}" in
     * ) AC_MSG_WARN([unknown version ${ac_prog_cc_stdc}]) ;;
 esac
 AC_PROG_LN_S
+AC_PATH_PROG([CLANG_TIDY], [clang-tidy], [clang-tidy],
+    [$PATH:/opt/homebrew/opt/llvm/bin:/usr/local/opt/llvm/bin])
 
 # Checks for libraries.
 AC_CHECK_FUNC([lrand48], ,
