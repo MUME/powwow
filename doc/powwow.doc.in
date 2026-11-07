@@ -1,7 +1,6 @@
 			     P O W W O W
 
 			doc for version @PACKAGE_VERSION@
-		     last modified Oct 09, 2007
 
 INTRODUCTION
 
@@ -344,7 +343,7 @@ SPECIAL COMMANDS: ALIASES AND ACTIONS
 				 need the \ to be followed by a special char
 				 and you do not want this char to be escaped)
 
-	If you have compiled powwow with -DUSE_REGEXP and use % instead of >
+	If powwow was built with regexp support and you use % instead of >
 	you define an action that uses an Extended POSIX regexp to match
 	instead of the standard matcher.
 
@@ -401,6 +400,12 @@ ACTION GROUPS
 	And then later to turn them back on, use:
 
 	#group non-pk on
+
+	The '@' between the label and the group name can be changed with
+	#groupdelim [delimiter]
+
+	For example, after `#groupdelim %' the action above would be defined
+	as auto-ride%non-pk. Without an argument, #groupdelim does nothing.
 
 MISSING: #PROMPT
 
@@ -463,6 +468,16 @@ SPECIAL COMMANDS: ALL OTHERS
 
 	#action >reply ^$1 tells you={#print;#add $1}
 			(from now on, you can use TAB to complete that name)
+	-----------------------------------------------------------
+	Add a text or expression to the static word completion list
+	#addstatic {text | (expression)}
+
+	#addstatic works like #add, but the words are never overwritten as
+	new words are added. They are not saved by #save, so it is best used
+	from your #init command. Example:
+
+	#init ={#identify;#exe <static-completions}
+			(with #addstatic commands in that file)
 	-----------------------------------------------------------
 	Put a text or expression into history (and to word completion list)
 	#put {text | (expression)}
@@ -1756,7 +1771,7 @@ HOW INLINE CALCULATOR IS IMPLEMENTED
 
 	Info and hints to get the most out of calculator and/or hack it.
 
-	The structure `op_list[]' defined in xeval.c contains definitions for
+	The structure `op_list[]' defined in eval.c contains definitions for
 	all the implemented operators, one for each line. Have a look at it
 	to find things like:
 
@@ -1828,7 +1843,7 @@ ATTRIBUTES: COLORS AND OTHER HILIGHTINGS
 
 HISTORY
 
-	Powwow keeps in memory the last 127 lines you typed from keyboard.
+	Powwow keeps in memory the last 2048 lines you typed from keyboard.
 	If you want to recall one of them (to correct a mistake for example)
 	you just need to press your arrow-up key or control-p to scroll through
 	the whole history, one step at time (see COMMAND LINE EDITING below
@@ -1845,7 +1860,7 @@ HISTORY
 
 WORD COMPLETION LIST
 
-	Powwow also remembers the last 512 words you typed from keyboard.
+	Powwow also remembers the last 4096 words you typed from keyboard.
 	This list of words is named `word completion list'. If you have already
 	typed a long or difficult word, you can type the first few chars of it
 	and then press TAB key to ask powwow to complete it for you.
@@ -1856,7 +1871,17 @@ WORD COMPLETION LIST
 	not present in the word completion list.
 
 	Also, you can use the '#add' command to add a word to word completion
-	list (see above for help on #add).
+	list (see above for help on #add), or '#addstatic' to add a word
+	that is never overwritten.
+
+	The delimiters that separate words can be shown or changed with
+	#delim [normal|program|{custom <chars>}]
+
+	normal uses only space and semicolon, which is the default. program
+	uses the characters  <>!=(),;"'{}[]+-/*%  and space, which suits
+	on-line programming. custom uses the given characters, plus space.
+	They also apply to &transpose-words, to the word operators of the
+	calculator such as :< and >:, and to '$' in patterns.
 	-----------------------------------------------------------
 
 COMMAND LINE EDITING
@@ -2017,7 +2042,7 @@ LIMITS
 
 	Powwow has the following limitations:
 
-	Numeric variables are defined as 'long', that means 32-bit integers
+	Numeric variables are defined as 'long', that means 64-bit integers
 	  on most systems.
 
 	String variables, text lines and commands by default have no length
@@ -2047,12 +2072,12 @@ LIMITS
 	Automap can be at most 999 steps.
 	  (the number can be changed by modifying the symbol MAX_MAPLEN)
 
-	History can contain at most 127 lines.
+	History can contain at most 2048 lines.
 	  (the number can be changed by modifying the symbol MAX_HIST)
 	  #history commands can execute other #history commands, up to
 	  MAX_HIST levels of recursion.
 
-        Word completion list can contain at most 512 words.
+        Word completion list can contain at most 4096 words.
 	  (the number can be changed by modifying the symbol MAX_WORDS)
 
         Up to 32 MUD (or spawned) connections can be open simultaneously.
