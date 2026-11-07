@@ -486,7 +486,8 @@ static int match_mark_or_subst(basenode *bp, char *src)
 	}
 	if (prm)
 	    mbeg = mword = 0;  /* reset match flags */
-	src = nsrc + strlen(mpat);
+	if (nsrc != NULL)
+	    src = nsrc + strlen(mpat);
 	pat = npat;
     }
     return 1;

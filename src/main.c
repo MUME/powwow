@@ -1680,7 +1680,8 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 	}
 	if (prm != -1 && match_e[prm])
 	    mbeg = mword = 0;  /* reset match flags */
-	src = nsrc + strlen(mpat);
+	if (nsrc != NULL)
+	    src = nsrc + strlen(mpat);
 	pat = npat;
     }
     ptrdel(&buf);
