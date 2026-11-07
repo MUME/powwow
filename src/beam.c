@@ -335,9 +335,9 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	    free(text);
 	    return;
 	}
-	for (i = 1; i < msglen && isdigit(text[i]); i++)
+	for (i = 1; i < msglen && isdigit((unsigned char)text[i]); ++i)
 	    ;
-	if (text[i++] != '\n' || i >= msglen) {
+	if (i >= msglen || text[i++] != '\n' || i >= msglen) {
 	    tty_printf(errdesc, "\\n");
 	    free(text);
 	    return;
