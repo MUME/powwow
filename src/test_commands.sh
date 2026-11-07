@@ -176,6 +176,10 @@ has '0'
 has '#var: #error: operand or index out of range.'
 lacks '99999999999999999999'
 
+run 'rebind rejects an empty key sequence' '#bind foo=bar' "$esc[A" "#rebind foo =
+"
+has '#rebind: empty key sequence.'
+
 if [ "$(getconf LONG_BIT)" -ge 64 ]; then
     run '#var numbers beyond int' '#var @x=3000000000
 #print (@x)

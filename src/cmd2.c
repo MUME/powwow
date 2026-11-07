@@ -1493,6 +1493,11 @@ void parse_rebind(char *arg)
 	seq = rawseq;
     }
 
+    if (seqlen == 0) {
+	PRINTF("#rebind: empty key sequence.\n");
+	return;
+    }
+
     for (p = keydefs; p; p = p->next) {
 	if (p == *kp)
 	    continue;
