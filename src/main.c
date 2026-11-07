@@ -202,7 +202,7 @@ int edlen;                /* length of current input line */
 int pos = 0;              /* cursor position in line */
 int isprompt_len = 0;     /* set by #isprompt: 0 if not a prompt, -1 if a
                              prompt of unknown length, else its length */
-char verbatim = 0;        /* 1 = don't expand aliases or process semicolons */
+bool verbatim = false;    /* don't expand aliases or process semicolons */
 char prefixstr[BUFSIZE];  /* inserted in the editing buffer each time */
 char inserted_next[BUFSIZE];/* inserted in buffer just once */
 char flashback = 0;	  /* cursor is on excursion and should be put back */

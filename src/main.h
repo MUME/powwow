@@ -108,7 +108,7 @@ extern char prefixstr[];
 extern char inserted_next[BUFSIZE];
 extern char flashback;
 extern int excursion;
-extern char verbatim;
+extern bool verbatim;
 
 extern char opt_exit;
 extern char opt_history;

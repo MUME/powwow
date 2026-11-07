@@ -1214,11 +1214,11 @@ static void cmd_quote(char *arg)
 {
     arg = skipspace(arg);
     if (!*arg)
-	verbatim ^= 1;
+	verbatim = !verbatim;
     else if (!strcmp(arg, "on"))
-	verbatim = 1;
+	verbatim = true;
     else if (!strcmp(arg, "off"))
-	verbatim = 0;
+	verbatim = false;
     if (opt_info) {
         PRINTF("#%s mode.\n", verbatim ? "verbatim" : "normal");
     }
