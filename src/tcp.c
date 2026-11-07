@@ -1268,6 +1268,12 @@ void tcp_spawn(const char *id, char *cmd)
 	errmsg("create socketpair");
 	return;
     }
+    if (sockets[0] >= FD_SETSIZE) {
+	tty_printf("#spawn: #error: too many open connections\n");
+	close(sockets[0]);
+	close(sockets[1]);
+	return;
+    }
     unescape(cmd);
 
     switch (childpid = fork()) {
