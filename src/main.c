@@ -93,7 +93,7 @@ static void prompt_reset_iac(void);
 static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds);
 static void get_user_input(void);
 
-static int  search_action_or_prompt(char *line, char clearline, char copyprompt);
+static int  search_action_or_prompt(char *line, char clearline, char onprompt);
 #define search_action(line, clearline) search_action_or_prompt((line), (clearline), 0)
 #define search_prompt(line, copyprompt) search_action_or_prompt((line), 0, (copyprompt)+1)
 

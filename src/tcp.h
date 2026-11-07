@@ -109,7 +109,7 @@ void tcp_show(void);
 void tcp_close(const char *id);
 void tcp_togglesnoop(const char *id);
 void tcp_spawn(const char *id, char *cmd);
-int  tcp_unIAC(char *data, int len);
+int  tcp_unIAC(char *buffer, int len);
 
 #endif /* _TCP_H_ */
 
