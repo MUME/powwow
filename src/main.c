@@ -200,7 +200,8 @@ int line0;                /* screen line where the input line starts */
 char edbuf[BUFSIZE];      /* line editing buffer */
 int edlen;                /* length of current input line */
 int pos = 0;              /* cursor position in line */
-int surely_isprompt = 0; /* !=0 if last #prompt set #isprompt */
+int isprompt_len = 0;     /* set by #isprompt: 0 if not a prompt, -1 if a
+                             prompt of unknown length, else its length */
 char verbatim = 0;        /* 1 = don't expand aliases or process semicolons */
 char prefixstr[BUFSIZE];  /* inserted in the editing buffer each time */
 char inserted_next[BUFSIZE];/* inserted in buffer just once */
@@ -613,7 +614,7 @@ static void redraw_everything(void)
 	draw_prompt();
     else if (prompt_status == -1) {
 	promptzero();
-	col0 = surely_isprompt = '\0';
+	col0 = isprompt_len = '\0';
     }
     if (line_status == 1)
 	draw_input_line();
@@ -1100,7 +1101,7 @@ static void effective_prompt(void)
 static int grab_prompt(char *linestart, int len, int islast)
 {
     char *p;
-    int is_iac_prompt = surely_isprompt = 0;
+    int is_iac_prompt = isprompt_len = 0;
 
     sgr_prompt_start();
 
@@ -1118,7 +1119,8 @@ static int grab_prompt(char *linestart, int len, int islast)
      * if islast is not set and a #prompt matches.
      */
     if ((is_iac_prompt || islast || printstrlen(linestart) < cols) &&
-	((search_prompt(linestart, 1) && surely_isprompt) || is_iac_prompt)) {
+	((search_prompt(linestart, 1) != 0 && isprompt_len != 0)
+	 || is_iac_prompt != 0)) {
 
 	char *reprint;
 	/*
@@ -1126,11 +1128,11 @@ static int grab_prompt(char *linestart, int len, int islast)
 	 * #isprompt placed the actual prompt in $prompt,
 	 * we must still process the rest of the line.
 	 */
-	if (surely_isprompt > 0 && surely_isprompt <= len) {
-	    len = surely_isprompt;
+	if (isprompt_len > 0 && isprompt_len <= len) {
+	    len = isprompt_len;
 	    prompt_status = 1;
-	} else if (!surely_isprompt && is_iac_prompt) {
-            len = surely_isprompt = is_iac_prompt;
+	} else if (isprompt_len == 0 && is_iac_prompt != 0) {
+            len = isprompt_len = is_iac_prompt;
 	    prompt->str = ptrmcpy(prompt->str, linestart, len);
             effective_prompt();
 	    if (MEM_ERROR) { promptzero(); errmsg("malloc(prompt)"); return 0; }
@@ -1214,17 +1216,17 @@ static void process_singleline(char **pbuf, int *psize)
 	 * The last line in the chunk we received has no trailing \n
 	 * Assume it is a prompt.
 	 */
-	if (surely_isprompt && promptlen && prompt_status == 1) {
+	if (isprompt_len != 0 && promptlen != 0 && prompt_status == 1) {
 	    draw_prompt(); tty_putc('\n'); col0 = 0;
 	    sgr_prompt_commit(promptstr, promptlen);
 	}
-	surely_isprompt = 0;
+	isprompt_len = 0;
 	promptzero();
 	if (lineend > linestart && (len = grab_prompt(linestart, lineend-linestart, 1)))
 	    size = len;
     } else {
 	if (current_connection == main_connection) {
-	    surely_isprompt = 0;
+	    isprompt_len = 0;
 	    promptzero();
 
 	    if (linestart[0]) {
@@ -1293,7 +1295,7 @@ static int process_first_fragment(char *buf, int got)
 	 * unless #isprompt was executed, demote it to a regular line,
 	 * match #actions on it, copy it in last_line.
 	 */
-	if (!surely_isprompt) {
+	if (isprompt_len == 0) {
 	    last_line->str = ptrcpy(last_line->str, prompt->str);
 	    if (MEM_ERROR) { print_error(error); return 0; }
 
@@ -1324,7 +1326,7 @@ static int process_first_fragment(char *buf, int got)
 	else
 	    lineend = buf + got;
 
-	if (surely_isprompt) {
+	if (isprompt_len != 0) {
 	    /*
 	     * either #isprompt _was_ executed,
 	     * or we got a MUME spinning bar.

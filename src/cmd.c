@@ -1098,12 +1098,12 @@ static void cmd_isprompt(char *arg)
 	    i = atoi(arg);
 
 	if (i == 0)
-	    surely_isprompt = -1;
+	    isprompt_len = -1;
 	else if (i < 0) {
 	    if (i > -NUMPARAM && *VAR[-i].str)
-		ptrtrunc(prompt->str, surely_isprompt = ptrlen(*VAR[-i].str));
+		ptrtrunc(prompt->str, isprompt_len = ptrlen(*VAR[-i].str));
 	} else
-	    ptrtrunc(prompt->str, surely_isprompt = i);
+	    ptrtrunc(prompt->str, isprompt_len = i);
     }
 }
 
