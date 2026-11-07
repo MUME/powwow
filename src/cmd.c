@@ -79,7 +79,7 @@ cmdstruct *commands = NULL;
 static cmdstruct default_commands[] =
 {
     C("help",       cmd_help,
-      "[keys|math|command]\tthis text, or help on specified topic"),
+      "[-P] [keys|math|command]\tthis text, or help on specified topic"),
     C("17", (function_str)0,
       "command\trepeat \"command\" 17 times"),
 #ifdef USE_SHELL
@@ -480,6 +480,22 @@ static char *format_command_help(char *dst, const cmdstruct *c)
     return dst;
 }
 
+/*
+ * show 'text', whose first line is its title, with the pager, or on
+ * the screen if 'use_pager' is false; this frees 'text'
+ */
+static void show_help_text(char *text, bool use_pager)
+{
+    if (use_pager) {
+	message_edit(text, strlen(text), 1, 1);
+	return;
+    }
+    const char *body = strchr(text, '\n');
+    status(1);
+    tty_puts(body != NULL ? body + 1 : text);
+    free(text);
+}
+
 static void cmd_help(char *arg)
 {
     int i, size;
@@ -490,6 +506,13 @@ static void cmd_help(char *arg)
     cmdstruct *c;
 
     arg = skipspace(arg);
+    bool use_pager = true;
+    size_t flag_len = strcspn(arg, " \t");
+    if ((flag_len == 2 && strncmp(arg, "-P", 2) == 0)
+        || (flag_len == 10 && strncmp(arg, "--no-pager", 10) == 0)) {
+	use_pager = false;
+	arg = skipspace(arg + flag_len);
+    }
     if (*arg == '#') arg++;
     if (!*arg) {
 	size = 25;
@@ -512,7 +535,7 @@ static void cmd_help(char *arg)
 	for( c = commands; c != NULL; c = c -> next )
 	    tmp = format_command_help(tmp, c);
 
-	message_edit(text, strlen(text), 1, 1);
+	show_help_text(text, use_pager);
 	return;
     }
 
@@ -548,7 +571,7 @@ static void cmd_help(char *arg)
 	    left -= i, got += i;
 	}
 	close(fd);
-	message_edit(text, strlen(text), 1, 1);
+	show_help_text(text, use_pager);
 	return;
     }
 
@@ -604,7 +627,7 @@ static void cmd_help(char *arg)
 
     fclose(f);
     text[i] = '\0'; /* safe, there is space */
-    message_edit(text, strlen(text), 1, 1);
+    show_help_text(text, use_pager);
 }
 
 static void cmd_clear(char *arg)

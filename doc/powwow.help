@@ -680,11 +680,14 @@ defining it:
 Change the '@' between the label of an action or alias and its group name.
 Without an argument, #groupdelim does nothing.
 @help
-#help [keys | math | command]
+#help [-P | --no-pager] [keys | math | command]
 
 Without an argument, list all commands. '#help keys' shows the editing
 keys, '#help math' the inline calculator, and '#help alias' or in general
 '#help <command-name>' the help on a command. Names can be abbreviated.
+
+The text is shown with the pager in $POWWOWPAGER or $PAGER, or more(1).
+With -P or --no-pager, it is printed on the screen instead.
 @identify
 #identify [startedit [endedit]]
 

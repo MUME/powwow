@@ -975,7 +975,7 @@ This is handy when you are talking to someone, for example.
 ### Help
 
 ```
-#help [keys | math | command]
+#help [-P | --no-pager] [keys | math | command]
 ```
 
 Shows a list of powwow's commands.
@@ -983,6 +983,8 @@ Shows a list of powwow's commands.
 `#help math` show help on inline calculator.
 You can also have help on specific commands, using for example
 `#help alias` or in general `#help <command-name>`.
+The text is shown with the pager in `POWWOWPAGER` or `PAGER`, or `more`;
+with `-P` or `--no-pager` it is printed on the screen instead.
 A help file is needed and provided for this last feature of `#help`,
 and powwow will look for the file "powwow.help" in the directory
 specified by the environment variable POWWOWHELP. If this variable

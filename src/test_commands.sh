@@ -242,6 +242,17 @@ has '#editor: two'
 has '#editor: err'
 has '#editor: partial'
 
+# a pager that would fail the test if it were used
+POWWOWPAGER='echo PAGER USED #'
+run 'help without the pager' '#help -P help
+#help --no-pager
+#help -P'
+POWWOWPAGER=cat
+lacks 'PAGER USED'
+has '#help [-P | --no-pager] [keys | math | command]'
+has '#addstatic {string|(expr)}      add the string to the static completion list'
+lacks "Help on 'help'"
+
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 
