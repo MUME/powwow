@@ -7,10 +7,9 @@ improve powwow, fix bugs or just have fun:
   maintain his own code, who can?). If you write any new functions,
   ok, use your own style as long as it's clear and consistent.
 
-* Document your changes! A brief report of changes in the Changelog file is
-  absolutely necessary. So is updating the doc files (powwow.doc, powwow_help
-  and README) Also, sending an e-mail to the code author/mantainer documenting
-  your changes will be appreciated.
+* Document your changes! Describe them in the commit message, and update the
+  doc files (doc/powwow.doc.in, doc/powwow.help, man/powwow.6.in and README)
+  when they are affected.
 
 Report from cancan's "Hacking":
 
@@ -29,15 +28,15 @@ indipendently... Now I (Cosmos) say exactly the same thing Yorick said
 Only difference is that powwow is now GPL-ed and not Public Domain.
 I hope this will help a little.
 
-* Rather than you just distributing your hacked version, I _really_ prefer you
-  to send back to me your changes, so that I can put them into the following
-  release. You lose nothing doing so, since even in case I refuse to include
-  your changes you can still distribute your version if you absolutely want :)
+* Rather than just distributing your hacked version, please send your changes
+  as a pull request to https://github.com/MUME/powwow, so that they can go into
+  the following release. You lose nothing doing so, since even if your changes
+  are refused you can still distribute your version if you absolutely want :)
 
   Even if you decide to distribute such a modified version, please
   make it clear that it is not the original version, use a version number
   which can't be confused with an original version, and put your name
-  in Changelog and in POWWOW_VERSION.
+  in the version.
 
 * I've tried to make the code obey the following rules for modularity:
 	- All exported things from one .c file is declared in its .h file.
