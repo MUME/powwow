@@ -608,7 +608,7 @@ Examples:
 #bind f1=cast 'sanctuary'	(change existing definition)
 #bind f1			(lets you edit the definition)
 #bind f1=			(removes the key)
-#bind f1 [[A=cast 'heal'	(also tell powwow that f1 on your
+#bind f1 ^[[[A=cast 'heal'	(also tell powwow that f1 on your
 				 keyboard sends ESC [ [ A, so you
 				 do not have to press it)
 ```
@@ -1247,9 +1247,8 @@ editor processes are brutally killed.
 Currently available option names are:
 
 ```
-	exit, history, wrap, compact, debug, echo, info, keyecho,
-	speedwalk, wrap, autoprint, buffer, reprint, sendsize,
-	autoclear
+	autoclear, autoprint, compact, debug, echo, exit, history,
+	info, keyecho, reprint, sendsize, speedwalk, words, wrap
 
 #option +name		turns an option on
 #option -name		turns it off
@@ -2212,7 +2211,7 @@ Examples: The following are all valid attributes:
 	green			-- only foreground
 	on white		-- only background
 	yellow on cyan		-- foreground and background
-	inverse bold		--
+	inverse bold		-- inverse and bold
 	blink red on blue	-- you can use multiple attributes,
 				   but you must put 'bold' 'inverse'
 				   and/or 'underline' BEFORE colors
