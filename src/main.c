@@ -687,7 +687,8 @@ static void mainloop(void)
 	    error = now_updated = 0;
 
             readfds = fdset;
-            err = select(tcp_max_fd + 1, &readfds, NULL, NULL, timeout);
+            int max_fd = edit_output_fds(&readfds, tcp_max_fd);
+            err = select(max_fd + 1, &readfds, NULL, NULL, timeout);
 
 	    prompt_reset_iac();
 
@@ -714,6 +715,9 @@ static void mainloop(void)
         }
 
 	if (flashback) putbackcursor();
+
+	if (err > 0)
+	    err -= edit_read_output(&readfds);
 
 	/* process subsidiary and spawned connections first */
 	if (tcp_count > 1 || tcp_attachcount) {

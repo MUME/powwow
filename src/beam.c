@@ -377,6 +377,8 @@ void message_edit(char *text, int msglen, char view, char builtin)
     s->key = key;
     s->conn = (view || builtin) ? NULL : current_connection;
     s->cancel = 0;
+    s->out_fd = -1;
+    s->out_len = 0;
     /* the editor gets the title as sent; we keep it as UTF-8 */
     title = my_strdup(descr);
     if (builtin) {
@@ -425,8 +427,26 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	sig_permanent(SIGCHLD, SIG_DFL);
     }
 
+    /* a background editor must not write over the screen */
+    int out_pipe[2] = { -1, -1 };
+    if (!waitforeditor && pipe(out_pipe) < 0) {
+	errmsg("pipe");
+	out_pipe[0] = out_pipe[1] = -1;
+    }
+
     switch(childpid = fork()) {		/* let's get schizophrenic */
       case 0:
+	if (out_pipe[1] >= 0) {
+	    int null_fd = open("/dev/null", O_RDONLY);
+	    if (null_fd >= 0) {
+		dup2(null_fd, 0);
+		close(null_fd);
+	    }
+	    dup2(out_pipe[1], 1);
+	    dup2(out_pipe[1], 2);
+	    close(out_pipe[0]);
+	    close(out_pipe[1]);
+	}
 	sprintf(command_str, "%s %s", editor, s->file);
         setenv("TITLE", title, 1);
 	execvp(args[0], args);
@@ -434,6 +454,10 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	break;
       case -1:
 	errmsg("fork");
+	if (out_pipe[0] >= 0) {
+	    close(out_pipe[0]);
+	    close(out_pipe[1]);
+	}
 	free(title);
 	free(s->descr);
 	free(s->file);
@@ -442,6 +466,12 @@ void message_edit(char *text, int msglen, char view, char builtin)
     }
     free(title);
     s->pid = childpid;
+    if (out_pipe[0] >= 0) {
+	close(out_pipe[1]);
+	fcntl(out_pipe[0], F_SETFL, O_NONBLOCK);
+	fcntl(out_pipe[0], F_SETFD, FD_CLOEXEC);
+	s->out_fd = out_pipe[0];
+    }
     if (waitforeditor) {
 	while ((i = waitpid(childpid, (int*)NULL, 0)) == -1 && errno == EINTR)
 	    ;
@@ -476,6 +506,106 @@ void message_edit(char *text, int msglen, char view, char builtin)
 }
 
 /*
+ * show the complete lines of output from the background editor of
+ * 'sp', and with 'all' also an incomplete last line
+ */
+static void show_edit_output(editsess *sp, bool all)
+{
+    static const char prefix[] = "#editor: ";
+    size_t end = sp->out_len;
+
+    if (!all) {
+        while (end > 0 && sp->out_buf[end - 1] != '\n')
+            --end;
+    }
+    if (end == 0)
+        return;
+
+    size_t nlines = 1;
+    for (size_t i = 0; i < end; ++i) {
+        if (sp->out_buf[i] == '\n')
+            ++nlines;
+    }
+    char *msg = malloc(end + nlines * sizeof(prefix) + 1);
+    if (msg == NULL) {
+        errmsg("malloc");
+        sp->out_len = 0;
+        return;
+    }
+
+    char *d = msg;
+    for (size_t i = 0; i < end; ) {
+        const char *nl = memchr(sp->out_buf + i, '\n', end - i);
+        size_t len = (nl != NULL ? (size_t)(nl - sp->out_buf) : end) - i;
+        memcpy(d, prefix, sizeof(prefix) - 1);
+        d += sizeof(prefix) - 1;
+        memcpy(d, sp->out_buf + i, len);
+        d += len;
+        *d++ = '\n';
+        i += len + 1;
+    }
+    *d = '\0';
+    write_message(msg);
+    free(msg);
+
+    sp->out_len -= end;
+    memmove(sp->out_buf, sp->out_buf + end, sp->out_len);
+}
+
+/* show what is left of the output of 'sp' and stop reading it */
+static void close_edit_output(editsess *sp)
+{
+    show_edit_output(sp, true);
+    close(sp->out_fd);
+    sp->out_fd = -1;
+}
+
+/*
+ * read the available output of the background editor of 'sp', closing
+ * it at the end; return true if there may be more to read
+ */
+static bool read_edit_output(editsess *sp)
+{
+    ssize_t n = read(sp->out_fd, sp->out_buf + sp->out_len,
+                     sizeof(sp->out_buf) - sp->out_len);
+    if (n > 0) {
+        sp->out_len += (size_t)n;
+        show_edit_output(sp, sp->out_len == sizeof(sp->out_buf));
+        return true;
+    }
+    if (n < 0 && errno == EINTR)
+        return true;
+    if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+        return false;
+    close_edit_output(sp);
+    return false;
+}
+
+int edit_output_fds(fd_set *set, int max_fd)
+{
+    for (editsess *sp = edit_sess; sp != NULL; sp = sp->next) {
+        if (sp->out_fd >= 0) {
+            FD_SET(sp->out_fd, set);
+            if (max_fd < sp->out_fd)
+                max_fd = sp->out_fd;
+        }
+    }
+    return max_fd;
+}
+
+int edit_read_output(const fd_set *set)
+{
+    int count = 0;
+    for (editsess *sp = edit_sess; sp != NULL; sp = sp->next) {
+        if (sp->out_fd >= 0 && FD_ISSET(sp->out_fd, set)) {
+            ++count;
+            (void)read_edit_output(sp);
+        }
+    }
+    return count;
+}
+
+/*
  * Our child has snuffed it. check if it was an editor, and update the
  * session list if that is the case.
  */
@@ -491,6 +621,16 @@ void sig_chld_bottomhalf(void)
 	for (sp = &edit_sess; *sp && (*sp)->pid != pid; sp = &(*sp)->next)
 	    ;
 	if (*sp) {
+	    if ((*sp)->out_fd >= 0) {
+		/*
+		 * show what the editor printed last; do not wait for
+		 * the end, as programs it started may still keep it open
+		 */
+		while ((*sp)->out_fd >= 0 && read_edit_output(*sp))
+		    ;
+		if ((*sp)->out_fd >= 0)
+		    close_edit_output(*sp);
+	    }
 	    finish_edit(*sp);
 	    p = *sp; *sp = p->next;
 	    connsess *conn = p->conn;

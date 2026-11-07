@@ -61,7 +61,10 @@ If the first character of the editor is \[oq]&\[cq] (which is then
 skipped), the editor is assumed to run in another window and
 .B powwow
 will run concurrently with the editor without waiting for it to
-finish.
+finish.  Such an editor reads its standard input from
+.IR /dev/null ,
+and what it writes to its standard output and standard error is
+shown as lines beginning with \[oq]#editor:\[cq].
 .PP
 When launched, the editor program will have its
 .B TITLE

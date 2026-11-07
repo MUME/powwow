@@ -231,6 +231,15 @@ has '#beep                           make your terminal beep (like #print (*7))'
 has '#if (expr) instr1 [; #else instr2]'
 has '                                otherwise execute "instr2"'
 
+# a background pager must not write over the screen
+POWWOWPAGER='&printf "one\ntwo\n"; echo err >&2; printf partial #'
+run 'background editor output' '#help mark' ''
+POWWOWPAGER=cat
+has '#editor: one'
+has '#editor: two'
+has '#editor: err'
+has '#editor: partial'
+
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 
