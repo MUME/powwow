@@ -689,37 +689,22 @@ void attr_string(int attrcode, char *begin, char *end)
 	    sprintf(begin, "\033[%c%d;%s%dm",
 		    fg<LOWCOLORS ? '3' : '9', fg % LOWCOLORS,
 		    bg<LOWCOLORS ? "4" :"10", bg % LOWCOLORS);
-#ifdef TERM_LINUX
-	    strcpy(end, "\033[39;49m");
-#endif
 	} else {
 	    sprintf(begin, "\033[%c%dm",
 		    fg<LOWCOLORS ? '3' : '9', fg % LOWCOLORS);
-#ifdef TERM_LINUX
-	    strcpy(end, "\033[39m");
-#endif
 	}
     } else if (bg < COLORS) {
 	sprintf(begin, "\033[%s%dm",
 		bg<LOWCOLORS ? "4" : "10", bg % LOWCOLORS);
-#ifdef TERM_LINUX
-	strcpy(end, "\033[49m");
-#endif
     }
 
-#ifndef TERM_LINUX
     if (fg < COLORS || bg < COLORS)
  	need_end = 1;
-#endif
 
     if (tok & ATTR_BOLD) {
 	if (tty_modebold[0]) {
 	    strcat(begin, tty_modebold);
-#ifdef TERM_LINUX
-	    strcat(end, "\033[21m");
-#else
 	    need_end = 1;
-#endif
 	} else {
 	    strcat(begin, tty_modestandon);
 	    strcpy(end, tty_modestandoff);
@@ -729,11 +714,7 @@ void attr_string(int attrcode, char *begin, char *end)
     if (tok & ATTR_BLINK) {
 	if (tty_modeblink[0]) {
 	    strcat(begin, tty_modeblink);
-#ifdef TERM_LINUX
-	    strcat(end, "\033[25m");
-#else
 	    need_end = 1;
-#endif
 	} else {
 	    strcat(begin, tty_modestandon);
 	    strcpy(end, tty_modestandoff);
@@ -743,11 +724,7 @@ void attr_string(int attrcode, char *begin, char *end)
     if (tok & ATTR_UNDERLINE) {
 	if (tty_modeuline[0]) {
 	    strcat(begin, tty_modeuline);
-#ifdef TERM_LINUX
-	    strcat(end, "\033[24m");
-#else
 	    need_end = 1;
-#endif
 	} else {
 	    strcat(begin, tty_modestandon);
 	    strcpy(end, tty_modestandoff);
@@ -757,21 +734,15 @@ void attr_string(int attrcode, char *begin, char *end)
     if (tok & ATTR_INVERSE) {
 	if (tty_modeinv[0]) {
 	    strcat(begin, tty_modeinv);
-#ifdef TERM_LINUX
-	    strcat(end, "\033[27m");
-#else
 	    need_end = 1;
-#endif
 	} else {
 	    strcat(begin, tty_modestandon);
 	    strcpy(end, tty_modestandoff);
 	}
     }
 
-#ifndef TERM_LINUX
     if (need_end)
 	strcpy(end, tty_modenorm);
-#endif
 }
 
 /*
