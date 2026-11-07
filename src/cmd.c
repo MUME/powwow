@@ -1046,8 +1046,7 @@ static void cmd_at(char *arg)
 
     if (*p)
 	change_delaynode(p, arg, millisec);
-    else
-	if (*arg)
+    else if (*arg != '\0')
 	new_delaynode(name, arg, millisec);
     else {
 	PRINTF("#cannot create delay label without a command.\n");

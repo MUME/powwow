@@ -461,7 +461,7 @@ void parse_action(char *str, int onprompt)
 
             if (sign == '+')
 		active = 1;
-	    else
+            else
 		active = 0;
 
 	    if (!*label) {
@@ -631,12 +631,12 @@ void parse_action(char *str, int onprompt)
 	    my_strncpy(pattern, str, BUFSIZE-1);
             *command++ = '=';
             np = lookup_action_pattern(pattern);
-            if (*command)
+            if (*command != '\0') {
 		if (np && *np)
-		change_actionorprompt(*np, NULL, command, ACTION_WEAK, NULL, 0);
-	    else
-		add_anonymous_action(pattern, command, ACTION_WEAK, NULL);
-            else if (np && *np)
+		    change_actionorprompt(*np, NULL, command, ACTION_WEAK, NULL, 0);
+		else
+		    add_anonymous_action(pattern, command, ACTION_WEAK, NULL);
+            } else if (np && *np)
 		delete_action(np);
             else {
                 PRINTF("#no action, cannot delete pattern: \"%s\"\n",
@@ -1195,9 +1195,9 @@ static void print_seq(char *seq, int len)
 	    tty_puts("space ");
         else if (ch == 0x7f)
 	    tty_puts("del ");
-	else if (ch & 0x80)
+        else if (ch & 0x80)
 	    tty_printf("\\%03o ", ch);
-	else
+        else
 	    tty_printf("%c ", ch);
     }
 }

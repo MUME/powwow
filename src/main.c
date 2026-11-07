@@ -496,7 +496,7 @@ under certain conditions; type \"#help copyright\" for details.\n"
 		exit(0);
         } else if (read_settings() < 0)
 	    exit(0);
-	else
+        else
 	    read_file = true;
     }
 
@@ -1981,9 +1981,8 @@ char *get_next_instr(char *p)
 	    if (*(p = sep))
 		p++;
 	}
-	else
-	    if (*q)
-		p = get_next_instr(q);
+	else if (*q != '\0')
+	    p = get_next_instr(q);
 	else {
 	    print_error(error=SYNTAX_ERROR);
 	    return NULL;

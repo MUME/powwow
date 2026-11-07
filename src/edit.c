@@ -208,7 +208,7 @@ void clear_input_line(int deleteprompt)
 	tty_puts(edattrend);
 	if (line0 < lines - 1)
 	    tty_puts(tty_clreoscr);
-        else
+	else
 	    tty_puts(tty_clreoln);
 	col0 = newcol;
     } else {

@@ -378,7 +378,7 @@ int ptrmcmp(const ptr *p, const char *q, int lenq)
 	if (!q || lenq<=0)
 	    /* both empty */
 	    res = 0;
-    	else
+	else
 	    res = -1;
     } else if (!q || lenq<=0)
 	res = 1;
