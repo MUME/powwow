@@ -11,14 +11,14 @@ also, the whole string following alias name is placed in $0.
 Then, before executing <command>, every $n in <command> is replaced by its
 value. Examples:
 
-#alias summ=cast 'summon' $0		(then "summ thor" is replaced by
-					 "cast 'summon' thor")
-#alias cs=cast '$1' $2			("cs summon thor" is expanded to
-					 "cast 'summon' thor")
-#alias summ				(lets you edit the definition of summ)
-#alias summ=				(removes the alias summ)
-#alias					(displays all defined aliases)
-#alias ws={wake;stand}			(note that you must use braces)
+#alias summ=cast 'summon' $0            (then "summ thor" is replaced by
+                                         "cast 'summon' thor")
+#alias cs=cast '$1' $2                  ("cs summon thor" is expanded to
+                                         "cast 'summon' thor")
+#alias summ                             (lets you edit the definition of summ)
+#alias summ=                            (removes the alias summ)
+#alias                                  (displays all defined aliases)
+#alias ws={wake;stand}                  (note that you must use braces)
 
 Aliases are saved automatically if you started powwow with a file name as
 argument. Aliases are not expanded in verbatim mode.
@@ -38,22 +38,22 @@ If 'label' is specified, the action is labeled; otherwise it is numbered.
 The match is case-sensitive. Examples:
 
 #action >fount ^There is a fountain here={#print;drink water}
-#action -fount					(turns off action)
-#action +fount					(turns it back on)
-#action =fount					(lets you edit it)
-#action <fount					(removes action)
+#action -fount                                  (turns off action)
+#action +fount                                  (turns it back on)
+#action =fount                                  (lets you edit it)
+#action <fount                                  (removes action)
 
 If you use % instead of >, you define an action that uses an Extended POSIX
 regexp to match instead of the standard matcher.
 
 #action %first ^([[:alpha:]]+) ([[:digit:]]+)=#print $2 counted $3.
-						(matches abc 123)
+                                                (matches abc 123)
 
 Note that if the pattern starts with '(', it is evaluated, which means that
 a regexp that starts with '(' has to be surrounded by  ("...")
 
 #action %second ("(..+)-\\1")=#print Double $1
-						(matches xyz-xyz)
+                                                (matches xyz-xyz)
 For regexp actions, $0 = the line, $1 = the whole match and $2... contain the
 submatches.
 @bind
@@ -65,12 +65,12 @@ editing function (such as the arrow keys). 'key' is the name of the key you
 want to define; When defining a new key, you will be asked to press it so
 powwow can record the control sequence your terminal sends. Examples:
 
-#bind						(lists all key bindings)
-#bind f1=recite scroll of recall		(you'll have to press f1 then)
-#bind f1=cast 'sanctuary'			(change exiting definition)
-#bind f1					(lets you edit the definition)
-#bind f1=					(removes the key)
-#bind edit					(lists editing keys)
+#bind                                           (lists all key bindings)
+#bind f1=recite scroll of recall                (you'll have to press f1 then)
+#bind f1=cast 'sanctuary'                       (change exiting definition)
+#bind f1                                        (lets you edit the definition)
+#bind f1=                                       (removes the key)
+#bind edit                                      (lists editing keys)
 
 By default, the vt100 numeric keypad is partially used to walk around
 @key
@@ -79,7 +79,7 @@ By default, the vt100 numeric keypad is partially used to walk around
 If 'name' is the name of one of the key defined with #bind, #key executes the
 corresponding command. Example:
 
-#bind f1=flee		(binds the f1 key to the 'flee' command)
+#bind f1=flee           (binds the f1 key to the 'flee' command)
 At any time, then, you can either:
 - Press your f1 key on you keyboard
 - Execute the command '#key f1'
@@ -87,36 +87,45 @@ and powwow will execute the command 'flee' for you.
 @reset
 #reset {all|list-name}
 
-Argument:	Effect:
-all		clear everything (apply all lines below this)
-alias		clear all aliases
-action		clear all actions
-bind		clear all key bindings and restart with default
-		settings. Note that also editing keys are resetted
-		to default function.
-at		clear all delayed commands
-in		(same thing)
-mark		clear all markers
-substitute	clear all substitutions
-var		clear all variables
+Argument:       Effect:
+all             clear everything (apply all lines below this)
+alias           clear all aliases
+action          clear all actions
+bind            clear all key bindings and restart with default
+                settings. Note that also editing keys are resetted
+                to default function.
+at              clear all delayed commands
+in              (same thing)
+mark            clear all markers
+substitute      clear all substitutions
+var             clear all variables
 @mark
 #mark [text[=[attribute]]]
 
-This command highlights a text in your output in the way you choose
-(if your terminal supports it). Attributes:
-zero or more of bold, dim, italic, underline, blink, inverse, hidden,
-strike, overline, then [<foreground>] [on <background>], where a color
-is one of black, red, green, yellow, blue, magenta, cyan, white,
-their bright variants BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN,
-WHITE, a 256-color palette index 0-255, an RGB color #rrggbb, or none.
-Wildcards are allowed ($ for a single word, & for any string). Examples:
+Highlight text in your output, if your terminal supports it.
+In the text, $ matches a single word and & matches any string, and
+a leading ^ matches only at the beginning of a line.
 
-#mark Sizzler=bold			(mark Sizzler in bold)
-#mark Sizzler				(lets you edit the above definition)
-#mark Sizzler=				(Sizzler is no longer put in bold)
-#mark					(lists all markers)
-#mark *&*=inverse			(mark in reverse any string in * *)
-#mark Gandalf=bold 208 on #202020	(orange on a dark gray background)
+An attribute is zero or more effects, then a foreground color, then
+"on" and a background color. Each part is optional.
+
+Effects:  bold, dim, italic, underline, blink, inverse, hidden,
+          strike, overline
+Colors:   black, red, green, yellow, blue, magenta, cyan, white
+          BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE (bright)
+          0 to 255 (256-color palette)
+          #rrggbb (RGB)
+          none (default color)
+
+Examples:
+
+#mark Sizzler=bold                (mark Sizzler in bold)
+#mark Sizzler                     (lets you edit the above definition)
+#mark Sizzler=                    (Sizzler is no longer put in bold)
+#mark                             (lists all markers)
+#mark *&*=inverse                 (mark in reverse any string in * *)
+#mark ^You=yellow                 (mark You at the beginning of a line)
+#mark Gandalf=bold 208 on #202020 (orange on a dark gray background)
 @substitute
 #substitute [text[=[new text]]]
 
@@ -127,11 +136,11 @@ word, & for any string), and ^ matches only at the beginning of a line.
 The characters ; { } ( ) " = in the new text must be escaped with a backslash.
 Examples:
 
-#substitute orc=goblin			(show orc as goblin)
-#substitute orc				(lets you edit the above definition)
-#substitute orc=			(orc is no longer replaced)
-#substitute				(lists all substitutions)
-#substitute ^You=I			(replace You only at start of a line)
+#substitute orc=goblin                  (show orc as goblin)
+#substitute orc                         (lets you edit the above definition)
+#substitute orc=                        (orc is no longer replaced)
+#substitute                             (lists all substitutions)
+#substitute ^You=I                      (replace You only at start of a line)
 @module
 #module [module name]
 
@@ -162,12 +171,7 @@ of lines in your screen.
 This sets the attribute of your entered text to the given attribute.
 Just #hilite turns it off.
 
-Attributes: zero or more of bold, dim, italic, underline, blink,
-inverse, hidden, strike, overline, then [<foreground>] [on <background>],
-where a color is one of black, red, green, yellow, blue, magenta, cyan,
-white, their bright variants BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA,
-CYAN, WHITE, a 256-color palette index 0-255, an RGB color #rrggbb,
-or none.
+See "#help mark" for the syntax of attributes.
 @host
 #host [hostname port [--tls[=options]|--no-tls] [--utf8|--latin1]]
 
@@ -210,23 +214,23 @@ If <initstr> is specified, it is sent to host on connection.
 @keys
 Default editing keys:
 
-^A	&begin-of-line
-^E	&end-of-line
-^B	&prev-char		M-b	&prev-word
-^F	&next-char		M-f	&next-word
-^P	&prev-line
-^N	&next-line
-^D	&del-char-right		M-d	&del-word-right
-BS	&del-char-left		M-BS	&del-word-left
-^K	&kill-to-eol		M-k	&redraw-line-noprompt
-^L	&redraw-line		M-l	&downcase-word
-^T	&transpose		M-t	&transpose-words
-^Q	&clear-line
-				M-u	&upcase-word
-^W	&to-history
-^Z	&suspend
-Tab	&complete-word		M-Tab	&complete-line
-Ret	&enter-line
+^A      &begin-of-line
+^E      &end-of-line
+^B      &prev-char              M-b     &prev-word
+^F      &next-char              M-f     &next-word
+^P      &prev-line
+^N      &next-line
+^D      &del-char-right         M-d     &del-word-right
+BS      &del-char-left          M-BS    &del-word-left
+^K      &kill-to-eol            M-k     &redraw-line-noprompt
+^L      &redraw-line            M-l     &downcase-word
+^T      &transpose              M-t     &transpose-words
+^Q      &clear-line
+                                M-u     &upcase-word
+^W      &to-history
+^Z      &suspend
+Tab     &complete-word          M-Tab   &complete-line
+Ret     &enter-line
 LF      &enter-line
 
 not assigned: &insert-string
@@ -282,13 +286,13 @@ This setting also affects &transpose-words (usually bound as M-t)
 
 Directly copied from C language, this command evaluates 'init'
 (if specified), then repeats the following cycle:
-	1) evaluate 'check', if result is 0 (false) stop repetition
-	2) execute 'command'
-	3) evaluate 'loop' (if specified)
-	4) restart from 1)
+        1) evaluate 'check', if result is 0 (false) stop repetition
+        2) execute 'command'
+        3) evaluate 'loop' (if specified)
+        4) restart from 1)
 
 As with #while, #for performs the parameter substitution in 'command'. Example:
-#for (@0=32; @0<=47; @0++) read @0	(read messages 32-47)
+#for (@0=32; @0<=47; @0++) read @0      (read messages 32-47)
 @at
 @in
 #at [label [(time-expression) [command]]]
@@ -325,7 +329,7 @@ Add the text or result of expression (calculator is used to evaluate the
 expression) to the word completion list. Example:
 
 #action >reply ^$1 tells you={#print;#add $1}
-			(from now on, you can use TAB to complete that name)
+                        (from now on, you can use TAB to complete that name)
 @addstatic
 #addstatic {text|(expression)}
 
@@ -350,11 +354,11 @@ commands, all those words will always be possible to Tab-complete on.
 
 This command lets you list or change various options of powwow.
 
-     #option 	      	lists all current option settings
-     #option list	long list of current options
-     #option =<option>	edit current setting of <option>
-     #option +<option>	enable <option>
-     #option -<option>	disable <option>
+     #option            lists all current option settings
+     #option list       long list of current options
+     #option =<option>  edit current setting of <option>
+     #option +<option>  enable <option>
+     #option -<option>  disable <option>
      #option <option>   toggle <option>
 
 @put
@@ -369,8 +373,8 @@ result in history.
 
 Evaluate expression with calculator, and trash result. Examples:
 
-#(@7=45)             		(set value of variable @7 to 45)
-#alias set=#($-1 = \$0) 	(copy parameter $0 of the alias into $-1)
+#(@7=45)                        (set value of variable @7 to 45)
+#alias set=#($-1 = \$0)         (copy parameter $0 of the alias into $-1)
 @print
 #print [<|!][string|(expression)]
 
@@ -391,11 +395,11 @@ Examples:
 
 #action disint ^&1 disintegrates &2=#print $1 DISINTEGRATES $2
 #action disint ^&1 disintegrates &2=#print (\$1+" DISINTEGRATES "+\$2)
-#print <mytext			(display a text on screen)
-#print !more mytext     	(same thing, but uses 'more' as text viewer)
-#print (@-7)			(print value of variable on screen)
-#print <($2)			(display the contents of file whose name is in
-				 variable $2)
+#print <mytext                  (display a text on screen)
+#print !more mytext             (same thing, but uses 'more' as text viewer)
+#print (@-7)                    (print value of variable on screen)
+#print <($2)                    (display the contents of file whose name is in
+                                 variable $2)
 
 Further feature (supported also by #send, #exe, #emulate and #var):
 If < or ! is specified, and you use an expression after it, you can also
@@ -413,8 +417,8 @@ than displayed on screen.
 The meaning of < and ! is the same, and #send do the expected things
 when they are used. Examples:
 
-#send <mytext					(stuff a text into the mud)
-#send !awk ' {print "tell arthur " $0} ' file	(say a file to your friend)
+#send <mytext                                   (stuff a text into the mud)
+#send !awk ' {print "tell arthur " $0} ' file   (say a file to your friend)
 #send ("say I have been playing for " + %(timer/86400000) + " hours")
 @exe
 #exe [<|!]{text|(expression)}
@@ -423,11 +427,11 @@ Evaluate the expression and get result, then execute result as if typed from
 keyboard. If < or ! is specified, #exe behaves exactly like #print, but
 executes the final text as if typed. Examples:
 
-#exe ("sigh")       		(is the same as typing sigh from keyboard)
+#exe ("sigh")                   (is the same as typing sigh from keyboard)
 #bind control_s=#exe ("#capture emergency" + %(@-7++))
-				(each time you press control_s, a different
-				 file is opened as capture)
-#exe <mytext			(read the file mytext and execute it)
+                                (each time you press control_s, a different
+                                 file is opened as capture)
+#exe <mytext                    (read the file mytext and execute it)
 @emulate
 #emulate [<|!]{text|(expression)}
 
@@ -435,10 +439,10 @@ Evaluate the expression and get result, then parse result as if received from
 remote host. If < or ! is specified, #emulate behaves exactly like #print,
 but parses the final text as if received from host. Examples:
 
-#emulate The assassin is dead! R.I.P.	(powwow reacts in the same way as
-					 if received the text from remote host)
-#emulate <mytext			(read the file mytext and parse it as
-					 if received)
+#emulate The assassin is dead! R.I.P.   (powwow reacts in the same way as
+                                         if received the text from remote host)
+#emulate <mytext                        (read the file mytext and parse it as
+                                         if received)
 @var
 #var $number = [<|!]{text|(expression)}
 #var @number = [<|!]{text|(expression)}
@@ -448,13 +452,13 @@ variable. If < or ! is specified, #var behaves exactly like #print, but puts
 the final text in the variable.
 You can also use an expression instead of 'number'. Examples:
 
-#var @(-1*4) = 27		       (same as #(@(-1*4)=27) )
+#var @(-1*4) = 27                      (same as #(@(-1*4)=27) )
 #var @1=!echo '5.6+6.48' | bc -l       (use bc calculator and put result in @1)
-#var $test = this is a very very very long text	   (you do not need quotes)
-#var $-6 = ("a short text")	       (since there are parentheses, you must
-				        also use quotes as in calculator)
-#var $-1 = <myfile		       (if myfile is longer than 1024 bytes,
-					powwow will read only the first 1024)
+#var $test = this is a very very very long text    (you do not need quotes)
+#var $-6 = ("a short text")            (since there are parentheses, you must
+                                        also use quotes as in calculator)
+#var $-1 = <myfile                     (if myfile is longer than 1024 bytes,
+                                        powwow will read only the first 1024)
 
 #var variable
 will let you edit the current value of the variable
@@ -470,8 +474,8 @@ If > is specified, 'name' file is truncated before actually writing result.
 If ! is specified, 'name' shell command is executed, and result is written
 to its standard input. Examples:
 
-#write ($test; "myfile")	(append contents of $test to the end of myfile)
-#write !("55+12"; "bc -l")	(eval 55+12 using bc program)
+#write ($test; "myfile")        (append contents of $test to the end of myfile)
+#write !("55+12"; "bc -l")      (eval 55+12 using bc program)
 @if
 #if (expression) command1 [#else command2]
 
@@ -487,9 +491,9 @@ This construct repeats a command while expression keeps true. As with #alias,
 #action and #for, the $n and @n in command are replaced by their values.
 Examples:
 
-#while (@0<13) {read @0;#(\@0++)}	  (read messages 0-12)
-	(As you can see, the last @0 is escaped to avoid it to be
-	 substituted with its value - we want to decrease the variable!)
+#while (@0<13) {read @0;#(\@0++)}         (read messages 0-12)
+        (As you can see, the last @0 is escaped to avoid it to be
+         substituted with its value - we want to decrease the variable!)
 @math
 The inline calculator is used to evaluate expressions inside
 #(), #print (), #exe (), #send (), #if (), #while (), #for (), #do (), etc.
@@ -552,7 +556,7 @@ operators between numbers:
 
 random number generator:
 
-  rand positive-number		(return a random number between 0 and n-1)
+  rand positive-number          (return a random number between 0 and n-1)
 
 operators between strings:
    + chain two strings
@@ -581,14 +585,14 @@ operators between a string and a number:
 
 Examples:
 
-#print($5="Hello, world")	(assign "Hello, world" to $5  and print it)
+#print($5="Hello, world")       (assign "Hello, world" to $5  and print it)
 
 #action >+exp ^You have scored $1 exp={#print;#print ("You gained " +
-	%($1 - @-5) + " exp. points since last score"); #(@-5 = $1)}
-		(when you type 'score' in MUME, one of the lines you get is:
-		 You have scored xxx experience points ... )
+        %($1 - @-5) + " exp. points since last score"); #(@-5 = $1)}
+                (when you type 'score' in MUME, one of the lines you get is:
+                 You have scored xxx experience points ... )
 @warranty
-			    NO WARRANTY
+                            NO WARRANTY
 
   11. BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
 FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
@@ -649,7 +653,7 @@ Show the CPU time used by powwow.
 Repeat a command: #do evaluates the expression and uses the result as
 counter, and #n uses a number, like #5 buy bread.
 
-#do (3*8) north		(go north 24 times)
+#do (3*8) north         (go north 24 times)
 @edit
 #edit
 
@@ -695,9 +699,9 @@ editing session starts/ends.
 
 Set up the command to execute on establishing a connection.
 
-#init				(shows the command)
-#init ={#identify;#speedwalk}	(sets the command)
-#init =				(clears it)
+#init                           (shows the command)
+#init ={#identify;#speedwalk}   (sets the command)
+#init =                         (clears it)
 @isprompt
 #isprompt [number | (expression)]
 
@@ -722,9 +726,9 @@ settings, use #exe <filename instead.
 
 With no argument, show the map of the directions you travelled.
 
-#map -1		(remove the last step from the map)
-#map -		(clear the whole map)
-#map nsssue	(add the list of directions to the map)
+#map -1         (remove the last step from the map)
+#map -          (clear the whole map)
+#map nsssue     (add the list of directions to the map)
 @movie
 #movie [filename]
 
@@ -742,7 +746,7 @@ Set or show the place in the list for new actions and marks. When it is 0
 (the default), powwow puts them at the bottom. With a command after the
 number, the new value is used only for that command.
 
-#nice 4 #mark Grizzly=red on blue	(put the mark in the 4th place)
+#nice 4 #mark Grizzly=red on blue       (put the mark in the 4th place)
 @prefix
 #prefix [string]
 
@@ -788,7 +792,7 @@ characters, and can handle ASCII 0 characters.
 Change the control sequence of a key binding, but not its name or effect.
 Without a sequence, you are asked to press the key.
 
-#rebind f1 ^[OP		(tell powwow that your f1 key sends ESC O P)
+#rebind f1 ^[OP         (tell powwow that your f1 key sends ESC O P)
 @rebindall
 @rebindALL
 #rebindall
@@ -825,14 +829,14 @@ writing succeeds.
 
 Set or show an internal variable. Known variables are:
 
-buffer	bytes of recent text from the MUD to keep and write at the beginning
-	of #capture and #movie files when you open them (default 0)
-lines	the number of lines of your terminal
-mem	the maximum length of a text or string, in bytes (default 0: no limit)
-timer	the number of milliseconds since program start
+buffer  bytes of recent text from the MUD to keep and write at the beginning
+        of #capture and #movie files when you open them (default 0)
+lines   the number of lines of your terminal
+mem     the maximum length of a text or string, in bytes (default 0: no limit)
+timer   the number of milliseconds since program start
 
-#setvar timer=0			(reset internal timer to 0)
-#setvar timer			(show timer and let you edit it)
+#setvar timer=0                 (reset internal timer to 0)
+#setvar timer                   (show timer and let you edit it)
 @snoop
 #snoop session-id
 
