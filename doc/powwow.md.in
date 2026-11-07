@@ -1012,9 +1012,11 @@ Shows a list of powwow's commands.
 You can also have help on specific commands, using for example
 `#help alias` or in general `#help <command-name>`.
 A help file is needed and provided for this last feature of `#help`,
-and powwow will look for the file "powwow_help" in the directory
+and powwow will look for the file "powwow.help" in the directory
 specified by the environment variable POWWOWHELP. If this variable
-does not exist, powwow looks in current directory.
+does not exist, powwow looks in the directory specified by POWWOWDIR
+or else where it was installed, and if the file is not there, in the
+current directory.
 
 ### Command repetition
 

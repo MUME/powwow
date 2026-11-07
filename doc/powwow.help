@@ -239,35 +239,35 @@ time as <key>. ^ means control.
 If your terminal has arrow keys, they are set for default to move cursor and to
 step around history.
 @wrap
-#wrap [on|off]
+#option [+-=]wrap
 
 Normally, powwow wraps words that would have been cut by the right
-margin to the next line. This command lets you turn it off and on.
+margin to the next line. This option lets you turn it off and on.
 @compact
-#compact [on|off]
+#option [+-=]compact
 
 Normally, powwow does not touch the prompts on screen while you play.
-In #compact mode, instead, lines containing only a prompt are deleted when
+In `compact' mode, instead, lines containing only a prompt are deleted when
 further messages arrive from the remote host.
 @echo
-#echo [on|off]
+#option [+-=]echo
 
 Normally, powwow echoes on your screen each command sent to remote
 host but not directly typed (example: aliases and actions sending text
-to the MUD). When #echo is off, such commands are still sent to host,
+to the MUD). When `echo' is off, such commands are still sent to host,
 but not echoed on screen.
 @info
-#info [on|off]
+#option [+-=]info
 
 Normally, powwow prints on screen some messages each time you
 define/edit/delete an #alias, #action, #bind and similar.
-When #info is off, those messages are not typed at all.
+When `info' is off, those messages are not typed at all.
 (But errors are still printed on screen)
 @debug
-#debug [on|off]
+#option [+-=]debug
 
 Normally, powwow does not print on screen the command lines it
-executes. When #debug is on, every line executed by powwow is also
+executes. When `debug' is on, every line executed by powwow is also
 echoed on screen (warning: this prints LOTS of lines on your screen)
 @delim
 #delim [normal|program|{custom <chars>}
@@ -483,14 +483,6 @@ otherwise (if there is an #else) execute command2.
 If expression is false and there is no #else, execute nothing.
 remember that you must use braces {} if command1 or command2
 contain more than one instruction.
-@settimer
-#settimer (expr)
-
-Evaluate the expression and get result, then set 'timer' to restart from the
-corresponding number of milliseconds. Examples:
-
-#settimer (0)		(reset internal timer to 0)
-#settimer (20000)	(make internal timer restart from 20000 milliseconds)
 @while
 #while (expression) command
 
@@ -620,3 +612,255 @@ TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
 YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
 PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGES.
+@!
+#! shell-command
+
+Execute a command using /bin/sh. Powwow waits until your shell finishes,
+but you can put jobs in the background with & as usual. Semicolons,
+escapes and braces need to be escaped if they are to be sent to the shell.
+@beep
+#beep
+
+Ring your terminal's bell (like #print (*7)).
+@cancel
+#cancel [number]
+
+Without an argument, all editing sessions are cancelled; otherwise, only
+the given session is cancelled. The corresponding editor processes are
+brutally killed.
+@capture
+#capture [[>]filename]
+
+Capture all output from the main MUD connection and your typed commands
+to a local file. Type #capture without argument to close the file.
+If the filename starts with a '>', new text is appended to the end of the
+file instead of overwriting it. See also #setvar buffer.
+@clear
+#clear
+
+Clear the input line. Used by spawned programs before they print to the
+screen when #option autoclear is off.
+@cpu
+#cpu
+
+Show the CPU time used by powwow.
+@do
+@17
+#do (expr) command
+#n command
+
+Repeat a command: #do evaluates the expression and uses the result as
+counter, and #n uses a number, like #5 buy bread.
+
+#do (3*8) north		(go north 24 times)
+@edit
+#edit
+
+Show your active editing sessions, with a brief description and their
+number.
+@file
+#file [=[definition-file]]
+
+Set, show or clear the name of the definition file. By default it is the
+one loaded when you start powwow, and powwow saves your settings to it
+before exiting. To disable this autosave, use #file =
+@group
+#group [name] [on|off|list]
+
+Turn on or off all the actions and aliases of a group, or list them.
+To put an action in a group, write the group name after an '@' when
+defining it:
+
+#action >+auto-ride@non-pk ZBLAM!={#print;stand;ride}
+#group non-pk off
+@groupdelim
+#groupdelim [delimiter]
+
+Change the '@' between the label of an action or alias and its group name.
+Without an argument, #groupdelim does nothing.
+@help
+#help [keys | math | command]
+
+Without an argument, list all commands. '#help keys' shows the editing
+keys, '#help math' the inline calculator, and '#help alias' or in general
+'#help <command-name>' the help on a command. Names can be abbreviated.
+@identify
+#identify [startedit [endedit]]
+
+Tell the server that powwow supports editing functions (currently only
+MUME). It is best attached to an action triggered by a string in the
+login screen. The startedit/endedit parameters are commands issued when an
+editing session starts/ends.
+
+#action >mume ***  MUME=#identify
+@init
+#init [=[command]]
+
+Set up the command to execute on establishing a connection.
+
+#init				(shows the command)
+#init ={#identify;#speedwalk}	(sets the command)
+#init =				(clears it)
+@isprompt
+#isprompt [number | (expression)]
+
+Used inside a #prompt to declare that the beginning of the line is a prompt.
+If positive, the number is the length of the prompt. If negative, -n, the
+prompt is as long as the parameter $n. If 0 or missing, the whole line is a
+prompt. See #prompt and the documentation for details.
+@keyedit
+#keyedit function
+
+Run one of the line-editing functions, as if its key had been pressed.
+
+#keyedit &prev-line
+@load
+#load [definition-file]
+
+Set the definition file and load settings from it. Current settings are
+completely erased first. To add the contents of a file to your current
+settings, use #exe <filename instead.
+@map
+#map [-[number] | walksequence]
+
+With no argument, show the map of the directions you travelled.
+
+#map -1		(remove the last step from the map)
+#map -		(clear the whole map)
+#map nsssue	(add the list of directions to the map)
+@movie
+#movie [filename]
+
+Like #capture, but add timestamps to each line, to allow replay at correct
+speed with powwow-movieplay. powwow-movie2ascii converts a movie to plain
+text. Type #movie without argument to close the file.
+@net
+#net
+
+Show the amount of data transmitted to and received from the remote host.
+@nice
+#nice [{number | (expression)} [command]]
+
+Set or show the place in the list for new actions and marks. When it is 0
+(the default), powwow puts them at the bottom. With a command after the
+number, the new value is used only for that command.
+
+#nice 4 #mark Grizzly=red on blue	(put the mark in the 4th place)
+@prefix
+#prefix [string]
+
+Begin each new line you type with the string. You can edit or delete the
+inserted string as usual. #prefix without arguments removes it.
+
+#prefix tell arthur
+@prompt
+#prompt [[<|=|>|%][+|-]label] [{pattern | (expression)}=[command]]
+
+Like #action, but for prompts: powwow matches #prompts on the beginning of
+a line, and the command must run #isprompt to recognize it as a prompt.
+It works only on the main MUD connection, and is needed only to mess with
+prompts in strange ways. See the documentation for details.
+@qui
+#qui
+
+Do nothing. It exists so that #qui is not an abbreviation of #quit.
+@quit
+#quit
+
+Exit from powwow. It brutally closes all connections that are still open,
+without renting your characters.
+@quote
+#quote [on | off]
+
+Toggle verbatim mode, in which no alias expansion takes place and
+semicolons, escapes, braces and ` are sent as typed, unless the line begins
+with a #. Useful to paste a text from an editor.
+@rawprint
+#rawprint {text | (expression)}
+
+Like #print, but does NOT add a final newline, and can handle ASCII 0
+characters.
+@rawsend
+#rawsend {text | (expression)}
+
+Like #send, but does NOT add a final newline nor IAC escaping of ASCII 255
+characters, and can handle ASCII 0 characters.
+@rebind
+#rebind name [sequence]
+
+Change the control sequence of a key binding, but not its name or effect.
+Without a sequence, you are asked to press the key.
+
+#rebind f1 ^[OP		(tell powwow that your f1 key sends ESC O P)
+@rebindall
+@rebindALL
+#rebindall
+#rebindALL
+
+#rebindall runs #rebind on most key bindings (skipping trivial ones like
+^A, ^B, etc.), asking you to press each key. #rebindALL does the same for
+really every key binding.
+@record
+#record [filename]
+
+Record all text typed from the keyboard to a local file. Output from the
+remote host is not recorded. Type #record without argument to close the
+file.
+@request
+#request [editor][prompt][all]
+
+Send identification strings to the server: editor is the same as #identify,
+and prompt asks for the special sequence IAC GA at the end of each prompt,
+which helps to detect it.
+@retrace
+#retrace [number]
+
+Walk in the reverse direction of the last number of steps. If number is 0
+or left blank, walk all the way back to where automapping started.
+@save
+#save [definition-file]
+
+Set the definition file and save settings to it. Powwow also saves them
+automatically before exiting. The definition file is overwritten only if
+writing succeeds.
+@setvar
+#setvar name[={number|(expr)}]
+
+Set or show an internal variable. Known variables are:
+
+buffer	bytes of recent text from the MUD to keep and write at the beginning
+	of #capture and #movie files when you open them (default 0)
+lines	the number of lines of your terminal
+mem	the maximum length of a text or string, in bytes (default 0: no limit)
+timer	the number of milliseconds since program start
+
+#setvar timer=0			(reset internal timer to 0)
+#setvar timer			(show timer and let you edit it)
+@snoop
+#snoop session-id
+
+Toggle the output display of a session.
+@spawn
+#spawn session-id command
+
+Create a new session connected to a shell command instead of a MUD.
+Writing to ##<session-id> sends data to the command's standard input, and
+its standard output is executed as if typed from the keyboard. Each command
+it outputs must end with a newline or a semicolon, and the last one with a
+newline. See #option autoclear and #clear for printing to the screen.
+@speedwalk
+#speedwalk [walksequence]
+
+Execute a speedwalk sequence even if the speedwalk option is disabled.
+@time
+#time
+
+Show the current time and date. Useful if you want to use #at.
+@ver
+#ver
+
+Show the current version, some compile options and when powwow was compiled.
+@zap
+#zap session-id
+
+Disconnect a session.

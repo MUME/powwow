@@ -204,7 +204,20 @@ run 'help prefers an exact match' '#help in' ''
 has '#in [label [(delay in millisec.) [command]]]'
 lacks 'Normally, powwow prints on screen some messages each time you'
 
+run 'help accepts an abbreviation' '#help speedw' ''
+has 'Execute a speedwalk sequence even if the speedwalk option is disabled.'
+
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
+
+# every named command must have a help entry
+name='every command has a help entry'
+sed -n 's/^ *C("\([^"][^"]*\)".*/\1/p' "${srcdir:-.}/cmd.c" > "$tmp/commands"
+while read -r command; do
+    if ! grep -Fxq -e "@$command" "$POWWOWHELP/powwow.help"; then
+        echo "FAIL $name: $command"
+        failed=1
+    fi
+done < "$tmp/commands"
 
 exit $failed
