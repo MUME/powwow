@@ -25,9 +25,9 @@
 #  define init_random srand48
 #endif
 
-#define uSEC_PER_SEC ((long)1000000)  /* microseconds in a second */
-#define mSEC_PER_SEC ((long)1000)     /* milliseconds in a second */
-#define uSEC_PER_mSEC ((long)1000)    /* microseconds in a millisecond */
+#define uSEC_PER_SEC 1000000L         /* microseconds in a second */
+#define mSEC_PER_SEC 1000L            /* milliseconds in a second */
+#define uSEC_PER_mSEC 1000L           /* microseconds in a millisecond */
 
 #undef MIN2
 #undef MAX2

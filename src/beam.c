@@ -327,7 +327,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
     args[2] = command_str; args[3] = 0;
 
     if (view) {
-	key = (unsigned int)-1;
+	key = ~0U;
 	i = 0;
     } else {
 	if (msglen < 1 || text[0] != 'M') {
