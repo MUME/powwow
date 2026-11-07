@@ -275,7 +275,7 @@ echoed on screen (warning: this prints LOTS of lines on your screen)
 By default, when powwow adds words to the word completion buffer,
 it uses only SPACE (' ') and SEMI-COLON (';') as delimeters. You
 can change this behaviour by specifying "program" or "custom" mode.
-The "program" mode uses ' <>!=(),.;"'{}[]+-/*%=' as separators, which
+The "program" mode uses ' <>!=(),;"'{}[]+-/*%' as separators, which
 is suitable if you are doing some kind of on-line programming.
 You can also make a customized setting with the "custom" mode (space
 is always used as a delimeter).
