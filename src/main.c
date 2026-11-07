@@ -208,8 +208,8 @@ char prefixstr[BUFSIZE];  /* inserted in the editing buffer each time */
 char inserted_next[BUFSIZE];/* inserted in buffer just once */
 char flashback = 0;	  /* cursor is on excursion and should be put back */
 int excursion;		  /* where the excursion is */
-char edattrbeg[CAPLEN];   /* starting input line attributes */
-char edattrend[CAPLEN];   /* ending input line attributes */
+char edattrbeg[ATTR_SGR_MAX];   /* starting input line attributes */
+char edattrend[ATTR_SGR_MAX];   /* ending input line attributes */
 int  edattrbg;		  /* input line attributes do change bg color */
 
 /* signals handling */

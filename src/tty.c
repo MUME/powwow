@@ -102,7 +102,7 @@ static char kpadstart[] = "", kpadend[] = "", begoln[] = "\r",
 	leftcur[] = "\033[D", rightcur[] = "\033[C",  upcur[] = "\033[A",
 	modebold[] = "\033[1m", modeblink[] = "\033[5m", modeinv[] = "\033[7m",
 	modeuline[] = "\033[4m", modestandon[] = "", modestandoff[] = "",
-        modenorm[] = "\033[m", modenormbackup[4],
+        modenorm[ATTR_SGR_MAX] = "\033[m", modenormbackup[ATTR_SGR_MAX],
 	cursor_left[] = "\033[D", cursor_right[] = "\033[C",
         cursor_up[] = "\033[A", cursor_down[] = "\033[B";
 
@@ -129,7 +129,7 @@ static char kpadstart[CAPLEN], kpadend[CAPLEN],
 /* attribute changers: */
 static char modebold[CAPLEN], modeblink[CAPLEN], modeinv[CAPLEN],
             modeuline[CAPLEN], modestandon[CAPLEN], modestandoff[CAPLEN],
-            modenorm[CAPLEN], modenormbackup[CAPLEN];
+            modenorm[ATTR_SGR_MAX], modenormbackup[ATTR_SGR_MAX];
 
 static int len_begoln, len_clreoln, len_leftcur, len_upcur, gotocost,
            deletecost, insertcost, insertfinish, inscharcost;

@@ -728,23 +728,22 @@ static void cmd_do(char *arg)
 
 static void cmd_hilite(char *arg)
 {
-    int attr;
+    struct attr attr;
 
     arg = skipspace(arg);
-    attr = parse_attributes(arg);
-    if (attr == -1) {
+    if (!attr_parse(arg, &attr)) {
 	PRINTF("#attribute syntax error.\n");
 	if (opt_info)
 	  show_attr_syntax();
     } else {
-	attr_string(attr, edattrbeg, edattrend);
+	attr_string(&attr, edattrbeg, edattrend);
 
-	edattrbg = ATTR(attr) & ATTR_INVERSE ? 1
-	    : BACKGROUND(attr) != NO_COLOR || ATTR(attr) & ATTR_BLINK;
+	edattrbg = ((attr.flags & (ATTR_INVERSE | ATTR_BLINK)) != 0
+		    || attr.bg.kind != COLOR_NONE);
 
 	if (opt_info) {
 	    PRINTF("#input highlighting is now %so%s%s.\n",
-		       edattrbeg, (attr == NOATTRCODE) ? "ff" : "n",
+		       edattrbeg, attr_is_none(&attr) ? "ff" : "n",
 		       edattrend);
 	}
     }
@@ -2357,7 +2356,7 @@ static void cmd_cpu(char *arg)
 #ifdef BUG_TELNET
 static void cmd_color(char *arg)
 {
-    int attrcode;
+    struct attr attr;
 
     arg = skipspace(arg);
     if (!*arg) {
@@ -2369,19 +2368,18 @@ static void cmd_color(char *arg)
 	return;
     }
 
-    attrcode = parse_attributes(arg);
-    if (attrcode == -1) {
+    if (!attr_parse(arg, &attr)) {
         PRINTF("#invalid attribute syntax.\n");
 	if (opt_info)
 	    show_attr_syntax();
     } else {
-        int bg = BACKGROUND(attrcode), fg = FOREGROUND(attrcode);
-        if (fg >= COLORS || bg >= COLORS) {
+        if (attr.fg.kind == COLOR_NONE || attr.bg.kind == COLOR_NONE) {
 	    PRINTF("#please specify foreground and background colors.\n");
 	} else {
-	    sprintf(tty_modenorm, "\033[;%c%d;%s%dm",
-		    fg<LOWCOLORS ? '3' : '9', fg % LOWCOLORS,
-		    bg<LOWCOLORS ? "4" :"10", bg % LOWCOLORS);
+	    char params[ATTR_SGR_MAX];
+	    attr = (struct attr){ .fg = attr.fg, .bg = attr.bg };
+	    attr_sgr_params(&attr, params, sizeof(params));
+	    snprintf(tty_modenorm, ATTR_SGR_MAX, "\033[;%sm", params);
 	    tty_puts(tty_modenorm);
 	    if (opt_info) {
 	        PRINTF("#standard colour set.\n");

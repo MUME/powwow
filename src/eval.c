@@ -1083,18 +1083,15 @@ static int exe_op(operator *op)
 	}
 
 	if (o1.type==TYPE_TXT) {
-	    char dummy[CAPLEN]; /* just because attr_string must write somewhere */
+	    char dummy[ATTR_SGR_MAX]; /* attr_string must write somewhere */
+	    struct attr attr = { 0 };
 
-	    if (o1.txt)
-		i = parse_attributes(ptrdata(o1.txt));
-	    else
-		i = NOATTRCODE;
-	    if (i == -1)
+	    if (o1.txt != NULL && !attr_parse(ptrdata(o1.txt), &attr))
 		error=BAD_ATTR_ERROR;
 	    else {
-		o1.txt = ptrsetlen(o1.txt, CAPLEN);
+		o1.txt = ptrsetlen(o1.txt, ATTR_SGR_MAX);
 		if (REAL_ERROR) break;
-		attr_string(i, ptrdata(o1.txt), dummy);
+		attr_string(&attr, ptrdata(o1.txt), dummy);
 		ptrtrunc(o1.txt, strlen(ptrdata(o1.txt)));
 		p=&o1;
 		ret = 1;

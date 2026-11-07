@@ -104,10 +104,11 @@ var		clear all variables
 
 This command highlights a text in your output in the way you choose
 (if your terminal supports it). Attributes:
-one or more of bold, blink, inverse, underline and/or
-[<foreground>] [on <background>], where the colors are:
-black, red, green, yellow, blue, magenta, cyan, white and
-BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, none.
+zero or more of bold, dim, italic, underline, blink, inverse, hidden,
+strike, overline, then [<foreground>] [on <background>], where a color
+is one of black, red, green, yellow, blue, magenta, cyan, white,
+their bright variants BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN,
+WHITE, a 256-color palette index 0-255, an RGB color #rrggbb, or none.
 Wildcards are allowed ($ for a single word, & for any string). Examples:
 
 #mark Sizzler=bold			(mark Sizzler in bold)
@@ -115,6 +116,7 @@ Wildcards are allowed ($ for a single word, & for any string). Examples:
 #mark Sizzler=				(Sizzler is no longer put in bold)
 #mark					(lists all markers)
 #mark *&*=inverse			(mark in reverse any string in * *)
+#mark Gandalf=bold 208 on #202020	(orange on a dark gray background)
 @substitute
 #substitute [text[=[new text]]]
 
@@ -160,10 +162,12 @@ of lines in your screen.
 This sets the attribute of your entered text to the given attribute.
 Just #hilite turns it off.
 
-Attributes: one or more of bold, blink, inverse, underline and/or
-[<foreground>] [on <background>], where the colors are:
-black, red, green, yellow, blue, magenta, cyan, white and
-BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, none.
+Attributes: zero or more of bold, dim, italic, underline, blink,
+inverse, hidden, strike, overline, then [<foreground>] [on <background>],
+where a color is one of black, red, green, yellow, blue, magenta, cyan,
+white, their bright variants BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA,
+CYAN, WHITE, a 256-color palette index 0-255, an RGB color #rrggbb,
+or none.
 @host
 #host [hostname port [--tls[=options]|--no-tls] [--utf8|--latin1]]
 

@@ -6,5 +6,6 @@
 /test_charset
 /test_ptr
 /test_sgr
+/test_attr
 *.log
 *.trs

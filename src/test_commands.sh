@@ -145,6 +145,24 @@ run 'mark the first word' '#mark ^$=bold
 #print ("foo x bar")'
 has '<ESC>[1mfoo<ESC>[0m x bar'
 
+run 'mark with 256 and RGB colors' '#mark foo=bold 208 on #202020
+#mark bar=italic strike on 22
+#mark
+#print ("foo bar")'
+has '#new mark: foo=bold 208 on #202020'
+has '#mark foo=bold 208 on #202020'
+has '#mark bar=italic strike on 22'
+has '<ESC>[1;38;5;208;48;2;32;32;32mfoo<ESC>[0m <ESC>[3;9;48;5;22mbar<ESC>[0m'
+
+run 'mark with an invalid color' '#mark foo=#ff00
+#mark foo=256
+#mark'
+has '#invalid attribute syntax.'
+has '#no markers are defined.'
+
+run 'attr operator' '#print (attr "dim #ff8700" + "x")'
+has '<ESC>[2;38;2;255;135;0mx'
+
 run 'substitute the first word' '#substitute ^$=Z
 #print ("foo x bar")'
 has 'Z x bar'

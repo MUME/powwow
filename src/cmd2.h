@@ -8,9 +8,8 @@ void show_prompts(void);
 void parse_action(char *str, int onprompt);
 
 void show_attr_syntax(void);
-void attr_string(int attrcode, char *begin, char *end);
-int  parse_attributes(char *line);
-char *attr_name(int attrcode);
+void attr_string(const struct attr *attr, char *begin, char *end);
+char *attr_name(const struct attr *attr);
 void show_marks(void);
 void parse_mark(char *str);
 

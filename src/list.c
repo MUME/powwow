@@ -187,7 +187,7 @@ void add_aliasnode(char *name, char *subst)
 /*
  * add a node to the marker list
  */
-void add_marknode(char *pattern, int attrcode, char mbeg, char wild)
+void add_marknode(char *pattern, const struct attr *attr, char mbeg, char wild)
 {
     marknode **p, *new = (marknode*)malloc(sizeof(marknode));
     int i;
@@ -200,7 +200,7 @@ void add_marknode(char *pattern, int attrcode, char mbeg, char wild)
     new->b.start = new->b.end = NULL;
     new->b.mbeg = mbeg;
     new->b.wild = wild;
-    new->attrcode = attrcode;
+    new->attr = *attr;
     if (new->b.pattern == NULL) {
 	errmsg("malloc");
 	free(new);

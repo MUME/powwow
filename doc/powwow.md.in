@@ -2082,7 +2082,7 @@ operators between a string and a number:
 functions for low-level color handling:
 
   noattr      (string containing the escape sequence to reset terminal
-	      colors and attributes -- bold, underline, inverse)
+	      colors and attributes -- bold, underline, etc.)
 
   attr "quoted-string"
 	      (return the escape sequence needed to turn on
@@ -2158,14 +2158,24 @@ The following attributes are available:
 
 | Attribute | Effect |
 | --- | --- |
-| `bold`, `blink`, `underline`, `inverse` | the obvious effects |
-| `reverse` | same as `inverse` |
+| `bold`, `dim`, `italic`, `underline`, `blink`, `inverse`, `hidden`, `strike`, `overline` | the obvious effects |
+| `faint`, `reverse`, `conceal`, `strikethrough` | same as `dim`, `inverse`, `hidden` and `strike` |
 | `[color] [on color]` | foreground and/or background |
 
-Colors are `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`,
-`white` and `BLACK`, `RED`, `GREEN`, `YELLOW`, `BLUE`, `MAGENTA`, `CYAN`,
-`WHITE`, `none` (`none` means to use default and is implemented as a
-color).
+Effect names are not case sensitive. A color is one of:
+
+| Color | Meaning |
+| --- | --- |
+| `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white` | the 8 ANSI colors |
+| `BLACK`, `RED`, `GREEN`, `YELLOW`, `BLUE`, `MAGENTA`, `CYAN`, `WHITE` | their bright variants |
+| `0` to `255` | an entry in the 256-color palette |
+| `#rrggbb` | a 24-bit RGB color, in hexadecimal |
+| `none` | use the default color |
+
+In the 256-color palette, 0-15 are the 16 colors above (as set by your
+terminal's theme), 16-231 are a 6x6x6 color cube where each of red,
+green and blue goes from 0 to 5 and the index is 16 + 36 * red +
+6 * green + blue, and 232-255 are 24 shades of gray from dark to light.
 
 Examples: The following are all valid attributes:
 
@@ -2176,16 +2186,14 @@ Examples: The following are all valid attributes:
 | `on white` | only background |
 | `yellow on cyan` | foreground and background |
 | `inverse bold` | inverse and bold |
-| `blink red on blue` | you can use multiple attributes, but you must put `bold`, `inverse` and/or `underline` BEFORE colors |
+| `blink red on blue` | you can use multiple effects, but you must put them BEFORE colors |
+| `bold 208 on 236` | orange on dark gray, from the 256-color palette |
+| `italic #ff8700 on #202020` | the same in RGB colors |
 
-Observe that bold, blink, underline and reverse work with all terminals
-that support these attributes, but colors only on terminals that
-support ANSI color escape sequences.
-
-Capitalized colors (BLACK..WHITE) are non-ANSI high intensity colors,
-and will not work on all terminals (They work on the 'aixterm' terminal
-emulator under AIX, but they may work on other terminals as well.
-Let me know if you find other terminals that support them).
+Powwow writes attributes as standard (ECMA-48) escape sequences.
+Most terminal emulators support all of them, but older terminals may
+ignore some effects, the bright colors, the 256-color palette or RGB
+colors.
 
 Notes for IBM PC and compatibles with VGA or SVGA cards in text mode:
 

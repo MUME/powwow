@@ -40,12 +40,6 @@
 #include "eval.h"
 #include "cmd2.h"
 
-/* anyone knows if ANSI 6429 talks about more than 8 colors? */
-static const char *const colornames[] = {
-    "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white",
-    "BLACK", "RED", "GREEN", "YELLOW", "BLUE", "MAGENTA", "CYAN", "WHITE", "none"
-};
-
 /*
  * show defined aliases
  */
@@ -663,183 +657,35 @@ void parse_action(char *str, int onprompt)
  */
 void show_attr_syntax(void)
 {
-    int i;
-    PRINTF("#attribute syntax:\n\tOne or more of:\tbold, blink, underline, inverse\n\tand/or\t[foreground] [ON background]\n\tColors: ");
-    for (i = 0; i < COLORS; i++)
-	tty_printf("%s%s", colornames[i],
-		 (i == LOWCOLORS - 1 || i == COLORS - 1) ? "\n\t\t" : ",");
-    tty_printf("%s\n", colornames[i]);
+    PRINTF("#attribute syntax:\n"
+           "\tZero or more of:\tbold, dim, italic, underline, blink, inverse,\n"
+           "\t\t\t\thidden, strike, overline\n"
+           "\tthen\t[foreground] [ON background]\n"
+           "\tColors: black,red,green,yellow,blue,magenta,cyan,white\n"
+           "\t\tBLACK,RED,GREEN,YELLOW,BLUE,MAGENTA,CYAN,WHITE (bright)\n"
+           "\t\t0-255 (256-color palette), #rrggbb (RGB), none\n");
 }
 
 /*
- * put escape sequences to turn on/off an attribute in given buffers
+ * put escape sequences to turn on/off an attribute in given buffers,
+ * which must have room for ATTR_SGR_MAX characters
  */
-void attr_string(int attrcode, char *begin, char *end)
+void attr_string(const struct attr *attr, char *begin, char *end)
 {
-    int fg = FOREGROUND(attrcode), bg = BACKGROUND(attrcode),
-      tok = ATTR(attrcode);
-    char need_end = 0;
-    *begin = *end = '\0';
-
-    if (tok > (ATTR_BOLD | ATTR_BLINK | ATTR_UNDERLINE | ATTR_INVERSE)
-	|| fg > COLORS || bg > COLORS || attrcode == NOATTRCODE)
-      return;    /* do nothing */
-
-    if (fg < COLORS) {
-	if (bg < COLORS) {
-	    sprintf(begin, "\033[%c%d;%s%dm",
-		    fg<LOWCOLORS ? '3' : '9', fg % LOWCOLORS,
-		    bg<LOWCOLORS ? "4" :"10", bg % LOWCOLORS);
-	} else {
-	    sprintf(begin, "\033[%c%dm",
-		    fg<LOWCOLORS ? '3' : '9', fg % LOWCOLORS);
-	}
-    } else if (bg < COLORS) {
-	sprintf(begin, "\033[%s%dm",
-		bg<LOWCOLORS ? "4" : "10", bg % LOWCOLORS);
-    }
-
-    if (fg < COLORS || bg < COLORS)
- 	need_end = 1;
-
-    if (tok & ATTR_BOLD) {
-	if (tty_modebold[0]) {
-	    strcat(begin, tty_modebold);
-	    need_end = 1;
-	} else {
-	    strcat(begin, tty_modestandon);
-	    strcpy(end, tty_modestandoff);
-	}
-    }
-
-    if (tok & ATTR_BLINK) {
-	if (tty_modeblink[0]) {
-	    strcat(begin, tty_modeblink);
-	    need_end = 1;
-	} else {
-	    strcat(begin, tty_modestandon);
-	    strcpy(end, tty_modestandoff);
-	}
-    }
-
-    if (tok & ATTR_UNDERLINE) {
-	if (tty_modeuline[0]) {
-	    strcat(begin, tty_modeuline);
-	    need_end = 1;
-	} else {
-	    strcat(begin, tty_modestandon);
-	    strcpy(end, tty_modestandoff);
-	}
-    }
-
-    if (tok & ATTR_INVERSE) {
-	if (tty_modeinv[0]) {
-	    strcat(begin, tty_modeinv);
-	    need_end = 1;
-	} else {
-	    strcat(begin, tty_modestandon);
-	    strcpy(end, tty_modestandoff);
-	}
-    }
-
-    if (need_end)
-	strcpy(end, tty_modenorm);
-}
-
-/*
- * parse attribute description in line.
- * Return attribute if successful, -1 otherwise.
- */
-int parse_attributes(char *line)
-{
-    char *p;
-    int tok = 0, fg, bg, t = -1;
-
-    if (!(p = strtok(line, " ")))
-      return NOATTRCODE;
-
-    fg = bg = NO_COLOR;
-
-    while (t && p) {
-	if (!strcasecmp(p, "bold"))
-	  t = ATTR_BOLD;
-	else if (!strcasecmp(p, "blink"))
-	  t = ATTR_BLINK;
-	else if (!strcasecmp(p, "underline"))
-	  t = ATTR_UNDERLINE;
-	else if (!strcasecmp(p, "inverse") || !strcasecmp(p, "reverse"))
-	  t = ATTR_INVERSE;
-	else
-	  t = 0;
-
-	if (t) {
-	    tok |= t;
-	    p = strtok(NULL, " ");
-	}
-    }
-
-    if (!p)
-	return ATTRCODE(tok, fg, bg);
-
-    for (t = 0; t <= COLORS && strcmp(p, colornames[t]); t++)
-	;
-    if (t <= COLORS) {
-	fg = t;
-	p = strtok(NULL, " ");
-    }
-
-    if (!p)
-      return ATTRCODE(tok, fg, bg);
-
-    if (strcasecmp(p, "on"))
-      return -1;      /* invalid attribute */
-
-    if (!(p = strtok(NULL, " ")))
-      return -1;
-
-    for (t = 0; t <= COLORS && strcmp(p, colornames[t]); t++)
-      ;
-    if (t <= COLORS)
-      bg = t;
+    attr_sgr(attr, begin, ATTR_SGR_MAX);
+    if (begin[0] != '\0')
+        my_strncpy(end, tty_modenorm, ATTR_SGR_MAX - 1);
     else
-      return -1;
-
-    return ATTRCODE(tok, fg, bg);
+        end[0] = '\0';
 }
 
-
 /*
- * return a static pointer to name of given attribute code
+ * return a static pointer to name of given attribute
  */
-char *attr_name(int attrcode)
+char *attr_name(const struct attr *attr)
 {
-    static char name[BUFSIZE];
-    int fg = FOREGROUND(attrcode), bg = BACKGROUND(attrcode), tok = ATTR(attrcode);
-
-    name[0] = 0;
-    if (tok > (ATTR_BOLD | ATTR_BLINK | ATTR_UNDERLINE | ATTR_INVERSE) || fg > COLORS || bg > COLORS)
-      return name;   /* error! */
-
-    if (tok & ATTR_BOLD)
-      strcat(name, "bold ");
-    if (tok & ATTR_BLINK)
-      strcat(name, "blink ");
-    if (tok & ATTR_UNDERLINE)
-      strcat(name, "underline ");
-    if (tok & ATTR_INVERSE)
-      strcat(name, "inverse ");
-
-    if (fg < COLORS || (fg == bg && fg == COLORS && !tok))
-      strcat(name, colornames[fg]);
-
-    if (bg < COLORS) {
-	strcat(name, " on ");
-	strcat(name, colornames[bg]);
-    }
-
-    if (!*name)
-	strcpy(name, "none");
-
+    static char name[ATTR_NAME_MAX];
+    attr_format(attr, name, sizeof(name));
     return name;
 }
 
@@ -854,7 +700,7 @@ void show_marks(void)
 	       markers ? ':' : '.');
     for (p = markers; p; p = p->next)
 	tty_printf("#mark %s%s=%s\n", p->b.mbeg != 0 ? "^" : "",
-		   p->b.pattern, attr_name(p->attrcode));
+		   p->b.pattern, attr_name(&p->attr));
 }
 
 
@@ -882,7 +728,7 @@ void parse_mark(char *str)
 	    char *name;
 	    pbuf = ptrmescape(pbuf, n->b.pattern, strlen(n->b.pattern), 0);
 	    if (MEM_ERROR) { ptrdel(&pbuf); return; }
-            name = attr_name(n->attrcode);
+            name = attr_name(&n->attr);
             fmt_next_edit("#mark %s%s=%s", n->b.mbeg != 0 ? "^" : "",
                           pbuf ? ptrdata(pbuf) : "", name);
 	    ptrdel(&pbuf);
@@ -891,7 +737,7 @@ void parse_mark(char *str)
         }
 
     } else {
-        int attrcode, wild = 0;
+        int wild = 0;
 	char pattern[BUFSIZE], *p2;
 
         *(p++) = '\0';
@@ -914,8 +760,8 @@ void parse_mark(char *str)
 	}
 
         np = lookup_marker(pattern, mbeg);
-        attrcode = parse_attributes(p);
-        if (attrcode == -1) {
+        struct attr attr;
+        if (!attr_parse(p, &attr)) {
             PRINTF("#invalid attribute syntax.\n");
 	    error=SYNTAX_ERROR;
             if (opt_info) show_attr_syntax();
@@ -923,7 +769,7 @@ void parse_mark(char *str)
 	    if ((n = *np)) {
 		if (opt_info) {
 		    PRINTF("#deleting mark: %s%s=%s\n", n->b.mbeg != 0 ? "^" : "",
-			   n->b.pattern, attr_name(n->attrcode));
+			   n->b.pattern, attr_name(&n->attr));
 		}
 		delete_marknode(np);
 	    } else {
@@ -932,19 +778,19 @@ void parse_mark(char *str)
 	    }
         else {
             if (*np) {
-                (*np)->attrcode = attrcode;
+                (*np)->attr = attr;
                 if (opt_info) {
                     PRINTF("#changed");
                 }
             } else {
-                add_marknode(pattern, attrcode, mbeg, wild);
+                add_marknode(pattern, &attr, mbeg, wild);
                 if (opt_info) {
                     PRINTF("#new");
                 }
             }
             if (opt_info)
 		tty_printf(" mark: %s%s=%s\n", mbeg ? "^" : "",
-			   pattern, attr_name(attrcode));
+			   pattern, attr_name(&attr));
         }
     }
 }

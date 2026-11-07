@@ -500,7 +500,7 @@ static int match_mark_or_subst(basenode *bp, char *src)
 static ptr *ptrmaddmarks(ptr *dst, char *line, int len)
 {
     marknode *mp, *mfirst;
-    char begin[CAPLEN], end[CAPLEN], *lineend = line + len;
+    char begin[ATTR_SGR_MAX], end[ATTR_SGR_MAX], *lineend = line + len;
     int start = 1, matchlen, matched = 0;
 
     ptrzero(dst);
@@ -529,7 +529,7 @@ static ptr *ptrmaddmarks(ptr *dst, char *line, int len)
 
 	if (mfirst) {
 	    start = 0;
-	    attr_string(mfirst->attrcode, begin, end);
+	    attr_string(&mfirst->attr, begin, end);
 
 	    assert(mfirst->b.start != NULL);
 	    dst = ptrmcat(dst, line, matchlen = mfirst->b.start - line);
@@ -1423,7 +1423,7 @@ int save_settings(void)
 	pp = ptrmescape(pp, mp->b.pattern, strlen(mp->b.pattern), 0);
 	if (MEM_ERROR) { failed = -1; break; }
 	failed = fprintf(f, "#mark %s%s=%s\n", mp->b.mbeg != 0 ? "^" : "",
-			     ptrdata(pp), attr_name(mp->attrcode));
+			     ptrdata(pp), attr_name(&mp->attr));
     }
 
     for (substnode *sp = substitutions; sp != NULL && failed > 0; sp = sp->next) {

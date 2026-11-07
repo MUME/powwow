@@ -9,6 +9,8 @@
 
 #include <stdbool.h>
 
+#include "attr.h"
+
 #if !defined(SYS_TIME_H) && !defined(_H_SYS_TIME)
 #  include <sys/time.h>
 #endif
@@ -121,40 +123,7 @@
 
 #define ISMARKWILDCARD(c) ((c) == '&' || (c) == '$')
 
-/*
- * Attribute codes: bit 0-4 for foreground color, 5-9 for
- * background color, 10-13 for effects.
- * Color #16 is "none", so 0x0210 is "no attribute".
- */
-#define COLORS         16         /* number of colors on HFT terminal */
 #define LOWCOLORS      8          /* number of ANSI colors */
-#define NO_COLOR       COLORS     /* no color change, use default */
-#define BITS_COLOR     5          /* bits used for a color entry
-                                     (16==none is a valid color) */
-#define BITS_2COLOR    10         /* bits used for 2 color entries */
-#define COLOR_MASK     0x1F       /* 5 (BITS_COLOR) bits set to 1, others 0 */
-
-#define ATTR_BOLD      0x01
-#define ATTR_BLINK     0x02
-#define ATTR_UNDERLINE 0x04
-#define ATTR_INVERSE   0x08
-
-/*
- * WARNING: colors and attributes are currently using 14 bits:
- * 4 for attributes, 5 for foreground color and 5 for background.
- * type used is int and -1 is used as 'invalid attribute'
- * so in case ints are 16 bits, there is only 1 bit left unused.
- * In case ints are 32 bits, no problem.
- */
-
-/* constructors / accessors for attribute codes */
-#define ATTRCODE(attr, fg, bg) \
-                (((attr) << BITS_2COLOR) | ((bg) << BITS_COLOR) | (fg))
-#define FOREGROUND(attrcode) ((attrcode) & COLOR_MASK)
-#define BACKGROUND(attrcode) (((attrcode) >> BITS_COLOR) & COLOR_MASK)
-#define ATTR(attrcode)       ((attrcode) >> BITS_2COLOR)
-
-#define NOATTRCODE ATTRCODE(0, NO_COLOR, NO_COLOR)
 
 /*
  * NCSA telnet 2.2 doesn't reset the color when it receives "esc [ m",
@@ -229,7 +198,7 @@ typedef struct basenode
 typedef struct marknode {
     struct marknode *next;
     basenode b;
-    int attrcode;
+    struct attr attr;
 } marknode;
 
 typedef struct substnode
