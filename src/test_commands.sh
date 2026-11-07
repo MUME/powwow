@@ -225,6 +225,12 @@ lacks 'Normally, powwow prints on screen some messages each time you'
 run 'help accepts an abbreviation' '#help speedw' ''
 has 'Execute a speedwalk sequence even if the speedwalk option is disabled.'
 
+run 'help aligns the list of commands' '#help' ''
+has '#addstatic {string|(expr)}      add the string to the static word completion list'
+has '#beep                           make your terminal beep (like #print (*7))'
+has '#if (expr) instr1 [; #else instr2]'
+has '                                otherwise execute "instr2"'
+
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 

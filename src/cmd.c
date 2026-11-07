@@ -81,164 +81,162 @@ static cmdstruct default_commands[] =
     C("help",       cmd_help,
       "[keys|math|command]\tthis text, or help on specified topic"),
     C("17", (function_str)0,
-      "command\t\t\trepeat \"command\" 17 times"),
+      "command\trepeat \"command\" 17 times"),
 #ifdef USE_SHELL
     C("!",          cmd_shell,
-      "shell-command\t\texecute a shell command using /bin/sh"),
+      "shell-command\texecute a shell command using /bin/sh"),
 #endif
     C("action",     cmd_action,
-      "[[<|=|>|%][+|-]name] [{pattern|(expression)} [=[command]]]\n"
-      "\t\t\t\tdelete/list/define actions"),
+      "[[<|=|>|%][+|-]name] [{pattern|(expression)} [=[command]]]\t"
+      "delete/list/define actions"),
     C("add",        cmd_add,
-      "{string|(expr)}\t\tadd the string to word completion list"),
+      "{string|(expr)}\tadd the string to word completion list"),
     C("addstatic",  cmd_addstatic,
-      "{string|(expr)}\t\tadd the string to the static word completion list"),
+      "{string|(expr)}\tadd the string to the static word completion list"),
     C("alias",      cmd_alias,
-      "[name[=[text]]]\t\tdelete/list/define aliases"),
+      "[name[=[text]]]\tdelete/list/define aliases"),
     C("at",         cmd_at,
-      "[name [(time-string) [command]]\n\t\t\t\tset time of delayed label"),
+      "[name [(time-string) [command]]\tset time of delayed label"),
     C("beep",       cmd_beep,
-      "\t\t\t\tmake your terminal beep (like #print (*7))"),
+      "\tmake your terminal beep (like #print (*7))"),
     C("bind",       cmd_bind,
-      "[edit|name [seq][=[command]]]\n"
-      "\t\t\t\tdelete/list/define key bindings"),
+      "[edit|name [seq][=[command]]]\tdelete/list/define key bindings"),
     C("cancel",     cmd_cancel,
-      "[number]\t\tcancel editing session"),
+      "[number]\tcancel editing session"),
     C("capture",    cmd_capture,
-      "[filename]\t\tbegin/end of capture to file"),
+      "[filename]\tbegin/end of capture to file"),
     C("clear",      cmd_clear,
-      "\t\t\tclear input line (use from spawned programs)"),
+      "\tclear input line (use from spawned programs)"),
     C("connect",    cmd_connect,
-      "[connect-id [initstr] [address port]\n"
-      "\t\t\t\topen a new connection"),
+      "[connect-id [initstr] [address port]\topen a new connection"),
     C("cpu",        cmd_cpu,
-      "\t\t\t\tshow CPU time used by powwow"),
+      "\tshow CPU time used by powwow"),
     C("delim",      cmd_delim,
-      "[normal|program|{custom [chars]}]\n"
-      "\t\t\t\tset word completion delimeters"),
+      "[normal|program|{custom [chars]}]\tset word completion delimeters"),
     C("do",         cmd_do,
-      "(expr) command\t\trepeat \"command\" (expr) times"),
+      "(expr) command\trepeat \"command\" (expr) times"),
     C("edit",       cmd_edit,
-      "\t\t\t\tlist editing sessions"),
+      "\tlist editing sessions"),
     C("emulate",    cmd_emulate,
       "[<|!]{text|(expr)}\tprocess result as if received from host"),
     C("exe",        cmd_exe,
       "[<|!]{text|(string-expr)}\texecute result as if typed from keyboard"),
     C("file",       cmd_file,
-      "[=[filename]]\t\tset/show powwow definition file"),
+      "[=[filename]]\tset/show powwow definition file"),
     C("for",        cmd_for,
-      "([init];check;[loop]) command\n"
-      "\t\t\t\twhile \"check\" is true exec \"command\""),
+      "([init];check;[loop]) command\t"
+      "while \"check\" is true exec \"command\""),
     C("group",      cmd_group,
       "[name] [on|off|list]\tgroup alias/action manipulation"),
     C("groupdelim", cmd_groupdelim,
       "[delimiter]\tchange delimiter for action/alias groups"),
     C("hilite",     cmd_hilite,
-      "[attr]\t\t\thighlight your input line"),
+      "[attr]\thighlight your input line"),
     C("history",    cmd_history,
       "[{number|(expr)}]\tlist/execute commands in history"),
     C("host",       cmd_host,
-      "[hostname port [--tls[=options]|--no-tls]]]\tset/show address of default host"),
+      "[hostname port [--tls[=options]|--no-tls]]]\t"
+      "set/show address of default host"),
     C("identify",   cmd_identify,
       "[startact [endact]]\tsend MUME client identification"),
     C("if",         cmd_if,
-      "(expr) instr1 [; #else instr2]\n"
-      "\t\t\t\tif \"expr\" is true execute \"instr1\",\n"
-      "\t\t\t\totherwise execute \"instr2\""),
+      "(expr) instr1 [; #else instr2]\t"
+      "if \"expr\" is true execute \"instr1\",\n"
+      "otherwise execute \"instr2\""),
     C("in",         cmd_in,
       "[label [(delay) [command]]]\tdelete/list/define delayed labels"),
     C("init",       cmd_init,
-      "[=[command]]\t\tdefine command to execute on connect to host"),
+      "[=[command]]\tdefine command to execute on connect to host"),
     C("isprompt",   cmd_isprompt,
-      "\t\t\trecognize a prompt as such"),
+      "\trecognize a prompt as such"),
     C("key",        cmd_key,
-      "name\t\t\texecute the \"name\" key binding"),
+      "name\texecute the \"name\" key binding"),
     C("keyedit",    cmd_keyedit,
-      "editing-name\t\trun a line-editing function"),
+      "editing-name\trun a line-editing function"),
     C("load",       cmd_load,
-      "[filename]\t\tload powwow settings from file"),
+      "[filename]\tload powwow settings from file"),
     C("map",        cmd_map,
       "[-[number]|walksequence]\tshow/clear/edit (auto)map"),
     C("mark",       cmd_mark,
-      "[string[=[attr]]]\t\tdelete/list/define markers"),
+      "[string[=[attr]]]\tdelete/list/define markers"),
 #ifdef HAVE_LIBDL
     C("module",     cmd_module,
-      "[name]\t\t\tload shared library extension"),
+      "[name]\tload shared library extension"),
 #endif
     C("movie",      cmd_movie,
-      "[filename]\t\tbegin/end of movie record to file"),
+      "[filename]\tbegin/end of movie record to file"),
     C("net",        cmd_net,
-      "\t\t\t\tprint amount of data received from/sent to host"),
+      "\tprint amount of data received from/sent to host"),
     C("nice",       cmd_nice,
-      "[{number|(expr)}[command]]\n"
-      "\t\t\t\tset/show priority of new actions/marks"),
+      "[{number|(expr)}[command]]\tset/show priority of new actions/marks"),
     C("option",     cmd_option,
       "[[+|-|=]name]|list\tlist or view various options"),
     C("prefix",     cmd_prefix,
-      "string\t\t\tprefix all lines with string"),
+      "string\tprefix all lines with string"),
     C("",           cmd_eval,
-      "(expr)\t\t\tevaluate expression, trashing result"),
+      "(expr)\tevaluate expression, trashing result"),
     C("print",      cmd_print,
-      "[<|!][text|(expr)]\tprint text/result on screen, appending a \\n\n"
-      "\t\t\t\tif no argument, prints value of variable $0"),
+      "[<|!][text|(expr)]\t"
+      "print text/result on screen, appending a \\n"
+      "\n"
+      "if no argument, prints value of variable $0"),
     C("prompt",     cmd_prompt,
-      "[[<|=|>|%][+|-]name] [{pattern|(expression)} [=[prompt-command]]]\n"
-      "\t\t\t\tdelete/list/define actions on prompts"),
+      "[[<|=|>|%][+|-]name] [{pattern|(expression)} [=[prompt-command]]]\t"
+      "delete/list/define actions on prompts"),
     C("put",        cmd_put,
-      "{text|(expr)}\t\tput text/result of expression in history"),
+      "{text|(expr)}\tput text/result of expression in history"),
     C("qui",        cmd_qui,
-      "\t\t\t\tdo nothing"),
+      "\tdo nothing"),
     C("quit",       cmd_quit,
-      "\t\t\t\tquit powwow"),
+      "\tquit powwow"),
     C("quote",      cmd_quote,
-      "[on|off]\t\t\ttoggle verbatim-flag on/off"),
+      "[on|off]\ttoggle verbatim-flag on/off"),
     C("rawsend",    cmd_rawsend,
       "{string|(expr)}\tsend raw data to the MUD"),
     C("rawprint",   cmd_rawprint,
       "{string|(expr)}\tsend raw data to the screen"),
     C("rebind",     cmd_rebind,
-      "name [seq]\t\tchange sequence of a key binding"),
+      "name [seq]\tchange sequence of a key binding"),
     C("rebindall",  cmd_rebindall,
-      "\t\t\trebind all key bindings"),
+      "\trebind all key bindings"),
     C("rebindALL",  cmd_rebindALL,
-      "\t\t\trebind ALL key bindings, even trivial ones"),
+      "\trebind ALL key bindings, even trivial ones"),
     C("record",     cmd_record,
-      "[filename]\t\tbegin/end of record to file"),
+      "[filename]\tbegin/end of record to file"),
     C("request",    cmd_request,
       "[editor][prompt][all]\tsend various identification strings"),
     C("reset",      cmd_reset,
-      "<list-name>\t\tclear the whole defined list and reload default"),
+      "<list-name>\tclear the whole defined list and reload default"),
     C("retrace",    cmd_retrace,
-      "[number]\t\tretrace the last number steps"),
+      "[number]\tretrace the last number steps"),
     C("save",       cmd_save,
-      "[filename]\t\tsave powwow settings to file"),
+      "[filename]\tsave powwow settings to file"),
     C("send",       cmd_send,
       "[<|!]{text|(expr)}\teval expression, sending result to the MUD"),
     C("setvar",     cmd_setvar,
       "name[=text|(expr)]\tset/show internal limits and variables"),
     C("snoop",      cmd_snoop,
-      "connect-id\t\ttoggle output display for connections"),
+      "connect-id\ttoggle output display for connections"),
     C("spawn",      cmd_spawn,
       "connect-id command\ttalk with a shell command"),
     C("speedwalk",  cmd_speedwalk,
       "[speedwalk sequence]\texecute a speedwalk sequence explicitly"),
     C("stop",       cmd_stop,
-      "\t\t\t\tremove all delayed commands from active list"),
+      "\tremove all delayed commands from active list"),
     C("substitute", cmd_substitute,
       "[string[=[text]]]\tdelete/list/define substitutions"),
     C("time",       cmd_time,
-      "\t\t\t\tprint current time and date"),
+      "\tprint current time and date"),
     C("var",        cmd_var,
-      "variable [= [<|!]{string|(expr)} ]\n"
-      "\t\t\t\twrite result into the variable"),
+      "variable [= [<|!]{string|(expr)} ]\twrite result into the variable"),
     C("ver",        cmd_ver,
-      "\t\t\t\tshow powwow version"),
+      "\tshow powwow version"),
     C("while",      cmd_while,
-      "(expr) instr\t\twhile \"expr\" is true execute \"instr\""),
+      "(expr) instr\twhile \"expr\" is true execute \"instr\""),
     C("write",      cmd_write,
-      "[>|!](expr;name)\t\twrite result of expr to \"name\" file"),
+      "[>|!](expr;name)\twrite result of expr to \"name\" file"),
     C("zap",        cmd_zap,
-      "connect-id\t\t\tclose a connection"),
+      "connect-id\tclose a connection"),
     { NULL }
 };
 
@@ -440,6 +438,48 @@ static bool find_help_entry(FILE *f, char *line, int size, const char *arg,
     return false;
 }
 
+/* column where the descriptions in the list of commands start */
+enum { HELP_COLUMN = 32 };
+
+/*
+ * write the line(s) for 'c' in the list of commands to 'dst', and
+ * return the end of what was written. A tab in the help text separates
+ * the arguments from the description, which is aligned at HELP_COLUMN.
+ */
+static char *format_command_help(char *dst, const cmdstruct *c)
+{
+    const char *tab = strchr(c->help, '\t');
+
+    if (tab == NULL) {
+	sprintf(dst, "#%s %s\n", c->name, c->help);
+	return dst + strlen(dst);
+    }
+
+    int args_len = (int)(tab - c->help);
+    sprintf(dst, "#%s%s%.*s", c->name, args_len > 0 ? " " : "",
+	    args_len, c->help);
+    size_t col = strlen(dst);
+    dst += col;
+    if (col >= HELP_COLUMN) {
+	*dst++ = '\n';
+	col = 0;
+    }
+    for (const char *p = tab + 1; ; ++p) {
+	for (; col < HELP_COLUMN; ++col)
+	    *dst++ = ' ';
+	if (*p == '\0')
+	    break;
+	*dst++ = *p;
+	col = (*p == '\n' ? 0 : col + 1);
+    }
+    /* drop the padding after the last line */
+    while (dst[-1] == ' ')
+	--dst;
+    *dst++ = '\n';
+    *dst = '\0';
+    return dst;
+}
+
 static void cmd_help(char *arg)
 {
     int i, size;
@@ -453,8 +493,11 @@ static void cmd_help(char *arg)
     if (*arg == '#') arg++;
     if (!*arg) {
 	size = 25;
-	for( c = commands; c != NULL; c = c -> next )
+	for( c = commands; c != NULL; c = c -> next ) {
 	    size += strlen(c -> name) + strlen(c -> help) + 5;
+	    for (const char *p = c->help; p != NULL; p = strchr(p + 1, '\n'))
+		size += HELP_COLUMN + 1;
+	}
 
 	text = tmp = (char *)malloc(size);
 	if (!text) {
@@ -466,10 +509,8 @@ static void cmd_help(char *arg)
         sprintf(tmp, "#help\n#commands available:\n");
 	tmp += strlen(tmp);
 
-	for( c = commands; c != NULL; c = c -> next ) {
-	    sprintf(tmp, "#%s %s\n", c -> name, c -> help);
-	    tmp += strlen(tmp);
-	}
+	for( c = commands; c != NULL; c = c -> next )
+	    tmp = format_command_help(tmp, c);
 
 	message_edit(text, strlen(text), 1, 1);
 	return;
