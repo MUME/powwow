@@ -461,14 +461,12 @@ static void check_delete(object *obj)
 
 static int exe_op(operator *op)
 {
-    object o1, o2, *p=NULL;
+    object o1 = { 0 }, o2 = { 0 }, *p=NULL;
     long *l, rnd, delta;
     ptr *src = NULL, *dst = NULL, *start = NULL;
     int srclen;
     char *ssrc, *tmp;
     int ret=0, i=0, j=0, danger=0;
-
-    o1.txt = o2.txt = NULL;
 
     switch ((int)*op) {
       case (int)comma:
