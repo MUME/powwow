@@ -31,12 +31,8 @@
 
 #undef MIN2
 #undef MAX2
-#undef ABS
-#undef SIGN
 #define MIN2(a,b) ((a)<(b) ? (a) : (b))
 #define MAX2(a,b) ((a)>(b) ? (a) : (b))
-#define ABS(a)    ((a)> 0  ? (a) :(-a))
-#define SIGN(a)   ((a)> 0  ?  1  : (a) ? -1 : 0)
 
 /* macros to match parentheses */
 #define ISRPAREN(c) ((c) == ')' || (c) == ']' || (c) == '}')
