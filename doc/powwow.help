@@ -268,7 +268,7 @@ When `info' is off, those messages are not typed at all.
 
 Normally, powwow does not print on screen the command lines it
 executes. When `debug' is on, every line executed by powwow is also
-echoed on screen (warning: this prints LOTS of lines on your screen)
+echoed on screen (warning: this prints a lot of lines on your screen)
 @delim
 #delim [normal|program|{custom <chars>}
 
