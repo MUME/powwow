@@ -123,17 +123,6 @@
 
 #define ISMARKWILDCARD(c) ((c) == '&' || (c) == '$')
 
-#define LOWCOLORS      8          /* number of ANSI colors */
-
-/*
- * NCSA telnet 2.2 doesn't reset the color when it receives "esc [ m",
- * so we must know what the normal colors are in order to reset it.
- * These colors can be changed with the #color command.
- */
-#ifdef BUG_TELNET
-# define DEFAULTFG 7		/* make default white text */
-# define DEFAULTBG 4		/* on blue background */
-#endif
 
 #define LM_NOECHO 1	/* no local echo */
 #define LM_CHAR 2	/* char-by-char mode (no line editing) */

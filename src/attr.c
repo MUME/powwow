@@ -222,7 +222,11 @@ static void append_color_params(char *buf, size_t size, size_t *len,
     }
 }
 
-void attr_sgr_params(const struct attr *attr, char *buf, size_t size)
+/*
+ * write the SGR parameters selecting 'attr', such as "1;38;5;208",
+ * to 'buf'; write "" if 'attr' changes nothing
+ */
+static void attr_sgr_params(const struct attr *attr, char *buf, size_t size)
 {
     size_t len = 0;
 

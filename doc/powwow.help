@@ -185,13 +185,6 @@ without --tls means --no-tls.)
 Available TLS options are:
   no-verify    do not verify the CA certificate
   host=<host>  assume the CA certificate host name is <host>
-@color
-#color [attrib]
-
-(This command exists only if BUG_TELNET is defined, to cope with
- deficiencies of NCSA telnet 2.2)
-Set your standard foreground and background to the colours you specify.
-#color  		sets default colors
 @connect
 #connect [session-id] [initstr] [address port]
          [--tls[=options]|--no-tls]

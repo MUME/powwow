@@ -870,20 +870,6 @@ This sets the attribute of your entered text to the given attribute.
 Just `#hilite` turns it off.
 See "Attributes: colors and other highlighting" below for more syntax.
 
-### Set standard colours
-
-```
-#color [attrib]
-```
-
-(This command exists only if BUG_TELNET is defined, to cope with
-deficiencies of NCSA telnet 2.2)
-Set your standard foreground and background to the colours you specify.
-
-```
-#color			returns to the default colors for your screen
-```
-
 ### Capture output to file
 
 ```

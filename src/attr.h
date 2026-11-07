@@ -52,12 +52,6 @@ bool attr_parse(const char *text, struct attr *attr);
 /* true if 'attr' changes nothing */
 bool attr_is_none(const struct attr *attr);
 
-/*
- * write the SGR parameters selecting 'attr', such as "1;38;5;208",
- * to 'buf'; write "" if 'attr' changes nothing
- */
-void attr_sgr_params(const struct attr *attr, char *buf, size_t size);
-
 /* write the escape sequence selecting 'attr' to 'buf', or "" */
 void attr_sgr(const struct attr *attr, char *buf, size_t size);
 

@@ -68,10 +68,6 @@ static void F(help), F(shell), F(action), F(add),
   F(substitute), F(time), F(var), F(ver), F(while), F(write),
   F(eval), F(zap), F(module), F(group), F(speedwalk), F(groupdelim);
 
-#ifdef BUG_TELNET
-static void F(color);
-#endif
-
 #undef F
 
 /* This must be init'd now at runtime */
@@ -112,10 +108,6 @@ static cmdstruct default_commands[] =
       "[filename]\t\tbegin/end of capture to file"),
     C("clear",      cmd_clear,
       "\t\t\tclear input line (use from spawned programs)"),
-#ifdef BUG_TELNET
-    C("color",      cmd_color,
-      "attr\t\t\tset default colors/attributes"),
-#endif
     C("connect",    cmd_connect,
       "[connect-id [initstr] [address port]\n"
       "\t\t\t\topen a new connection"),
@@ -2352,42 +2344,6 @@ static void cmd_cpu(char *arg)
     PRINTF("#CPU time used: %.3f sec. (%.2f%%)\n", f,
 	       (l > 0 && l > f) ? f * 100.0 / l : 100.0);
 }
-
-#ifdef BUG_TELNET
-static void cmd_color(char *arg)
-{
-    struct attr attr;
-
-    arg = skipspace(arg);
-    if (!*arg) {
-        strcpy(tty_modenorm, tty_modenormbackup);
-	tty_puts(tty_modenorm);
-	if (opt_info) {
-	    PRINTF("#standard color cleared.\n");
-	}
-	return;
-    }
-
-    if (!attr_parse(arg, &attr)) {
-        PRINTF("#invalid attribute syntax.\n");
-	if (opt_info)
-	    show_attr_syntax();
-    } else {
-        if (attr.fg.kind == COLOR_NONE || attr.bg.kind == COLOR_NONE) {
-	    PRINTF("#please specify foreground and background colors.\n");
-	} else {
-	    char params[ATTR_SGR_MAX];
-	    attr = (struct attr){ .fg = attr.fg, .bg = attr.bg };
-	    attr_sgr_params(&attr, params, sizeof(params));
-	    snprintf(tty_modenorm, ATTR_SGR_MAX, "\033[;%sm", params);
-	    tty_puts(tty_modenorm);
-	    if (opt_info) {
-	        PRINTF("#standard colour set.\n");
-	    }
-        }
-    }
-}
-#endif
 
 /*
  * consume any --tls, --no-tls, --utf8 and --latin1 flags starting at

@@ -7,7 +7,7 @@ extern int tty_read_fd;
 
 extern char *tty_clreoln, *tty_clreoscr, *tty_begoln,
             *tty_modebold, *tty_modeblink, *tty_modeuline,
-	    *tty_modenorm, *tty_modenormbackup,
+	    *tty_modenorm,
             *tty_modeinv, *tty_modestandon, *tty_modestandoff;
 
 void tty_bootstrap(void);

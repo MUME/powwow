@@ -102,7 +102,7 @@ static char kpadstart[] = "", kpadend[] = "", begoln[] = "\r",
 	leftcur[] = "\033[D", rightcur[] = "\033[C",  upcur[] = "\033[A",
 	modebold[] = "\033[1m", modeblink[] = "\033[5m", modeinv[] = "\033[7m",
 	modeuline[] = "\033[4m", modestandon[] = "", modestandoff[] = "",
-        modenorm[ATTR_SGR_MAX] = "\033[m", modenormbackup[ATTR_SGR_MAX],
+        modenorm[] = "\033[m",
 	cursor_left[] = "\033[D", cursor_right[] = "\033[C",
         cursor_up[] = "\033[A", cursor_down[] = "\033[B";
 
@@ -129,7 +129,7 @@ static char kpadstart[CAPLEN], kpadend[CAPLEN],
 /* attribute changers: */
 static char modebold[CAPLEN], modeblink[CAPLEN], modeinv[CAPLEN],
             modeuline[CAPLEN], modestandon[CAPLEN], modestandoff[CAPLEN],
-            modenorm[ATTR_SGR_MAX], modenormbackup[ATTR_SGR_MAX];
+            modenorm[CAPLEN];
 
 static int len_begoln, len_clreoln, len_leftcur, len_upcur, gotocost,
            deletecost, insertcost, insertfinish, inscharcost;
@@ -142,7 +142,7 @@ static int extract(char *cap, char *buf);
 char *tty_modebold = modebold,       *tty_modeblink = modeblink,
      *tty_modeinv  = modeinv,        *tty_modeuline = modeuline,
      *tty_modestandon = modestandon, *tty_modestandoff = modestandoff,
-     *tty_modenorm = modenorm,       *tty_modenormbackup = modenormbackup,
+     *tty_modenorm = modenorm,
      *tty_begoln   = begoln,         *tty_clreoln = clreoln,
      *tty_clreoscr = clreoscr;
 
@@ -379,14 +379,12 @@ void tty_bootstrap(void)
     struct tc_init_node *np;
     char tcbuf[2048];		/* by convention, this is enough */
     int i;
-#endif /* not USE_VT100 */
-#if !defined(USE_VT100) || defined(BUG_TELNET)
     char *term = getenv("TERM");
     if (!term) {
 	fprintf(stderr, "$TERM not set\n");
 	exit(1);
     }
-#endif /* !defined(USE_VT100) || defined(BUG_TELNET) */
+#endif /* not USE_VT100 */
 #ifdef USE_VT100
     cols = 80;
 #  ifdef LINES
@@ -430,15 +428,6 @@ void tty_bootstrap(void)
     tty_sig_winch_bottomhalf(); /* get window size */
 
 #endif  /* not USE_VT100 */
-    strcpy(modenormbackup, modenorm);
-#ifdef BUG_TELNET
-    if (strncmp(term, "vt10", 4) == 0) {
-	/* might be NCSA Telnet 2.2 for PC, which doesn't reset colours */
-	sprintf(modenorm, "\033[;%c%d;%s%dm",
-		DEFAULTFG<LOWCOLORS ? '3' : '9',  DEFAULTFG % LOWCOLORS,
-		DEFAULTBG<LOWCOLORS ? "4" : "10", DEFAULTBG % LOWCOLORS);
-    }
-#endif /* BUG_TELNET */
 }
 
 /*
