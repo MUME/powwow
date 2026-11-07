@@ -49,29 +49,40 @@
 #define LONGLEN		(3*(1+(int)sizeof(long)))
 				/* max length of a string representation
 				 * of a long */
-#define ESC		'\\'	/* special escape char */
+#define ESC		'\\'	/* special escape char;
+				 * update doc/powwow.md.in if changed */
 #define STRESC		"\\"
-#define ESC2		'`'	/* other special escape char */
+#define ESC2		'`'	/* other special escape char;
+				 * update doc/powwow.md.in if changed */
 #define STRESC2		"`"
-#define CMDSEP		';'	/* command separator character */
-#define SPECIAL_CHARS	"{}();\"=" /* specials chars needing escape */
+#define CMDSEP		';'	/* command separator character;
+				 * update doc/powwow.md.in if changed */
+#define SPECIAL_CHARS	"{}();\"=" /* specials chars needing escape;
+				    * update doc/powwow.md.in if changed */
 #define MPI		"~$#E"	/* MUME protocol introducer */
 #define MPILEN		4	/* strlen(MPI) */
 
-#define MAX_CONNECTS	32	/* max number of open connections. must fit in a byte */
+#define MAX_CONNECTS	32	/* max number of open connections. must fit in a byte;
+				 * update doc/powwow.md.in if changed */
 
 #define CAPLEN		20	/* max length of a terminal capability */
-#define BUFSIZE		4096	/* general buffer size */
+#define BUFSIZE		4096	/* general buffer size;
+				 * update doc/powwow.md.in if changed */
 #define PARAMLEN	99	/* initial length of text strings */
-#define MAX_MAPLEN	1000	/* maximum length of automapped path */
+#define MAX_MAPLEN	1000	/* maximum length of automapped path;
+				 * update doc/powwow.md.in if changed */
 #define MIN_WORDLEN	3	/* the minimum length for history words */
-#define MAX_WORDS	4096	/* number of words kept for TAB-completion */
-#define MAX_HIST	2048	/* number of history lines kept */
+#define MAX_WORDS	4096	/* number of words kept for TAB-completion;
+				 * update doc/powwow.md.in if changed */
+#define MAX_HIST	2048	/* number of history lines kept;
+				 * update doc/powwow.md.in if changed */
 #define LOG_MAX_HASH	7
 #define MAX_HASH	(1<<LOG_MAX_HASH) /* max hash value, must be a power of 2 */
 #define NUMPARAM	10	/* number of local unnamed params allowed
-				 * (hardcoded, don't change) */
-#define NUMVAR		50	/* number of global unnamed variables */
+				 * (hardcoded, don't change);
+				 * update doc/powwow.md.in if changed */
+#define NUMVAR		50	/* number of global unnamed variables;
+				 * update doc/powwow.md.in if changed */
 #define NUMTOT		(NUMVAR+NUMPARAM)
 #define MAX_SUBOPT	256	/* max length of suboption string */
 #define MAX_ARGS	16	/* max number of arguments to editor */
@@ -80,9 +91,11 @@
 				 * hope it's enough also for very slow lines */
 
 #define MAX_STACK	100	/* maximum number of nested
-                                 * action, alias, #for or #while */
+                                 * action, alias, #for or #while;
+                                 * update doc/powwow.md.in if changed */
 #define MAX_LOOP	10000	/* maximum number of iterations in
-                                 * #for or #while */
+                                 * #for or #while;
+                                 * update doc/powwow.md.in if changed */
 
 #define ACTION_WEAK	0	/* GH: normal junk */
 #define ACTION_REGEXP	1	/*     oh-so-mighty regexp */

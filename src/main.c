@@ -223,6 +223,7 @@ volatile int sig_pending, sig_winch_got, sig_chld_got;
  */
 const char action_chars[ACTION_TYPES] = { '>', '%' };
 
+/* update doc/powwow.md.in and doc/powwow.help if changed */
 #define DELIMSET_NORMAL   " ;"
 #define DELIMSET_PROGRAM  " <>!=(),;\"'{}[]+-/*%"
 
