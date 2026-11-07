@@ -1502,11 +1502,18 @@ void parse_rebind(char *arg)
 	}
     }
 
+    char *new_seq = malloc(seqlen);
+    if (new_seq == NULL) {
+	errmsg("malloc");
+	return;
+    }
+    memmove(new_seq, seq, seqlen);
+
     old = &((*kp)->sequence);
     if (*old)
 	free(*old);
-    *old = (char *)malloc((*kp)->seqlen = seqlen);
-    memmove(*old, seq, seqlen);
+    *old = new_seq;
+    (*kp)->seqlen = seqlen;
 
     if (opt_info)
 	show_single_bind("redefined key:", *kp);

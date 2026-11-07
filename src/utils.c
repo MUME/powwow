@@ -1149,6 +1149,7 @@ int read_settings(void)
     ptrbuf = ptrnew(PARAMLEN);
     if (MEM_ERROR) {
 	print_error(error);
+	fclose(f);
 	return 0;
     }
     buf = ptrdata(ptrbuf);

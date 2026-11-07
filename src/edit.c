@@ -612,12 +612,18 @@ static void default_completions(void)
 void put_static_word(char *s)
 {
     if (static_words.used >= static_words.size) {
+        int size = static_words.size;
         do {
-            static_words.size = static_words.size ? static_words.size * 2 : 16;
-        } while (static_words.used >= static_words.size);
-        static_words.words = realloc(static_words.words,
-                                     sizeof static_words.words[0]
-                                     * static_words.size);
+            size = size != 0 ? size * 2 : 16;
+        } while (static_words.used >= size);
+        char **new_words = realloc(static_words.words,
+                                   sizeof(new_words[0]) * size);
+        if (new_words == NULL) {
+            errmsg("realloc");
+            return;
+        }
+        static_words.words = new_words;
+        static_words.size = size;
     }
 
     if ((s = my_strdup(s)) == NULL) {

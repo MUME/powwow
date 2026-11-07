@@ -845,11 +845,14 @@ static void buf_add(char **buf, size_t *used, size_t *size,
 {
     if (*used + len + 1 > *size) {
         *size = 2 * (*used + len + 1);
-        *buf = realloc(*buf, *size);
-        if (*buf == NULL) {
+        char *new_buf = realloc(*buf, *size);
+        if (new_buf == NULL) {
+            free(*buf);
+            *buf = NULL;
             *used = *size = 0;
             return;
         }
+        *buf = new_buf;
     }
     memcpy(*buf + *used, s, len);
     *used += len;
