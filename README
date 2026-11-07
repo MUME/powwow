@@ -7,19 +7,17 @@ It implements (a subset of) the telnet protocol.
 Files you should have received:
 
 	README		This text.
-	Changelog	What has changed since the last release.
+	ChangeLog.old	Changes in older releases.
 	powwow.doc	Complete documentation. READ this!
 	configure	A shell script that will create a Makefile
 			suitable for your system
-	*.[ch]		Sources.
-	tools/*		Additional standalone utilities.
+	src/*.[ch]	Sources.
 	powwow.help	Online help file (in plain ASCII).
 	powwow.6	Man page.
 	Config.demo	A demonstrative definition file for powwow
 	Hacking		Read this if you want to improve/destroy powwow
 			yourself.
 	README.follow	Documentation for the 'follow' mini-program.
-	README.term	How to make termpowwow
 
 COMPILING
 
