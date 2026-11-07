@@ -244,7 +244,7 @@ int memunescape(char *p, int lenp, bool raw)
 	    state = NORM, *p++ = ESC, s++, lenp--;
 	else {
 	    if (state == ESCSINGLE && lenp >= 3 &&
-		ISODIGIT(s[0]) && ISODIGIT(s[1]) && ISODIGIT(s[2])) {
+		is_odigit(s[0]) && is_odigit(s[1]) && is_odigit(s[2])) {
 
 		int c = ((s[0]-'0') << 6) | ((s[1]-'0') << 3) | (s[2]-'0');
 		/* \ooo is an ISO 8859-1 character, unless raw; either

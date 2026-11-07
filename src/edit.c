@@ -895,6 +895,22 @@ void next_char(char *dummy)
     input_moveto(next_cell(pos));
 }
 
+static inline bool is_rparen(char c)
+{
+    return c == ')' || c == ']' || c == '}';
+}
+
+static inline bool is_lparen(char c)
+{
+    return c == '(' || c == '[' || c == '{';
+}
+
+/* the left parenthesis matching the right parenthesis c */
+static inline char matching_lparen(char c)
+{
+    return c == ')' ? '(' : (c == ']' ? '[' : '{');
+}
+
 /*
  * Flash cursor at parentheses that matches c inserted before current pos
  */
@@ -904,12 +920,12 @@ static void flashparen(char c)
     if (line_status != 0)
 	return;
     for (i = pos - 1, lev = 0; i >= 0; i--) {
-	if (ISRPAREN(edbuf[i])) {
+	if (is_rparen(edbuf[i])) {
 	    lev++;
-	} else if (ISLPAREN(edbuf[i])) {
+	} else if (is_lparen(edbuf[i])) {
 	    lev--;
 	    if (!lev) {
-		if (LPAREN(c) == edbuf[i])
+		if (matching_lparen(c) == edbuf[i])
 		    break;
 		else
 		    i = -1;
@@ -990,7 +1006,7 @@ void insert_char(char c)
     if (edlen + ninsbuf < BUFSIZE - n - 1) {
         memcpy(insbuf + ninsbuf, pend, n);
         ninsbuf += n;
-	if (ISRPAREN(c)) {
+	if (is_rparen(c)) {
             insert_flush();
 	    flashparen(c);
         }

@@ -13,6 +13,11 @@ static inline bool is_csi_final(unsigned char c)
     return c >= 0x40 && c <= 0x7e;
 }
 
+static inline bool is_odigit(char c)
+{
+    return c >= '0' && c <= '7';
+}
+
 char *my_strdup(const char *s);
 char *my_strncpy(char *dst, const char *src, int len);
 int  printstrlen(char *s);

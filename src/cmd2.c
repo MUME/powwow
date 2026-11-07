@@ -1104,7 +1104,7 @@ static char *unescape_seq(char *buf, char *seq, int *seqlen)
 	     * GH: \012 ==> octal number
 	     */
 	    if (state == ESCSINGLE &&
-		ISODIGIT(seq[0]) && ISODIGIT(seq[1]) && ISODIGIT(seq[2])) {
+		is_odigit(seq[0]) && is_odigit(seq[1]) && is_odigit(seq[2])) {
 		*(buf++) =(((seq[0] - '0') << 6) |
 			   ((seq[1] - '0') << 3) |
 			   (seq[2] - '0'));

@@ -34,13 +34,6 @@
 #define MIN2(a,b) ((a)<(b) ? (a) : (b))
 #define MAX2(a,b) ((a)>(b) ? (a) : (b))
 
-/* macros to match parentheses */
-#define ISRPAREN(c) ((c) == ')' || (c) == ']' || (c) == '}')
-#define ISLPAREN(c) ((c) == '(' || (c) == '[' || (c) == '{')
-#define LPAREN(c) ((c) == ')' ? '(' : ((c) == ']' ? '[' : '{'))
-
-#define ISODIGIT(c) ((c) >= '0' && (c) <= '7')
-
 #ifdef __GNUC__
  #define PRINTF_FUNCTION(string, first) \
 	__attribute__ ((format (printf, string, first)))
