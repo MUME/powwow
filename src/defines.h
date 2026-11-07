@@ -33,12 +33,10 @@
 #undef MAX2
 #undef ABS
 #undef SIGN
-#undef SWAP2
 #define MIN2(a,b) ((a)<(b) ? (a) : (b))
 #define MAX2(a,b) ((a)>(b) ? (a) : (b))
 #define ABS(a)    ((a)> 0  ? (a) :(-a))
 #define SIGN(a)   ((a)> 0  ?  1  : (a) ? -1 : 0)
-#define SWAP2(a,b,c) ((c)=(b), (b)=(a), (a)=(c))
 
 /* macros to match parentheses */
 #define ISRPAREN(c) ((c) == ')' || (c) == ']' || (c) == '}')

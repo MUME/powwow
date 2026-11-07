@@ -2000,6 +2000,12 @@ static void send_line(char *line, char silent)
     tcp_write(current_connection, line);
 }
 
+static void swap_ptrs(ptr **a, ptr **b)
+{
+    ptr *tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
 
 /*
  * Parse and exec the first instruction in 'line', and return pointer to the
@@ -2011,7 +2017,7 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
     char *buf, *arg, *end, *ret;
     char last_is_sep = 0;
     int len, copied = 0;
-    ptr *pbuf = NULL, *pbusy = NULL, *tmp;
+    ptr *pbuf = NULL, *pbusy = NULL;
 
     if (error) return NULL;
 
@@ -2045,18 +2051,18 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
      */
     if (subs && subst_param(&pbuf, line)) {
 	line = pbuf != NULL ? ptrdata(pbuf) : "";
-	SWAP2(pbusy, pbuf, tmp);
+	swap_ptrs(&pbusy, &pbuf);
 	copied = 1;
     }
     if (jit_subs && jit_subst_vars(&pbuf, line)) {
 	line = pbuf != NULL ? ptrdata(pbuf) : "";
-	SWAP2(pbusy, pbuf, tmp);
+	swap_ptrs(&pbusy, &pbuf);
 	copied = 1;
     }
     if (!copied) {
 	pbuf = ptrmcpy(pbuf, line, strlen(line));
 	line = pbuf != NULL ? ptrdata(pbuf) : "";
-	SWAP2(pbusy, pbuf, tmp);
+	swap_ptrs(&pbusy, &pbuf);
     }
     if (subs || jit_subs)
 	unescape(line);
