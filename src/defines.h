@@ -58,12 +58,6 @@
 #define MPI		"~$#E"	/* MUME protocol introducer */
 #define MPILEN		4	/* strlen(MPI) */
 
-#ifdef NR_OPEN
-# define MAX_FDSCAN	NR_OPEN
-#else
-# define MAX_FDSCAN	256	/* max number of fds */
-#endif
-
 #define MAX_CONNECTS	32	/* max number of open connections. must fit in a byte */
 
 #define CAPLEN		20	/* max length of a terminal capability */

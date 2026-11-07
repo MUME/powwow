@@ -2056,7 +2056,7 @@ LIMITS
 	  (the number can be changed by modifying the symbol MAX_WORDS)
 
         Up to 32 MUD (or spawned) connections can be open simultaneously.
-	  (the number can be changed by modifying the symbol MAX_FDSCAN)
+	  (the number can be changed by modifying the symbol MAX_CONNECTS)
 
 	For all other resources, the only limit is the available memory.
 	-----------------------------------------------------------

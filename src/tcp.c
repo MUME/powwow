@@ -341,7 +341,7 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
         newtcp_fd = socket(host_info->ai_family, host_info->ai_socktype, 0);
         if (newtcp_fd == -1)
             continue;
-        if (newtcp_fd >= MAX_FDSCAN) {
+        if (newtcp_fd >= FD_SETSIZE) {
             tty_printf("#connect: #error: too many open connections\n");
             close(newtcp_fd);
             return -1;
@@ -374,7 +374,7 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
 	tty_puts("\n#powwow: unable to connect to term server\n");
 	return -1;
     } else {
-	if (newtcp_fd >= MAX_FDSCAN) {
+	if (newtcp_fd >= FD_SETSIZE) {
 	    tty_printf("#connect: #error: too many open connections\n");
 	    close(newtcp_fd);
 	    return -1;
