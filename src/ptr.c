@@ -22,6 +22,7 @@
 #include "main.h"
 #include "utils.h"
 #include "eval.h"
+#include "ptr.h"
 
 enum
 {

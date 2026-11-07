@@ -25,6 +25,7 @@
 #include "edit.h"
 #include "tcp.h"
 #include "list.h"
+#include "map.h"
 
 /*
  * mapping variables

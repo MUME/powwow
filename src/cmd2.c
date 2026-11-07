@@ -38,6 +38,7 @@
 #include "tcp.h"
 #include "tty.h"
 #include "eval.h"
+#include "cmd2.h"
 
 /* anyone knows if ANSI 6429 talks about more than 8 colors? */
 static const char *const colornames[] = {
