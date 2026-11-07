@@ -474,6 +474,8 @@ static int match_mark_or_subst(basenode *bp, char *src)
 		    /* '$' at end of pattern, take first word */
 		    if ((tmp = memchrs(prm, strlen(prm), DELIM, DELIM_LEN)))
 			bp->end = endprm = tmp;
+		    if (bp->start == NULL)
+			bp->start = prm;
 		} else {
 			/* match only if param is single-worded */
 		    if (memchrs(prm, endprm - prm, DELIM, DELIM_LEN))

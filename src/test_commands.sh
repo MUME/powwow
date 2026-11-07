@@ -138,6 +138,14 @@ run 'mark anchor' '#mark ^foo=bold
 has 'xfoo foo'
 has '<ESC>[1mfoo<ESC>[0m x'
 
+run 'mark the first word' '#mark ^$=bold
+#print ("foo x bar")'
+has '<ESC>[1mfoo<ESC>[0m x bar'
+
+run 'substitute the first word' '#substitute ^$=Z
+#print ("foo x bar")'
+has 'Z x bar'
+
 run 'emulate without a connection' '#emulate hello'
 has 'hello'
 
