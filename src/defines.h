@@ -97,7 +97,7 @@
 /* GH: the redefinable delimeters */
 #define DELIM		(delim_list[delim_mode])
 #define DELIM_LEN	(delim_len[delim_mode])
-#define IS_DELIM(c)	(strchr(DELIM, (c)) != NULL)
+#define IS_DELIM(c)	(memchr(DELIM, (c), DELIM_LEN) != NULL)
 
 #define DELIM_NORMAL	0	/* GH: normal word delimeters	*/
 #define DELIM_PROGRAM	1	/*     ()[]{}.,;"'+/-*%		*/

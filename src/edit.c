@@ -284,7 +284,7 @@ void transpose_words(char *dummy)
 
 	this_eo = this_so = pos;
 	/* optionally traceback to find a word */
-	while (this_so && IS_DELIM(edbuf[this_so]))
+	while (this_so != 0 && (this_so == edlen || IS_DELIM(edbuf[this_so])))
 	    this_so--;
 
 	/* now find where the current word ends */
@@ -790,7 +790,7 @@ static void change_case_word(function_str self, int upper)
     if (last_edit_cmd == self)
 	start = 0;
     else {
-	while (start > 0 && IS_DELIM(edbuf[start])) start--;
+	while (start > 0 && (start == edlen || IS_DELIM(edbuf[start]))) --start;
 	while (start > 0 && !IS_DELIM(edbuf[start - 1])) start--;
     }
     for (end = start; end < edlen

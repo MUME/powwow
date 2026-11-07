@@ -806,7 +806,7 @@ static int exe_op(operator *op)
 	  case (int)colon_less:
 	    while (o2.num && srclen) {
 		/* skip span of multiple word delimeters */
-		while (srclen && memchr(DELIM, *ssrc, DELIM_LEN))
+		while (srclen && IS_DELIM(*ssrc))
 		    srclen--, ssrc++, j++;
 		/* skip whole words */
 		if (srclen && (tmp = memchrs(ssrc, srclen, DELIM, DELIM_LEN)))
@@ -830,14 +830,14 @@ static int exe_op(operator *op)
 	  case (int)colon_greater:
 	    o2.num--;
 	    /* skip span of multiple word delimeters */
-	    while (srclen && memchr(DELIM, *ssrc, DELIM_LEN))
+	    while (srclen && IS_DELIM(*ssrc))
 		srclen--, ssrc++;
 	    while (o2.num && srclen) {
 		/* skip whole words */
 		if (srclen && (tmp = memchrs(ssrc, srclen, DELIM, DELIM_LEN))) {
 		    i=tmp-ssrc, o2.num--, ssrc+=i, srclen-=i;
 		    /* skip span of multiple word delimeters */
-		    while (srclen && memchr(DELIM, *ssrc, DELIM_LEN))
+		    while (srclen && IS_DELIM(*ssrc))
 			srclen--, ssrc++;
 		} else break;
 	    }
@@ -857,7 +857,7 @@ static int exe_op(operator *op)
 	    o2.num--;
 	    while (o2.num && srclen) {
 		/* skip span of multiple word delimeters */
-		while (srclen && memchr(DELIM, ssrc[srclen - 1], DELIM_LEN))
+		while (srclen && IS_DELIM(ssrc[srclen - 1]))
 		    srclen--;
 		/* skip whole words */
 		if (srclen && (tmp=memrchrs(ssrc, srclen, DELIM, DELIM_LEN)))
@@ -873,7 +873,7 @@ static int exe_op(operator *op)
 	  case (int)greater_colon:
 	    while (o2.num && srclen) {
 		/* skip span of multiple word delimeters */
-		while (srclen && memchr(DELIM, ssrc[srclen - 1], DELIM_LEN))
+		while (srclen && IS_DELIM(ssrc[srclen - 1]))
 		    srclen--;
 		/* skip whole words */
 		if (srclen && (tmp=memrchrs(ssrc, srclen, DELIM, DELIM_LEN)))
@@ -952,14 +952,14 @@ static int exe_op(operator *op)
 	if (*op==colon_question) {
 	    o1.num = 0;
 	    /* skip span of multiple word delimeters */
-	    while (srclen && memchr(DELIM, *ssrc, DELIM_LEN))
+	    while (srclen && IS_DELIM(*ssrc))
 		ssrc++, srclen--;
 	    while (srclen) {
 		/* skip whole words */
 		if (srclen && (tmp=memchrs(ssrc, srclen, DELIM, DELIM_LEN))) {
 		    i=tmp-ssrc, o1.num++, ssrc+=i, srclen-=i;
 		    /* skip span of multiple word delimeters */
-		    while (srclen && memchr(DELIM, *ssrc, DELIM_LEN))
+		    while (srclen && IS_DELIM(*ssrc))
 			srclen--, ssrc++;
 		} else {
 		    srclen=0;

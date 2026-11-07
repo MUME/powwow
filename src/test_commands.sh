@@ -25,7 +25,7 @@ fail() {
 }
 
 # start test $1, running the commands in $2; then, if given, type the keys in
-# $3 once powwow is waiting for them
+# $3 once powwow is waiting for them, and then the keys in $4
 run() {
     name=$1
     {
@@ -34,6 +34,10 @@ run() {
             sleep 1
             printf '%s' "$3"
             sleep 1
+            if [ $# -gt 3 ]; then
+                printf '%s' "$4"
+                sleep 1
+            fi
         fi
         printf '#quit\n'
     } | "$POWWOW" > "$tmp/raw" 2>&1 &
@@ -146,5 +150,19 @@ run 'word operators skip trailing delimiters' '#print ("foo bar  baz  " >: 1)
 has 'baz  '
 has 'foo bar '
 has 'bar  baz  '
+
+run 'NUL is not a word delimiter' '#($a = "a  \000  b")
+#print (:?$a)'
+has '3'
+
+run 'transpose words at the end of a line' '#bind foo=&transpose-words' \
+    "$esc[A" "#print foo bar $esc[A
+"
+has 'bar  foo'
+
+run 'upcase a word at the end of a line' '#bind foo=&upcase-word' \
+    "$esc[A" "#print foo bar $esc[A
+"
+has 'foo BAR '
 
 exit $failed
