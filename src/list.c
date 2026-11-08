@@ -333,7 +333,8 @@ void add_promptnode(char *pattern, char *command, char *label, int active, int t
 /*
  * add a node to the keydef list
  */
-void add_keynode(char *name, char *sequence, int seqlen, function_str funct, char *call_data)
+void add_keynode(const char *name, const char *sequence, int seqlen,
+                 function_str funct, const char *call_data)
 {
     keynode *new = (keynode*)malloc(sizeof(keynode));
     if (!new) {

@@ -1170,7 +1170,7 @@ void show_edit_functions(void)
  */
 void reset_bind(char *name)
 {
-    char *seq, *command;
+    const char *seq, *command;
     function_str funct;
     keynode **kp = lookup_key(name);
     if (!tty_default_bind(name, &seq, &funct, &command)) {

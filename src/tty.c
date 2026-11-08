@@ -44,15 +44,29 @@
 
 #ifdef USE_VT100	/* hard-coded vt100 features if no termcap: */
 
-static char kpadstart[] = "", kpadend[] = "", begoln[] = "\r",
-	clreoln[] = "\033[K", clreoscr[] = "\033[J",
-	leftcur[] = "\033[D", rightcur[] = "\033[C",  upcur[] = "\033[A",
-	modebold[] = "\033[1m", modeblink[] = "\033[5m", modeinv[] = "\033[7m",
-	modeuline[] = "\033[4m", modestandon[] = "", modestandoff[] = "",
-        modenorm[] = "\033[m",
-	cursor_left[] = "\033[D", cursor_right[] = "\033[C",
-        cursor_up[] = "\033[A", cursor_down[] = "\033[B",
-        cursor_delete[] = "\033[3~";
+/* terminal escape sequences */
+static const char kpadstart[] = "";
+static const char kpadend[] = "";
+static const char begoln[] = "\r";
+static const char clreoln[] = "\033[K";
+static const char clreoscr[] = "\033[J";
+static const char leftcur[] = "\033[D";
+static const char rightcur[] = "\033[C";
+static const char upcur[] = "\033[A";
+static const char cursor_left[] = "\033[D";
+static const char cursor_right[] = "\033[C";
+static const char cursor_up[] = "\033[A";
+static const char cursor_down[] = "\033[B";
+static const char cursor_delete[] = "\033[3~";
+
+/* attribute changers */
+static const char modebold[] = "\033[1m";
+static const char modeblink[] = "\033[5m";
+static const char modeinv[] = "\033[7m";
+static const char modeuline[] = "\033[4m";
+static const char modestandon[] = "";
+static const char modestandoff[] = "";
+static const char modenorm[] = "\033[m";
 
 #define insertfinish (0)
 static int len_begoln = 1, len_leftcur = 3, len_upcur = 3, gotocost = 8;
@@ -65,34 +79,40 @@ int tgetflag(const char *id);
 char *tgetstr(const char *id, char **area);
 char *tgoto(const char *cap, int col, int row);
 
-/* terminal escape sequences */
-static char kpadstart[CAPLEN], kpadend[CAPLEN],
-	leftcur[CAPLEN], rightcur[CAPLEN], upcur[CAPLEN], curgoto[CAPLEN],
-	delchar[CAPLEN], insstart[CAPLEN], insstop[CAPLEN],
-        inschar[CAPLEN],
-	begoln[CAPLEN], clreoln[CAPLEN], clreoscr[CAPLEN],
-	cursor_left[CAPLEN], cursor_right[CAPLEN], cursor_up[CAPLEN],
-	cursor_down[CAPLEN], cursor_delete[CAPLEN];
+/* terminal escape sequences, from termcap */
+static char kpadstart[CAPLEN], kpadend[CAPLEN];
+static char begoln[CAPLEN], clreoln[CAPLEN], clreoscr[CAPLEN];
+static char leftcur[CAPLEN], rightcur[CAPLEN], upcur[CAPLEN];
+static char curgoto[CAPLEN];
+static char delchar[CAPLEN], insstart[CAPLEN], insstop[CAPLEN];
+static char inschar[CAPLEN];
+static char cursor_left[CAPLEN], cursor_right[CAPLEN];
+static char cursor_up[CAPLEN], cursor_down[CAPLEN];
+static char cursor_delete[CAPLEN];
 
-/* attribute changers: */
-static char modebold[CAPLEN], modeblink[CAPLEN], modeinv[CAPLEN],
-            modeuline[CAPLEN], modestandon[CAPLEN], modestandoff[CAPLEN],
-            modenorm[CAPLEN];
+/* attribute changers */
+static char modebold[CAPLEN], modeblink[CAPLEN], modeinv[CAPLEN];
+static char modeuline[CAPLEN], modestandon[CAPLEN], modestandoff[CAPLEN];
+static char modenorm[CAPLEN];
 
-static int len_begoln, len_clreoln, len_leftcur, len_upcur, gotocost,
-           deletecost, insertcost, insertfinish, inscharcost;
+static int len_begoln, len_clreoln, len_leftcur, len_upcur, gotocost;
+static int deletecost, insertcost, insertfinish, inscharcost;
 
 static int extract(char *cap, char *buf);
 
 #endif /* USE_VT100 */
 
 
-char *tty_modebold = modebold,       *tty_modeblink = modeblink,
-     *tty_modeinv  = modeinv,        *tty_modeuline = modeuline,
-     *tty_modestandon = modestandon, *tty_modestandoff = modestandoff,
-     *tty_modenorm = modenorm,
-     *tty_begoln   = begoln,         *tty_clreoln = clreoln,
-     *tty_clreoscr = clreoscr;
+const char *tty_modebold = modebold;
+const char *tty_modeblink = modeblink;
+const char *tty_modeinv = modeinv;
+const char *tty_modeuline = modeuline;
+const char *tty_modestandon = modestandon;
+const char *tty_modestandoff = modestandoff;
+const char *tty_modenorm = modenorm;
+const char *tty_begoln = begoln;
+const char *tty_clreoln = clreoln;
+const char *tty_clreoscr = clreoscr;
 
 int tty_read_fd = 0;
 static int wrapglitch = 0;
@@ -349,7 +369,7 @@ void tty_bootstrap(void)
  * or #rebind)
  */
 static const struct {
-    char *label, *seq, *command;
+    const char *label, *seq, *command;
 } walk_binds[] = {
     { .label = "KP2", .seq = "\033Or", .command = "s" },
     { .label = "KP3", .seq = "\033Os", .command = "d" },
@@ -374,7 +394,7 @@ void tty_add_walk_binds(void)
  * termcap has their sequences
  */
 static const struct {
-    char *label, *seq;
+    const char *label, *seq;
     function_str funct;
     int since;
 } default_binds[] = {
@@ -513,8 +533,8 @@ void tty_add_new_binds(int version)
  * find the default binding of the key 'label': set its sequence, and its
  * editing function or command; return false if it has none
  */
-bool tty_default_bind(const char *label, char **seq, function_str *funct,
-                      char **command)
+bool tty_default_bind(const char *label, const char **seq,
+                      function_str *funct, const char **command)
 {
     *command = NULL;
     for (size_t i = 0; i < sizeof(default_binds) / sizeof(*default_binds);

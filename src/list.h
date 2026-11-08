@@ -22,7 +22,8 @@ void add_aliasnode(char *name, char *subst);
 void add_actionnode(char *pattern, char *command, char *label, int active, int type, void *vregexp);
 void add_promptnode(char *pattern, char *command, char *label, int active, int type, void *vregexp);
 void add_marknode(char *pattern, const struct attr *attr, char mbeg, char wild);
-void add_keynode(char *name, char *sequence, int seqlen, function_str funct, char *call_data);
+void add_keynode(const char *name, const char *sequence, int seqlen,
+                 function_str funct, const char *call_data);
 void add_substnode(char *pattern, char *replacement, char mbeg, char wild);
 delaynode *add_delaynode(char *name, char *command, vtime *when, int is_dead);
 varnode *add_varnode(char *name, int type);
