@@ -2,7 +2,10 @@
 AM_CPPFLAGS=-D_XOPEN_SOURCE=700 @feature_cppflags@ -DPOWWOW_DIR=\"$(pkgdatadir)\" \
 	-DPLUGIN_DIR=\"$(plugindir)\"
 
-bin_PROGRAMS = powwow powwow-muc powwow-movieplay
+bin_PROGRAMS = powwow powwow-movieplay
+if HAVE_CURSES
+bin_PROGRAMS += powwow-muc
+endif
 powwow_SOURCES = beam.c cmd.c log.c edit.c cmd2.c eval.c \
 		 utils.c main.c tcp.c list.c map.c tty.c \
 		 ptr.c tls.c charset.c width.c sgr.c attr.c
@@ -13,6 +16,7 @@ powwow_HEADERS = beam.h cmd.h log.h edit.h cmd2.h eval.h \
 		 ptr.h defines.h tls.h charset.h width.h sgr.h attr.h \
 		 feature/regex.h
 powwow_muc_SOURCES = powwow-muc.c
+powwow_muc_LDADD = @CURSES_LIBS@
 powwow_movieplay_SOURCES = powwow-movieplay.c
 
 install-exec-hook:

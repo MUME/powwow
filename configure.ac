@@ -91,12 +91,21 @@ AC_PATH_PROG([CLANG_TIDY], [clang-tidy], [clang-tidy],
 
 # Checks for libraries.
 
-if test "x${enable_vt100}" != "xyes"; then
-    AC_SEARCH_LIBS(initscr,[ncurses curses], [], [
-        if test "x${enable_vt100}" = "xno" ; then
-            AC_MSG_ERROR([*** curses libraries not found])
-        fi])
-fi
+# powwow uses curses for termcap, unless --enable-vt100; powwow-muc always
+# uses curses, and is not built without it
+save_LIBS=$LIBS
+AC_SEARCH_LIBS([initscr], [ncurses curses], [have_curses=yes],
+    [have_curses=no])
+AS_IF([test "x${enable_vt100}" = xyes], [
+    AS_IF([test "x${have_curses}" = xyes &&
+           test "x${ac_cv_search_initscr}" != "xnone required"],
+        [CURSES_LIBS=${ac_cv_search_initscr}])
+    LIBS=$save_LIBS
+], [test "x${have_curses}" = xno], [
+    AC_MSG_ERROR([*** curses libraries not found])
+])
+AC_SUBST([CURSES_LIBS])
+AM_CONDITIONAL([HAVE_CURSES], [test "x${have_curses}" = xyes])
 
 AC_CHECK_FUNC([getopt_long],
     AC_DEFINE(HAVE_GETOPT_LONG, 1, [Define to use getopt_long().]))
