@@ -139,6 +139,8 @@ void tty_start(void)
     tcgetattr(tty_read_fd, &ttybsave);
     struct termios ttyb = ttybsave;
     ttyb.c_lflag &= ~(ECHO | ICANON);
+    /* let ^S and ^Q through instead of stopping and starting the output */
+    ttyb.c_iflag &= ~IXON;
     ttyb.c_cc[VTIME] = 0;
     ttyb.c_cc[VMIN] = 1;
     disable_special_keys(&ttyb);
