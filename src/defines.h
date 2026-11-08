@@ -7,6 +7,8 @@
 
 #include "../config.h"
 
+#include <assert.h>
+#include <limits.h>
 #include <stdbool.h>
 
 #include "attr.h"
@@ -50,9 +52,11 @@
 				    * update doc/powwow.md.in if changed */
 #define MPI		"~$#E"	/* MUME protocol introducer */
 #define MPILEN		4	/* strlen(MPI) */
+static_assert(sizeof(MPI) - 1 == MPILEN, "MPILEN must be strlen(MPI)");
 
 #define MAX_CONNECTS	32	/* max number of open connections. must fit in a byte;
 				 * update doc/powwow.md.in if changed */
+static_assert(MAX_CONNECTS <= UCHAR_MAX, "MAX_CONNECTS must fit in a byte");
 
 #define CAPLEN		20	/* max length of a terminal capability */
 #define BUFSIZE		4096	/* general buffer size;

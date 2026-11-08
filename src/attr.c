@@ -9,6 +9,7 @@
  *
  */
 
+#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -36,6 +37,17 @@ static const struct effect effects[] = {
 };
 
 #define N_EFFECTS (sizeof(effects) / sizeof(effects[0]))
+
+static_assert(ATTR_OVERLINE == 1 << (N_EFFECTS - 1),
+              "effects[] must list every enum attr_flag");
+
+/* the longest escape sequence and description must fit their buffers */
+static_assert(sizeof("\033[1;5;4;7;2;3;8;9;53;38;2;255;255;255;"
+                     "48;2;255;255;255m") <= ATTR_SGR_MAX,
+              "ATTR_SGR_MAX is too small");
+static_assert(sizeof("bold blink underline inverse dim italic hidden strike"
+                     " overline #rrggbb on #rrggbb") <= ATTR_NAME_MAX,
+              "ATTR_NAME_MAX is too small");
 
 /* other names accepted for effects */
 static const struct effect effect_aliases[] = {
