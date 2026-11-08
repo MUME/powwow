@@ -307,6 +307,9 @@ void ptrunescape(ptr *p)
     p->len = memunescape(ptrdata(p), ptrlen(p), raw_escapes);
 }
 
+/* the attribute of the input line, for #hilite */
+struct attr input_attr;
+
 /*
  * add escapes (backslashes) to src
  */
@@ -1424,6 +1427,12 @@ int save_settings(void)
 	if (failed > 0)
 	    failed = fprintf(f, "#delim %s%s\n", delim_name[delim_mode],
 			     delim_mode == DELIM_CUSTOM ? ptrdata(pp) : "" );
+    }
+
+    if (failed > 0 && !attr_is_none(&input_attr)) {
+        char attr[ATTR_NAME_MAX];
+        attr_format(&input_attr, attr, sizeof(attr));
+        failed = fprintf(f, "#hilite %s\n", attr);
     }
 
 	if (failed > 0)

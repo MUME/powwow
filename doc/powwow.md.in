@@ -872,7 +872,8 @@ is already defined, you cannot change its place in the list.
 ```
 
 This sets the attribute of your entered text to the given attribute.
-Just `#hilite` turns it off.
+Just `#hilite` turns it off. It is saved in the definition file; a
+`#hilite` in `#init` changes it when connecting.
 See "Attributes: colors and other highlighting" below for more syntax.
 
 ### Capture output to file

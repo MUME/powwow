@@ -172,7 +172,8 @@ of lines in your screen.
 #hilite [<attribute>]
 
 This sets the attribute of your entered text to the given attribute.
-Just #hilite turns it off.
+Just #hilite turns it off. It is saved in the definition file; a #hilite in
+#init changes it when connecting.
 
 See "#help mark" for the syntax of attributes.
 @host
