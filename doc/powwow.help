@@ -227,7 +227,8 @@ Default editing keys:
 ^S      &forward-search
 ^G      &abort
 ^D      &del-char-right         M-d     &del-word-right
-BS      &del-char-left          M-BS    &del-word-left
+Delete  &del-char-right
+^H, Del &del-char-left          M-Del   &del-word-left
 ^K      &kill-to-eol            M-k     &redraw-line-noprompt
 ^L      &redraw-line            M-l     &downcase-word
 ^T      &transpose              M-t     &transpose-words
@@ -243,6 +244,8 @@ LF      &enter-line
 not assigned: &clear-line, &insert-string
 
 #bind functions lists all the editing functions and their keys.
+
+Del is the Backspace key on most terminals, and Delete the Delete key.
 
 M-<key> means press escape and then <key>, or press meta/alt key at the same
 time as <key>. ^ means control.

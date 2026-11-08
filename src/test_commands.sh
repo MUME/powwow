@@ -260,6 +260,11 @@ run 'C-w deletes back to a space and M-q puts the line in history' '' \
 has 'foo  qux'
 lacks 'one'
 
+run 'Delete deletes the character under the cursor' '' \
+    "#print abc$(printf '\002\002')${esc}[3~
+"
+has 'ac'
+
 run 'unbound meta and function keys are ignored' '' \
     "#print a${esc}6b${esc}[1;5Cc${esc}OPd${esc}${esc}xe
 "
@@ -369,6 +374,9 @@ old_savefile() {
 /=&$f\$/d"
     done
     sed -e "$script
+/^#bind Delete /d
+s/^#bind C-h /#bind BS /
+s/^#bind M-C-h /#bind M-BS /
 s/^#bind C-w .*/#bind C-w ^W=\\&$1/" "$tmp/cfg" > "$tmp/old"
 }
 
@@ -376,7 +384,11 @@ old_savefile to-history
 echo '#bind M-c ^[c=&upcase-word' >> "$tmp/old"
 run 'new default keys are added to an old save-file' "#load $tmp/old
 #bind edit"
-has '#new default editing keys added: C-g C-r C-s C-u C-y M-y M-q'
+has '#new default editing keys added: C-g C-r C-s C-u C-y M-y M-q Delete'
+has '#key BS renamed to C-h'
+has '#key M-BS renamed to M-C-h'
+has '#bind C-h ^H=&del-char-left'
+has '#bind Delete ^[[3~=&del-char-right'
 has '#C-w now deletes back to the previous space; M-q puts the line in history'
 has '#bind C-w ^W=&del-unix-word-left'
 has '#bind M-c ^[c=&upcase-word'
@@ -404,6 +416,8 @@ run '#bind functions lists all editing functions' '#bind functions'
 has '&abort                  stop searching (C-g)'
 has '&clear-line             clear the input line'
 has '&prev-line              show the previous history line (C-p, Up)'
+has '&del-char-left          delete the character left of the cursor (C-h, Del)'
+has '&del-char-right         delete the character under the cursor (C-d, Delete)'
 long=$(sed -n '/#editing functions:/,$p' "$tmp/out" | awk 'length > 79')
 [ -z "$long" ] || fail "lines longer than 79 columns: $long"
 

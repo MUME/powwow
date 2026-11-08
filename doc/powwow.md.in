@@ -2258,7 +2258,8 @@ functions by typing `#bind functions`):
 | `^S` | `&forward-search` | search forward in history, like `^R` |
 | `^G` | `&abort` | stop searching, and restore the line typed before |
 | `^D` | `&del-char-right` | delete character under cursor |
-| `BS` | `&del-char-left` | delete character left of cursor |
+| `Delete` | `&del-char-right` | same thing, for the Delete key |
+| `^H`, `Del` | `&del-char-left` | delete character left of cursor; `Del` is the Backspace key on most terminals |
 | `^K` | `&kill-to-eol` | kill to end of line |
 | `^U` | `&kill-to-bol` | kill to beginning of line |
 | `^Y` | `&yank` | insert the last killed text |
@@ -2272,7 +2273,7 @@ functions by typing `#bind functions`):
 | `M-k` | `&redraw-line-noprompt` | redraw command line, discarding prompt |
 | `M-b` | `&prev-word` | backward one word |
 | `M-d` | `&del-word-right` | delete word right of cursor |
-| `M-BS` | `&del-word-left` | delete word left of cursor |
+| `M-^H`, `M-Del` | `&del-word-left` | delete word left of cursor |
 | `M-c` | `&capitalize-word` | capitalize the word from the cursor, and move after it |
 | `M-l` | `&downcase-word` | lowercase the word from the cursor, and move after it |
 | `M-q` | `&to-history` | put current line in history and clear input line. This is useful when you are typing a long line and need to send another urgent command first. |

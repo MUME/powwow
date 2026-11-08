@@ -35,6 +35,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* C-r and C-s (&reverse-search and &forward-search) search the
 	  history incrementally, and C-g (&abort) stops searching, as in
 	  readline.
+	* The Delete key deletes the character under the cursor. The keys
+	  BS and M-BS are now named C-h and M-C-h, also when loading a
+	  save-file from an older version.
 	* Unbound meta keys and function keys beep instead of typing the
 	  rest of their escape sequence, such as `6' for M-6.
 	* `#reset bind KEY' resets one key to its default binding.

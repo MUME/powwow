@@ -51,7 +51,8 @@ static char kpadstart[] = "", kpadend[] = "", begoln[] = "\r",
 	modeuline[] = "\033[4m", modestandon[] = "", modestandoff[] = "",
         modenorm[] = "\033[m",
 	cursor_left[] = "\033[D", cursor_right[] = "\033[C",
-        cursor_up[] = "\033[A", cursor_down[] = "\033[B";
+        cursor_up[] = "\033[A", cursor_down[] = "\033[B",
+        cursor_delete[] = "\033[3~";
 
 #define insertfinish (0)
 static int len_begoln = 1, len_leftcur = 3, len_upcur = 3, gotocost = 8;
@@ -71,7 +72,7 @@ static char kpadstart[CAPLEN], kpadend[CAPLEN],
         inschar[CAPLEN],
 	begoln[CAPLEN], clreoln[CAPLEN], clreoscr[CAPLEN],
 	cursor_left[CAPLEN], cursor_right[CAPLEN], cursor_up[CAPLEN],
-	cursor_down[CAPLEN];
+	cursor_down[CAPLEN], cursor_delete[CAPLEN];
 
 /* attribute changers: */
 static char modebold[CAPLEN], modeblink[CAPLEN], modeinv[CAPLEN],
@@ -285,6 +286,7 @@ void tty_bootstrap(void)
 	{ "kr", cursor_right, 0, 0 },
 	{ "ku", cursor_up, 0, 0 },
 	{ "kd", cursor_down, 0, 0 },
+	{ "kD", cursor_delete, 0, 0 },
 	{ "", NULL, 0, 0 }
     };
     struct tc_init_node *np;
@@ -368,7 +370,8 @@ void tty_add_walk_binds(void)
 
 /*
  * the default editing keys, with the save-file version that added them
- * (see tty_add_new_binds)
+ * (see tty_add_new_binds); the cursor keys and Delete are bound only if
+ * termcap has their sequences
  */
 static const struct {
     char *label, *seq;
@@ -377,7 +380,7 @@ static const struct {
 } default_binds[] = {
     { .label = "LF", .seq = "\n", .funct = enter_line },
     { .label = "Ret", .seq = "\r", .funct = enter_line },
-    { .label = "BS", .seq = "\b", .funct = del_char_left },
+    { .label = "C-h", .seq = "\b", .funct = del_char_left },
     { .label = "Del", .seq = "\177", .funct = del_char_left },
     { .label = "Tab", .seq = "\t", .funct = complete_word },
     { .label = "C-a", .seq = "\001", .funct = begin_of_line },
@@ -416,8 +419,14 @@ static const struct {
     { .label = "M-l", .seq = "\033l", .funct = downcase_word },
     { .label = "M-q", .seq = "\033q", .funct = to_history,
       .since = READLINE_KEYS_SAVEFILEVER },
-    { .label = "M-BS", .seq = "\033\b", .funct = del_word_left },
+    { .label = "M-C-h", .seq = "\033\b", .funct = del_word_left },
     { .label = "M-Del", .seq = "\033\177", .funct = del_word_left },
+    { .label = "Left", .seq = cursor_left, .funct = prev_char },
+    { .label = "Right", .seq = cursor_right, .funct = next_char },
+    { .label = "Up", .seq = cursor_up, .funct = prev_line },
+    { .label = "Down", .seq = cursor_down, .funct = next_line },
+    { .label = "Delete", .seq = cursor_delete, .funct = del_char_right,
+      .since = READLINE_KEYS_SAVEFILEVER },
 };
 
 /* is the key 'label' or the key sequence 'seq' bound? */
@@ -438,28 +447,48 @@ static bool key_is_bound(const char *label, const char *seq)
 void tty_add_initial_binds(void)
 {
     for (size_t i = 0; i < sizeof(default_binds) / sizeof(*default_binds);
-         ++i)
-        add_keynode(default_binds[i].label, default_binds[i].seq, 0,
-                    default_binds[i].funct, NULL);
+         ++i) {
+        if (*default_binds[i].seq != '\0')
+            add_keynode(default_binds[i].label, default_binds[i].seq, 0,
+                        default_binds[i].funct, NULL);
+    }
+}
 
-    if (*cursor_left ) add_keynode("Left" , cursor_left , 0, prev_char, NULL);
-    if (*cursor_right) add_keynode("Right", cursor_right, 0, next_char, NULL);
-    if (*cursor_up   ) add_keynode("Up"   , cursor_up   , 0, prev_line, NULL);
-    if (*cursor_down ) add_keynode("Down" , cursor_down , 0, next_line, NULL);
+/*
+ * rename the key 'old' to 'new', if it has the sequence 'seq' and there
+ * is no key 'new' yet
+ */
+static void rename_key(char *old, const char *seq, char *new)
+{
+    keynode *k = *lookup_key(old);
+    int len = strlen(seq);
+    if (k == NULL || k->seqlen != len || memcmp(k->sequence, seq, len) != 0
+        || *lookup_key(new) != NULL)
+        return;
+    add_keynode(new, k->sequence, k->seqlen, k->funct, k->call_data);
+    delete_keynode(lookup_key(old));
+    tty_printf("#key %s renamed to %s\n", old, new);
 }
 
 /*
  * add the default editing keys added after save-file version 'version',
- * unless the save-file binds those keys, and make C-w delete a word if it
- * is still the old default of &to-history
+ * unless the save-file binds those keys, rename the keys whose default
+ * names changed, and make C-w delete a word if it is still the old default
+ * of &to-history
  */
 void tty_add_new_binds(int version)
 {
+    if (version < READLINE_KEYS_SAVEFILEVER) {
+        rename_key("BS", "\b", "C-h");
+        rename_key("M-BS", "\033\b", "M-C-h");
+    }
+
     char added[BUFSIZE];
     int n = 0;
     for (size_t i = 0; i < sizeof(default_binds) / sizeof(*default_binds);
          ++i) {
         if (default_binds[i].since <= version
+            || *default_binds[i].seq == '\0'
             || key_is_bound(default_binds[i].label, default_binds[i].seq))
             continue;
         add_keynode(default_binds[i].label, default_binds[i].seq, 0,
@@ -471,8 +500,8 @@ void tty_add_new_binds(int version)
         tty_printf("#new default editing keys added:%s\n", added);
 
     keynode *k = *lookup_key("C-w");
-    if (version < READLINE_KEYS_SAVEFILEVER && k != NULL && k->funct == to_history
-        && k->seqlen == 1 && k->sequence[0] == '\027'
+    if (version < READLINE_KEYS_SAVEFILEVER && k != NULL
+        && k->funct == to_history && k->seqlen == 1 && k->sequence[0] == '\027'
         && k->call_data == NULL) {
         k->funct = del_unix_word_left;
         tty_puts("#C-w now deletes back to the previous space;"
@@ -490,28 +519,10 @@ bool tty_default_bind(const char *label, char **seq, function_str *funct,
     *command = NULL;
     for (size_t i = 0; i < sizeof(default_binds) / sizeof(*default_binds);
          ++i) {
-        if (strcmp(default_binds[i].label, label) == 0) {
+        if (strcmp(default_binds[i].label, label) == 0
+            && *default_binds[i].seq != '\0') {
             *seq = default_binds[i].seq;
             *funct = default_binds[i].funct;
-            return true;
-        }
-    }
-    const struct {
-        const char *label;
-        char *seq;
-        function_str funct;
-    } cursor_binds[] = {
-        { .label = "Left", .seq = cursor_left, .funct = prev_char },
-        { .label = "Right", .seq = cursor_right, .funct = next_char },
-        { .label = "Up", .seq = cursor_up, .funct = prev_line },
-        { .label = "Down", .seq = cursor_down, .funct = next_line },
-    };
-    for (size_t i = 0; i < sizeof(cursor_binds) / sizeof(*cursor_binds);
-         ++i) {
-        if (strcmp(cursor_binds[i].label, label) == 0
-            && *cursor_binds[i].seq != '\0') {
-            *seq = cursor_binds[i].seq;
-            *funct = cursor_binds[i].funct;
             return true;
         }
     }
