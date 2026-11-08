@@ -1,6 +1,7 @@
 # Default help file directory
 AM_CPPFLAGS=-D_XOPEN_SOURCE=700 @feature_cppflags@ -DPOWWOW_DIR=\"$(pkgdatadir)\" \
-	-DPLUGIN_DIR=\"$(plugindir)\"
+	-DPLUGIN_DIR=\"$(plugindir)\" -DPOWWOW_BUILD_DIR=\"$(abs_builddir)\" \
+	-DPOWWOW_SOURCE_DIR=\"$(abs_top_srcdir)\"
 
 bin_PROGRAMS = powwow powwow-movieplay
 if HAVE_CURSES
