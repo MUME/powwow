@@ -320,6 +320,17 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
     tty_printf("#trying %s:%d (%s)... ", addr, port, protocol);
     tty_flush();
 
+    /*
+     * BSD systems do not restart an interrupted connect(), even with
+     * SA_RESTART; defer the signals whose handlers only set a flag, so
+     * that only CTRL-C interrupts it
+     */
+    sigset_t deferred, old_mask;
+    sigemptyset(&deferred);
+    sigaddset(&deferred, SIGWINCH);
+    sigaddset(&deferred, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &deferred, &old_mask);
+
     /* try each address until one connects */
     newtcp_fd = -1;
     int err = 0;
@@ -333,6 +344,7 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
             tty_printf("#connect: #error: too many open connections\n");
             close(newtcp_fd);
             freeaddrinfo(addrs);
+            sigprocmask(SIG_SETMASK, &old_mask, NULL);
             return -1;
         }
         if (connect(newtcp_fd, ai->ai_addr, ai->ai_addrlen) == 0)
@@ -344,6 +356,7 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
             break;
     }
     freeaddrinfo(addrs);
+    sigprocmask(SIG_SETMASK, &old_mask, NULL);
 
     if (newtcp_fd == -1) {
         errno = err;
