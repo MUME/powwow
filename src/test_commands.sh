@@ -196,8 +196,18 @@ has '<ESC>[1;38;5;208;48;2;32;32;32mfoo<ESC>[m <ESC>[3;9;48;5;22mbar<ESC>[m'
 run 'mark with an invalid color' '#mark foo=#ff00
 #mark foo=256
 #mark'
-has '#invalid attribute syntax.'
+has '#mark: "#ff00" is not a color: write #rrggbb in hex.'
+has '#mark: 256 is not a color: numbered colors go from 0 to 255.'
 has '#no markers are defined.'
+
+run 'hilite with an invalid attribute' '#hilite ?
+#hilite red blue
+#hilite White'
+has '#hilite: "?" is not an effect or a color.'
+has '#hilite: "blue" follows the color: write "on" before a background color.'
+has '#hilite: "White" is not an effect or a color.'
+has '#syntax: #hilite [input|messages] [<attribute>]'
+has '  example:  bold yellow on blue'
 
 run 'attr operator' '#print (attr "dim #ff8700" + "x")'
 has '<ESC>[2;38;2;255;135;0mx'

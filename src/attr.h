@@ -49,6 +49,10 @@ struct attr {
  */
 bool attr_parse(const char *text, struct attr *attr);
 
+/* like attr_parse(), but if it is invalid, write why to 'why' of 'size' */
+bool attr_parse_why(const char *text, struct attr *attr, char *why,
+                    size_t size);
+
 /* true if 'attr' changes nothing */
 bool attr_is_none(const struct attr *attr);
 
