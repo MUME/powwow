@@ -2295,6 +2295,10 @@ way doesn't work on all terminals.
 
 `C-x` means pressing the Control key at the same time as x.
 
+When a key, such as `C-x`, starts a longer key sequence, the keys typed so
+far, such as `C-x 8-`, are shown after the input line if the next key does
+not follow within a second.
+
 `C-c` cannot be bound, as it is the break key: see below.
 
 If your terminal has arrow keys, they can be used to move the

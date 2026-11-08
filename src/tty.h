@@ -41,6 +41,8 @@ void input_delete_nofollow_chars(int n);
 void input_insert_follow_chars(char *str, int n);
 void input_replace(int from, int len, const char *str, int n);
 void input_moveto(int new_pos);
+void input_show_hint(const char *hint);
+void input_hide_hint(void);
 void input_draw(void);
 int  input_line(int p);
 int  input_col(int p);

@@ -741,6 +741,40 @@ static void input_cursor_to(int toline, int tocol, bool absolute)
         tty_gotoxy_opt(CURCOL(pos), fromline, tocol, toline);
 }
 
+/*
+ * show 'hint' after the end of the input line, leaving the cursor where it
+ * is, if it fits on the row; input_hide_hint() erases it
+ */
+void input_show_hint(const char *hint)
+{
+    if (line_status != 0)
+        return;
+    int line, col;
+    input_layout_end(edlen, &line, &col);
+    int width = (int)strlen(hint) + 1;
+    if (col + width >= cols_1)
+        return;
+    input_cursor_to(line, col, false);
+    tty_printf("%s %s%s", edattrend, hint, edattrbeg);
+    int pline, pcol;
+    input_layout(pos, &pline, &pcol);
+    tty_gotoxy_opt(col + width, line, pcol, pline);
+}
+
+void input_hide_hint(void)
+{
+    if (line_status != 0)
+        return;
+    int line, col;
+    input_layout_end(edlen, &line, &col);
+    input_cursor_to(line, col, false);
+    tty_printf("%s%s%s", edattrend, tty_clreoln, edattrbeg);
+    int pline, pcol;
+    input_layout(pos, &pline, &pcol);
+    tty_gotoxy_opt(col, line, pcol, pline);
+}
+
+
 void input_moveto(int new_pos)
 {
     /*
