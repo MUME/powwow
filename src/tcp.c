@@ -285,84 +285,68 @@ static void sendopt(byte what, byte opt)
 
 /*
  * connect to remote host
- * Warning: some voodoo code here
  */
 static int tcp_connect(const char *addr, int port, const char *protocol)
 {
-    struct addrinfo *host_info;
-    struct addrinfo addrinfo = { 0 };
-    struct sockaddr_in6 address = { 0 };
-    int err, newtcp_fd;
+    int newtcp_fd;
 
     status(1);
 
-    /*
-     * inet_addr has a strange design: It is documented to return -1 for
-     * malformed requests, but it is declared to return unsigned long!
-     * Anyway, this works.
-     */
-
 #ifndef TERM
-    switch (inet_pton(AF_INET6, addr, &address.sin6_addr))
-    {
-    case -1:
-        perror("inet_pton()");
-        return -1;
-    case 1:
-	address.sin6_family = AF_INET6;
-        addrinfo.ai_family   = AF_INET6;
-        addrinfo.ai_socktype = SOCK_STREAM;
-        addrinfo.ai_addr     = (struct sockaddr *)&address;
-        addrinfo.ai_addrlen  = sizeof address;
-        host_info = &addrinfo;
-        break;
-    case 0:
+    char service[16];
+    snprintf(service, sizeof(service), "%d", port);
+    struct addrinfo hints = {
+        .ai_family = AF_UNSPEC,
+        .ai_socktype = SOCK_STREAM,
+        .ai_flags = AI_NUMERICHOST | AI_NUMERICSERV,
+    };
+    struct addrinfo *addrs;
+    int gai = getaddrinfo(addr, service, &hints, &addrs);
+    if (gai == EAI_NONAME) {
+        /* not a numeric address: look up the host name */
 	if (opt_info)
 	    tty_printf("#looking up %s... ", addr);
 	tty_flush();
-        addrinfo.ai_family   = AF_INET6;
-        addrinfo.ai_socktype = SOCK_STREAM;
-        addrinfo.ai_flags    = AI_V4MAPPED;
-        int gai = getaddrinfo(addr, NULL, &addrinfo, &host_info);
-        if (gai != 0) {
-            tty_printf("failed to look up host: %s\n",
-                       gai_strerror(gai));
-            return -1;
-        }
-	if (opt_info)
-	    tty_puts("found.\n");
-        break;
-    default:
-        abort();
+        hints.ai_flags = AI_NUMERICSERV;
+        gai = getaddrinfo(addr, service, &hints, &addrs);
+        if (opt_info)
+            tty_puts(gai == 0 ? "found.\n" : "not found.\n");
+    }
+    if (gai != 0) {
+        tty_printf("#cannot look up %s: %s\n", addr, gai_strerror(gai));
+        return -1;
     }
 
-    for (; host_info; host_info = host_info->ai_next) {
-        newtcp_fd = socket(host_info->ai_family, host_info->ai_socktype, 0);
-        if (newtcp_fd == -1)
+    tty_printf("#trying %s:%d (%s)... ", addr, port, protocol);
+    tty_flush();
+
+    /* try each address until one connects */
+    newtcp_fd = -1;
+    int err = 0;
+    for (struct addrinfo *ai = addrs; ai != NULL; ai = ai->ai_next) {
+        newtcp_fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+        if (newtcp_fd == -1) {
+            err = errno;
             continue;
+        }
         if (newtcp_fd >= FD_SETSIZE) {
             tty_printf("#connect: #error: too many open connections\n");
             close(newtcp_fd);
+            freeaddrinfo(addrs);
             return -1;
         }
-
-        tty_printf("#trying %s:%d (%s)... ", addr, port, protocol);
-
-        tty_flush();
-
-        ((struct sockaddr_in6 *)host_info->ai_addr)->sin6_port = htons(port);
-
-        err = connect(newtcp_fd, host_info->ai_addr, host_info->ai_addrlen);
-
-        if (err == -1) { /* CTRL-C pressed, or other errors */
-            errmsg("cannot connect to %s:%d", addr, port);
-            close(newtcp_fd);
-            return -1;
-        }
-        break;
+        if (connect(newtcp_fd, ai->ai_addr, ai->ai_addrlen) == 0)
+            break;
+        err = errno;
+        close(newtcp_fd);
+        newtcp_fd = -1;
+        if (err == EINTR)
+            break;
     }
+    freeaddrinfo(addrs);
 
-    if (host_info == NULL) {
+    if (newtcp_fd == -1) {
+        errno = err;
         errmsg("cannot connect to %s:%d", addr, port);
         return -1;
     }

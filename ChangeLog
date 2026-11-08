@@ -13,6 +13,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Error messages say what failed and why, such as `#cannot connect
 	  to host:port: Connection refused', instead of naming system calls
 	  and error numbers.
+	* #connect tries every address of the host, and connects to IPv4
+	  addresses on systems such as FreeBSD that do not map them to IPv6.
 
 Changes from 1.3.0 to 1.3.1
 	* New command #substitute.
