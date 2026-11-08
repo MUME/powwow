@@ -524,7 +524,7 @@ static void rename_key(char *old, const char *seq, char *new)
         return;
     add_keynode(new, k->sequence, k->seqlen, k->funct, k->call_data);
     delete_keynode(lookup_key(old));
-    tty_printf("#key %s renamed to %s\n", old, new);
+    tty_message("#key %s renamed to %s\n", old, new);
 }
 
 /*
@@ -556,14 +556,14 @@ void tty_add_new_binds(int version)
                       default_binds[i].label);
     }
     if (n > 0)
-        tty_printf("#new default editing keys added:%s\n", added);
+        tty_message("#new default editing keys added:%s\n", added);
 
     keynode *k = *lookup_key("C-w");
     if (version < READLINE_KEYS_SAVEFILEVER && k != NULL
         && k->funct == to_history && k->seqlen == 1 && k->sequence[0] == '\027'
         && k->call_data == NULL) {
         k->funct = del_unix_word_left;
-        tty_puts("#C-w now deletes back to the previous space;"
+        tty_message("#C-w now deletes back to the previous space;"
                  " M-q puts the line in history\n");
     }
 }

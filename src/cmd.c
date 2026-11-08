@@ -132,7 +132,8 @@ static cmdstruct default_commands[] =
     C("groupdelim", cmd_groupdelim,
       "[<delimiter>]\tchange delimiter for action/alias groups"),
     C("hilite",     cmd_hilite,
-      "[<attribute>]\thighlight your input line"),
+      "[input|messages] [<attribute>]\thighlight your input line or\n"
+      "powwow's messages"),
     C("history",    cmd_history,
       "[{<number>|(<expr>)}]\tlist/execute commands in history"),
     C("host",       cmd_host,
@@ -793,12 +794,28 @@ static void cmd_do(char *arg)
 static void cmd_hilite(char *arg)
 {
     struct attr attr;
+    bool messages = false;
 
     arg = skipspace(arg);
+    size_t len = strcspn(arg, " ");
+    if (len == 8 && strncmp(arg, "messages", 8) == 0) {
+        messages = true;
+        arg = skipspace(arg + len);
+    } else if (len == 5 && strncmp(arg, "input", 5) == 0) {
+        arg = skipspace(arg + len);
+    }
+
     if (!attr_parse(arg, &attr)) {
 	PRINTF("#attribute syntax error.\n");
 	if (opt_info)
 	  show_attr_syntax();
+    } else if (messages) {
+        message_attr = attr;
+	attr_string(&attr, msgattrbeg, msgattrend);
+	if (opt_info) {
+	    PRINTF("#message highlighting is now %s.\n",
+		   attr_is_none(&attr) ? "off" : "on");
+	}
     } else {
         input_attr = attr;
 	attr_string(&attr, edattrbeg, edattrend);
@@ -807,9 +824,10 @@ static void cmd_hilite(char *arg)
 		    || attr.bg.kind != COLOR_NONE);
 
 	if (opt_info) {
-	    PRINTF("#input highlighting is now %so%s%s.\n",
-		       edattrbeg, attr_is_none(&attr) ? "ff" : "n",
-		       edattrend);
+	    /* "on" in the input attribute, and then the message one again */
+	    PRINTF("#input highlighting is now %s%so%s%s%s.\n", msgattrend,
+		   edattrbeg, attr_is_none(&attr) ? "ff" : "n", edattrend,
+		   msgattrbeg);
 	}
     }
 }
@@ -2715,16 +2733,16 @@ static void cmd_option(char *arg)
         }
         if (varp == NULL) {
             if (strncmp("list", p, len) == 0) {
-                tty_puts("#list of options:\n");
+                tty_message("#list of options:\n");
                 for (i = 0; options[i].name; ++i) {
                     assert(options[i].option != NULL);
-                    tty_printf("#option %c%-12s    %s\n",
+                    tty_message("#option %c%-12s    %s\n",
                                *options[i].option ? '+' : '-',
                                options[i].name,
                                options[i].doc);
                 }
             } else {
-                tty_puts("#syntax: #option [[+|-|=]<option>|list]...\n");
+                tty_message("#syntax: #option [[+|-|=]<option>|list]...\n");
             }
             status(1);
             return;

@@ -305,19 +305,19 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
     if (gai == EAI_NONAME) {
         /* not a numeric address: look up the host name */
 	if (opt_info)
-	    tty_printf("#looking up %s... ", addr);
+	    tty_message("#looking up %s... ", addr);
 	tty_flush();
         hints.ai_flags = AI_NUMERICSERV;
         gai = getaddrinfo(addr, service, &hints, &addrs);
         if (opt_info)
-            tty_puts(gai == 0 ? "found.\n" : "not found.\n");
+            tty_message("%s", gai == 0 ? "found.\n" : "not found.\n");
     }
     if (gai != 0) {
-        tty_printf("#cannot look up %s: %s\n", addr, gai_strerror(gai));
+        tty_message("#cannot look up %s: %s\n", addr, gai_strerror(gai));
         return -1;
     }
 
-    tty_printf("#trying %s:%d (%s)... ", addr, port, protocol);
+    tty_message("#trying %s:%d (%s)... ", addr, port, protocol);
     tty_flush();
 
     /*
@@ -341,7 +341,7 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
             continue;
         }
         if (newtcp_fd >= FD_SETSIZE) {
-            tty_printf("#connect: #error: too many open connections\n");
+            tty_message("#connect: #error: too many open connections\n");
             close(newtcp_fd);
             freeaddrinfo(addrs);
             sigprocmask(SIG_SETMASK, &old_mask, NULL);
@@ -367,16 +367,16 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
 #else /* TERM */
 
     if ((newtcp_fd = connect_server(0)) < 0) {
-	tty_puts("\n#powwow: unable to connect to term server\n");
+	tty_message("\n#powwow: unable to connect to term server\n");
 	return -1;
     } else {
 	if (newtcp_fd >= FD_SETSIZE) {
-	    tty_printf("#connect: #error: too many open connections\n");
+	    tty_message("#connect: #error: too many open connections\n");
 	    close(newtcp_fd);
 	    return -1;
 	}
 	send_command(newtcp_fd, C_PORT, 0, "%s:%d", addr, port);
-	tty_puts("Connected to term server...\n");
+	tty_message("Connected to term server...\n");
 #ifdef TERM_COMPRESS
 	send_command(newtcp_fd, C_COMPRESS, 1, "y");
 #endif
@@ -385,7 +385,7 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
 
 #endif /* TERM */
 
-    tty_puts("connected!\n");
+    tty_message("connected!\n");
 
     return newtcp_fd;
 }
@@ -1167,7 +1167,7 @@ void tcp_close(const char *id)
     if (id != NULL) {           /* #zap cmd */
         conn = tcp_find_connection(id);
 	if (conn == NULL) {
-	    tty_printf("#no such connection: \"%s\"\n", id);
+	    tty_message("#no such connection: \"%s\"\n", id);
 	    return;
 	}
     }
@@ -1176,13 +1176,13 @@ void tcp_close(const char *id)
 
     abort_edit_fd(conn);
 
-    tty_printf("#connection on \"%s\" closed.\n", conn->id);
+    tty_message("#connection on \"%s\" closed.\n", conn->id);
 
     if (conn == main_connection) { /* main connection closed */
 	if (tcp_count == 1) { /* was last connection */
 	    if (opt_exit)
 		exit_powwow();
-	    tty_puts("#no connections left. Type #quit to quit.\n");
+	    tty_message("#no connections left. Type #quit to quit.\n");
             current_connection = main_connection = NULL;
 	} else {
 	    /* must find another connection and promote it to main */
@@ -1190,12 +1190,12 @@ void tcp_close(const char *id)
 		if (!CONN_INDEX(i).id || &CONN_INDEX(i) == conn
 		    || (CONN_INDEX(i).flags & SPAWN))
 		    continue;
-		tty_printf("#default connection is now \"%s\"\n", CONN_INDEX(i).id);
+		tty_message("#default connection is now \"%s\"\n", CONN_INDEX(i).id);
 		main_connection = &CONN_INDEX(i);
 		break;
 	    }
 	    if (conn == main_connection) {
-	        tty_printf("#PANIC! internal error in tcp_close()\nQuitting.\n");
+	        tty_message("#PANIC! internal error in tcp_close()\nQuitting.\n");
 		syserr(NULL);
 	    }
 	}
@@ -1266,7 +1266,7 @@ void tcp_spawn(const char *id, char *cmd)
 	return;
     }
     if (sockets[0] >= FD_SETSIZE) {
-	tty_printf("#spawn: #error: too many open connections\n");
+	tty_message("#spawn: #error: too many open connections\n");
 	close(sockets[0]);
 	close(sockets[1]);
 	return;

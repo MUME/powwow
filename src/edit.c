@@ -1892,7 +1892,7 @@ static void charin_list(void)
         free(l.names[i].chars);
     }
     if (l.count > CHARIN_LIST_MAX)
-        tty_printf("#and %d more.\n", l.count - CHARIN_LIST_MAX);
+        tty_message("#and %d more.\n", l.count - CHARIN_LIST_MAX);
     free(l.names);
     status(1);
 }

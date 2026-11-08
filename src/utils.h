@@ -35,7 +35,8 @@ void sgr_prompt_commit(const char *prompt, size_t len);
 void ptrunescape(ptr *p);
 int  memunescape(char *p, int lenp, bool raw);
 extern bool raw_escapes;
-extern struct attr input_attr;
+extern struct attr input_attr, message_attr;
+extern char msgattrbeg[], msgattrend[];
 
 ptr  *ptrescape(ptr *dst, ptr *src, int append);
 ptr  *ptrmescape(ptr *dst, char *src, int srclen, int append);
