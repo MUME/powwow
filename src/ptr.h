@@ -73,5 +73,11 @@ char *ptrmrchrs(const ptr *p, const char *q, int lenq);
 char *memchrs(const char *p, int lenp, const char *q, int lenq);
 char *memrchrs(const char *p, int lenp, const char *q, int lenq);
 char *memfind(const char *hay, int haylen, const char *needle, int needlelen);
+#define memchrs(p, lenp, q, lenq) \
+    CONST_GENERIC((p), (memchrs)((p), (lenp), (q), (lenq)))
+#define memrchrs(p, lenp, q, lenq) \
+    CONST_GENERIC((p), (memrchrs)((p), (lenp), (q), (lenq)))
+#define memfind(hay, haylen, needle, needlelen) \
+    CONST_GENERIC((hay), (memfind)((hay), (haylen), (needle), (needlelen)))
 
 #endif /* PTR_H */

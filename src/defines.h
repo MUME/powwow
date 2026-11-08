@@ -13,6 +13,15 @@
 
 #include "attr.h"
 
+/*
+ * the result of 'call', a call of a function returning a (char *) into
+ * the string 'str', made const if 'str' is const, like C23's strchr()
+ */
+#define CONST_GENERIC(str, call)                 \
+    _Generic((str),                              \
+             const char *: (const char *)(call), \
+             default: (call))
+
 #include <sys/select.h>
 #include <sys/time.h>
 

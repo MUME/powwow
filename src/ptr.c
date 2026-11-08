@@ -433,7 +433,7 @@ char *ptrrchr(const ptr *p, char c)
 /*
  * find first occurrence of needle in hay
  */
-char *memfind(const char *hay, int haylen, const char *needle, int needlelen)
+char *(memfind)(const char *hay, int haylen, const char *needle, int needlelen)
 {
     const char *tmp;
 
@@ -470,7 +470,7 @@ char *ptrmfind(const ptr *p, const char *q, int lenq)
 {
     if (p) {
 	if (q && lenq>0)
-	    return (char *)memfind(ptrdata(p), ptrlen(p), q, lenq);
+	    return memfind(ptrdata(p), ptrlen(p), q, lenq);
 	return ptrdata(p);
     }
     return (char*)p; /* shortcut for NULL */
@@ -480,7 +480,7 @@ char *ptrfind(const ptr *p, const ptr *q)
 {
     if (p) {
 	if (q)
-	    return (char *)memfind(ptrdata(p), ptrlen(p), ptrdata(q), ptrlen(q));
+	    return memfind(ptrdata(p), ptrlen(p), ptrdata(q), ptrlen(q));
 	return ptrdata(p);
     }
     return (char*)p; /* shortcut for NULL */
@@ -491,7 +491,7 @@ char *ptrfind(const ptr *p, const ptr *q)
  * Scan p for the first occurrence of one of the characters in q,
  * return NULL if none of them is found.
  */
-char *memchrs(const char *p, int lenp, const char *q, int lenq)
+char *(memchrs)(const char *p, int lenp, const char *q, int lenq)
 {
     const char *endp;
 
@@ -532,7 +532,7 @@ char *ptrchrs(const ptr *p, const ptr *q)
  * Scan p for the last occurrence of one of the characters in q,
  * return NULL if none of them is found.
  */
-char *memrchrs(const char *p, int lenp, const char *q, int lenq)
+char *(memrchrs)(const char *p, int lenp, const char *q, int lenq)
 {
     if (!p || lenp<=0) {
 	if (!q || lenq<=0)

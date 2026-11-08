@@ -206,7 +206,7 @@ static const char f_tls[] = "--tls";
 bool parse_tls_flag(struct tls_options *dst, const char **argp,
                     bool require_prefix)
 {
-    const char *arg = skipspace((char *)*argp);
+    const char *arg = skipspace(*argp);
     if (require_prefix) {
         if (strncmp(arg, f_tls, sizeof f_tls - 1) != 0)
             return true;

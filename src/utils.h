@@ -46,11 +46,14 @@ ptr  *ptrsubstdef(ptr *dst, char mbeg, char *pattern, char *replacement);
 void put_marks(char *dst, char *line);
 void smart_print(char *line, char newline);
 char *split_first_word(char *dst, int dstlen, char *src);
-char *first_valid(char *p, char ch);
-char *first_regular(char *p, char c);
+char *first_valid(const char *p, char ch);
+char *first_regular(const char *p, char c);
+#define first_valid(p, ch) CONST_GENERIC((p), (first_valid)((p), (ch)))
+#define first_regular(p, c) CONST_GENERIC((p), (first_regular)((p), (c)))
 void unescape(char *s);
 void escape_specials(char *dst, const char *src);
-char *skipspace(char *p);
+char *skipspace(const char *p);
+#define skipspace(p) CONST_GENERIC((p), (skipspace)(p))
 noreturn void exit_powwow(void);
 void suspend_powwow(int signum);
 function_signal sig_permanent(int signum, function_signal sighandler);

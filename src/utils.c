@@ -153,17 +153,17 @@ char *utf8_fgets(char *buf, int size, FILE *f)
 /*
  * return pointer to next non-blank char
  */
-char *skipspace(char *p)
+char *(skipspace)(const char *p)
 {
     while (*p == ' ' || *p == '\t') p++;
-    return p;
+    return (char *)p;
 }
 
 /*
  * find the first valid (non-escaped)
  * char in a string
  */
-char *first_valid(char *p, char ch)
+char *(first_valid)(const char *p, char ch)
 {
     if (*p && *p != ch) {
 	p++;
@@ -172,14 +172,14 @@ char *first_valid(char *p, char ch)
 	else while (*p && ((*p != ch) || p[-1] == ESC))
 	    p++;
     }
-    return p;
+    return (char *)p;
 }
 
 /*
  * find the first regular (non-escaped, non in "" () or {} )
  * char in a string
  */
-char *first_regular(char *p, char c)
+char *(first_regular)(const char *p, char c)
 {
     int escaped, quotes=0, paren=0, braces=0;
 
@@ -215,7 +215,7 @@ char *first_regular(char *p, char c)
 	}
 	p++;
     }
-    return p;
+    return (char *)p;
 }
 
 /*

@@ -15,12 +15,33 @@
 #include "defines.h"
 #include "main.h"
 #include "eval.h"
+#include "utils.h"
 
 /* needed by ptr.c */
 int error;
 int limit_mem;
 
 static int failures;
+
+/*
+ * the strchr()-like functions return a const pointer for a const string;
+ * the calls are not evaluated
+ */
+#define IS_CONST(expr) _Generic((expr), const char *: true, default: false)
+static const char const_str[] = "a";
+static char str[] = "a";
+static_assert(IS_CONST(memchrs(const_str, 1, "a", 1))
+              && !IS_CONST(memchrs(str, 1, "a", 1)), "memchrs");
+static_assert(IS_CONST(memrchrs(const_str, 1, "a", 1))
+              && !IS_CONST(memrchrs(str, 1, "a", 1)), "memrchrs");
+static_assert(IS_CONST(memfind(const_str, 1, "a", 1))
+              && !IS_CONST(memfind(str, 1, "a", 1)), "memfind");
+static_assert(IS_CONST(skipspace(const_str))
+              && !IS_CONST(skipspace(str)), "skipspace");
+static_assert(IS_CONST(first_valid(const_str, 'a'))
+              && !IS_CONST(first_valid(str, 'a')), "first_valid");
+static_assert(IS_CONST(first_regular(const_str, 'a'))
+              && !IS_CONST(first_regular(str, 'a')), "first_regular");
 
 static void check(const char *what, bool ok)
 {
