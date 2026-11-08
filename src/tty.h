@@ -14,6 +14,7 @@ void tty_bootstrap(void);
 void tty_start(void);
 void tty_quit(void);
 void tty_special_keys(void);
+const char *tty_intr_key(void);
 void tty_sig_winch_bottomhalf(void);
 void tty_add_walk_binds(void);
 void tty_add_initial_binds(void);

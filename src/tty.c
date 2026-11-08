@@ -134,6 +134,25 @@ static struct {
 static struct termios ttybsave;
 
 /*
+ * the name of the interrupt key of the terminal, as C-c, which stops the
+ * running command and, pressed again, quits powwow
+ */
+const char *tty_intr_key(void)
+{
+    static char name[8];
+    unsigned char c = ttybsave.c_cc[VINTR];
+    if (c == _POSIX_VDISABLE)
+        return "the interrupt key";
+    if (c < ' ')
+        snprintf(name, sizeof(name), "C-%c", c + '`');
+    else if (c == 0x7f)
+        return "Backspace";
+    else
+        snprintf(name, sizeof(name), "%c", c);
+    return name;
+}
+
+/*
  * disable the keys that the terminal handles itself even in non-canonical
  * mode, so that they can be bound: suspend (^Z, handled by powwow), and,
  * where they exist, delayed suspend (^Y) and discard output (^O)
