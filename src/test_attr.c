@@ -85,7 +85,9 @@ int main(void)
     check("red", E "[31m", "red");
     check("on blue", E "[44m", "on blue");
     check("yellow on cyan", E "[33;46m", "yellow on cyan");
-    check("WHITE on BLACK", E "[97;100m", "WHITE on BLACK");
+    check("WHITE on BLACK", E "[97;100m", "White on Black");
+    check("White on Black", E "[97;100m", "White on Black");
+    check("rED", E "[31m", "red");
     check("bold red ON none", E "[1;31m", "bold red");
     check("none on green", E "[42m", "on green");
 
@@ -97,7 +99,7 @@ int main(void)
     check("#FFFFFF on #000000", E "[38;2;255;255;255;48;2;0;0;0m",
           "#ffffff on #000000");
     check("underline RED on #101010", E "[4;91;48;2;16;16;16m",
-          "underline RED on #101010");
+          "underline Red on #101010");
 
     /* the longest attribute fits */
     check("bold blink underline inverse dim italic hidden strike overline"
@@ -107,7 +109,6 @@ int main(void)
           " #ffffff on #ffffff");
 
     check_invalid("purple");
-    check_invalid("Red");
     check_invalid("256");
     check_invalid("1000");
     check_invalid("-1");

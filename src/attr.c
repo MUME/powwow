@@ -11,6 +11,7 @@
 
 #include <assert.h>
 #include <stdarg.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -59,10 +60,13 @@ static const struct effect effect_aliases[] = {
 
 #define N_EFFECT_ALIASES (sizeof(effect_aliases) / sizeof(effect_aliases[0]))
 
-/* lowercase are the ANSI colors, uppercase their bright variants */
+/*
+ * lowercase are the ANSI colors, and with a capital first letter their
+ * bright variants
+ */
 static const char *const color_names[16] = {
     "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white",
-    "BLACK", "RED", "GREEN", "YELLOW", "BLUE", "MAGENTA", "CYAN", "WHITE"
+    "Black", "Red", "Green", "Yellow", "Blue", "Magenta", "Cyan", "White"
 };
 
 static const char WHITESPACE[] = " \t";
@@ -96,9 +100,12 @@ static bool parse_color(const char *tok, size_t len, struct color *color)
         *color = (struct color){ .kind = COLOR_NONE };
         return true;
     }
-    for (unsigned i = 0; i < 16; ++i) {
-        if (token_is(tok, len, color_names[i], false)) {
-            *color = (struct color){ .kind = COLOR_NAMED, .value = i };
+    /* the case of the first letter chooses the bright variant: white,
+     * and White; the case of the others does not matter */
+    for (unsigned i = 0; i < 8; ++i) {
+        if (len > 0 && token_is(tok, len, color_names[i], true)) {
+            unsigned bright = isupper((unsigned char)tok[0]) ? 8 : 0;
+            *color = (struct color){ .kind = COLOR_NAMED, .value = i + bright };
             return true;
         }
     }
