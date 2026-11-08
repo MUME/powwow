@@ -374,6 +374,7 @@ void tty_add_initial_binds(void)
 	{ "C-z",	"\032",		suspend_key },
 	{ "M-Tab",	"\033\t",	complete_line },
 	{ "M-b",	"\033b",	prev_word },
+	{ "M-c",	"\033c",	capitalize_word },
 	{ "M-d",	"\033d",	del_word_right },
 	{ "M-f",	"\033f",	next_word },
 	{ "M-k",	"\033k",	redraw_line_noprompt },

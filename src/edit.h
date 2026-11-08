@@ -67,6 +67,7 @@ void del_word_right(char *dummy);
 void del_word_left(char *dummy);
 void upcase_word(char *dummy);
 void downcase_word(char *dummy);
+void capitalize_word(char *dummy);
 void prev_line(char *dummy);
 void next_line(char *dummy);
 void prev_char(char *dummy);

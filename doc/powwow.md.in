@@ -2266,9 +2266,10 @@ their function (they can be listed typing `#bind edit`):
 | `M-b` | `&prev-word` | backward one word |
 | `M-d` | `&del-word-right` | delete word right of cursor |
 | `M-BS` | `&del-word-left` | delete word left of cursor |
-| `M-l` | `&downcase-word` | turn word to lowercase |
+| `M-c` | `&capitalize-word` | capitalize the word from the cursor, and move after it |
+| `M-l` | `&downcase-word` | lowercase the word from the cursor, and move after it |
 | `M-t` | `&transpose-words` | transpose previous word with next |
-| `M-u` | `&upcase-word` | turn word to uppercase |
+| `M-u` | `&upcase-word` | uppercase the word from the cursor, and move after it |
 | `Ret` | `&enter-line` | the most obvious: execute the typed line |
 | `LF` | `&enter-line` | same thing, but for `^J` key (some terminals send this when you hit return) |
 | (none) | `&insert-string` | insert on command line the specified chars |

@@ -76,6 +76,7 @@ const edit_function internal_functions[] = {
     {"&prev-word", prev_word, },
     {"&upcase-word", upcase_word, },
     {"&downcase-word", downcase_word, },
+    {"&capitalize-word", capitalize_word, },
     {"&next-word", next_word, },
     {"&insert-string", insert_string, },
     {NULL, (function_str)0 }
@@ -779,41 +780,106 @@ void del_word_left(char *dummy)
     input_delete_nofollow_chars(i);
 }
 
-/*
- * change the case of the current word, or of the whole line if
- * repeated; the UTF-8 length of the text may change
- */
-static void change_case_word(function_str self, int upper)
-{
-    int opos = pos;
-    int start = pos, end;
-    char buf[2 * BUFSIZE];
-    int n = 0;
+enum case_change { CASE_UPPER, CASE_LOWER, CASE_CAPITALIZE };
 
-    if (last_edit_cmd == self)
-	start = 0;
-    else {
-	while (start > 0 && (start == edlen || IS_DELIM(edbuf[start]))) --start;
-	while (start > 0 && !IS_DELIM(edbuf[start - 1])) start--;
-    }
-    for (end = start; end < edlen
-             && (!IS_DELIM(edbuf[end]) || last_edit_cmd == self); ) {
-        uint32_t cp;
-        end += utf8_get(edbuf + end, edlen - end, &cp);
+/* the case mappings of one character */
+static uint32_t to_upper(uint32_t cp)
+{
 #ifdef USE_LOCALE
-        cp = upper ? towupper(cp) : towlower(cp);
+    return towupper(cp);
 #else
-        if (cp < 0x80)
-            cp = upper ? toupper(cp) : tolower(cp);
+    return cp < 0x80 ? (uint32_t)toupper(cp) : cp;
 #endif
-        n += utf8_put(cp, buf + n);
+}
+
+static uint32_t to_lower(uint32_t cp)
+{
+#ifdef USE_LOCALE
+    return towlower(cp);
+#else
+    return cp < 0x80 ? (uint32_t)tolower(cp) : cp;
+#endif
+}
+
+/* the titlecase differs from the uppercase only for these letters */
+static uint32_t to_title(uint32_t cp)
+{
+    switch (cp) {
+    case U'Ǆ': case U'ǅ': case U'ǆ':
+        return U'ǅ';
+    case U'Ǉ': case U'ǈ': case U'ǉ':
+        return U'ǈ';
+    case U'Ǌ': case U'ǋ': case U'ǌ':
+        return U'ǋ';
+    case U'Ǳ': case U'ǲ': case U'ǳ':
+        return U'ǲ';
     }
+    /* Georgian Mkhedruli letters are their own titlecase */
+    if ((cp >= U'ა' && cp <= U'ჺ') || (cp >= U'ჽ' && cp <= U'ჿ'))
+        return cp;
+    return to_upper(cp);
+}
+
+static bool is_letter(uint32_t cp)
+{
+#ifdef USE_LOCALE
+    return iswalpha(cp);
+#else
+    return cp < 0x80 && isalpha(cp);
+#endif
+}
+
+/*
+ * write the UTF-8 text from 'src' to 'dst' with its case changed, one
+ * character at a time; return the length of the result
+ */
+static int change_case(enum case_change change, const char *src, int len,
+                       char *dst)
+{
+    bool title = change == CASE_CAPITALIZE;
+    bool after_letter = false;
+    int n = 0;
+    for (int i = 0; i < len; ) {
+        uint32_t cp;
+        i += utf8_get(src + i, len - i, &cp);
+        bool letter = is_letter(cp);
+        if (change == CASE_UPPER) {
+            cp = to_upper(cp);
+        } else if (title && letter) {
+            cp = to_title(cp);
+            title = false;
+        } else if (cp == U'Σ' && after_letter) {
+            /* final sigma at the end of a word */
+            uint32_t next = U' ';
+            if (i < len)
+                utf8_get(src + i, len - i, &next);
+            cp = is_letter(next) ? U'σ' : U'ς';
+        } else {
+            cp = to_lower(cp);
+        }
+        after_letter = letter;
+        n += utf8_put(cp, dst + n);
+    }
+    return n;
+}
+
+/*
+ * change the case of the word at or after the cursor, from the cursor
+ * to the end of the word, and move the cursor there, like readline; the
+ * UTF-8 length of the text may change
+ */
+static void change_case_word(enum case_change change)
+{
+    int start = pos;
+    while (start < edlen && !word_at(start))
+        start = next_cell(start);
+    int end = start;
+    while (end < edlen && word_at(end))
+        end = next_cell(end);
+
+    char buf[2 * BUFSIZE];
+    int n = change_case(change, edbuf + start, end - start, buf);
     input_replace(start, end - start, buf, n);
-    if (opos >= end)
-        opos += n - (end - start);
-    else if (opos > start)
-        opos = start + n;
-    input_moveto(opos);
 }
 
 /*
@@ -821,7 +887,7 @@ static void change_case_word(function_str self, int upper)
  */
 void upcase_word(char *dummy)
 {
-    change_case_word(upcase_word, 1);
+    change_case_word(CASE_UPPER);
 }
 
 /*
@@ -829,7 +895,15 @@ void upcase_word(char *dummy)
  */
 void downcase_word(char *dummy)
 {
-    change_case_word(downcase_word, 0);
+    change_case_word(CASE_LOWER);
+}
+
+/*
+ * capitalize word
+ */
+void capitalize_word(char *dummy)
+{
+    change_case_word(CASE_CAPITALIZE);
 }
 
 /*

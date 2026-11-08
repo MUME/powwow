@@ -191,10 +191,35 @@ run 'transpose words at the end of a line' '#bind foo=&transpose-words' \
 "
 has 'bar  foo'
 
-run 'upcase a word at the end of a line' '#bind foo=&upcase-word' \
-    "$esc[A" "#print foo bar $esc[A
+run 'change case at the end of a line' '' \
+    "#print foo bar ${esc}u${esc}l${esc}c
 "
-has 'foo BAR '
+has 'foo bar '
+
+run 'upcase words and move past them' '' \
+    "#print foo bar baz${esc}b${esc}b${esc}u${esc}u!
+"
+has 'foo BAR BAZ!'
+
+run 'upcase the rest of a word' '' \
+    "#print foo barbaz$(printf '\002\002\002')${esc}u!
+"
+has 'foo barBAZ!'
+
+run 'capitalize and downcase words' '' \
+    "#print fOO bAR bAZ${esc}b${esc}b${esc}b${esc}c${esc}l${esc}c!
+"
+has 'Foo bar Baz!'
+
+utf8=$(locale -a 2>/dev/null | grep -iE '^(C|en_US)\.utf-?8$' | head -n 1)
+if [ -n "$utf8" ]; then
+    LC_ALL=$utf8
+    run 'capitalize and downcase non-ASCII words' '' \
+        "#print ǆUNGLA ΟΔΟΣ 12ab${esc}b${esc}b${esc}b${esc}c${esc}c${esc}c!
+"
+    has 'ǅungla Οδος 12Ab!'
+    LC_ALL=C
+fi
 
 run '#var numbers' '#var @x=-5
 #print (@x)

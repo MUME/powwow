@@ -225,7 +225,7 @@ BS      &del-char-left          M-BS    &del-word-left
 ^K      &kill-to-eol            M-k     &redraw-line-noprompt
 ^L      &redraw-line            M-l     &downcase-word
 ^T      &transpose              M-t     &transpose-words
-^Q      &clear-line
+^Q      &clear-line             M-c     &capitalize-word
                                 M-u     &upcase-word
 ^W      &to-history
 ^Z      &suspend

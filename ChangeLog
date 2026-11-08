@@ -17,6 +17,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* #connect tries every address of the host, and connects to IPv4
 	  addresses on systems such as FreeBSD that do not map them to IPv6.
 	* Fixed `rand' always returning 0 on 64-bit systems.
+	* M-u, M-l and the new M-c (&capitalize-word) change the case from
+	  the cursor to the end of the word and move the cursor after it,
+	  as in readline.
 
 Changes from 1.3.0 to 1.3.1
 	* New command #substitute.
