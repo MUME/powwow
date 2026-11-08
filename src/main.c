@@ -1747,14 +1747,18 @@ static int search_action_or_prompt(char *line, char clearline, char onprompt)
 
 /*
  * the length of the unbound key sequence that starts 'typed', of 'n'
- * bytes, if it starts with ESC: ESC and a character for a meta key, or a
- * whole CSI (ESC [) or SS3 (ESC O) sequence for a function key; return 0
- * if 'typed' does not start with ESC, or -1 if the sequence is incomplete
+ * bytes, that no binding matches although its first key starts one: for
+ * ESC, ESC and a character for a meta key, or a whole CSI (ESC [) or SS3
+ * (ESC O) sequence for a function key, and for another control key, such
+ * as C-x, all of it; return 0 if 'typed' does not start with a control
+ * key, or -1 if the sequence is incomplete
  */
-static int unbound_esc_len(const char *typed, int n)
+static int unbound_key_len(const char *typed, int n)
 {
-    if (n < 2 || typed[0] != '\033')
+    if (n < 2 || (unsigned char)typed[0] >= ' ')
         return 0;
+    if (typed[0] != '\033')
+        return n;
     if (typed[1] == '\033')
         return 1;
     if (typed[1] == 'O')
@@ -1865,11 +1869,11 @@ static void get_user_input(void)
 
 		if (!p) {
 		    /*
-		     * ignore an unbound key that sends an escape sequence, as
-		     * a whole once it is complete, or else type the first
-		     * character; then keep processing the rest
+		     * ignore an unbound key sequence that starts like a bound
+		     * one, as a whole once it is complete, or else type the
+		     * first character; then keep processing the rest
 		     */
-		    int skip = unbound_esc_len(typed, nchars);
+		    int skip = unbound_key_len(typed, nchars);
 		    if (skip < 0 && nchars < CAPLEN)
 			break;		/* wait for the rest */
 		    last_edit_cmd = (function_str)0;

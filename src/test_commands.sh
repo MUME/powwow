@@ -266,9 +266,9 @@ run 'Delete deletes the character under the cursor' '' \
 has 'ac'
 
 run 'unbound meta and function keys are ignored' '' \
-    "#print a${esc}6b${esc}[1;5Cc${esc}OPd${esc}${esc}xe
+    "#print a${esc}6b${esc}[1;5Cc${esc}OPd${esc}${esc}xe$(printf '\030')zf
 "
-has 'abcde'
+has 'abcdef'
 
 run 'consecutive kills are yanked together' '' \
     "#print foo bar${esc}$(printf '\b')${esc}$(printf '\b')x $(printf '\031')
