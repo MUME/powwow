@@ -45,6 +45,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  and lists the names when pressed again.
 	* Bound the Delete key to delete the character under the cursor.
 	* Renamed the keys BS and M-BS to C-h and M-C-h.
+	* After a second without the next key of a key sequence, the keys
+	  typed so far are shown after the input line, such as `C-x 8-'.
 	* Unbound meta keys, function keys and key sequences such as C-x z
 	  beep instead of typing the rest of them, such as `6' for M-6.
 	* ^S and ^Q no longer stop and start the output, and ^Y and ^O are

@@ -622,6 +622,44 @@ static void redraw_everything(void)
 	draw_input_line();
 }
 
+static char typed[CAPLEN];     /* keys typed so far, that start a binding */
+static int nchars;              /* number of them */
+static vtime typed_time;        /* when the last of them was typed */
+static bool typed_shown;        /* whether they are shown after the line */
+
+/* the time to wait for the next key before showing the keys typed so far */
+enum { TYPED_HINT_DELAY = 1000 };
+
+/* the milliseconds left before showing the keys typed so far, or -1 */
+static int typed_hint_wait(void)
+{
+    if (nchars == 0 || typed_shown || (linemode & (LM_CHAR | LM_NOECHO)))
+        return -1;
+    update_now();
+    long waited = diff_vtime(&now, &typed_time);
+    return waited >= TYPED_HINT_DELAY ? 0 : TYPED_HINT_DELAY - (int)waited;
+}
+
+/* show the keys typed so far after the input line, as "C-x 8-" */
+static void show_typed_hint(void)
+{
+    char hint[64];
+    size_t n = 0;
+    for (int i = 0; i < nchars && n < sizeof(hint) - 8; ++i) {
+        unsigned char c = typed[i];
+        const char *sep = i > 0 ? " " : "";
+        if (c == '\033')
+            n += snprintf(hint + n, sizeof(hint) - n, "%sESC", sep);
+        else if (c < ' ')
+            n += snprintf(hint + n, sizeof(hint) - n, "%sC-%c", sep, c + '`');
+        else
+            n += snprintf(hint + n, sizeof(hint) - n, "%s%c", sep, c);
+    }
+    snprintf(hint + n, sizeof(hint) - n, "-");
+    input_show_hint(hint);
+    typed_shown = true;
+}
+
 /* how much can we sleep in select() ? */
 static void compute_sleeptime(vtime **timeout, bool force_zero)
 {
@@ -643,6 +681,9 @@ static void compute_sleeptime(vtime **timeout, bool force_zero)
     }
     if (flashback && (!sleeptime || sleeptime > FLASHDELAY))
 	sleeptime = FLASHDELAY;
+    int wait = typed_hint_wait();
+    if (wait >= 0 && (!sleeptime || sleeptime > wait))
+        sleeptime = wait > 0 ? wait : 1;
 
     if (sleeptime) {
 	tbuf.tv_sec = sleeptime / mSEC_PER_SEC;
@@ -696,6 +737,8 @@ static void mainloop(void)
 
 	if (err < 0)
 	    syserr("cannot wait for input");
+	if (typed_hint_wait() == 0)
+	    show_typed_hint();
         if (tty_has_chars() && !FD_ISSET(tty_read_fd, &readfds)) {
             /* keys already read from the terminal */
             FD_SET(tty_read_fd, &readfds);
@@ -1783,8 +1826,6 @@ static void get_user_input(void)
     int i, j, chunk = 1;
     static char buf[BUFSIZE+1];   /* allow for terminating \0 */
     char *c = buf;
-    static char typed[CAPLEN];    /* chars typed so far (with partial match) */
-    static int nchars = 0;	  /* number of them */
 
     /* We have 4 possible line modes:
      * line mode, local echo: line editing functions in effect
@@ -1802,6 +1843,13 @@ static void get_user_input(void)
 
     if (j < 0 || (chunk == 1 && j != chunk))
 	syserr("cannot read from the terminal");
+
+    if (typed_shown) {
+        input_hide_hint();
+        typed_shown = false;
+    }
+    update_now();
+    typed_time = now;
 
     c[chunk] = '\0';
 
