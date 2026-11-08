@@ -48,7 +48,7 @@ int  evaln(                       char **what);
 
 void print_error(int err_num);
 
-extern char *error_msg[];
+extern const char *const error_msg[];
 extern int error;
 
 #define REAL_ERROR (error && error != USER_BREAK)

@@ -78,7 +78,8 @@ enum op_codes {
 typedef enum op_codes operator;
 
 typedef struct {
-    char priority, assoc, syntax, *name;
+    char priority, assoc, syntax;
+    const char *name;
     operator code;
 } operator_list;
 
@@ -89,39 +90,39 @@ typedef struct {
   int curr_op;
 } stack;
 
-char *error_msg[] = {
-	"unknown error",
-	"math stack overflow",
-	"math stack underflow",
-	"stack overflow",
-	"stack underflow",
-	"expression syntax",
-	"operator expected",
-	"value expected",
-	"division by zero",
-	"operand or index out of range",
-	"missing right parenthesis",
-	"missing left parenthesis",
-	"internal error!",
-	"operator not supported",
-	"operation not completed (internal error)",
-	"out of memory",
-	"text/string longer than limit, discarded",
-	"infinite loop",
-	"numeric value expected",
-	"string expected",
-	"missing label",
-	"missing separator \";\"",
-	"#history recursion too deep",
-	"user break",
-	"too many defined variables",
-	"undefined variable",
-	"invalid digit in numeric value",
-	"bad attribute syntax",
-	"invalid variable name",
+const char *const error_msg[] = {
+    "unknown error",
+    "math stack overflow",
+    "math stack underflow",
+    "stack overflow",
+    "stack underflow",
+    "expression syntax",
+    "operator expected",
+    "value expected",
+    "division by zero",
+    "operand or index out of range",
+    "missing right parenthesis",
+    "missing left parenthesis",
+    "internal error!",
+    "operator not supported",
+    "operation not completed (internal error)",
+    "out of memory",
+    "text/string longer than limit, discarded",
+    "infinite loop",
+    "numeric value expected",
+    "string expected",
+    "missing label",
+    "missing separator \";\"",
+    "#history recursion too deep",
+    "user break",
+    "too many defined variables",
+    "undefined variable",
+    "invalid digit in numeric value",
+    "bad attribute syntax",
+    "invalid variable name",
 };
 
-static operator_list op_list[] = {
+static const operator_list op_list[] = {
     { 0, 0,     0,          "",     op_null             },
 
     { 1, LEFT,  BINARY,     ",",    op_comma            },
@@ -306,7 +307,8 @@ static int check_operator(char side, operator *op, int mindepth)
 {
     int i, max, len;
     operator match;
-    char *name, c, d;
+    const char *name;
+    char c, d;
 
     if (!(c=*line) || c == CMDSEP) {
 	*op = side==BINARY ? op_null : side==LEFT ? op_pre_null : op_post_null;
