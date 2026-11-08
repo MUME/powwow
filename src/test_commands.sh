@@ -413,6 +413,8 @@ has '#deleting key binding: foo ^[[A=bar'
 has '#no key named "nosuch", and no default for it.'
 
 run '#bind functions lists all editing functions' '#bind functions'
+has '#moving:'
+has '#killing and yanking:'
 has '&abort                  stop searching (C-g)'
 has '&clear-line             clear the input line'
 has '&prev-line              show the previous history line (C-p, Up)'

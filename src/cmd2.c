@@ -1140,8 +1140,8 @@ static void show_single_bind(char *msg, keynode *p)
  * list keyboard bindings
  */
 /*
- * list all the editing functions, with their descriptions and the keys
- * bound to them
+ * list all the editing functions by group, with their descriptions and the
+ * keys bound to them
  */
 void show_edit_functions(void)
 {
@@ -1149,6 +1149,9 @@ void show_edit_functions(void)
     PRINTF("#editing functions:\n");
     for (const edit_function *f = internal_functions + 1; f->name != NULL;
          ++f) {
+        if (f == internal_functions + 1 || strcmp(f->group, f[-1].group) != 0)
+            PRINTF("%s#%s:\n", f == internal_functions + 1 ? "" : "\n",
+                   f->group);
         char keys[BUFSIZE];
         int n = 0;
         for (const keynode *k = keydefs; k != NULL; k = k->next) {
