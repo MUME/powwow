@@ -1569,7 +1569,14 @@ static struct {
     bool active;
     bool tabbed;                /* Tab completed nothing, list on the next */
     const char *file;           /* the names, of characters or emoji */
-    char name[BUFSIZE / 2];     /* the name, as last taken from the line */
+    /* the text, as last taken from the line: for emoji, it can be the
+     * group, a slash, the subgroup, a slash and the name, of which 'parts'
+     * are typed: 0 if only the name, 1 if the group and subgroup, or 2 */
+    char text[BUFSIZE / 2];
+    int parts;
+    char group[64], subgroup[64];
+    char name[BUFSIZE / 2];
+    int name_at;                /* where the name starts in the text */
     char saved[BUFSIZE];
     int saved_pos;
 } charin;
@@ -1577,20 +1584,76 @@ static struct {
 /* the names that Tab lists at most */
 enum { CHARIN_LIST_MAX = 20 };
 
-/* take the name from the input line */
+/* take the text from the input line, and its parts */
 static void charin_get_name(void)
 {
     int len = edlen - edstart;
-    if (len >= (int)sizeof(charin.name))
-        len = sizeof(charin.name) - 1;
-    memcpy(charin.name, edbuf + edstart, len);
-    charin.name[len] = '\0';
+    if (len >= (int)sizeof(charin.text))
+        len = sizeof(charin.text) - 1;
+    memcpy(charin.text, edbuf + edstart, len);
+    charin.text[len] = '\0';
+
+    charin.parts = 0;
+    charin.group[0] = charin.subgroup[0] = '\0';
+    charin.name_at = 0;
+    const char *slash = (charin.file == emojifile
+                         ? strchr(charin.text, '/') : NULL);
+    if (slash != NULL) {
+        snprintf(charin.group, sizeof(charin.group), "%.*s",
+                 (int)(slash - charin.text), charin.text);
+        const char *sub = slash + 1;
+        slash = strchr(sub, '/');
+        charin.parts = slash != NULL ? 2 : 1;
+        snprintf(charin.subgroup, sizeof(charin.subgroup), "%.*s",
+                 (int)(slash != NULL ? slash - sub : (int)strlen(sub)), sub);
+        charin.name_at = (slash != NULL
+                          ? slash + 1 - charin.text
+                          : (int)strlen(charin.text));
+    }
+    strcpy(charin.name, charin.text + charin.name_at);
 }
 
-/* replace the name in the input line with 'name' */
+/* replace the name in the input line with 'name', after the group */
 static void charin_set_name(const char *name)
 {
-    input_replace(edstart, edlen - edstart, name, strlen(name));
+    input_replace(edstart + charin.name_at, edlen - edstart - charin.name_at,
+                  name, strlen(name));
+}
+
+/* replace all the text in the input line with 'text' */
+static void charin_set_text(const char *text)
+{
+    input_replace(edstart, edlen - edstart, text, strlen(text));
+}
+
+/* find the names that match the name being read, in its group */
+static int charin_find(charname_fn fn, void *data)
+{
+    if (charin.parts == 2)
+        return charname_find(charin.file, charin.group, charin.subgroup,
+                             charin.name, fn, data);
+    return charname_find(charin.file, NULL, NULL, charin.name, fn, data);
+}
+
+/* the groups and subgroups of the emoji */
+struct group_list {
+    int count;
+    struct group_entry {
+        char group[64], subgroup[64];
+        int count;
+    } entries[128];
+};
+
+static void group_list_add(const char *group, const char *subgroup, int count,
+                           void *data)
+{
+    struct group_list *l = data;
+    if (l->count < (int)(sizeof(l->entries) / sizeof(*l->entries))) {
+        struct group_entry *e = &l->entries[l->count++];
+        snprintf(e->group, sizeof(e->group), "%s", group);
+        snprintf(e->subgroup, sizeof(e->subgroup), "%s", subgroup);
+        e->count = count;
+    }
 }
 
 /* stop reading the name, and edit the line as it was */
@@ -1758,16 +1821,58 @@ static int compare_listed(const void *a, const void *b)
     return strcmp(x->name, y->name);
 }
 
-/* list the names that match above the input line, the best ones first */
+/*
+ * list the groups of emoji that match the text being read: the subgroups
+ * of the group typed before a slash, or else the groups that the words
+ * typed match, or the subgroups that they match
+ */
+static void charin_list_groups(void)
+{
+    struct group_list l = { 0 };
+    charname_groups(charin.file, group_list_add, &l);
+    for (int i = 0; i < l.count; ++i) {
+        const struct group_entry *e = &l.entries[i];
+        bool first = i == 0 || strcmp(e->group, l.entries[i - 1].group) != 0;
+        if (charin.parts == 1) {
+            if (charname_words_match(charin.group, e->group, false)
+                && charname_words_match(charin.subgroup, e->subgroup, false))
+                tty_printf("%s/%s/ (%d emoji)\n", e->group, e->subgroup,
+                           e->count);
+        } else if (charname_words_match(charin.name, e->group, false)) {
+            if (first) {
+                int count = 0;
+                for (int j = i; j < l.count
+                         && strcmp(l.entries[j].group, e->group) == 0; ++j)
+                    count += l.entries[j].count;
+                tty_printf("%s/ (%d emoji)\n", e->group, count);
+            }
+        } else if (charname_words_match(charin.name, e->subgroup, false)) {
+            tty_printf("%s/%s/ (%d emoji)\n", e->group, e->subgroup,
+                       e->count);
+        }
+    }
+}
+
+/*
+ * list the names that match above the input line, the best ones first,
+ * after the groups of emoji that match
+ */
 static void charin_list(void)
 {
+    clear_input_line(0);
+    tty_putc('\n');
+    if (charin.file == emojifile && charin.parts < 2)
+        charin_list_groups();
+    if (charin.parts == 1) {
+        status(1);
+        return;
+    }
+
     struct charin_listing l = { 0 };
-    charname_find(charin.file, charin.name, charin_list_add, &l);
+    charin_find(charin_list_add, &l);
     if (l.count > 0)            /* else names is NULL, which qsort rejects */
         qsort(l.names, l.count, sizeof(*l.names), compare_listed);
 
-    clear_input_line(0);
-    tty_putc('\n');
     /* the characters after the names, lined up, as their width varies
      * with the terminal */
     int width = 0;
@@ -1798,11 +1903,69 @@ static void charin_list(void)
  * start with it, and then those that start with its first word; if that
  * adds nothing, beep, and list them if Tab is pressed again
  */
+/* Tab completed nothing: beep, and list the names if pressed again */
+static void charin_no_completion(void)
+{
+    if (!charin.tabbed) {
+        charin.tabbed = true;
+        tty_putc('\007');
+    } else {
+        charin_list();
+    }
+}
+
+/*
+ * complete the group and subgroup of emoji typed before a slash: the
+ * group, if only one matches, and the subgroup, as far as those that
+ * match have in common
+ */
+static void charin_complete_group(void)
+{
+    struct group_list l = { 0 };
+    charname_groups(charin.file, group_list_add, &l);
+    struct name_set groups = { 0 }, subgroups = { 0 };
+    for (int i = 0; i < l.count; ++i) {
+        const struct group_entry *e = &l.entries[i];
+        if (!charname_words_match(charin.group, e->group, false)
+            || !charname_words_match(charin.subgroup, e->subgroup, false))
+            continue;
+        if (groups.count == 0 || strcmp(groups.first, e->group) != 0)
+            name_set_add(&groups, e->group);
+        name_set_add(&subgroups, e->subgroup);
+    }
+    if (groups.count != 1) {
+        if (subgroups.count == 0)
+            tty_putc('\007');
+        else
+            charin_no_completion();
+        return;
+    }
+    const char *sub = charin.subgroup;
+    if (subgroups.count == 1)
+        sub = subgroups.first;
+    else if (strlen(subgroups.common) > strlen(sub)
+             && charname_starts_with(sub, subgroups.common))
+        sub = subgroups.common;
+    char text[sizeof(charin.text)];
+    int len = snprintf(text, sizeof(text), "%s/%s%s", groups.first, sub,
+                       subgroups.count == 1 ? "/" : "");
+    if (len < (int)sizeof(text) && strcmp(text, charin.text) != 0) {
+        charin_set_text(text);
+        charin.tabbed = false;
+    } else {
+        charin_no_completion();
+    }
+}
+
 static void charin_complete(void)
 {
     charin_get_name();
+    if (charin.parts == 1) {
+        charin_complete_group();
+        return;
+    }
     struct charin_matches m = { 0 };
-    if (charname_find(charin.file, charin.name, charin_match, &m) <= 0) {
+    if (charin_find(charin_match, &m) <= 0) {
         tty_putc('\007');
         return;
     }
@@ -1826,11 +1989,8 @@ static void charin_complete(void)
     if (better) {
         charin_set_name(longer);
         charin.tabbed = false;
-    } else if (!charin.tabbed) {
-        charin.tabbed = true;
-        tty_putc('\007');
     } else {
-        charin_list();
+        charin_no_completion();
     }
 }
 
@@ -1848,7 +2008,7 @@ static void charin_insert(void)
     if (n == 0) {
         struct charin_matches m = { 0 };
         const char *name = NULL;
-        if (charname_find(charin.file, charin.name, charin_match, &m) == 1)
+        if (charin_find(charin_match, &m) == 1)
             name = m.all.first;
         else if (m.abbreviated.count == 1)
             name = m.abbreviated.first;

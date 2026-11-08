@@ -25,7 +25,13 @@ bool charname_starts_with(const char *prefix, const char *name);
 bool charname_words_abbreviate(const char *pattern, const char *name);
 bool charname_words_match(const char *pattern, const char *name,
                           bool anchored);
-int charname_find(const char *file, const char *pattern, charname_fn fn,
-                  void *data);
+int charname_find(const char *file, const char *group, const char *subgroup,
+                  const char *pattern, charname_fn fn, void *data);
+
+/* called by charname_groups() with each group and subgroup */
+typedef void (*charname_group_fn)(const char *group, const char *subgroup,
+                                  int count, void *data);
+
+void charname_groups(const char *file, charname_group_fn fn, void *data);
 
 #endif /* _CHARNAME_H_ */

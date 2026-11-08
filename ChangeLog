@@ -44,7 +44,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  starts of its words, as `gr sm al' for `greek small letter alpha',
 	  and lists the names and their characters when pressed again.
 	* C-x 8 e e and C-x 8 e s (&insert-emoji) insert an emoji by its
-	  name, such as `thumbs up' or `flag: Sweden', like C-x 8 Ret.
+	  name, such as `thumbs up' or `flag: Sweden', like C-x 8 Ret, and
+	  its group and subgroup can be browsed and typed before the name,
+	  as `peo/fant/mage'.
 	* Bound the Delete key to delete the character under the cursor,
 	  Home and End to move to the start and end of the line, M-< and
 	  M-> to move to the first line of the history and back

@@ -26,8 +26,9 @@ struct name_entry {
     uint32_t cps[CHARNAME_MAX];
     int ncps;
     char name[128];
-    char group[128];            /* the group and subgroup of an emoji */
-    char words[256];            /* its group, and then its name */
+    char group[64], subgroup[64];       /* of an emoji */
+    char groups[64 + 2 + 64];           /* both, as "group, subgroup" */
+    char words[256];                    /* both, and then the name */
 };
 
 /* is 'c' between words of a name? */
@@ -193,14 +194,14 @@ static bool read_entry(FILE *f, struct name_entry *e)
         if (e->ncps == 0 || *p != '\t')
             continue;
         const char *rest = copy_field(p + 1, e->name, sizeof(e->name));
-        char group[64], subgroup[64];
-        rest = copy_field(rest, group, sizeof(group));
-        copy_field(rest, subgroup, sizeof(subgroup));
-        e->group[0] = '\0';
-        if (group[0] != '\0')
-            snprintf(e->group, sizeof(e->group), "%s, %s", group, subgroup);
-        snprintf(e->words, sizeof(e->words), "%s %s %s", group, subgroup,
-                 e->name);
+        rest = copy_field(rest, e->group, sizeof(e->group));
+        copy_field(rest, e->subgroup, sizeof(e->subgroup));
+        e->groups[0] = '\0';
+        if (e->group[0] != '\0')
+            snprintf(e->groups, sizeof(e->groups), "%s, %s", e->group,
+                     e->subgroup);
+        snprintf(e->words, sizeof(e->words), "%s %s %s", e->group,
+                 e->subgroup, e->name);
         return true;
     }
     return false;
@@ -239,13 +240,15 @@ int charname_lookup(const char *file, const char *name, size_t len,
 
 /*
  * call 'fn' with each name in 'file' that 'pattern' matches as in
- * charname_words_match(), where the words of the group of an emoji come
- * before its name, with its code points, its group if the name does not
- * match by itself, or else NULL, and 'data'; return how many there are, or
- * -1 if the names cannot be read
+ * charname_words_match(), with its code points, the group and subgroup of
+ * an emoji if the name matches only with them, or else NULL, and 'data';
+ * the words of the group and subgroup come before those of the name,
+ * unless 'group' is not NULL: then only the emoji are found whose group
+ * and subgroup match the words of 'group' and 'subgroup'; return how
+ * many there are, or -1 if the names cannot be read
  */
-int charname_find(const char *file, const char *pattern, charname_fn fn,
-                  void *data)
+int charname_find(const char *file, const char *group, const char *subgroup,
+                  const char *pattern, charname_fn fn, void *data)
 {
     FILE *f = fopen(file, "r");
     if (f == NULL)
@@ -253,13 +256,44 @@ int charname_find(const char *file, const char *pattern, charname_fn fn,
     struct name_entry e;
     int count = 0;
     while (read_entry(f, &e)) {
-        if (!charname_words_match(pattern, e.words, false))
+        bool by_name = charname_words_match(pattern, e.name, false);
+        if (group != NULL
+            ? (!by_name || !charname_words_match(group, e.group, false)
+               || !charname_words_match(subgroup, e.subgroup, false))
+            : !by_name && !charname_words_match(pattern, e.words, false))
             continue;
-        fn(e.name, e.cps, e.ncps,
-           charname_words_match(pattern, e.name, false) ? NULL : e.group,
-           data);
+        fn(e.name, e.cps, e.ncps, by_name ? NULL : e.groups, data);
         ++count;
     }
     fclose(f);
     return count;
+}
+
+/*
+ * call 'fn' with each group and subgroup of the emoji in 'file', with how
+ * many emoji there are in it, and 'data'
+ */
+void charname_groups(const char *file, charname_group_fn fn, void *data)
+{
+    FILE *f = fopen(file, "r");
+    if (f == NULL)
+        return;
+    struct name_entry e;
+    char group[64] = "", subgroup[64] = "";
+    int count = 0;
+    while (read_entry(f, &e)) {
+        if (e.group[0] == '\0')
+            break;              /* characters, not emoji */
+        if (strcmp(e.group, group) != 0 || strcmp(e.subgroup, subgroup) != 0) {
+            if (count > 0)
+                fn(group, subgroup, count, data);
+            strcpy(group, e.group);
+            strcpy(subgroup, e.subgroup);
+            count = 0;
+        }
+        ++count;
+    }
+    if (count > 0)
+        fn(group, subgroup, count, data);
+    fclose(f);
 }
