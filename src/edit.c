@@ -1704,6 +1704,7 @@ static void isearch_show(void)
                      isearch.reverse ? "reverse-i-search" : "i-search",
                      isearch.query);
     int cursor = n + isearch.offset;
+    edlabel = n < (int)sizeof(buf) ? n : (int)sizeof(buf) - 1;
     n += snprintf(buf + n, sizeof(buf) - n, "%s",
                   isearch_line(isearch.index));
     if (n >= (int)sizeof(buf))
@@ -1744,6 +1745,7 @@ static void isearch_end(bool accept)
     }
     if (accept && strcmp(line, isearch.saved) != 0)
         undo_record(isearch.saved, isearch.saved_pos);
+    edlabel = 0;
     input_replace(0, edlen, line, strlen(line));
     input_moveto(new_pos);
 }
@@ -1943,7 +1945,7 @@ static void charin_end(void)
     undo_clear(&name_undo.undo);
     undo_clear(&name_undo.redo);
     undos = &line_undo;
-    edstart = 0;
+    edstart = edlabel = 0;
     input_replace(0, edlen, charin.saved, strlen(charin.saved));
     input_moveto(charin.saved_pos);
 }
@@ -1958,6 +1960,7 @@ static void charin_start(const char *file, const char *prompt)
     charin.file = file;
     strcpy(charin.saved, edbuf);
     charin.saved_pos = pos;
+    edlabel = (int)strlen(prompt);
     input_replace(0, edlen, prompt, strlen(prompt));
     edstart = edlen;
     undos = &name_undo;

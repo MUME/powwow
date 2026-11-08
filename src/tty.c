@@ -801,7 +801,8 @@ void input_show_hint(const char *hint)
     if (col + width >= cols_1)
         return;
     input_cursor_to(line, col, false);
-    tty_printf("%s %s%s", edattrend, hint, edattrbeg);
+    tty_printf("%s %s%s%s%s", edattrend, msgattrbeg, hint, msgattrend,
+               edattrbeg);
     int pline, pcol;
     input_layout(pos, &pline, &pcol);
     tty_gotoxy_opt(col + width, line, pcol, pline);
@@ -890,10 +891,15 @@ static void input_redraw_from(int from)
     input_layout_end(from, &line, &col);
 
     const char *s = edbuf + from, *end = edbuf + edlen;
+    bool in_label = false;      /* drawing a label, as a message */
     while (s < end) {
         size_t n = utf8_cell_len(s, end - s);
         int w = utf8_cell_width(s, n);
         if (!tty_cell_fits(col, s, n, w)) {
+            if (in_label) {
+                tty_printf("%s%s", msgattrend, edattrbeg);
+                in_label = false;
+            }
             if (col < cols_1) {
                 /* a wide character did not fit; blank the rest of
                  * the row, which may hold half of an old one (with
@@ -908,10 +914,19 @@ static void input_redraw_from(int from)
             input_newline(&line);
             col = 0;
         }
+        if ((s - edbuf < edlabel) != in_label) {
+            in_label = !in_label;
+            if (in_label)
+                tty_printf("%s%s", edattrend, msgattrbeg);
+            else
+                tty_printf("%s%s", msgattrend, edattrbeg);
+        }
         while (n-- > 0)
             tty_putc(*s++);
         col += w;
     }
+    if (in_label)
+        tty_printf("%s%s", msgattrend, edattrbeg);
     if (col >= cols_1) {
         input_newline(&line);
         col = 0;
