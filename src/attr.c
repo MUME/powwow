@@ -146,7 +146,32 @@ static size_t next_token(const char **text)
     return strcspn(*text, WHITESPACE);
 }
 
-bool attr_parse(const char *text, struct attr *attr)
+/* write why the attribute is invalid, about the 'len' bytes of 'tok' */
+static bool attr_error(char *why, size_t size, const char *format,
+                       const char *tok, size_t len)
+{
+    if (why != NULL && size > 0)
+        snprintf(why, size, format, (int)len, tok);
+    return false;
+}
+
+/*
+ * why the 'len' bytes of 'tok' are not a color, or not an effect either
+ * if 'or_effect'
+ */
+static const char *color_error(const char *tok, size_t len, bool or_effect)
+{
+    if (strspn(tok, "0123456789") >= len)
+        return "%.*s is not a color: numbered colors go from 0 to 255";
+    if (tok[0] == '#')
+        return "\"%.*s\" is not a color: write #rrggbb in hex";
+    return (or_effect
+            ? "\"%.*s\" is not an effect or a color"
+            : "\"%.*s\" is not a color");
+}
+
+bool attr_parse_why(const char *text, struct attr *attr, char *why,
+                    size_t size)
 {
     struct attr a = { 0 };
     size_t len = next_token(&text);
@@ -163,28 +188,48 @@ bool attr_parse(const char *text, struct attr *attr)
 
     /* [foreground] */
     if (len > 0 && !token_is(text, len, "on", true)) {
-        if (!parse_color(text, len, &a.fg))
-            return false;
+        if (!parse_color(text, len, &a.fg)) {
+            return attr_error(why, size, color_error(text, len, true), text,
+                              len);
+        }
         text += len;
         len = next_token(&text);
     }
 
     /* [on background] */
     if (len > 0) {
-        if (!token_is(text, len, "on", true))
-            return false;
+        if (!token_is(text, len, "on", true)) {
+            return attr_error(why, size,
+                              "\"%.*s\" follows the color: write \"on\" "
+                              "before a background color", text, len);
+        }
         text += len;
         len = next_token(&text);
-        if (len == 0 || !parse_color(text, len, &a.bg))
+        if (len == 0) {
+            if (why != NULL && size > 0)
+                snprintf(why, size, "a color must follow \"on\"");
             return false;
+        }
+        if (!parse_color(text, len, &a.bg)) {
+            return attr_error(why, size, color_error(text, len, false), text,
+                              len);
+        }
         text += len;
         len = next_token(&text);
     }
 
-    if (len > 0)
-        return false;
+    if (len > 0) {
+        return attr_error(why, size,
+                          "\"%.*s\" follows the background color", text,
+                          len);
+    }
     *attr = a;
     return true;
+}
+
+bool attr_parse(const char *text, struct attr *attr)
+{
+    return attr_parse_why(text, attr, NULL, 0);
 }
 
 bool attr_is_none(const struct attr *attr)
