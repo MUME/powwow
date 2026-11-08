@@ -1737,6 +1737,31 @@ static int search_action_or_prompt(char *line, char clearline, char onprompt)
 }
 
 /*
+ * the length of the unbound key sequence that starts 'typed', of 'n'
+ * bytes, if it starts with ESC: ESC and a character for a meta key, or a
+ * whole CSI (ESC [) or SS3 (ESC O) sequence for a function key; return 0
+ * if 'typed' does not start with ESC, or -1 if the sequence is incomplete
+ */
+static int unbound_esc_len(const char *typed, int n)
+{
+    if (n < 2 || typed[0] != '\033')
+        return 0;
+    if (typed[1] == '\033')
+        return 1;
+    if (typed[1] == 'O')
+        return n >= 3 ? 3 : -1;
+    if (typed[1] == '[') {
+        /* parameter and intermediate bytes, until a final byte */
+        for (int i = 2; i < n; ++i) {
+            if (typed[i] >= 0x40 && typed[i] <= 0x7e)
+                return i + 1;
+        }
+        return -1;
+    }
+    return 2;
+}
+
+/*
  * read terminal input and send to parser.
  * decode keys that send escape sequences
  */
@@ -1829,17 +1854,25 @@ static void get_user_input(void)
 
 		if (!p) {
 		    /*
-		     * type the first character and keep processing
-		     * the rest in the input buffer
+		     * ignore an unbound key that sends an escape sequence, as
+		     * a whole once it is complete, or else type the first
+		     * character; then keep processing the rest
 		     */
-		    i = 1;
+		    int skip = unbound_esc_len(typed, nchars);
+		    if (skip < 0 && nchars < CAPLEN)
+			break;		/* wait for the rest */
 		    last_edit_cmd = (function_str)0;
-		    insert_char(typed[0]);
-		    while (i < nchars) {
-			typed[i - 1] = typed[i];
-			i++;
+		    if (skip != 0) {
+			if (skip < 0)
+			    skip = nchars;
+			tty_putc('\007');
+		    } else {
+			skip = 1;
+			insert_char(typed[0]);
 		    }
-		    if (--nchars)
+		    memmove(typed, typed + skip, nchars - skip);
+		    nchars -= skip;
+		    if (nchars > 0)
 			done = 0;
 		} else if (p->seqlen == nchars) {
 		    insert_flush();

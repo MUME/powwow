@@ -260,6 +260,11 @@ run 'C-w deletes back to a space and M-q puts the line in history' '' \
 has 'foo  qux'
 lacks 'one'
 
+run 'unbound meta and function keys are ignored' '' \
+    "#print a${esc}6b${esc}[1;5Cc${esc}OPd${esc}${esc}xe
+"
+has 'abcde'
+
 run 'consecutive kills are yanked together' '' \
     "#print foo bar${esc}$(printf '\b')${esc}$(printf '\b')x $(printf '\031')
 "

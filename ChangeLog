@@ -35,6 +35,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* C-r and C-s (&reverse-search and &forward-search) search the
 	  history incrementally, and C-g (&abort) stops searching, as in
 	  readline.
+	* Unbound meta keys and function keys beep instead of typing the
+	  rest of their escape sequence, such as `6' for M-6.
 	* `#reset bind KEY' resets one key to its default binding.
 	* `#bind functions' lists all the editing functions, with the keys
 	  bound to them.
