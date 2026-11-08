@@ -861,9 +861,10 @@ Execute a speedwalk sequence even if the speedwalk option is disabled.
 
 Show the current time and date. Useful if you want to use #at.
 @ver
-#ver
+#ver [-v]
 
-Show the current version and some compile options.
+Show the version of powwow; with -v, also show the credits and some
+compile options.
 @zap
 #zap session-id
 

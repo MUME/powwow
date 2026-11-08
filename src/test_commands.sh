@@ -269,6 +269,14 @@ grep -Ex '[0-9]+' "$tmp/out" > "$tmp/numbers"
 grep -Evx '[0-5]' "$tmp/numbers" && fail "number out of range"
 [ "$(sort -u "$tmp/numbers" | wc -l)" -gt 1 ] || fail "numbers are all the same"
 
+run 'version' '#ver'
+grep -q '^Powwow version ' "$tmp/out" || fail "missing version"
+grep -q '^Options: ' "$tmp/out" && fail "unexpected options"
+
+run 'verbose version' '#ver -v'
+grep -q '^Options: ' "$tmp/out" || fail "missing options"
+lacks '#syntax: #ver [-v]'
+
 # every named command must have a help entry
 name='every command has a help entry'
 sed -n 's/^ *C("\([^"][^"]*\)".*/\1/p' "${srcdir:-.}/cmd.c" > "$tmp/commands"

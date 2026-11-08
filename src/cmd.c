@@ -230,7 +230,7 @@ static cmdstruct default_commands[] =
     C("var",        cmd_var,
       "variable [= [<|!]{string|(expr)} ]\twrite result into the variable"),
     C("ver",        cmd_ver,
-      "\tshow powwow version"),
+      "[-v]\tshow the version, or also credits and options"),
     C("while",      cmd_while,
       "(expr) instr\twhile \"expr\" is true execute \"instr\""),
     C("write",      cmd_write,
@@ -1468,7 +1468,13 @@ static void cmd_time(char *arg)
 
 static void cmd_ver(char *arg)
 {
-    printver(2);
+    arg = skipspace(arg);
+    if (*arg == '\0')
+        printver(0);
+    else if (strcmp(arg, "-v") == 0)
+        printver(2);
+    else
+        PRINTF("#syntax: #ver [-v]\n");
 }
 
 static void cmd_emulate(char *arg)
