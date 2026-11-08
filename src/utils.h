@@ -3,6 +3,8 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
+#include <stdnoreturn.h>
+
 /*
  * is 'c' the final byte of a control sequence (ESC [ ... final), as
  * opposed to a parameter or intermediate byte? (ECMA-48; independent
@@ -49,7 +51,7 @@ char *first_regular(char *p, char c);
 void unescape(char *s);
 void escape_specials(char *dst, const char *src);
 char *skipspace(char *p);
-void exit_powwow(void);
+noreturn void exit_powwow(void);
 void suspend_powwow(int signum);
 function_signal sig_permanent(int signum, function_signal sighandler);
 
@@ -62,7 +64,7 @@ function_signal sig_permanent(int signum, function_signal sighandler);
 void signal_start(void);
 void sig_bottomhalf(void);
 void errmsg(char *msg);
-void syserr(char *msg);
+noreturn void syserr(char *msg);
 int  read_settings(void);
 int  save_settings(void);
 void movie_write(char *str, int newline);
