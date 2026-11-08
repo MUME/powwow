@@ -184,7 +184,7 @@ int now_updated;		   /* current time is up to date */
 vtime start_time;                  /* time of powwow timer startup */
 vtime ref_time;                    /* time corresponding to timer == 0 */
 
-function_str last_edit_cmd;	   /* GH: keep track of for repeated cmds */
+function_str last_edit_cmd;	   /* to detect repeated commands */
 
 clock_t start_clock, cpu_clock;
 
@@ -216,7 +216,7 @@ int  edattrbg;		  /* input line attributes do change bg color */
 volatile int sig_pending, sig_winch_got, sig_chld_got;
 
 
-/* GH: different ID characters for different action types */
+/* different ID characters for different action types */
 /*
  * Cosmos: they are hardcoded in cmd2.c, function parse_action()
  * so don't change them.
@@ -1534,8 +1534,8 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
 
 #ifdef USE_REGEXP
 /*
- * GH: matches precompiled regexp, return actual params in param array
- *     return 1 if matched, 0 if not
+ * match a precompiled regexp, return actual params in param array;
+ * return 1 if matched, 0 if not
  */
 static int match_regexp_action(void *regexp, char *line, int *match_s, int *match_e)
 {
@@ -1808,7 +1808,7 @@ static void get_user_input(void)
 	for (; j > 0; c++, j--) {
 
 	    /* search function key strings for match */
-	    /* GH: support for \0 in sequence */
+	    /* sequences may contain \0 */
 	    done = 0;
 	    typed[nchars++] = *c;
 
@@ -1829,8 +1829,8 @@ static void get_user_input(void)
 
 		if (!p) {
 		    /*
-		     * GH: type the first character and keep processing
-		     *     the rest in the input buffer
+		     * type the first character and keep processing
+		     * the rest in the input buffer
 		     */
 		    i = 1;
 		    last_edit_cmd = (function_str)0;
@@ -1848,7 +1848,7 @@ static void get_user_input(void)
 		    /* the command may delete p, for example with #load */
 		    function_str funct = p->funct;
 		    funct(p->call_data);
-		    last_edit_cmd = funct; /* GH: keep track of last command */
+		    last_edit_cmd = funct;
 		    nchars = 0;
 		}
 	    }
@@ -2479,7 +2479,7 @@ void set_deffile(char *arg)
 }
 
 /*
- * GH: return true if var is one of the permanent variables
+ * return true if var is one of the permanent variables
  */
 int is_permanent_variable(varnode *v)
 {

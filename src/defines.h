@@ -98,18 +98,18 @@ static_assert(MAX_CONNECTS <= UCHAR_MAX, "MAX_CONNECTS must fit in a byte");
                                  * #for or #while;
                                  * update doc/powwow.md.in if changed */
 
-#define ACTION_WEAK	0	/* GH: normal junk */
-#define ACTION_REGEXP	1	/*     oh-so-mighty regexp */
+#define ACTION_WEAK	0	/* pattern with $ and & wildcards */
+#define ACTION_REGEXP	1	/* regular expression */
 #define ACTION_TYPES	(ACTION_REGEXP + 1)
 
-/* GH: the redefinable delimeters */
+/* the redefinable delimeters */
 #define DELIM		(delim_list[delim_mode])
 #define DELIM_LEN	(delim_len[delim_mode])
 #define IS_DELIM(c)	(memchr(DELIM, (c), DELIM_LEN) != NULL)
 
-#define DELIM_NORMAL	0	/* GH: normal word delimeters	*/
-#define DELIM_PROGRAM	1	/*     ()[]{}.,;"'+/-*%		*/
-#define DELIM_CUSTOM	2	/*     user-defined		*/
+#define DELIM_NORMAL	0	/* normal word delimeters */
+#define DELIM_PROGRAM	1	/* ()[]{}.,;"'+/-*% */
+#define DELIM_CUSTOM	2	/* user-defined */
 #define DELIM_MODES	(DELIM_CUSTOM + 1)
 
 
@@ -200,7 +200,7 @@ typedef struct triggernode {
     struct triggernode *next;
     char *command, *label;
     int active;
-    int type;				/* GH: allow regexp */
+    int type;				/* ACTION_WEAK or ACTION_REGEXP */
     char *pattern;
 #ifdef USE_REGEXP
     void *regexp;			/* 0 if type == ACTION_WEAK */
@@ -222,7 +222,7 @@ typedef struct keynode {
     struct keynode *next;
     char *name;			/* key name */
     char *sequence;		/* escape sequence sent by terminal */
-    int seqlen;			/* GH: length of esc seq to allow \0 in seq */
+    int seqlen;			/* length of sequence, which may contain \0 */
     function_str funct;		/* function called when key pressed */
     char *call_data;		/* data passed to function */
 } keynode;

@@ -954,8 +954,7 @@ void suspend_powwow(int  signum)
 }
 
 /*
- * GH: Sets a signal-handler permanently (like bsd signal())
- *     from Ilie
+ * set a signal handler permanently (like BSD signal())
  */
 function_signal sig_permanent(int signum, function_signal sighandler)
 {
@@ -1500,7 +1499,6 @@ int save_settings(void)
 	reverse_sortedlist((sortednode **)&sortednamed_vars[1]);
     }
 
-    /* GH: fixed the history and word completions saves */
     if (failed > 0 && opt_history) {
 	l = (curline + 1) % MAX_HIST;
 	while (failed > 0 && l != curline) {

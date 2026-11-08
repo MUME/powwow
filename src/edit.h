@@ -11,8 +11,7 @@ typedef struct {
 extern edit_function internal_functions[];
 
 /*
- * GH: completion list, stolen from cancan 2.6.3a
- *
+ * completion list:
  *     words[wordindex] is where the next word will go (always empty)
  *     words[wordindex].prev is last (least interesting)
  *     words[wordindex].next is 2nd (first to search for completion)

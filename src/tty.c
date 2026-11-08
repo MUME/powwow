@@ -579,10 +579,6 @@ int input_col(int p)
 }
 
 /*
- * GH: change the position on input line (gotoxy there, and set pos)
- *     from cancan 2.6.3a
- */
-/*
  * move the cursor from pos to 'toline', 'tocol', scrolling the input
  * line if that is off the screen; with 'absolute', do not rely on the
  * cursor being at pos

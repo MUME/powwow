@@ -947,7 +947,7 @@ static char *unescape_seq(char *buf, char *seq, int *seqlen)
 	  case ESCSINGLE:
 	  case ESCAPE:
 	    /*
-	     * GH: \012 ==> octal number
+	     * \012 ==> octal number
 	     */
 	    if (state == ESCSINGLE &&
 		is_odigit(seq[0]) && is_odigit(seq[1]) && is_odigit(seq[2])) {
@@ -1060,7 +1060,7 @@ char *seq_name(char *seq, int len)
      * rules: control chars are written as ^X, where
      * X is char | 64
      *
-     * GH: codes > 0x80  ==>  octal \012
+     * codes > 0x80  ==>  octal \012
      *
      * special case: 0x7f is written ^?
      */
@@ -1076,7 +1076,6 @@ char *seq_name(char *seq, int len)
 	    *(p++) = '^';
 	    *(p++) = '?';
         } else if (c & 0x80) {
-	    /* GH: save chars with high bit set in octal */
 	    sprintf(p, "\\%03o", (int)c);
 	    p += strlen(p);
 	} else
@@ -1176,7 +1175,7 @@ static void define_new_key(char *name, char *command)
     if (!seq) return;
 
     for (p = keydefs; p; p = p->next)
-	/* GH: don't allow binding of supersets of another bind */
+	/* don't allow binding of supersets of another bind */
 	if (!memcmp(p->sequence, seq, MIN2(p->seqlen, seqlen))) {
 	    show_single_bind("key already bound as:", p);
 	    return;

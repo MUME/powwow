@@ -271,7 +271,7 @@ void redraw_line_noprompt(char *dummy)
 }
 
 /*
- * GH: transpose two words to the left
+ * transpose two words to the left
  */
 void transpose_words(char *dummy)
 {
@@ -490,13 +490,11 @@ static char *compl_get_word(int i)
 void complete_word(char *dummy)
 {
     /*
-     * GH: rewritten to allow circulating through history with
-     * repetitive command
-     *     code stolen from cancan 2.6.3a
-     *        curr_word:   index into words[]
-     *        comp_len     length of current completition
-     *        root_len     length of the root word (before the completition)
-     *        root         start of the root word
+     * repeating the command cycles through the words
+     *     curr_word    index into words[]
+     *     comp_len     length of current completion
+     *     root_len     length of the root word (before the completion)
+     *     root         start of the root word
      */
 
     static int curr_word, comp_len = 0, root_len = 0;
@@ -555,7 +553,7 @@ void complete_word(char *dummy)
 
 /*
  * match and complete entire lines backwards in history
- * GH: made repeated complete_line cycle through history
+ * repeating the command cycles through the history
  */
 void complete_line(char *dummy)
 {
@@ -587,10 +585,6 @@ void complete_line(char *dummy)
 	curr_line = i;
     }
 }
-
-/*
- * GH: word history handling stolen from cancan 2.6.3a
- */
 
 static void default_completions(void)
 {
@@ -656,7 +650,7 @@ void put_word(char *s)
 }
 
 /*
- * GH: set delimeters[DELIM_CUSTOM]
+ * set delimeters[DELIM_CUSTOM]
  */
 void set_custom_delimeters(char *s)
 {
@@ -785,8 +779,8 @@ void del_word_left(char *dummy)
 }
 
 /*
- * GH: change the case of the current word, or of the whole line if
- *     repeated; the UTF-8 length of the text may change
+ * change the case of the current word, or of the whole line if
+ * repeated; the UTF-8 length of the text may change
  */
 static void change_case_word(function_str self, int upper)
 {
@@ -822,7 +816,7 @@ static void change_case_word(function_str self, int upper)
 }
 
 /*
- * GH: make word upcase
+ * make word upcase
  */
 void upcase_word(char *dummy)
 {
@@ -830,7 +824,7 @@ void upcase_word(char *dummy)
 }
 
 /*
- * GH: make word downcase
+ * make word downcase
  */
 void downcase_word(char *dummy)
 {

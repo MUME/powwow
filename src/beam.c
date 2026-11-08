@@ -616,8 +616,7 @@ void sig_chld_bottomhalf(void)
 
     while ((pid = waitpid(-1, &ret, WNOHANG)) > 0) {
 
-	/* GH: check for WIFSTOPPED unnecessary since no */
-	/* WUNTRACED to waitpid()			 */
+	/* no need to check WIFSTOPPED, since waitpid() has no WUNTRACED */
 	for (sp = &edit_sess; *sp && (*sp)->pid != pid; sp = &(*sp)->next)
 	    ;
 	if (*sp) {
