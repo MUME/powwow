@@ -2248,40 +2248,40 @@ functions by typing `#bind functions`):
 
 | Key | Function name | Description |
 | --- | --- | --- |
-| `^A` | `&begin-of-line` | beginning of line |
-| `^E` | `&end-of-line` | end of line |
-| `^B` | `&prev-char` | backward one character |
-| `^F` | `&next-char` | forward one character |
-| `^P` | `&prev-line` | use previous line in history (step backward) |
-| `^N` | `&next-line` | use next line in history (step forward) |
-| `^R` | `&reverse-search` | search backward in history for the text typed next; hit again to find an older line. Any editing key ends the search on the line found, and `Ret` executes it. |
-| `^S` | `&forward-search` | search forward in history, like `^R` |
-| `^G` | `&abort` | stop searching, and restore the line typed before |
-| `^D` | `&del-char-right` | delete character under cursor |
+| `C-a` | `&begin-of-line` | beginning of line |
+| `C-e` | `&end-of-line` | end of line |
+| `C-b` | `&prev-char` | backward one character |
+| `C-f` | `&next-char` | forward one character |
+| `C-p` | `&prev-line` | use previous line in history (step backward) |
+| `C-n` | `&next-line` | use next line in history (step forward) |
+| `C-r` | `&reverse-search` | search backward in history for the text typed next; hit again to find an older line. Any editing key ends the search on the line found, and `Ret` executes it. |
+| `C-s` | `&forward-search` | search forward in history, like `C-r` |
+| `C-g` | `&abort` | stop searching, and restore the line typed before |
+| `C-d` | `&del-char-right` | delete character under cursor |
 | `Delete` | `&del-char-right` | same thing, for the Delete key |
-| `^H`, `Del` | `&del-char-left` | delete character left of cursor; `Del` is the Backspace key on most terminals |
-| `^K` | `&kill-to-eol` | kill to end of line |
-| `^U` | `&kill-to-bol` | kill to beginning of line |
-| `^Y` | `&yank` | insert the last killed text |
-| `^T` | `&transpose` | transpose previous character with next (if at the end of the line, the two last) |
-| `^L` | `&redraw-line` | redraw your command line. This is useful if something garbles your input line. |
-| `^W` | `&del-unix-word-left` | delete left of cursor to the previous space |
-| `^Z` | `&suspend` | suspend powwow in the background |
+| `C-h`, `Del` | `&del-char-left` | delete character left of cursor; `Del` is the Backspace key on most terminals |
+| `C-k` | `&kill-to-eol` | kill to end of line |
+| `C-u` | `&kill-to-bol` | kill to beginning of line |
+| `C-y` | `&yank` | insert the last killed text |
+| `C-t` | `&transpose` | transpose previous character with next (if at the end of the line, the two last) |
+| `C-l` | `&redraw-line` | redraw your command line. This is useful if something garbles your input line. |
+| `C-w` | `&del-unix-word-left` | delete left of cursor to the previous space |
+| `C-z` | `&suspend` | suspend powwow in the background |
 | `Tab` | `&complete-word` | complete the word being typed to the last matching word in the history (or added with an `#add` command; see above). Hit multiple times to browse the possible completions. This is similar to the GNU Emacs `M-/` command. |
 | `M-Tab` | `&complete-line` | complete the line being typed to the last matching line in the history. Hit multiple times to browse the possible completions. |
 | `M-f` | `&next-word` | forward one word |
 | `M-k` | `&redraw-line-noprompt` | redraw command line, discarding prompt |
 | `M-b` | `&prev-word` | backward one word |
 | `M-d` | `&del-word-right` | delete word right of cursor |
-| `M-^H`, `M-Del` | `&del-word-left` | delete word left of cursor |
+| `M-C-h`, `M-Del` | `&del-word-left` | delete word left of cursor |
 | `M-c` | `&capitalize-word` | capitalize the word from the cursor, and move after it |
 | `M-l` | `&downcase-word` | lowercase the word from the cursor, and move after it |
 | `M-q` | `&to-history` | put current line in history and clear input line. This is useful when you are typing a long line and need to send another urgent command first. |
 | `M-t` | `&transpose-words` | transpose previous word with next |
 | `M-u` | `&upcase-word` | uppercase the word from the cursor, and move after it |
-| `M-y` | `&yank-pop` | right after `^Y` or `M-y`, replace the inserted text with the kill before it |
+| `M-y` | `&yank-pop` | right after `C-y` or `M-y`, replace the inserted text with the kill before it |
 | `Ret` | `&enter-line` | the most obvious: execute the typed line |
-| `LF` | `&enter-line` | same thing, but for `^J` key (some terminals send this when you hit return) |
+| `LF` | `&enter-line` | same thing, but for `C-j` key (some terminals send this when you hit return) |
 | (none) | `&clear-line` | clear input line. |
 | (none) | `&insert-string` | insert on command line the specified chars |
 
@@ -2289,7 +2289,7 @@ M-x means pressing the META or Alt key at the same time as x,
 or pressing and releasing the escape key, then typing x. The former
 way doesn't work on all terminals.
 
-`^x`  means pressing the Control key at the same time as x.
+`C-x` means pressing the Control key at the same time as x.
 
 If your terminal has arrow keys, they can be used to move the
 cursor and step around in history. In addition, you can define your

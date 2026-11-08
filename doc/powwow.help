@@ -215,26 +215,27 @@ If <initstr> is specified, it is sent to host on connection.
 @keys
 Default editing keys:
 
-^A      &begin-of-line
-^E      &end-of-line
-^B      &prev-char              M-b     &prev-word
-^F      &next-char              M-f     &next-word
-^P      &prev-line
-^N      &next-line
-^R      &reverse-search
-^S      &forward-search
-^G      &abort
-^D      &del-char-right         M-d     &del-word-right
+C-a     &begin-of-line
+C-e     &end-of-line
+C-b     &prev-char              M-b     &prev-word
+C-f     &next-char              M-f     &next-word
+C-p     &prev-line
+C-n     &next-line
+C-r     &reverse-search
+C-s     &forward-search
+C-g     &abort
+C-d     &del-char-right         M-d     &del-word-right
 Delete  &del-char-right
-^H, Del &del-char-left          M-Del   &del-word-left
-^K      &kill-to-eol            M-k     &redraw-line-noprompt
-^L      &redraw-line            M-l     &downcase-word
-^T      &transpose              M-t     &transpose-words
+C-h     &del-char-left          M-C-h   &del-word-left
+Del     &del-char-left          M-Del   &del-word-left
+C-k     &kill-to-eol            M-k     &redraw-line-noprompt
+C-l     &redraw-line            M-l     &downcase-word
+C-t     &transpose              M-t     &transpose-words
                                 M-c     &capitalize-word
-^U      &kill-to-bol            M-u     &upcase-word
-^W      &del-unix-word-left     M-q     &to-history
-^Y      &yank                   M-y     &yank-pop
-^Z      &suspend
+C-u     &kill-to-bol            M-u     &upcase-word
+C-w     &del-unix-word-left     M-q     &to-history
+C-y     &yank                   M-y     &yank-pop
+C-z     &suspend
 Tab     &complete-word          M-Tab   &complete-line
 Ret     &enter-line
 LF      &enter-line
@@ -246,7 +247,7 @@ not assigned: &clear-line, &insert-string
 Del is the Backspace key on most terminals, and Delete the Delete key.
 
 M-<key> means press escape and then <key>, or press meta/alt key at the same
-time as <key>. ^ means control.
+time as <key>. C-<key> means press control at the same time as <key>.
 If your terminal has arrow keys, they are set for default to move cursor and to
 step around history.
 @wrap
