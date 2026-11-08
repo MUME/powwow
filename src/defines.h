@@ -60,8 +60,7 @@
 #define SPECIAL_CHARS	"{}();\"=" /* specials chars needing escape;
 				    * update doc/powwow.md.in if changed */
 #define MPI		"~$#E"	/* MUME protocol introducer */
-#define MPILEN		4	/* strlen(MPI) */
-static_assert(sizeof(MPI) - 1 == MPILEN, "MPILEN must be strlen(MPI)");
+#define MPILEN		(sizeof(MPI) - 1)
 
 #define MAX_CONNECTS	32	/* max number of open connections. must fit in a byte;
 				 * update doc/powwow.md.in if changed */
