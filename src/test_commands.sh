@@ -438,6 +438,14 @@ b
 "
     has 'a🧙‍♂️'
 
+    run 'emoji can be browsed by group and subgroup' '' \
+        "${cx8e}		$(printf '\007')
+#print a${cx8e}peo/fant	man mag	
+b
+"
+    grep -q '^Flags/ ([0-9]* emoji)$' "$tmp/out" || fail "no list of groups"
+    has 'a🧙‍♂️b'
+
     run 'Ret inserts the only character whose name matches' '' \
         "#print a${cx8}lat let yr
 
