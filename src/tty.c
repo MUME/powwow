@@ -115,6 +115,22 @@ static struct {
 static struct termios ttybsave;
 
 /*
+ * disable the keys that the terminal handles itself even in non-canonical
+ * mode, so that they can be bound: suspend (^Z, handled by powwow), and,
+ * where they exist, delayed suspend (^Y) and discard output (^O)
+ */
+static void disable_special_keys(struct termios *ttyb)
+{
+    ttyb->c_cc[VSUSP] = _POSIX_VDISABLE;
+#ifdef VDSUSP
+    ttyb->c_cc[VDSUSP] = _POSIX_VDISABLE;
+#endif
+#ifdef VDISCARD
+    ttyb->c_cc[VDISCARD] = _POSIX_VDISABLE;
+#endif
+}
+
+/*
  * Set the terminal to character-at-a-time-without-echo mode, and save the
  * original state in ttybsave
  */
@@ -125,8 +141,7 @@ void tty_start(void)
     ttyb.c_lflag &= ~(ECHO | ICANON);
     ttyb.c_cc[VTIME] = 0;
     ttyb.c_cc[VMIN] = 1;
-    /* disable the special handling of the suspend key (handle it ourselves) */
-    ttyb.c_cc[VSUSP] = _POSIX_VDISABLE;
+    disable_special_keys(&ttyb);
     tcsetattr(tty_read_fd, TCSANOW, &ttyb);
 
 #ifdef USE_LOCALE
@@ -180,11 +195,10 @@ void tty_special_keys(void)
             ttyb.c_cc[i] = _POSIX_VDISABLE;
         ttyb.c_oflag &= ~OPOST;
     } else {
-        /* line at a time mode: enable them, except suspend */
+        /* line at a time mode: enable them, except those powwow handles */
         for (int i = 0; i < NCCS; ++i)
             ttyb.c_cc[i] = ttybsave.c_cc[i];
-        /* disable the suspend key (handle it ourselves) */
-        ttyb.c_cc[VSUSP] = _POSIX_VDISABLE;
+        disable_special_keys(&ttyb);
         /* set cooked mode */
         ttyb.c_oflag |= OPOST;
     }
