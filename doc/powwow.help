@@ -306,7 +306,8 @@ The "program" mode uses ' <>!=(),;"'{}[]+-/*%' as separators, which
 is suitable if you are doing some kind of on-line programming.
 You can also make a customized setting with the "custom" mode (space
 is always used as a delimeter).
-This setting also affects &transpose-words (usually bound as M-t)
+This setting also affects alias parameters, $ in patterns, and the word
+operators of the calculator, such as :< and >:.
 @for
 #for ([<init>];<check>;[<loop>]) <command>
 
