@@ -562,11 +562,7 @@ void printver(int level)
 #else
 	       "termcaps,"
 #endif
-#ifdef USE_SGTTY
-	       " BSD sgtty,"
-#else
 	       " termios,"
-#endif
 #ifdef USE_REGEXP
 	       " regexp "
   #ifdef USE_REGEXP_PCRE2POSIX

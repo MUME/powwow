@@ -40,60 +40,8 @@
 #include "charset.h"
 #include "width.h"
 
-#ifndef USE_SGTTY
-#  ifdef APOLLO
-#    include "/sys5.3/usr/include/sys/termio.h"
-#  else
-/*
- * including both termio.h and termios.h might be an overkill, and gives
- * many warnings, but seems to be necessary at times. works anyway.
- */
-#    include <termios.h>
-#    ifndef __linux__
-#      include <termio.h>
-#    endif
-#  endif
-/* #else USE_SGTTY */
-#endif
-
-/*
- * SunOS 4 doesn't have function headers and has the defs needed from
- * ioctl.h in termios.h.  Does it compile with USE_SGTTY?
- */
-#if (defined(sun) && defined(sparc) && ! defined(__SVR4))
-   extern int printf();
-#else
-#  include <sys/ioctl.h>
-#endif
-
-#ifdef USE_BSD_LIKE
-#  include <sys/ioctl_compat.h>
-#  define O_RAW RAW
-#  define O_ECHO ECHO
-#  define O_CBREAK CBREAK
-#endif
-
-#if defined(TCSETS) || defined(TCSETATTR)
-#  ifndef TCSETS		/* cc for HP-UX  SHOULD define this... */
-#    define TCSETS TCSETATTR
-#    define TCGETS TCGETATTR
-#  endif
-typedef struct termios termiostruct;
-#else
-#  define TCSETS TCSETA
-#  define TCGETS TCGETA
-typedef struct termio termiostruct;
-#endif
-
-#ifdef VSUSP
-#  define O_SUSP VSUSP
-#else
-#  ifdef SWTCH
-#    define O_SUSP SWTCH
-#  else
-#    define O_SUSP SUSP
-#  endif
-#endif
+#include <sys/ioctl.h>
+#include <termios.h>
 
 #ifdef USE_VT100	/* hard-coded vt100 features if no termcap: */
 
@@ -165,19 +113,7 @@ static struct {
 };
 #endif  /* USE_LOCALE */
 
-#ifdef USE_SGTTY
-static struct sgttyb ttybsave;
-static struct tchars tcsave;
-static struct ltchars ltcsave;
-#else /* not USE_SGTTY */
-static termiostruct ttybsave;
-#endif /* USE_SGTTY */
-
-/*
- * Terminal handling routines:
- * These are one big mess of left-justified chicken scratches.
- * It should be handled more cleanly...but unix portability is what it is.
- */
+static struct termios ttybsave;
 
 /*
  * Set the terminal to character-at-a-time-without-echo mode, and save the
@@ -185,29 +121,14 @@ static termiostruct ttybsave;
  */
 void tty_start(void)
 {
-#ifdef USE_SGTTY
-    struct sgttyb ttyb;
-    struct ltchars ltc;
-    ioctl(tty_read_fd, TIOCGETP, &ttybsave);
-    ioctl(tty_read_fd, TIOCGETC, &tcsave);
-    ioctl(tty_read_fd, TIOCGLTC, &ltcsave);
-    ttyb = ttybsave;
-    ttyb.sg_flags = (ttyb.sg_flags|O_CBREAK) & ~O_ECHO;
-    ioctl(tty_read_fd, TIOCSETP, &ttyb);
-    ltc = ltcsave;
-    ltc.t_suspc = -1;
-    ioctl(tty_read_fd, TIOCSLTC, &ltc);
-#else /* not USE_SGTTY */
-    termiostruct ttyb;
-    ioctl(tty_read_fd, TCGETS, &ttyb);
-    ttybsave = ttyb;
-    ttyb.c_lflag &= ~(ECHO|ICANON);
+    tcgetattr(tty_read_fd, &ttybsave);
+    struct termios ttyb = ttybsave;
+    ttyb.c_lflag &= ~(ECHO | ICANON);
     ttyb.c_cc[VTIME] = 0;
     ttyb.c_cc[VMIN] = 1;
     /* disable the special handling of the suspend key (handle it ourselves) */
-    ttyb.c_cc[O_SUSP] = 0;
-    ioctl(tty_read_fd, TCSETS, &ttyb);
-#endif /* USE_SGTTY */
+    ttyb.c_cc[VSUSP] = _POSIX_VDISABLE;
+    tcsetattr(tty_read_fd, TCSANOW, &ttyb);
 
 #ifdef USE_LOCALE
     orig_read_fd_fl = fcntl(tty_read_fd, F_GETFL);
@@ -239,13 +160,7 @@ void tty_start(void)
  */
 void tty_quit(void)
 {
-#ifdef USE_SGTTY
-    ioctl(tty_read_fd, TIOCSETP, &ttybsave);
-    ioctl(tty_read_fd, TIOCSETC, &tcsave);
-    ioctl(tty_read_fd, TIOCSLTC, &ltcsave);
-#else /* not USE_SGTTY */
-    ioctl(tty_read_fd, TCSETS, &ttybsave);
-#endif /* USE_SGTTY */
+    tcsetattr(tty_read_fd, TCSANOW, &ttybsave);
     tty_puts(kpadend);
     tty_flush();
 #ifdef USE_LOCALE
@@ -258,44 +173,25 @@ void tty_quit(void)
  */
 void tty_special_keys(void)
 {
-#ifdef USE_SGTTY
-    struct tchars tc = {-1, -1, -1, -1, -1, -1};
-    struct ltchars ltc = {-1, -1, -1, -1, -1, -1};
-    struct sgttyb ttyb;
-    ioctl(tty_read_fd, TIOCGETP, &ttyb);
+    struct termios ttyb;
+    tcgetattr(tty_read_fd, &ttyb);
     if (linemode & LM_CHAR) {
-	/* char-by-char mode: set RAW mode*/
-	ttyb.sg_flags |= RAW;
+        /* char-by-char mode: disable all special keys and set raw mode */
+        for (int i = 0; i < NCCS; ++i)
+            ttyb.c_cc[i] = _POSIX_VDISABLE;
+        ttyb.c_oflag &= ~OPOST;
     } else {
-	/* line-at-a-time mode: enable spec keys, disable RAW */
-	tc = tcsave;
-	ltc = ltcsave;
-	ltc.t_suspc = -1;	/* suspend key remains disabled */
-	ttyb.sg_flags &= ~RAW;
+        /* line at a time mode: enable them, except suspend */
+        for (int i = 0; i < NCCS; ++i)
+            ttyb.c_cc[i] = ttybsave.c_cc[i];
+        /* disable the suspend key (handle it ourselves) */
+        ttyb.c_cc[VSUSP] = _POSIX_VDISABLE;
+        /* set cooked mode */
+        ttyb.c_oflag |= OPOST;
     }
-    ioctl(tty_read_fd, TIOCSETP, &ttyb);
-    ioctl(tty_read_fd, TIOCSETC, &tc);
-    ioctl(tty_read_fd, TIOCSLTC, &ltc);
-#else /* not USE_SGTTY */
-    int i;
-    termiostruct ttyb;
-    ioctl(tty_read_fd, TCGETS, &ttyb);
-    if (linemode & LM_CHAR)  {
-	/* char-by-char mode: disable all special keys and set raw mode */
-	for(i = 0; i < NCCS; i++)
-	    ttyb.c_cc[i] = 0;
-	ttyb.c_oflag &= ~OPOST;
-    } else {
-	/* line at a time mode: enable them, except suspend */
-	for(i = 0; i < NCCS; i++)
-	    ttyb.c_cc[i] = ttybsave.c_cc[i];
-	/* disable the suspend key (handle it ourselves) */
-	ttyb.c_cc[O_SUSP] = 0;
-	/* set cooked mode */
-	ttyb.c_oflag |= OPOST;
-    }
-    ioctl(tty_read_fd, TCSETS, &ttyb);
-#endif /* USE_SGTTY */
+    ttyb.c_cc[VTIME] = 0;
+    ttyb.c_cc[VMIN] = 1;
+    tcsetattr(tty_read_fd, TCSANOW, &ttyb);
 }
 
 /*

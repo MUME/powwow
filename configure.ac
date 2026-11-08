@@ -52,16 +52,6 @@ case "${host_os}" in
     darwin*) is_darwin=t ;;
 esac
 
-AC_ARG_ENABLE([bsd],
-    AS_HELP_STRING([--enable-bsd], [enable BSD features (default on Darwin)]),
-    [],
-    [ enable_bsd=no; test -n "${is_darwin}" && enable_bsd=yes ])
-
-AS_IF([ test "${enable_bsd}" = yes ],
-    [ AC_DEFINE(USE_SGTTY, 1, [Define to use BSD sgtty.])
-      AC_DEFINE(USE_BSD_LIKE, 1,
-    [Define for building on BSD-like systems.]) ])
-
 AC_ARG_ENABLE(tls,
     AS_HELP_STRING([--disable-tls],[disables TLS support]),
     [],
@@ -217,7 +207,6 @@ with-libgrapheme:   ${with_libgrapheme}
 enable-sort:        ${enable_sort}
 enable-shell:       ${enable_shell}
 enable-ansi-bug:    ${enable_ansi_bug}
-enable-bsd:         ${enable_bsd}
 
 Host:               ${host}
 Compiler:           ${CC}
