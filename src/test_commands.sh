@@ -229,7 +229,7 @@ has 'Execute a speedwalk sequence even if the speedwalk option is disabled.'
 
 run 'help aligns the list of commands' '#help' ''
 has '#addstatic {string|(expr)}      add the string to the static completion list'
-long=$(sed -n '/#commands available:/,/#quit/p' "$tmp/out" | awk 'length > 79')
+long=$(sed -n '/#commands available:/,$p' "$tmp/out" | awk 'length > 79')
 [ -z "$long" ] || fail "lines longer than 79 columns: $long"
 has '#beep                           make your terminal beep (like #print (*7))'
 has '#if (expr) instr1 [; #else instr2]'
