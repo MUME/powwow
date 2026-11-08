@@ -240,9 +240,9 @@ int charname_lookup(const char *file, const char *name, size_t len,
 /*
  * call 'fn' with each name in 'file' that 'pattern' matches as in
  * charname_words_match(), where the words of the group of an emoji come
- * before its name, with the group if the name does not match by itself,
- * or else NULL, and 'data'; return how many there are, or -1 if the names
- * cannot be read
+ * before its name, with its code points, its group if the name does not
+ * match by itself, or else NULL, and 'data'; return how many there are, or
+ * -1 if the names cannot be read
  */
 int charname_find(const char *file, const char *pattern, charname_fn fn,
                   void *data)
@@ -255,7 +255,7 @@ int charname_find(const char *file, const char *pattern, charname_fn fn,
     while (read_entry(f, &e)) {
         if (!charname_words_match(pattern, e.words, false))
             continue;
-        fn(e.name,
+        fn(e.name, e.cps, e.ncps,
            charname_words_match(pattern, e.name, false) ? NULL : e.group,
            data);
         ++count;

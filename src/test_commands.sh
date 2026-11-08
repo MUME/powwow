@@ -403,7 +403,7 @@ $(printf '\007')b
 ${cx8}sm face		$(printf '\007')
 "
     has 'aα'
-    has 'smirking face'
+    grep -q '^smirking face  *😏$' "$tmp/out" || fail 'no smirking face'
 
     run 'Tab keeps the words typed that the common start does not have' '' \
         "#print a${cx8}latin liga	 st
@@ -429,7 +429,8 @@ b
     run 'Tab lists the group of the emoji that match with it' '' \
         "${cx8e}fant		$(printf '\007')
 "
-    has 'elf (People & Body, person-fantasy)'
+    grep -q '^elf (People & Body, person-fantasy)  *🧝$' "$tmp/out" ||
+        fail 'no elf (People & Body, person-fantasy)'
 
     run 'Tab completes words of the group and the name to the name' '' \
         "#print a${cx8e}person-fant man mag	
@@ -446,7 +447,7 @@ b
     run 'Tab lists the best names first' '' \
         "${cx8}en 		$(printf '\007')
 "
-    sed -n '/^en dash$/,$p' "$tmp/out" | sed -n 2,4p > "$tmp/first"
+    sed -n '/^en dash  /,$p' "$tmp/out" | sed -n '2,4s/  .*//p' > "$tmp/first"
     [ "$(cat "$tmp/first")" = "en quad
 en space
 envelope" ] || fail "en dash, en quad, en space and envelope are not first"

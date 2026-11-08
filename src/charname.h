@@ -14,9 +14,10 @@ extern char namesfile[], emojifile[];
 /* the code points of an emoji sequence, at most */
 enum { CHARNAME_MAX = 16 };
 
-/* called by charname_find() with each name found, and its group if the
- * name matches only with it */
-typedef void (*charname_fn)(const char *name, const char *group, void *data);
+/* called by charname_find() with each name found, its 'ncps' code points
+ * 'cps', and its group if the name matches only with it */
+typedef void (*charname_fn)(const char *name, const uint32_t *cps,
+                            int ncps, const char *group, void *data);
 
 int charname_lookup(const char *file, const char *name, size_t len,
                     uint32_t *cps);

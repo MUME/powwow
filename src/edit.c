@@ -1680,7 +1680,8 @@ struct charin_matches {
     int by_group;
 };
 
-static void charin_match(const char *name, const char *group, void *data)
+static void charin_match(const char *name, const uint32_t *cps, int ncps,
+                         const char *group, void *data)
 {
     struct charin_matches *m = data;
     int tier = charin_tier(name);
@@ -1708,10 +1709,12 @@ struct charin_listing {
         int tier;
         char *name;
         char *shown;            /* with its group, if it matched with it */
+        char *chars;            /* the character or emoji itself */
     } *names;
 };
 
-static void charin_list_add(const char *name, const char *group, void *data)
+static void charin_list_add(const char *name, const uint32_t *cps, int ncps,
+                            const char *group, void *data)
 {
     struct charin_listing *l = data;
     if (l->count == l->size) {
@@ -1722,17 +1725,24 @@ static void charin_list_add(const char *name, const char *group, void *data)
         l->names = names;
         l->size = size;
     }
-    char shown[256];
+    char shown[256], chars[CHARNAME_MAX * UTF8_MAX + 1];
     snprintf(shown, sizeof(shown), group != NULL ? "%s (%s)" : "%s",
              name, group);
+    int n = 0;
+    for (int i = 0; i < ncps; ++i)
+        n += utf8_put(cps[i], chars + n);
+    chars[n] = '\0';
     char *copy = my_strdup(name), *shown_copy = my_strdup(shown);
-    if (copy == NULL || shown_copy == NULL) {
+    char *chars_copy = my_strdup(chars);
+    if (copy == NULL || shown_copy == NULL || chars_copy == NULL) {
         free(copy);
         free(shown_copy);
+        free(chars_copy);
         return;
     }
     l->names[l->count++] = (struct listed_name){
-        .tier = charin_tier(name), .name = copy, .shown = shown_copy
+        .tier = charin_tier(name), .name = copy, .shown = shown_copy,
+        .chars = chars_copy
     };
 }
 
@@ -1758,11 +1768,23 @@ static void charin_list(void)
 
     clear_input_line(0);
     tty_putc('\n');
+    /* the characters after the names, lined up, as their width varies
+     * with the terminal */
+    int width = 0;
+    for (int i = 0; i < l.count && i < CHARIN_LIST_MAX; ++i) {
+        int w = utf8_width(l.names[i].shown, strlen(l.names[i].shown));
+        if (w > width)
+            width = w;
+    }
     for (int i = 0; i < l.count; ++i) {
         if (i < CHARIN_LIST_MAX)
-            tty_printf("%s\n", l.names[i].shown);
+            tty_printf("%s%*s  %s\n", l.names[i].shown,
+                       width - utf8_width(l.names[i].shown,
+                                          strlen(l.names[i].shown)), "",
+                       l.names[i].chars);
         free(l.names[i].name);
         free(l.names[i].shown);
+        free(l.names[i].chars);
     }
     if (l.count > CHARIN_LIST_MAX)
         tty_printf("#and %d more.\n", l.count - CHARIN_LIST_MAX);
