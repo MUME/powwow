@@ -320,51 +320,47 @@ void redraw_line_noprompt(char *dummy)
     status(-1);
 }
 
+/* the end of the word at or after 'p' */
+static int word_end_after(int p)
+{
+    while (p < edlen && !word_at(p))
+        p = next_cell(p);
+    while (p < edlen && word_at(p))
+        p = next_cell(p);
+    return p;
+}
+
+/* the start of the word before 'p' */
+static int word_start_before(int p)
+{
+    while (p > edstart && !word_at(prev_cell(p)))
+        p = prev_cell(p);
+    while (p > edstart && word_at(prev_cell(p)))
+        p = prev_cell(p);
+    return p;
+}
+
 /*
- * transpose two words to the left
+ * swap the word before the cursor with the word at or after it, or the
+ * last two words at the end of the line, and move after them, like
+ * transpose-words in readline
  */
 void transpose_words(char *dummy)
 {
-    /* other refers to the word to the left, this is the one we are at */
-
-    int this_so, other_so, this_eo, other_eo;
-    char buf[BUFSIZE];
-    int n;
-
-    if (pos > 2) {
-
-	this_eo = this_so = pos;
-	/* optionally traceback to find a word */
-	while (this_so != 0 && (this_so == edlen || IS_DELIM(edbuf[this_so])))
-	    this_so--;
-
-	/* now find where the current word ends */
-	while (this_eo < edlen && !IS_DELIM(edbuf[this_eo]))
-	    this_eo++;
-
-	/* found a word; now find its start */
-	while (this_so > 0 && !IS_DELIM(edbuf[this_so - 1]))
-	    this_so--;
-
-	if (this_so < 2)
-	    return;		/* impossible that there's another word */
-
-	other_so = this_so - 1;
-	while (other_so >= 0 && IS_DELIM(edbuf[other_so]))
-	    other_so--;
-	if (other_so < 0)
-	    return;
-	other_eo = other_so + 1;
-	while (other_so > 0 && !IS_DELIM(edbuf[other_so - 1]))
-	    other_so--;
-
-	n = sprintf(buf, "%.*s%.*s%.*s",
-		    this_eo - this_so, edbuf + this_so,
-		    this_so - other_eo, edbuf + other_eo,
-		    other_eo - other_so, edbuf + other_so);
-
-	input_replace(other_so, this_eo - other_so, buf, n);
+    int start2 = word_start_before(word_end_after(pos));
+    int end2 = word_end_after(start2);
+    int start1 = word_start_before(start2);
+    int end1 = word_end_after(start1);
+    if (start1 == start2 || start2 < end1) {
+        tty_putc('\007');
+        return;
     }
+    char buf[BUFSIZE];
+    int n = snprintf(buf, sizeof(buf), "%.*s%.*s%.*s",
+                     end2 - start2, edbuf + start2,
+                     start2 - end1, edbuf + end1,
+                     end1 - start1, edbuf + start1);
+    input_replace(start1, end2 - start1, buf, n);
 }
 
 /*

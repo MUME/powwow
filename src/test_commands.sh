@@ -232,7 +232,7 @@ run --bind 'transpose words at the end of a line' \
     '#bind foo=&transpose-words' \
     "$esc[20~" "#print foo bar $esc[20~
 "
-has 'bar  foo'
+has 'bar foo '
 
 run 'change case at the end of a line' '' \
     "#print foo bar ${esc}u${esc}l${esc}c
@@ -276,6 +276,11 @@ run 'a key sequence and C-h lists its bindings' '' \
 has '#key bindings starting with C-x 8:'
 has '#bind C-x-8-Ret ^X8^M=&insert-char'
 has 'x'
+
+run 'M-t swaps the word at the cursor with the one before' '' \
+    "#print one two three$(printf '\002\002')${esc}t!
+"
+has 'one three two!'
 
 run 'consecutive kills are yanked together' '' \
     "#print foo bar${esc}$(printf '\b')${esc}$(printf '\b')x $(printf '\031')

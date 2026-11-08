@@ -44,6 +44,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  starts of its words, as `gr sm al' for `greek small letter alpha',
 	  and lists the names when pressed again.
 	* Bound the Delete key to delete the character under the cursor.
+	* M-t swaps the word before the cursor with the word at or after
+	  it, finding words like M-f and M-b instead of by the #delim
+	  characters, and moves after them.
 	* Renamed the keys BS and M-BS to C-h and M-C-h.
 	* After a second without the next key of a key sequence, the keys
 	  typed so far are shown after the input line, such as `C-x 8-',

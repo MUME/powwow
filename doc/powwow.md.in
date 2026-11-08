@@ -2239,7 +2239,7 @@ The delimiters that separate words can be shown or changed with
 normal uses only space and semicolon, which is the default. program
 uses the characters  `<>!=(),;"'{}[]+-/*%`  and space, which suits
 on-line programming. custom uses the given characters, plus space.
-They also apply to `&transpose-words`, to the word operators of the
+They also apply to alias parameters, to the word operators of the
 calculator such as `:<` and `>:`, and to `$` in patterns.
 
 ## Command line editing
@@ -2273,7 +2273,7 @@ functions by typing `#bind functions`):
 | `C-r` | `&reverse-search` | search backward in history for the text typed next; hit again to find an older line. Any editing key ends the search on the line found, and `Ret` executes it. |
 | `C-s` | `&forward-search` | search forward in history, like `C-r` |
 | `C-t` | `&transpose` | transpose previous character with next (if at the end of the line, the two last) |
-| `M-t` | `&transpose-words` | transpose previous word with next |
+| `M-t` | `&transpose-words` | swap the word before the cursor with the word at or after it, or the last two words at the end of the line |
 | `C-u` | `&kill-to-bol` | kill to beginning of line |
 | `M-u` | `&upcase-word` | uppercase the word from the cursor, and move after it |
 | `C-w` | `&del-unix-word-left` | delete left of cursor to the previous space |
