@@ -412,6 +412,13 @@ has '#default key binding: KP8 ^[Ox=n'
 has '#deleting key binding: foo ^[[A=bar'
 has '#no key named "nosuch", and no default for it.'
 
+run '#reset rejects unknown lists' '#bind foo ^[[A=bar
+#reset bind 
+#bind foo
+#reset nosuch'
+has '#no such key: "foo"'
+has '#reset: unknown list "nosuch", must specify one of:'
+
 run '#bind functions lists all editing functions' '#bind functions'
 has '#moving:'
 has '#killing and yanking:'

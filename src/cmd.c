@@ -1337,13 +1337,24 @@ static void cmd_rebindALL(char *arg)
     }
 }
 
+static void reset_usage(const char *arg)
+{
+    if (*arg == '\0')
+        PRINTF("#reset: must specify one of:\n");
+    else
+        PRINTF("#reset: unknown list \"%s\", must specify one of:\n", arg);
+    tty_puts(" alias, action, bind [key], in (or at), mark, prompt,"
+             " substitute, var, all.\n");
+}
+
 static void cmd_reset(char *arg)
 {
     char all = 0;
     arg = skipspace(arg);
+    for (size_t len = strlen(arg); len > 0 && arg[len - 1] == ' '; --len)
+        arg[len - 1] = '\0';
     if (!*arg) {
-        PRINTF("#reset: must specify one of:\n");
-        tty_puts(" alias, action, bind, in (or at), mark, prompt, substitute, var, all.\n");
+        reset_usage(arg);
 	return;
     }
     if (strncmp(arg, "bind ", 5) == 0) {
@@ -1426,6 +1437,8 @@ static void cmd_reset(char *arg)
 	if (!all)
 	    return;
     }
+    if (!all)
+        reset_usage(arg);
 }
 
 static void cmd_snoop(char *arg)
