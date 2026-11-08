@@ -669,6 +669,21 @@ grep -aq '^#delim: "program" ' "$tmp/out" || fail "expected #delim program"
 has '#option autoprint is now on.'
 grep -aq 'fights off $' "$tmp/out" || fail "expected #group fights off"
 
+run 'Tab completes the names of aliases, actions, marks and variables' '' \
+    "#alias kfoo=kill foo
+#action >+hpcheck ^HP:&1=#print found
+#mark troll=bold
+#var \$target=orc
+#alias kf	
+#action -hpc	
+#mark tr	
+#var \$tar	
+"
+grep -aq '#alias kfoo $' "$tmp/out" || fail "expected #alias kfoo"
+grep -aq '#action -hpcheck $' "$tmp/out" || fail "expected #action -hpcheck"
+grep -aq '#mark troll $' "$tmp/out" || fail "expected #mark troll"
+grep -aq '#var \$target $' "$tmp/out" || fail "expected #var \$target"
+
 run 'Tab completes the arguments of #hilite' '' \
     "#hil	inp	un	Ye	o	cy	
 #hil	me	b		
