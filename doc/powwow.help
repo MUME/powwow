@@ -247,6 +247,9 @@ not assigned: &clear-line, &insert-string
 
 Del is the Backspace key on most terminals, and Delete the Delete key.
 
+C-c, the interrupt key of the terminal, cannot be bound: it stops a command
+that is running, such as a #while loop, and pressed twice it quits powwow.
+
 M-<key> means press escape and then <key>, or press meta/alt key at the same
 time as <key>. C-<key> means press control at the same time as <key>.
 If your terminal has arrow keys, they are set for default to move cursor and to

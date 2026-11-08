@@ -144,7 +144,7 @@ careful, as `#quit` brutally closes the connection to the mud,
 without renting your character. Normally, you want to log out
 gracefully from the mud before doing that. If you wish to cut
 your link manually, you can also press the break key on your
-system twice (usually Control-C or DEL) (You must hit it twice
+system twice (usually `C-c`) (You must hit it twice
 because hitting only once is used to stop command parsing -
 see the bottom of this file).
 
@@ -2291,6 +2291,8 @@ way doesn't work on all terminals.
 
 `C-x` means pressing the Control key at the same time as x.
 
+`C-c` cannot be bound, as it is the break key: see below.
+
 If your terminal has arrow keys, they can be used to move the
 cursor and step around in history. In addition, you can define your
 own key bindings for sending quick commands (see the `#bind` command).
@@ -2452,7 +2454,7 @@ For all other resources, the only limit is the available memory.
 
 ## The break key
 
-It is usually Control-C or DEL (it depends from the terminal you use).
+It is usually `C-c` (it is the interrupt key set by `stty intr`).
 
 Powwow cannot redefine it, but you need to hit it twice in a row
 to actually stop powwow.
