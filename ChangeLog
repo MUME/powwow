@@ -20,31 +20,33 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Fixed #delim splitting command and alias names, and the arguments
 	  of commands such as #host, #load and #spawn, at characters other
 	  than space and `;'.
+	* Line editing follows readline, as in bash and other shells: the
+	  default keys do what they do there, and the entries below add
+	  the missing ones.
 	* M-u, M-l and the new M-c (&capitalize-word) change the case from
 	  the cursor to the end of the word and move the cursor after it,
-	  as in readline, using Unicode titlecase and special casing such as
-	  `ß' to `SS' when built with libgrapheme.
-	* C-w deletes to the previous space, as in readline, using the new
+	  using Unicode titlecase and special casing such as `ß' to `SS'
+	  when built with libgrapheme.
+	* C-w deletes to the previous space, using the new
 	  &del-unix-word-left; &to-history moved to M-q.
-	* Loading a save-file from an older version adds the new default
-	  editing keys that it does not bind, and makes C-w delete a word
-	  if it is bound to &to-history as it was by default.
-	* C-y (&yank) inserts text deleted by C-k, C-w, M-d, M-BS and the
-	  new C-u (&kill-to-bol), and M-y (&yank-pop) replaces it with the
-	  previously deleted text, as in readline.
+	* C-y (&yank) inserts text deleted by C-k, C-w, M-d, M-Backspace and
+	  the new C-u (&kill-to-bol), and M-y (&yank-pop) replaces it with
+	  the previously deleted text.
 	* C-r and C-s (&reverse-search and &forward-search) search the
-	  history incrementally, and C-g (&abort) stops searching, as in
-	  readline.
-	* The Delete key deletes the character under the cursor. The keys
-	  BS and M-BS are now named C-h and M-C-h, also when loading a
-	  save-file from an older version.
+	  history incrementally, and C-g (&abort) stops searching.
+	* Bound the Delete key to delete the character under the cursor.
+	* Renamed the keys BS and M-BS to C-h and M-C-h.
 	* Unbound meta keys and function keys beep instead of typing the
 	  rest of their escape sequence, such as `6' for M-6.
-	* `#reset bind KEY' resets one key to its default binding.
-	* `#bind functions' lists all the editing functions, with the keys
-	  bound to them.
 	* ^S and ^Q no longer stop and start the output, and ^Y and ^O are
 	  no longer handled by the terminal on macOS and the BSDs.
+	* Loading a save-file from an older version adds the new default
+	  editing keys that it does not bind, renames BS and M-BS, and
+	  makes C-w delete a word if it is bound to &to-history as it was
+	  by default.
+	* `#reset bind KEY' resets one key to its default binding.
+	* `#bind functions' lists all the editing functions by group, with
+	  the keys bound to them.
 
 Changes from 1.3.0 to 1.3.1
 	* New command #substitute.
