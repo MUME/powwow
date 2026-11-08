@@ -7,7 +7,7 @@
 #   sh emoji-names.sh emoji-test.txt VERSION > emoji-names.txt
 #
 # each line is the code points of an emoji in hex, separated by spaces, a
-# tab, its name, a tab, and its group and subgroup; only the fully
+# tab, its name, a tab, its group, a tab, and its subgroup; only the fully
 # qualified emoji are listed
 
 [ $# -eq 2 ] || { echo "usage: $0 emoji-test.txt VERSION" >&2; exit 2; }
@@ -21,5 +21,5 @@ awk '
     sub(/ *;.*/, "", seq)
     name = $0
     sub(/^[^#]*# [^ ]+ E[0-9.]+ /, "", name)
-    print seq "\t" name "\t" group " " subgroup
+    print seq "\t" name "\t" group "\t" subgroup
 }' "$1"

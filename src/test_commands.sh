@@ -405,6 +405,12 @@ ${cx8}sm face		$(printf '\007')
     has 'aα'
     has 'smirking face'
 
+    run 'Tab keeps the words typed that the common start does not have' '' \
+        "#print a${cx8}latin liga	 st
+
+"
+    has 'aﬆ'
+
     run 'C-_ undoes editing the character name, and inserting it' '' \
         "#print a${cx8}em dash$(printf '\027')${cu}
 ${cu}b
@@ -419,6 +425,17 @@ ${cx8e}food pizza
 b
 "
     has 'a👍🇸🇪🍕b'
+
+    run 'Tab lists the group of the emoji that match with it' '' \
+        "${cx8e}fant		$(printf '\007')
+"
+    has 'elf (People & Body, person-fantasy)'
+
+    run 'Tab completes words of the group and the name to the name' '' \
+        "#print a${cx8e}person-fant man mag	
+
+"
+    has 'a🧙‍♂️'
 
     run 'Ret inserts the only character whose name matches' '' \
         "#print a${cx8}lat let yr

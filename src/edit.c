@@ -1671,20 +1671,24 @@ static void name_set_add(struct name_set *set, const char *name)
 
 /*
  * the names that the name being read matches: all of them, those that
- * start with it, those that start with its first word, and those whose
- * words it abbreviates, one by one
+ * start with it, and those that start with its first word; those whose
+ * words it abbreviates, one by one; and how many match only with the
+ * words of their group
  */
 struct charin_matches {
     struct name_set all, prefixed, anchored, abbreviated;
+    int by_group;
 };
 
-static void charin_match(const char *name, void *data)
+static void charin_match(const char *name, const char *group, void *data)
 {
     struct charin_matches *m = data;
     int tier = charin_tier(name);
     name_set_add(&m->all, name);
     if (charname_words_abbreviate(charin.name, name))
         name_set_add(&m->abbreviated, name);
+    if (group != NULL)
+        ++m->by_group;
     if (tier == 0)
         name_set_add(&m->prefixed, name);
     if (tier <= 1)
@@ -1703,10 +1707,11 @@ struct charin_listing {
     struct listed_name {
         int tier;
         char *name;
+        char *shown;            /* with its group, if it matched with it */
     } *names;
 };
 
-static void charin_list_add(const char *name, void *data)
+static void charin_list_add(const char *name, const char *group, void *data)
 {
     struct charin_listing *l = data;
     if (l->count == l->size) {
@@ -1717,11 +1722,17 @@ static void charin_list_add(const char *name, void *data)
         l->names = names;
         l->size = size;
     }
-    char *copy = my_strdup(name);
-    if (copy == NULL)
+    char shown[256];
+    snprintf(shown, sizeof(shown), group != NULL ? "%s (%s)" : "%s",
+             name, group);
+    char *copy = my_strdup(name), *shown_copy = my_strdup(shown);
+    if (copy == NULL || shown_copy == NULL) {
+        free(copy);
+        free(shown_copy);
         return;
+    }
     l->names[l->count++] = (struct listed_name){
-        .tier = charin_tier(name), .name = copy
+        .tier = charin_tier(name), .name = copy, .shown = shown_copy
     };
 }
 
@@ -1749,8 +1760,9 @@ static void charin_list(void)
     tty_putc('\n');
     for (int i = 0; i < l.count; ++i) {
         if (i < CHARIN_LIST_MAX)
-            tty_printf("%s\n", l.names[i].name);
+            tty_printf("%s\n", l.names[i].shown);
         free(l.names[i].name);
+        free(l.names[i].shown);
     }
     if (l.count > CHARIN_LIST_MAX)
         tty_printf("#and %d more.\n", l.count - CHARIN_LIST_MAX);
@@ -1777,8 +1789,19 @@ static void charin_complete(void)
                           : m.prefixed.count > 0
                           ? name_set_completion(&m.prefixed)
                           : name_set_completion(&m.anchored));
-    if (strlen(longer) > strlen(charin.name)
-        && charname_words_match(charin.name, longer, false)) {
+    bool better = (strlen(longer) > strlen(charin.name)
+                   && charname_words_match(charin.name, longer, false));
+    /* when the words typed match with the group of the emoji, as in
+     * "person-fant man mag", the start that all the names have in common
+     * is better, even if it is shorter, as "man mage"; not otherwise, as
+     * it would drop words typed, as "liga" of "latin liga" */
+    const char *common = name_set_completion(&m.all);
+    if (!better && m.by_group == m.all.count && common[0] != '\0'
+        && !charname_words_match(charin.name, common, false)) {
+        longer = common;
+        better = true;
+    }
+    if (better) {
         charin_set_name(longer);
         charin.tabbed = false;
     } else if (!charin.tabbed) {
