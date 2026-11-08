@@ -11,13 +11,8 @@
 
 #include "attr.h"
 
-#if !defined(SYS_TIME_H) && !defined(_H_SYS_TIME)
-#  include <sys/time.h>
-#endif
-
-#ifdef AIX
-#  include <sys/select.h>
-#endif
+#include <sys/select.h>
+#include <sys/time.h>
 
 #ifdef USE_RANDOM
 #  define get_random random
