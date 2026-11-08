@@ -941,6 +941,53 @@ static void complete_group(struct word_list *l, int arg, const char *args)
     }
 }
 
+/* the names of the aliases, for #alias */
+static void complete_alias(struct word_list *l, int arg, const char *args)
+{
+    if (arg != 0)
+        return;
+    for (const aliasnode *p = sortedaliases; p != NULL; p = p->snext)
+        word_list_add(l, p->name);
+}
+
+/* the labels of the actions, for #action after any of <=>% and + or - */
+static void complete_action(struct word_list *l, int arg, const char *args)
+{
+    if (arg != 0)
+        return;
+    for (const actionnode *p = actions; p != NULL; p = p->next) {
+        if (p->label != NULL && p->label[0] != '\0')
+            word_list_add(l, p->label);
+    }
+}
+
+/* the patterns of the marks without spaces, for #mark */
+static void complete_mark(struct word_list *l, int arg, const char *args)
+{
+    if (arg != 0)
+        return;
+    for (const marknode *p = markers; p != NULL; p = p->next) {
+        if (strchr(p->b.pattern, ' ') == NULL)
+            word_list_add(l, p->b.pattern);
+    }
+}
+
+/* the named variables, as @name and $name, for #var */
+static void complete_var(struct word_list *l, int arg, const char *args)
+{
+    if (arg != 0)
+        return;
+    static const char signs[2] = { '@', '$' };  /* numbers and text */
+    for (int type = 0; type < 2; ++type) {
+        for (const varnode *v = sortednamed_vars[type]; v != NULL;
+             v = v->snext) {
+            char name[BUFSIZE];
+            snprintf(name, sizeof(name), "%c%s", signs[type], v->name);
+            word_list_add(l, name);
+        }
+    }
+}
+
 /*
  * how the arguments of commands are completed: a function that adds the
  * words that argument 'arg' can be, after the arguments 'args' before it;
@@ -952,15 +999,19 @@ static const struct {
     void (*complete)(struct word_list *l, int arg, const char *args);
     const char *prefix;
 } arg_completions[] = {
+    { "action", complete_action, "<=>%+-" },
+    { "alias", complete_alias, "" },
     { "bind", complete_bind, "" },
     { "delim", complete_delim, "" },
     { "group", complete_group, "" },
     { "help", complete_help, "" },
     { "hilite", complete_hilite, "" },
     { "key", complete_key, "" },
+    { "mark", complete_mark, "" },
     { "option", complete_option, "+-=" },
     { "rebind", complete_key, "" },
     { "reset", complete_reset, "" },
+    { "var", complete_var, "" },
 };
 
 /* the command that 'name' runs, as its start, or NULL */
