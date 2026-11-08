@@ -807,10 +807,13 @@ static void cmd_hilite(char *arg)
         arg = skipspace(arg + len);
     }
 
-    if (!attr_parse(arg, &attr)) {
-	PRINTF("#attribute syntax error.\n");
-	if (opt_info)
-	  show_attr_syntax();
+    char why[BUFSIZE];
+    if (!attr_parse_why(arg, &attr, why, sizeof(why))) {
+        PRINTF("#hilite: %s.\n", why);
+        if (opt_info) {
+            PRINTF("#syntax: #hilite [input|messages] [<attribute>]\n");
+            show_attr_syntax();
+        }
     } else if (messages) {
         message_attr = attr;
 	attr_string(&attr, msgattrbeg, msgattrend);

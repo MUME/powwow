@@ -657,13 +657,13 @@ void parse_action(char *str, int onprompt)
  */
 void show_attr_syntax(void)
 {
-    PRINTF("#attribute syntax:\n"
-           "\tZero or more of:\tbold, dim, italic, underline, blink, inverse,\n"
-           "\t\t\t\thidden, strike, overline\n"
-           "\tthen\t[foreground] [ON background]\n"
-           "\tColors: black,red,green,yellow,blue,magenta,cyan,white\n"
-           "\t\tBLACK,RED,GREEN,YELLOW,BLUE,MAGENTA,CYAN,WHITE (bright)\n"
-           "\t\t0-255 (256-color palette), #rrggbb (RGB), none\n");
+    PRINTF("#an attribute is: [<effect>...] [<color>] [on <color>]\n"
+           "  effects:  bold, dim, italic, underline, blink, inverse, hidden,\n"
+           "            strike, overline\n"
+           "  colors:   black, red, green, yellow, blue, magenta, cyan, white,\n"
+           "            bright in capitals (BLACK, RED, ...), 0 to 255 for the\n"
+           "            256-color palette, #rrggbb or none\n"
+           "  example:  bold yellow on blue\n");
 }
 
 /*
@@ -761,8 +761,9 @@ void parse_mark(char *str)
 
         np = lookup_marker(pattern, mbeg);
         struct attr attr;
-        if (!attr_parse(p, &attr)) {
-            PRINTF("#invalid attribute syntax.\n");
+        char why[BUFSIZE];
+        if (!attr_parse_why(p, &attr, why, sizeof(why))) {
+            PRINTF("#mark: %s.\n", why);
 	    error=SYNTAX_ERROR;
             if (opt_info) show_attr_syntax();
         } else if (!*p)
