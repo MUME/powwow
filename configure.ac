@@ -86,8 +86,17 @@ case "x${ac_prog_cc_stdc}" in
     * ) AC_MSG_WARN([unknown version ${ac_prog_cc_stdc}]) ;;
 esac
 AC_PROG_LN_S
-AC_PATH_PROG([CLANG_TIDY], [clang-tidy], [clang-tidy],
-    [$PATH:/opt/homebrew/opt/llvm/bin:/usr/local/opt/llvm/bin])
+# clang-tidy, or else the newest with a version, as clang-tidy-15 (Debian,
+# Ubuntu) or clang-tidy19 (FreeBSD), with one line of output
+AC_CACHE_CHECK([for clang-tidy], [ac_cv_path_CLANG_TIDY],
+    [AC_PATH_PROGS_FEATURE_CHECK([CLANG_TIDY],
+        [clang-tidy m4_for([v], [30], [15], [-1],
+                           [[clang-tidy-]v[ clang-tidy]v ])],
+        [ac_cv_path_CLANG_TIDY=$ac_path_CLANG_TIDY
+         ac_path_CLANG_TIDY_found=:],
+        [ac_cv_path_CLANG_TIDY=clang-tidy],
+        [$PATH:/opt/homebrew/opt/llvm/bin:/usr/local/opt/llvm/bin])])
+AC_SUBST([CLANG_TIDY], [$ac_cv_path_CLANG_TIDY])
 
 # Checks for libraries.
 
