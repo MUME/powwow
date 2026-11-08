@@ -342,23 +342,28 @@ void tty_bootstrap(void)
 }
 
 /*
- * add the default keypad bindings to the list
+ * the default keypad keys, which walk around; termcap does not have their
+ * sequences, so they are those of a vt100 (they can be changed with #bind
+ * or #rebind)
  */
+static const struct {
+    char *label, *seq, *command;
+} walk_binds[] = {
+    { .label = "KP2", .seq = "\033Or", .command = "s" },
+    { .label = "KP3", .seq = "\033Os", .command = "d" },
+    { .label = "KP4", .seq = "\033Ot", .command = "w" },
+    { .label = "KP5", .seq = "\033Ou", .command = "exits" },
+    { .label = "KP6", .seq = "\033Ov", .command = "e" },
+    { .label = "KP7", .seq = "\033Ow", .command = "look" },
+    { .label = "KP8", .seq = "\033Ox", .command = "n" },
+    { .label = "KP9", .seq = "\033Oy", .command = "u" },
+};
+
 void tty_add_walk_binds(void)
 {
-    /*
-     * Note: termcap doesn't have sequences for the numeric keypad, so we just
-     * assume they are the same as for a vt100. They can be redefined
-     * at runtime anyway (using #bind or #rebind)
-     */
-    add_keynode("KP2", "\033Or", 0, key_run_command, "s");
-    add_keynode("KP3", "\033Os", 0, key_run_command, "d");
-    add_keynode("KP4", "\033Ot", 0, key_run_command, "w");
-    add_keynode("KP5", "\033Ou", 0, key_run_command, "exits");
-    add_keynode("KP6", "\033Ov", 0, key_run_command, "e");
-    add_keynode("KP7", "\033Ow", 0, key_run_command, "look");
-    add_keynode("KP8", "\033Ox", 0, key_run_command, "n");
-    add_keynode("KP9", "\033Oy", 0, key_run_command, "u");
+    for (size_t i = 0; i < sizeof(walk_binds) / sizeof(*walk_binds); ++i)
+        add_keynode(walk_binds[i].label, walk_binds[i].seq, 0,
+                    key_run_command, walk_binds[i].command);
 }
 
 /*
