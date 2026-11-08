@@ -17,6 +17,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* #connect tries every address of the host, and connects to IPv4
 	  addresses on systems such as FreeBSD that do not map them to IPv6.
 	* Fixed `rand' always returning 0 on 64-bit systems.
+	* C-c stops a loop such as #while also while it runs a shell command
+	  with #!, which received the C-c instead of powwow.
 	* Fixed #delim splitting command and alias names, and the arguments
 	  of commands such as #host, #load and #spawn, at characters other
 	  than space and `;'.

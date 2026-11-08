@@ -24,6 +24,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -652,14 +653,18 @@ static void cmd_shell(char *arg)
         }
     } else {
         tty_quit();
-
-        if (system(arg) == -1) {
-            perror("system()");
-        }
-
+        int wstatus = system(arg);
         tty_start();
         tty_gotoxy(col0 = 0, line0 = lines -1);
         tty_puts(tty_clreoln);
+
+        if (wstatus == -1) {
+            errmsg("cannot run the shell");
+        } else if (WIFSIGNALED(wstatus) && WTERMSIG(wstatus) == SIGINT) {
+            /* stop a loop, as shells do */
+            PRINTF("#interrupted.\n");
+            error = USER_BREAK;
+        }
     }
 }
 #endif
