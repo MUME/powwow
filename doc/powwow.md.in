@@ -2249,39 +2249,39 @@ functions by typing `#bind functions`):
 | Key | Function name | Description |
 | --- | --- | --- |
 | `C-a` | `&begin-of-line` | beginning of line |
-| `C-e` | `&end-of-line` | end of line |
 | `C-b` | `&prev-char` | backward one character |
+| `M-b` | `&prev-word` | backward one word |
+| `M-c` | `&capitalize-word` | capitalize the word from the cursor, and move after it |
+| `C-d` | `&del-char-right` | delete character under cursor |
+| `M-d` | `&del-word-right` | delete word right of cursor |
+| `C-e` | `&end-of-line` | end of line |
 | `C-f` | `&next-char` | forward one character |
-| `C-p` | `&prev-line` | use previous line in history (step backward) |
+| `M-f` | `&next-word` | forward one word |
+| `C-g` | `&abort` | stop searching, and restore the line typed before |
+| `C-h`, `Del` | `&del-char-left` | delete character left of cursor; `Del` is the Backspace key on most terminals |
+| `M-C-h`, `M-Del` | `&del-word-left` | delete word left of cursor |
+| `C-k` | `&kill-to-eol` | kill to end of line |
+| `M-k` | `&redraw-line-noprompt` | redraw command line, discarding prompt |
+| `C-l` | `&redraw-line` | redraw your command line. This is useful if something garbles your input line. |
+| `M-l` | `&downcase-word` | lowercase the word from the cursor, and move after it |
 | `C-n` | `&next-line` | use next line in history (step forward) |
+| `C-p` | `&prev-line` | use previous line in history (step backward) |
+| `M-q` | `&to-history` | put current line in history and clear input line. This is useful when you are typing a long line and need to send another urgent command first. |
 | `C-r` | `&reverse-search` | search backward in history for the text typed next; hit again to find an older line. Any editing key ends the search on the line found, and `Ret` executes it. |
 | `C-s` | `&forward-search` | search forward in history, like `C-r` |
-| `C-g` | `&abort` | stop searching, and restore the line typed before |
-| `C-d` | `&del-char-right` | delete character under cursor |
-| `Delete` | `&del-char-right` | same thing, for the Delete key |
-| `C-h`, `Del` | `&del-char-left` | delete character left of cursor; `Del` is the Backspace key on most terminals |
-| `C-k` | `&kill-to-eol` | kill to end of line |
-| `C-u` | `&kill-to-bol` | kill to beginning of line |
-| `C-y` | `&yank` | insert the last killed text |
 | `C-t` | `&transpose` | transpose previous character with next (if at the end of the line, the two last) |
-| `C-l` | `&redraw-line` | redraw your command line. This is useful if something garbles your input line. |
+| `M-t` | `&transpose-words` | transpose previous word with next |
+| `C-u` | `&kill-to-bol` | kill to beginning of line |
+| `M-u` | `&upcase-word` | uppercase the word from the cursor, and move after it |
 | `C-w` | `&del-unix-word-left` | delete left of cursor to the previous space |
+| `C-y` | `&yank` | insert the last killed text |
+| `M-y` | `&yank-pop` | right after `C-y` or `M-y`, replace the inserted text with the kill before it |
 | `C-z` | `&suspend` | suspend powwow in the background |
+| `Delete` | `&del-char-right` | delete character under cursor, like `C-d` |
+| `LF` | `&enter-line` | execute the typed line, like `Ret`, for the `C-j` key (some terminals send this when you hit return) |
+| `Ret` | `&enter-line` | the most obvious: execute the typed line |
 | `Tab` | `&complete-word` | complete the word being typed to the last matching word in the history (or added with an `#add` command; see above). Hit multiple times to browse the possible completions. This is similar to the GNU Emacs `M-/` command. |
 | `M-Tab` | `&complete-line` | complete the line being typed to the last matching line in the history. Hit multiple times to browse the possible completions. |
-| `M-f` | `&next-word` | forward one word |
-| `M-k` | `&redraw-line-noprompt` | redraw command line, discarding prompt |
-| `M-b` | `&prev-word` | backward one word |
-| `M-d` | `&del-word-right` | delete word right of cursor |
-| `M-C-h`, `M-Del` | `&del-word-left` | delete word left of cursor |
-| `M-c` | `&capitalize-word` | capitalize the word from the cursor, and move after it |
-| `M-l` | `&downcase-word` | lowercase the word from the cursor, and move after it |
-| `M-q` | `&to-history` | put current line in history and clear input line. This is useful when you are typing a long line and need to send another urgent command first. |
-| `M-t` | `&transpose-words` | transpose previous word with next |
-| `M-u` | `&upcase-word` | uppercase the word from the cursor, and move after it |
-| `M-y` | `&yank-pop` | right after `C-y` or `M-y`, replace the inserted text with the kill before it |
-| `Ret` | `&enter-line` | the most obvious: execute the typed line |
-| `LF` | `&enter-line` | same thing, but for `C-j` key (some terminals send this when you hit return) |
 | (none) | `&clear-line` | clear input line. |
 | (none) | `&insert-string` | insert on command line the specified chars |
 

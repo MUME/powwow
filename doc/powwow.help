@@ -216,29 +216,30 @@ If <initstr> is specified, it is sent to host on connection.
 Default editing keys:
 
 C-a     &begin-of-line
-C-e     &end-of-line
 C-b     &prev-char              M-b     &prev-word
-C-f     &next-char              M-f     &next-word
-C-p     &prev-line
-C-n     &next-line
-C-r     &reverse-search
-C-s     &forward-search
-C-g     &abort
+                                M-c     &capitalize-word
 C-d     &del-char-right         M-d     &del-word-right
-Delete  &del-char-right
+C-e     &end-of-line
+C-f     &next-char              M-f     &next-word
+C-g     &abort
 C-h     &del-char-left          M-C-h   &del-word-left
-Del     &del-char-left          M-Del   &del-word-left
 C-k     &kill-to-eol            M-k     &redraw-line-noprompt
 C-l     &redraw-line            M-l     &downcase-word
+C-n     &next-line
+C-p     &prev-line
+                                M-q     &to-history
+C-r     &reverse-search
+C-s     &forward-search
 C-t     &transpose              M-t     &transpose-words
-                                M-c     &capitalize-word
 C-u     &kill-to-bol            M-u     &upcase-word
-C-w     &del-unix-word-left     M-q     &to-history
+C-w     &del-unix-word-left
 C-y     &yank                   M-y     &yank-pop
 C-z     &suspend
-Tab     &complete-word          M-Tab   &complete-line
-Ret     &enter-line
+Del     &del-char-left          M-Del   &del-word-left
+Delete  &del-char-right
 LF      &enter-line
+Ret     &enter-line
+Tab     &complete-word          M-Tab   &complete-line
 
 not assigned: &clear-line, &insert-string
 
