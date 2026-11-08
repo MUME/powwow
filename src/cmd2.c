@@ -1170,10 +1170,9 @@ void show_edit_functions(void)
  */
 void reset_bind(char *name)
 {
-    const char *seq, *command;
-    function_str funct;
+    const default_bind *d = tty_default_bind(name);
     keynode **kp = lookup_key(name);
-    if (!tty_default_bind(name, &seq, &funct, &command)) {
+    if (d == NULL) {
         if (*kp == NULL) {
             PRINTF("#no key named \"%s\", and no default for it.\n", name);
         } else {
@@ -1185,16 +1184,16 @@ void reset_bind(char *name)
     if (*kp != NULL)
         delete_keynode(kp);
     /* another key with the same sequence would hide this one */
-    int len = strlen(seq);
+    int len = strlen(d->seq);
     for (kp = &keydefs; *kp != NULL; ) {
-        if ((*kp)->seqlen == len && memcmp((*kp)->sequence, seq, len) == 0) {
+        if ((*kp)->seqlen == len && memcmp((*kp)->sequence, d->seq, len) == 0) {
             show_single_bind("deleting key binding:", *kp);
             delete_keynode(kp);
         } else {
             kp = &(*kp)->next;
         }
     }
-    add_keynode(name, seq, 0, funct, command);
+    add_keynode(name, d->seq, 0, d->funct, d->command);
     if (*(kp = lookup_key(name)) != NULL)
         show_single_bind("default key binding:", *kp);
 }

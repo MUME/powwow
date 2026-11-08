@@ -355,24 +355,30 @@ void tty_bootstrap(void)
  * sequences, so they are those of a vt100 (they can be changed with #bind
  * or #rebind)
  */
-static const struct {
-    const char *label, *seq, *command;
-} walk_binds[] = {
-    { .label = "KP2", .seq = "\033Or", .command = "s" },
-    { .label = "KP3", .seq = "\033Os", .command = "d" },
-    { .label = "KP4", .seq = "\033Ot", .command = "w" },
-    { .label = "KP5", .seq = "\033Ou", .command = "exits" },
-    { .label = "KP6", .seq = "\033Ov", .command = "e" },
-    { .label = "KP7", .seq = "\033Ow", .command = "look" },
-    { .label = "KP8", .seq = "\033Ox", .command = "n" },
-    { .label = "KP9", .seq = "\033Oy", .command = "u" },
+static const default_bind walk_binds[] = {
+    { .label = "KP2", .seq = "\033Or",
+      .funct = key_run_command, .command = "s" },
+    { .label = "KP3", .seq = "\033Os",
+      .funct = key_run_command, .command = "d" },
+    { .label = "KP4", .seq = "\033Ot",
+      .funct = key_run_command, .command = "w" },
+    { .label = "KP5", .seq = "\033Ou",
+      .funct = key_run_command, .command = "exits" },
+    { .label = "KP6", .seq = "\033Ov",
+      .funct = key_run_command, .command = "e" },
+    { .label = "KP7", .seq = "\033Ow",
+      .funct = key_run_command, .command = "look" },
+    { .label = "KP8", .seq = "\033Ox",
+      .funct = key_run_command, .command = "n" },
+    { .label = "KP9", .seq = "\033Oy",
+      .funct = key_run_command, .command = "u" },
 };
 
 void tty_add_walk_binds(void)
 {
     for (size_t i = 0; i < sizeof(walk_binds) / sizeof(*walk_binds); ++i)
         add_keynode(walk_binds[i].label, walk_binds[i].seq, 0,
-                    key_run_command, walk_binds[i].command);
+                    walk_binds[i].funct, walk_binds[i].command);
 }
 
 /*
@@ -380,11 +386,7 @@ void tty_add_walk_binds(void)
  * (see tty_add_new_binds); the cursor keys and Delete are bound only if
  * termcap has their sequences
  */
-static const struct {
-    const char *label, *seq;
-    function_str funct;
-    int since;
-} default_binds[] = {
+static const default_bind default_binds[] = {
     { .label = "LF", .seq = "\n", .funct = enter_line },
     { .label = "Ret", .seq = "\r", .funct = enter_line },
     { .label = "C-h", .seq = "\b", .funct = del_char_left },
@@ -517,31 +519,21 @@ void tty_add_new_binds(int version)
 }
 
 /*
- * find the default binding of the key 'label': set its sequence, and its
- * editing function or command; return false if it has none
+ * find the default binding of the key 'label'; return NULL if it has none
  */
-bool tty_default_bind(const char *label, const char **seq,
-                      function_str *funct, const char **command)
+const default_bind *tty_default_bind(const char *label)
 {
-    *command = NULL;
     for (size_t i = 0; i < sizeof(default_binds) / sizeof(*default_binds);
          ++i) {
         if (strcmp(default_binds[i].label, label) == 0
-            && *default_binds[i].seq != '\0') {
-            *seq = default_binds[i].seq;
-            *funct = default_binds[i].funct;
-            return true;
-        }
+            && *default_binds[i].seq != '\0')
+            return &default_binds[i];
     }
     for (size_t i = 0; i < sizeof(walk_binds) / sizeof(*walk_binds); ++i) {
-        if (strcmp(walk_binds[i].label, label) == 0) {
-            *seq = walk_binds[i].seq;
-            *funct = key_run_command;
-            *command = walk_binds[i].command;
-            return true;
-        }
+        if (strcmp(walk_binds[i].label, label) == 0)
+            return &walk_binds[i];
     }
-    return false;
+    return NULL;
 }
 
 #ifndef USE_VT100

@@ -18,8 +18,18 @@ void tty_sig_winch_bottomhalf(void);
 void tty_add_walk_binds(void);
 void tty_add_initial_binds(void);
 void tty_add_new_binds(int version);
-bool tty_default_bind(const char *label, const char **seq,
-                      function_str *funct, const char **command);
+/*
+ * a default key binding: an editing function, or the command 'command' if
+ * 'funct' is key_run_command; 'since' is the save-file version that added it
+ */
+typedef struct {
+    const char *label, *seq;
+    function_str funct;
+    const char *command;
+    int since;
+} default_bind;
+
+const default_bind *tty_default_bind(const char *label);
 
 /* the save-file version that added the readline-like editing keys */
 enum { READLINE_KEYS_SAVEFILEVER = 9 };
