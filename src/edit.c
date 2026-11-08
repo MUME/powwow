@@ -1836,19 +1836,19 @@ static void charin_list_groups(void)
         if (charin.parts == 1) {
             if (charname_words_match(charin.group, e->group, false)
                 && charname_words_match(charin.subgroup, e->subgroup, false))
-                tty_printf("%s/%s/ (%d emoji)\n", e->group, e->subgroup,
-                           e->count);
+                tty_message("%s/%s/ (%d emoji)\n", e->group, e->subgroup,
+                            e->count);
         } else if (charname_words_match(charin.name, e->group, false)) {
             if (first) {
                 int count = 0;
                 for (int j = i; j < l.count
                          && strcmp(l.entries[j].group, e->group) == 0; ++j)
                     count += l.entries[j].count;
-                tty_printf("%s/ (%d emoji)\n", e->group, count);
+                tty_message("%s/ (%d emoji)\n", e->group, count);
             }
         } else if (charname_words_match(charin.name, e->subgroup, false)) {
-            tty_printf("%s/%s/ (%d emoji)\n", e->group, e->subgroup,
-                       e->count);
+            tty_message("%s/%s/ (%d emoji)\n", e->group, e->subgroup,
+                        e->count);
         }
     }
 }
@@ -1883,10 +1883,10 @@ static void charin_list(void)
     }
     for (int i = 0; i < l.count; ++i) {
         if (i < CHARIN_LIST_MAX)
-            tty_printf("%s%*s  %s\n", l.names[i].shown,
-                       width - utf8_width(l.names[i].shown,
-                                          strlen(l.names[i].shown)), "",
-                       l.names[i].chars);
+            tty_message("%s%*s  %s\n", l.names[i].shown,
+                        width - utf8_width(l.names[i].shown,
+                                           strlen(l.names[i].shown)), "",
+                        l.names[i].chars);
         free(l.names[i].name);
         free(l.names[i].shown);
         free(l.names[i].chars);

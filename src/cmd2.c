@@ -789,8 +789,8 @@ void parse_mark(char *str)
                 }
             }
             if (opt_info)
-		tty_printf(" mark: %s%s=%s\n", mbeg ? "^" : "",
-			   pattern, attr_name(&attr));
+		tty_message(" mark: %s%s=%s\n", mbeg ? "^" : "",
+			    pattern, attr_name(&attr));
         }
     }
 }
@@ -1027,25 +1027,29 @@ static int get_one_char(int timeout)
  */
 static void print_seq(char *seq, int len)
 {
-    while (len--) {
+    char buf[6 * CAPLEN + 1];
+    int n = 0;
+    for (; len > 0 && n < (int)sizeof(buf) - 6; --len) {
 	unsigned char ch = *(seq++);
         if (ch == '\033') {
-            tty_puts("esc ");
+            n += sprintf(buf + n, "esc ");
             continue;
         }
         if (ch < ' ') {
-            tty_putc('^');
+            buf[n++] = '^';
             ch |= '@';
         }
         if (ch == ' ')
-	    tty_puts("space ");
+	    n += sprintf(buf + n, "space ");
         else if (ch == 0x7f)
-	    tty_puts("del ");
+	    n += sprintf(buf + n, "del ");
         else if (ch & 0x80)
-	    tty_printf("\\%03o ", ch);
+	    n += sprintf(buf + n, "\\%03o ", ch);
         else
-	    tty_printf("%c ", ch);
+	    n += sprintf(buf + n, "%c ", ch);
     }
+    buf[n] = '\0';
+    tty_message("%s", buf);
 }
 
 /*
