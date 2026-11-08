@@ -44,10 +44,11 @@ COMPILING
 	The powwow binary will run from any location, but there are some
 	settings set at compile time that will make more sense if you use
 	the "install" make target to install the binaries and
-	documentation together.	 For example, POWWOWDIR will default to the
+	documentation together.  For example, POWWOWDIR will default to the
 	location that "make install" will put the online powwow documentation,
 	making the #help feature work out of the box without modifying any
-	settings or flags.
+	settings or flags.  Run from the build directory, as src/powwow, it
+	uses the documentation in the source tree.
 
 	If you require changes to the build process, please report the problems
 	(and hopefully solution) at https://github.com/MUME/powwow.  Also please

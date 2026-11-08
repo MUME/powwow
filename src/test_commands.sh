@@ -523,6 +523,13 @@ has '#help [-P|--no-pager] [keys|math|<command>]'
 has '#addstatic {<text>|(<expr>)}    add the string to the static completion list'
 lacks "Help on 'help'"
 
+# run from the build directory, powwow finds the help in the source tree
+unset POWWOWHELP
+run 'help from the source tree' '#help -P keys'
+POWWOWHELP=${srcdir:-.}/../doc
+export POWWOWHELP
+has 'C-x 8 Ret &insert-char'
+
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 

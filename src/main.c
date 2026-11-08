@@ -285,6 +285,25 @@ static void show_help(const char *prog)
 #undef TLS_DESC
 }
 
+/*
+ * does powwow run from its build directory, as the 'argv0' it was run as
+ * says? then it uses the documentation in its source tree
+ */
+static bool in_build_dir(const char *argv0)
+{
+    const char *slash = strrchr(argv0, '/');
+    if (slash == NULL)
+        return false;           /* found in $PATH */
+    char dir[BUFSIZE];
+    snprintf(dir, sizeof(dir), "%.*s",
+             slash == argv0 ? 1 : (int)(slash - argv0), argv0);
+    char *real = realpath(dir, NULL), *build = realpath(POWWOW_BUILD_DIR, NULL);
+    bool same = real != NULL && build != NULL && strcmp(real, build) == 0;
+    free(real);
+    free(build);
+    return same;
+}
+
 int main(int argc, char **argv)
 {
 #ifdef USE_LOCALE
@@ -395,10 +414,13 @@ int main(int argc, char **argv)
     } else
 	powwow_dir[0] = '\0';
 
+    bool from_build_dir = in_build_dir(argv[0]);
     if ((p = getenv("POWWOWHELP")))
 	strcpy(helpfile, p);
     else if (powwow_dir[0])
 	strcpy(helpfile, powwow_dir);
+    else if (from_build_dir)
+	strcpy(helpfile, POWWOW_SOURCE_DIR "/doc");
     else
 	strcpy(helpfile, POWWOW_DIR);
 
@@ -415,6 +437,8 @@ int main(int argc, char **argv)
 
     if (powwow_dir[0])
 	strcpy(copyfile, powwow_dir);
+    else if (from_build_dir)
+	strcpy(copyfile, POWWOW_SOURCE_DIR);
     else
 	strcpy(copyfile, POWWOW_DIR);
     if (copyfile[strlen(copyfile) - 1] != '/')
