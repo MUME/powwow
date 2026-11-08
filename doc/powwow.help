@@ -109,10 +109,10 @@ Highlight text in your output, if your terminal supports it.
 In the text, $ matches a single word and & matches any string, and
 a leading ^ matches only at the beginning of a line.
 
-An attribute is zero or more effects, then a foreground color, then
+An attribute is zero or more styles, then a foreground color, then
 "on" and a background color. Each part is optional.
 
-Effects:  bold, dim, italic, underline, blink, inverse, hidden,
+Styles:   bold, dim, italic, underline, blink, inverse, hidden,
           strike, overline
 Colors:   black, red, green, yellow, blue, magenta, cyan, white
           Black, Red, Green, Yellow, Blue, Magenta, Cyan, White (bright)

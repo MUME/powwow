@@ -2149,15 +2149,16 @@ a single command instead of two.
 ## Attributes: colors and other highlighting
 
 Some commands use attributes to specify the visual appearance of text.
-The following attributes are available:
+An attribute is zero or more styles, then a foreground color, then `on`
+and a background color; each part is optional:
 
-| Attribute | Effect |
+| Part | Meaning |
 | --- | --- |
-| `bold`, `dim`, `italic`, `underline`, `blink`, `inverse`, `hidden`, `strike`, `overline` | the obvious effects |
+| `bold`, `dim`, `italic`, `underline`, `blink`, `inverse`, `hidden`, `strike`, `overline` | the styles |
 | `faint`, `reverse`, `conceal`, `strikethrough` | same as `dim`, `inverse`, `hidden` and `strike` |
 | `[color] [on color]` | foreground and/or background |
 
-Effect names are not case sensitive. A color is one of:
+Style names are not case sensitive. A color is one of:
 
 | Color | Meaning |
 | --- | --- |
@@ -2181,13 +2182,13 @@ Examples: The following are all valid attributes:
 | `on white` | only background |
 | `yellow on cyan` | foreground and background |
 | `inverse bold` | inverse and bold |
-| `blink red on blue` | you can use multiple effects, but you must put them BEFORE colors |
+| `blink red on blue` | you can use multiple styles, but you must put them BEFORE colors |
 | `bold 208 on 236` | orange on dark gray, from the 256-color palette |
 | `italic #ff8700 on #202020` | the same in RGB colors |
 
 Powwow writes attributes as standard (ECMA-48) escape sequences.
 Most terminal emulators support all of them, but older terminals may
-ignore some effects, the bright colors, the 256-color palette or RGB
+ignore some styles, the bright colors, the 256-color palette or RGB
 colors.
 
 Notes for IBM PC and compatibles with VGA or SVGA cards in text mode:
