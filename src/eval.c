@@ -1380,6 +1380,9 @@ int eval_any(long *lres, ptr **pres, char **what)
     depth = 0;
     (void)_eval(0);
 
+    /* an empty expression, such as in "#(" */
+    if (!error && stk.curr_obj < 0)
+        error = NO_VALUE_ERROR;
     if (!error)
 	(void)pop_obj(&res);
     if (error) {

@@ -332,8 +332,13 @@ if [ -n "$utf8" ]; then
 fi
 
 run '#while needs a parenthesis' '#while 1
+#while (
+#print (
 #while (@1<3) {#print (@1);#(\@1++)}'
 has '#while: #error: missing left parenthesis.'
+has '#while: #error: value expected.'
+has '#print: #error: value expected.'
+lacks '#while: #error: math stack underflow.'
 has '2'
 
 run '#var numbers' '#var @x=-5
