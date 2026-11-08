@@ -353,6 +353,36 @@ lacks 'Normally, powwow prints on screen some messages each time you'
 run 'help accepts an abbreviation' '#help speedw' ''
 has 'Execute a speedwalk sequence even if the speedwalk option is disabled.'
 
+# make a save-file like those saved before the readline-like keys, with
+# its C-w bound to the function &$1
+old_savefile() {
+    run 'save a file to make an old one' "#save $tmp/cfg"
+    script='s/^#savefile-version .*/#savefile-version 8/'
+    for f in abort reverse-search forward-search kill-to-bol yank yank-pop \
+             capitalize-word to-history; do
+        script="$script
+/=&$f\$/d"
+    done
+    sed -e "$script
+s/^#bind C-w .*/#bind C-w ^W=\\&$1/" "$tmp/cfg" > "$tmp/old"
+}
+
+old_savefile to-history
+echo '#bind M-c ^[c=&upcase-word' >> "$tmp/old"
+run 'new default keys are added to an old save-file' "#load $tmp/old
+#bind edit"
+has '#new default editing keys added: C-g C-r C-s C-u C-y M-y M-q'
+has '#C-w now deletes back to the previous space; M-q puts the line in history'
+has '#bind C-w ^W=&del-unix-word-left'
+has '#bind M-c ^[c=&upcase-word'
+has '#bind C-r ^R=&reverse-search'
+
+old_savefile clear-line
+run 'an old save-file keeps its own C-w' "#load $tmp/old
+#bind edit"
+has '#bind C-w ^W=&clear-line'
+lacks '#C-w now deletes back to the previous space; M-q puts the line in history'
+
 run '#bind functions lists all editing functions' '#bind functions'
 has '&abort                  stop searching (C-g)'
 has '&clear-line             clear the input line'

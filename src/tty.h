@@ -17,6 +17,10 @@ void tty_special_keys(void);
 void tty_sig_winch_bottomhalf(void);
 void tty_add_walk_binds(void);
 void tty_add_initial_binds(void);
+void tty_add_new_binds(int version);
+
+/* the save-file version that added the readline-like editing keys */
+enum { READLINE_KEYS_SAVEFILEVER = 9 };
 void tty_gotoxy(int col, int line);
 void tty_gotoxy_opt(int fromcol, int fromline, int tocol, int toline);
 int  tty_cell_fits(int col, const char *s, size_t n, int w);

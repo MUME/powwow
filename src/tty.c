@@ -362,61 +362,117 @@ void tty_add_walk_binds(void)
 }
 
 /*
+ * the default editing keys, with the save-file version that added them
+ * (see tty_add_new_binds)
+ */
+static const struct {
+    char *label, *seq;
+    function_str funct;
+    int since;
+} default_binds[] = {
+    { .label = "LF", .seq = "\n", .funct = enter_line },
+    { .label = "Ret", .seq = "\r", .funct = enter_line },
+    { .label = "BS", .seq = "\b", .funct = del_char_left },
+    { .label = "Del", .seq = "\177", .funct = del_char_left },
+    { .label = "Tab", .seq = "\t", .funct = complete_word },
+    { .label = "C-a", .seq = "\001", .funct = begin_of_line },
+    { .label = "C-b", .seq = "\002", .funct = prev_char },
+    { .label = "C-d", .seq = "\004", .funct = del_char_right },
+    { .label = "C-e", .seq = "\005", .funct = end_of_line },
+    { .label = "C-f", .seq = "\006", .funct = next_char },
+    { .label = "C-g", .seq = "\007", .funct = abort_edit,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "C-k", .seq = "\013", .funct = kill_to_eol },
+    { .label = "C-l", .seq = "\014", .funct = redraw_line },
+    { .label = "C-n", .seq = "\016", .funct = next_line },
+    { .label = "C-p", .seq = "\020", .funct = prev_line },
+    { .label = "C-r", .seq = "\022", .funct = reverse_search,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "C-s", .seq = "\023", .funct = forward_search,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "C-t", .seq = "\024", .funct = transpose_chars },
+    { .label = "C-u", .seq = "\025", .funct = kill_to_bol,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "C-w", .seq = "\027", .funct = del_unix_word_left },
+    { .label = "C-y", .seq = "\031", .funct = yank,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "C-z", .seq = "\032", .funct = suspend_key },
+    { .label = "M-Tab", .seq = "\033\t", .funct = complete_line },
+    { .label = "M-b", .seq = "\033b", .funct = prev_word },
+    { .label = "M-c", .seq = "\033c", .funct = capitalize_word,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "M-d", .seq = "\033d", .funct = del_word_right },
+    { .label = "M-f", .seq = "\033f", .funct = next_word },
+    { .label = "M-k", .seq = "\033k", .funct = redraw_line_noprompt },
+    { .label = "M-t", .seq = "\033t", .funct = transpose_words },
+    { .label = "M-u", .seq = "\033u", .funct = upcase_word },
+    { .label = "M-y", .seq = "\033y", .funct = yank_pop,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "M-l", .seq = "\033l", .funct = downcase_word },
+    { .label = "M-q", .seq = "\033q", .funct = to_history,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "M-BS", .seq = "\033\b", .funct = del_word_left },
+    { .label = "M-Del", .seq = "\033\177", .funct = del_word_left },
+};
+
+/* is the key 'label' or the key sequence 'seq' bound? */
+static bool key_is_bound(const char *label, const char *seq)
+{
+    int len = strlen(seq);
+    for (const keynode *k = keydefs; k != NULL; k = k->next) {
+        if (strcmp(k->name, label) == 0
+            || (k->seqlen == len && memcmp(k->sequence, seq, len) == 0))
+            return true;
+    }
+    return false;
+}
+
+/*
  * initialize the key binding list
  */
 void tty_add_initial_binds(void)
 {
-    struct b_init_node {
-	char *label, *seq;
-	function_str funct;
-    };
-    static struct b_init_node b_init[] = {
-	{ "LF",		"\n",		enter_line },
-	{ "Ret",	"\r",		enter_line },
-	{ "BS",		"\b",		del_char_left },
-	{ "Del",	"\177",		del_char_left },
-	{ "Tab",	"\t",		complete_word },
-	{ "C-a",	"\001",		begin_of_line },
-	{ "C-b",	"\002",		prev_char },
-	{ "C-d",	"\004",		del_char_right },
-	{ "C-e",	"\005",		end_of_line },
-	{ "C-f",	"\006",		next_char },
-	{ "C-g",	"\007",		abort_edit },
-	{ "C-k",	"\013",		kill_to_eol },
-	{ "C-l",	"\014",		redraw_line },
-	{ "C-n",	"\016",		next_line },
-	{ "C-p",	"\020",		prev_line },
-	{ "C-r",	"\022",		reverse_search },
-	{ "C-s",	"\023",		forward_search },
-	{ "C-t",	"\024",		transpose_chars },
-	{ "C-u",	"\025",		kill_to_bol },
-	{ "C-w",	"\027",		del_unix_word_left },
-	{ "C-y",	"\031",		yank },
-	{ "C-z",	"\032",		suspend_key },
-	{ "M-Tab",	"\033\t",	complete_line },
-	{ "M-b",	"\033b",	prev_word },
-	{ "M-c",	"\033c",	capitalize_word },
-	{ "M-d",	"\033d",	del_word_right },
-	{ "M-f",	"\033f",	next_word },
-	{ "M-k",	"\033k",	redraw_line_noprompt },
-	{ "M-t",	"\033t",	transpose_words },
-	{ "M-u",	"\033u",	upcase_word },
-	{ "M-y",	"\033y",	yank_pop },
-	{ "M-l",	"\033l",	downcase_word },
-	{ "M-q",	"\033q",	to_history },
-	{ "M-BS",	"\033\b",	del_word_left },
-	{ "M-Del",	"\033\177",	del_word_left },
-	{ "",		"",		0 }
-    };
-    struct b_init_node *p = b_init;
-    do {
-	add_keynode(p->label, p->seq, 0, p->funct, NULL);
-    } while((++p)->seq[0]);
+    for (size_t i = 0; i < sizeof(default_binds) / sizeof(*default_binds);
+         ++i)
+        add_keynode(default_binds[i].label, default_binds[i].seq, 0,
+                    default_binds[i].funct, NULL);
 
     if (*cursor_left ) add_keynode("Left" , cursor_left , 0, prev_char, NULL);
     if (*cursor_right) add_keynode("Right", cursor_right, 0, next_char, NULL);
     if (*cursor_up   ) add_keynode("Up"   , cursor_up   , 0, prev_line, NULL);
     if (*cursor_down ) add_keynode("Down" , cursor_down , 0, next_line, NULL);
+}
+
+/*
+ * add the default editing keys added after save-file version 'version',
+ * unless the save-file binds those keys, and make C-w delete a word if it
+ * is still the old default of &to-history
+ */
+void tty_add_new_binds(int version)
+{
+    char added[BUFSIZE];
+    int n = 0;
+    for (size_t i = 0; i < sizeof(default_binds) / sizeof(*default_binds);
+         ++i) {
+        if (default_binds[i].since <= version
+            || key_is_bound(default_binds[i].label, default_binds[i].seq))
+            continue;
+        add_keynode(default_binds[i].label, default_binds[i].seq, 0,
+                    default_binds[i].funct, NULL);
+        n += snprintf(added + n, sizeof(added) - n, " %s",
+                      default_binds[i].label);
+    }
+    if (n > 0)
+        tty_printf("#new default editing keys added:%s\n", added);
+
+    keynode *k = *lookup_key("C-w");
+    if (version < READLINE_KEYS_SAVEFILEVER && k != NULL && k->funct == to_history
+        && k->seqlen == 1 && k->sequence[0] == '\027'
+        && k->call_data == NULL) {
+        k->funct = del_unix_word_left;
+        tty_puts("#C-w now deletes back to the previous space;"
+                 " M-q puts the line in history\n");
+    }
 }
 
 #ifndef USE_VT100

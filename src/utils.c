@@ -39,7 +39,7 @@
 #include "sgr.h"
 
 enum {
-    SAVEFILEVER = 8,            /* current version */
+    SAVEFILEVER = 9,            /* current version */
     UTF8_SAVEFILEVER = 8,       /* version when files became UTF-8 */
 };
 
@@ -1132,6 +1132,8 @@ static void load_missing_stuff(int n)
 	sleep(1);
 	tty_puts("ok\n");
     }
+    if (n < READLINE_KEYS_SAVEFILEVER)
+        tty_add_new_binds(n);
 }
 
 /*
