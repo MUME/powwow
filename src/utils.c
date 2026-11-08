@@ -292,6 +292,18 @@ int memunescape(char *p, int lenp, bool raw)
     return (int)(p - start);
 }
 
+/*
+ * remove the spaces at the end of 's', such as after a word completed with
+ * Tab; return 's'
+ */
+char *strip_end(char *s)
+{
+    size_t len = strlen(s);
+    while (len > 0 && s[len - 1] == ' ')
+        s[--len] = '\0';
+    return s;
+}
+
 /* if set, \ooo escapes produce raw bytes (for #rawsend and #rawprint) */
 bool raw_escapes = false;
 

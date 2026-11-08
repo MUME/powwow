@@ -515,6 +515,7 @@ static void cmd_help(char *arg)
 	use_pager = false;
 	arg = skipspace(arg + flag_len);
     }
+    strip_end(arg);
     if (*arg == '#') arg++;
     if (!*arg) {
 	size = 25;
@@ -707,6 +708,8 @@ static void cmd_beep(char *arg)
 static void cmd_bind(char *arg)
 {
     arg = skipspace(arg);
+    if (strchr(arg, '=') == NULL)
+        strip_end(arg);         /* not in the command bound */
     if (!*arg)
 	show_binds(0);
     else if (!strcmp(arg, "edit"))
@@ -1209,7 +1212,7 @@ static void cmd_key(char *arg)
 {
     keynode *q=NULL;
 
-    arg = skipspace(arg);
+    arg = strip_end(skipspace(arg));
     if (!*arg)
 	return;
 
