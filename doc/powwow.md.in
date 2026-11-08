@@ -2476,11 +2476,11 @@ This is because hitting it only once is used to stop command parsing:
 if you enter a long loop using internal commands
 (for example: `#while` (1) drop 1 coin)
 you can simply press your break key and powwow will immediatly exit
-from the loop with this message: `#interrupted. Press again to quit.`
+from the loop with this message: `#interrupted; press C-c again to quit.`
 
 If you press the break key again, you will exit powwow.
 Otherwise, if you first type something, then you press break key once
-more, you will get again: `#interrupted. Press again to quit.`
+more, you will get again: `#interrupted; press C-c again to quit.`
 
 ## Advanced topic: substitutions and unescaping
 

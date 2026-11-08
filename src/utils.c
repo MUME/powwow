@@ -941,7 +941,8 @@ static void sig_intr_handler(int signum)
 	exit_powwow();
     }
 
-    PRINTF("%s\n#interrupted. Press again to quit%s\n", edattrend, tty_clreoln);
+    PRINTF("%s\n#interrupted; press %s again to quit.%s\n", edattrend,
+           tty_intr_key(), tty_clreoln);
     tty_flush(); /* in case we are not in mainlupe */
     confirm = 1;
     error = USER_BREAK;
