@@ -1806,6 +1806,8 @@ static void get_user_input(void)
 	/* char mode. chunk == 1; send complete UTF-8 characters */
 	static char pend[UTF8_MAX];
 	static int npend;
+	if (*c == '\r')
+	    *c = '\n';     /* send Ret as before ICRNL was turned off */
 	if (npend > 0 && ((unsigned char)*c & 0xc0) != 0x80)
 	    npend = 0;          /* incomplete character */
 	pend[npend++] = *c;
