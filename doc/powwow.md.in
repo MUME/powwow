@@ -2281,7 +2281,12 @@ functions by typing `#bind functions`):
 | `C-y` | `&yank` | insert the last killed text |
 | `M-y` | `&yank-pop` | right after `C-y` or `M-y`, replace the inserted text with the kill before it |
 | `C-z` | `&suspend` | suspend powwow in the background |
+| `M-.` | `&yank-last-word` | insert the last word of the previous line; again right after, the last word of the line before |
+| `M-<` | `&begin-of-history` | use the first line in history |
+| `M->` | `&end-of-history` | use the line being typed, after the history |
 | `Delete` | `&del-char-right` | delete character under cursor, like `C-d` |
+| `End` | `&end-of-line` | end of line |
+| `Home` | `&begin-of-line` | beginning of line |
 | `LF` | `&enter-line` | execute the typed line, like `Ret`, for the `C-j` key (some terminals send this when you hit return) |
 | `Ret` | `&enter-line` | the most obvious: execute the typed line |
 | `Tab` | `&complete-word` | complete the word being typed to the last matching word in the history (or added with an `#add` command; see above). Hit multiple times to browse the possible completions. This is similar to the GNU Emacs `M-/` command. |

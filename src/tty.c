@@ -57,6 +57,8 @@ static const char cursor_right[] = "\033[C";
 static const char cursor_up[] = "\033[A";
 static const char cursor_down[] = "\033[B";
 static const char cursor_delete[] = "\033[3~";
+static const char cursor_home[] = "\033[H";
+static const char cursor_end[] = "\033[F";
 
 /* attribute changers */
 static const char modebold[] = "\033[1m";
@@ -85,6 +87,7 @@ static char curgoto[CAPLEN];
 static char cursor_left[CAPLEN], cursor_right[CAPLEN];
 static char cursor_up[CAPLEN], cursor_down[CAPLEN];
 static char cursor_delete[CAPLEN];
+static char cursor_home[CAPLEN], cursor_end[CAPLEN];
 
 /* attribute changers */
 static char modebold[CAPLEN], modeblink[CAPLEN], modeinv[CAPLEN];
@@ -296,6 +299,8 @@ void tty_bootstrap(void)
 	{ "ku", cursor_up, 0, 0 },
 	{ "kd", cursor_down, 0, 0 },
 	{ "kD", cursor_delete, 0, 0 },
+	{ "kh", cursor_home, 0, 0 },
+	{ "@7", cursor_end, 0, 0 },
 	{ "", NULL, 0, 0 }
     };
     struct tc_init_node *np;
@@ -439,6 +444,16 @@ static const default_bind default_binds[] = {
     { .label = "Up", .seq = cursor_up, .funct = prev_line },
     { .label = "Down", .seq = cursor_down, .funct = next_line },
     { .label = "Delete", .seq = cursor_delete, .funct = del_char_right,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "Home", .seq = cursor_home, .funct = begin_of_line,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "End", .seq = cursor_end, .funct = end_of_line,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "M-<", .seq = "\033<", .funct = begin_of_history,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "M->", .seq = "\033>", .funct = end_of_history,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "M-.", .seq = "\033.", .funct = yank_last_word,
       .since = READLINE_KEYS_SAVEFILEVER },
 };
 

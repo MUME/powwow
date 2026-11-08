@@ -78,6 +78,12 @@ const edit_function internal_functions[] = {
       .help = "search the history forward" },
     { .name = "&abort", .funct = abort_edit, .group = "history",
       .help = "stop searching" },
+    { .name = "&begin-of-history", .funct = begin_of_history,
+      .group = "history",
+      .help = "show the first history line" },
+    { .name = "&end-of-history", .funct = end_of_history,
+      .group = "history",
+      .help = "show the line being typed, after the history" },
     { .name = "&to-history", .funct = to_history, .group = "history",
       .help = "put the line in the history, and clear it" },
     { .name = "&del-char-left", .funct = del_char_left, .group = "changing text",
@@ -113,6 +119,9 @@ const edit_function internal_functions[] = {
       .help = "insert the last killed text" },
     { .name = "&yank-pop", .funct = yank_pop, .group = "killing and yanking",
       .help = "replace the text yanked with an older kill" },
+    { .name = "&yank-last-word", .funct = yank_last_word,
+      .group = "killing and yanking",
+      .help = "insert the last word of the previous line" },
     { .name = "&complete-word", .funct = complete_word, .group = "completion",
       .help = "complete the word from the history" },
     { .name = "&complete-line", .funct = complete_line, .group = "completion",
@@ -1090,28 +1099,36 @@ void capitalize_word(char *dummy)
 }
 
 /*
+ * edit history line 'i', keeping the line edited in its place in the
+ * history, so that it can be edited again
+ */
+static void goto_history_line(int i)
+{
+    if (hist[pickline] && strcmp(hist[pickline], edbuf)) {
+	free(hist[pickline]);
+	hist[pickline] = NULL;
+    }
+    if (!hist[pickline]) {
+	if (!(hist[pickline] = my_strdup(edbuf))) {
+	    out_of_memory();
+	    return;
+	}
+    }
+    pickline = i;
+    clear_input_line(0);
+    strcpy(edbuf, hist[pickline]);
+    pos = edlen = strlen(edbuf);
+}
+
+/*
  * get previous line from history list
  */
 void prev_line(char *dummy)
 {
     int i = pickline - 1;
     if (i < 0) i = MAX_HIST - 1;
-    if (hist[i]) {
-	if (hist[pickline] && strcmp(hist[pickline], edbuf)) {
-	    free(hist[pickline]);
-	    hist[pickline] = NULL;
-	}
-	if (!hist[pickline]) {
-	    if (!(hist[pickline] = my_strdup(edbuf))) {
-		out_of_memory();
-		return;
-	    }
-	}
-	pickline = i;
-	clear_input_line(0);
-	strcpy(edbuf, hist[pickline]);
-	pos = edlen = strlen(edbuf);
-    }
+    if (hist[i])
+        goto_history_line(i);
 }
 
 /*
@@ -1121,22 +1138,74 @@ void next_line(char *dummy)
 {
     int i = pickline + 1;
     if (i == MAX_HIST) i = 0;
-    if (hist[i]) {
-	if (hist[pickline] && strcmp(hist[pickline], edbuf)) {
-	    free(hist[pickline]);
-	    hist[pickline] = NULL;
-	}
-	if (!hist[pickline]) {
-	    if (!(hist[pickline] = my_strdup(edbuf))) {
-		out_of_memory();
-		return;
-	    }
-	}
-	pickline = i;
-	clear_input_line(0);
-	strcpy(edbuf, hist[pickline]);
-	edlen = pos = strlen(edbuf);
+    if (hist[i])
+        goto_history_line(i);
+}
+
+/*
+ * get the first line of the history list, like beginning-of-history
+ */
+void begin_of_history(char *dummy)
+{
+    int i = pickline;
+    for (;;) {
+        int prev = (i + MAX_HIST - 1) % MAX_HIST;
+        if (hist[prev] == NULL || prev == curline)
+            break;
+        i = prev;
     }
+    if (i != pickline)
+        goto_history_line(i);
+}
+
+/*
+ * get the line being typed, after the last line of the history list
+ */
+void end_of_history(char *dummy)
+{
+    if (pickline != curline && hist[curline] != NULL)
+        goto_history_line(curline);
+}
+
+/* where the last word inserted by M-. is, and from which history line */
+static struct {
+    int index, start;
+} yank_word;
+
+/*
+ * insert the last word of the previous line in the history; again right
+ * after, replace it with the last word of the line before, like
+ * yank-last-arg in readline
+ */
+void yank_last_word(char *dummy)
+{
+    bool again = last_edit_cmd == yank_last_word && yank_word.start <= pos;
+    int i = again ? yank_word.index : curline;
+    for (int n = 0; n < MAX_HIST; ++n) {
+        i = (i + MAX_HIST - 1) % MAX_HIST;
+        if (hist[i] == NULL || i == curline)
+            break;
+        /* the last word, separated by spaces */
+        const char *line = hist[i];
+        int end = strlen(line);
+        while (end > 0 && (line[end - 1] == ' ' || line[end - 1] == '\t'))
+            --end;
+        int start = end;
+        while (start > 0 && line[start - 1] != ' ' && line[start - 1] != '\t')
+            --start;
+        if (start == end)
+            continue;
+        if (again)
+            input_replace(yank_word.start, pos - yank_word.start,
+                          line + start, end - start);
+        else {
+            yank_word.start = pos;
+            input_insert_follow_chars((char *)line + start, end - start);
+        }
+        yank_word.index = i;
+        return;
+    }
+    tty_putc('\007');
 }
 
 /*
