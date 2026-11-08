@@ -11,6 +11,11 @@ improve powwow, fix bugs or just have fun:
   doc files (doc/powwow.md.in, doc/powwow.help, man/powwow.6.in and README)
   when they are affected.
 
+* Run "make -C doc update-unicode" to download the latest Unicode data and
+  make doc/unicode-names.txt and doc/emoji-names.txt again, the names that
+  C-x 8 Ret, C-x 8 e e and \N{...} look up. It runs doc/update-unicode.sh,
+  which checks the new files before it replaces the old ones. Commit them.
+
 * Run "make -j8 tidy" to check the sources with clang-tidy, or
   "make -C src foo.tidy" to check only foo.c. The checks are listed in
   .clang-tidy. Warnings do not make the target fail. Before making a function
