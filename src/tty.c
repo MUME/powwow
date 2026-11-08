@@ -370,7 +370,7 @@ void tty_add_initial_binds(void)
 	{ "C-n",	"\016",		next_line },
 	{ "C-p",	"\020",		prev_line },
 	{ "C-t",	"\024",		transpose_chars },
-	{ "C-w",	"\027",		to_history },
+	{ "C-w",	"\027",		del_unix_word_left },
 	{ "C-z",	"\032",		suspend_key },
 	{ "M-Tab",	"\033\t",	complete_line },
 	{ "M-b",	"\033b",	prev_word },
@@ -381,6 +381,7 @@ void tty_add_initial_binds(void)
 	{ "M-t",	"\033t",	transpose_words },
 	{ "M-u",	"\033u",	upcase_word },
 	{ "M-l",	"\033l",	downcase_word },
+	{ "M-q",	"\033q",	to_history },
 	{ "M-BS",	"\033\b",	del_word_left },
 	{ "M-Del",	"\033\177",	del_word_left },
 	{ "",		"",		0 }

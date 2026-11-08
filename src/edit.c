@@ -75,6 +75,7 @@ const edit_function internal_functions[] = {
     {"&transpose-words", transpose_words, },
     {"&suspend", suspend_key, },
     {"&del-word-left", del_word_left, },
+    {"&del-unix-word-left", del_unix_word_left, },
     {"&del-word-right", del_word_right, },
     {"&prev-word", prev_word, },
     {"&upcase-word", upcase_word, },
@@ -781,6 +782,22 @@ void del_word_left(char *dummy)
     i = pos - i;
     input_moveto(pos - i);
     input_delete_nofollow_chars(i);
+}
+
+/*
+ * delete to the start of the space-separated word to the left, like
+ * unix-word-rubout in readline
+ */
+void del_unix_word_left(char *dummy)
+{
+    int i = pos;
+    while (i > 0 && (edbuf[i - 1] == ' ' || edbuf[i - 1] == '\t'))
+        --i;
+    while (i > 0 && edbuf[i - 1] != ' ' && edbuf[i - 1] != '\t')
+        --i;
+    int n = pos - i;
+    input_moveto(i);
+    input_delete_nofollow_chars(n);
 }
 
 enum case_change { CASE_UPPER, CASE_LOWER, CASE_CAPITALIZE };

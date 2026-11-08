@@ -2257,7 +2257,7 @@ their function (they can be listed typing `#bind edit`):
 | `^T` | `&transpose` | transpose previous character with next (if at the end of the line, the two last) |
 | `^L` | `&redraw-line` | redraw your command line. This is useful if something garbles your input line. |
 | `^Q` | `&clear-line` | clear input line. |
-| `^W` | `&to-history` | put current line in history and clear input line. This is useful when you are typing a long line and need to send another urgent command first. |
+| `^W` | `&del-unix-word-left` | delete left of cursor to the previous space |
 | `^Z` | `&suspend` | suspend powwow in the background |
 | `Tab` | `&complete-word` | complete the word being typed to the last matching word in the history (or added with an `#add` command; see above). Hit multiple times to browse the possible completions. This is similar to the GNU Emacs `M-/` command. |
 | `M-Tab` | `&complete-line` | complete the line being typed to the last matching line in the history. Hit multiple times to browse the possible completions. |
@@ -2268,6 +2268,7 @@ their function (they can be listed typing `#bind edit`):
 | `M-BS` | `&del-word-left` | delete word left of cursor |
 | `M-c` | `&capitalize-word` | capitalize the word from the cursor, and move after it |
 | `M-l` | `&downcase-word` | lowercase the word from the cursor, and move after it |
+| `M-q` | `&to-history` | put current line in history and clear input line. This is useful when you are typing a long line and need to send another urgent command first. |
 | `M-t` | `&transpose-words` | transpose previous word with next |
 | `M-u` | `&upcase-word` | uppercase the word from the cursor, and move after it |
 | `Ret` | `&enter-line` | the most obvious: execute the typed line |

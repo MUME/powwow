@@ -227,7 +227,7 @@ BS      &del-char-left          M-BS    &del-word-left
 ^T      &transpose              M-t     &transpose-words
 ^Q      &clear-line             M-c     &capitalize-word
                                 M-u     &upcase-word
-^W      &to-history
+^W      &del-unix-word-left     M-q     &to-history
 ^Z      &suspend
 Tab     &complete-word          M-Tab   &complete-line
 Ret     &enter-line

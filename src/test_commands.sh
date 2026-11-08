@@ -215,6 +215,12 @@ run 'capitalize and downcase words' '' \
 "
 has 'Foo bar Baz!'
 
+run 'C-w deletes back to a space and M-q puts the line in history' '' \
+    "#print one${esc}q#print foo  bar-baz $(printf '\027')qux
+"
+has 'foo  qux'
+lacks 'one'
+
 utf8=$(locale -a 2>/dev/null | grep -iE '^(C|en_US)\.utf-?8$' | head -n 1)
 if [ -n "$utf8" ]; then
     LC_ALL=$utf8
