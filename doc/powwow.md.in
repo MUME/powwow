@@ -1369,8 +1369,7 @@ Alas, you cannot go that way.
 #ver
 ```
 
-Displays the current version, some compile options and (if
-your compiler supports it) when powwow was compiled.
+Displays the current version and some compile options.
 
 ### Multiple connections handling commands
 

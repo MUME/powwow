@@ -863,7 +863,7 @@ Show the current time and date. Useful if you want to use #at.
 @ver
 #ver
 
-Show the current version, some compile options and when powwow was compiled.
+Show the current version and some compile options.
 @zap
 #zap session-id
 

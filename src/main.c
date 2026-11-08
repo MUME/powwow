@@ -558,32 +558,29 @@ void printver(int level)
 
     tty_printf("\nOptions: "
 #ifdef USE_VT100
-	       "vt100-only,"
+	       "vt100-only"
 #else
-	       "termcaps,"
+	       "termcaps"
 #endif
-	       " termios,"
 #ifdef USE_REGEXP
-	       " regexp "
   #ifdef USE_REGEXP_PCRE2POSIX
-	       "(pcre2posix)"
+	       ", regexp (pcre2posix)"
   #else
-	       "(libc)"
+	       ", regexp (libc)"
   #endif
-	       ","
 #else
-	       " no regexp,"
+	       ", no regexp"
 #endif
 #ifdef USE_LOCALE
-	       " locale,"
+	       ", locale"
 #endif
 #ifdef USE_TLS
-	       " tls,"
+	       ", tls"
 #endif
 #ifdef HAVE_LIBDL
-	       " modules,"
+	       ", modules"
 #endif
-	       " compiled " __TIME__ " " __DATE__ "\n");
+	       "\n");
 }
 
 #ifdef MOTDFILE
