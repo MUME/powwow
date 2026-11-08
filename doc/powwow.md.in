@@ -2261,8 +2261,8 @@ functions by typing `#bind functions`):
 | `C-f` | `&next-char` | forward one character |
 | `M-f` | `&next-word` | forward one word |
 | `C-g` | `&abort` | stop searching, and restore the line typed before |
-| `C-h`, `Del` | `&del-char-left` | delete character left of cursor; `Del` is the Backspace key on most terminals |
-| `M-C-h`, `M-Del` | `&del-word-left` | delete word left of cursor |
+| `C-h`, `Backspace` | `&del-char-left` | delete character left of cursor |
+| `M-C-h`, `M-Backspace` | `&del-word-left` | delete word left of cursor |
 | `C-k` | `&kill-to-eol` | kill to end of line |
 | `M-k` | `&redraw-line-noprompt` | redraw command line, discarding prompt |
 | `C-l` | `&redraw-line` | redraw your command line. This is useful if something garbles your input line. |

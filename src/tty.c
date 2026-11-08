@@ -415,7 +415,7 @@ static const default_bind default_binds[] = {
     { .label = "LF", .seq = "\n", .funct = enter_line },
     { .label = "Ret", .seq = "\r", .funct = enter_line },
     { .label = "C-h", .seq = "\b", .funct = del_char_left },
-    { .label = "Del", .seq = "\177", .funct = del_char_left },
+    { .label = "Backspace", .seq = "\177", .funct = del_char_left },
     { .label = "Tab", .seq = "\t", .funct = complete_word },
     { .label = "C-a", .seq = "\001", .funct = begin_of_line },
     { .label = "C-b", .seq = "\002", .funct = prev_char },
@@ -457,7 +457,7 @@ static const default_bind default_binds[] = {
     { .label = "M-q", .seq = "\033q", .funct = to_history,
       .since = READLINE_KEYS_SAVEFILEVER },
     { .label = "M-C-h", .seq = "\033\b", .funct = del_word_left },
-    { .label = "M-Del", .seq = "\033\177", .funct = del_word_left },
+    { .label = "M-Backspace", .seq = "\033\177", .funct = del_word_left },
     { .label = "Left", .seq = cursor_left, .funct = prev_char },
     { .label = "Right", .seq = cursor_right, .funct = next_char },
     { .label = "Up", .seq = cursor_up, .funct = prev_line },
@@ -528,6 +528,8 @@ void tty_add_new_binds(int version)
     if (version < READLINE_KEYS_SAVEFILEVER) {
         rename_key("BS", "\b", "C-h");
         rename_key("M-BS", "\033\b", "M-C-h");
+        rename_key("Del", "\177", "Backspace");
+        rename_key("M-Del", "\033\177", "M-Backspace");
     }
 
     char added[BUFSIZE];

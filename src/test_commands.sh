@@ -466,6 +466,7 @@ old_savefile() {
 /^#bind Delete /d
 s/^#bind C-h /#bind BS /
 s/^#bind M-C-h /#bind M-BS /
+s/^#bind Backspace /#bind Del /
 s/^#bind C-w .*/#bind C-w ^W=\\&$1/" "$tmp/cfg" > "$tmp/old"
 }
 
@@ -476,6 +477,7 @@ run 'new default keys are added to an old save-file' "#load $tmp/old
 has '#new default editing keys added: C-g C-r C-s C-u C-x-8-Ret C-y M-y M-q Delete'
 has '#key BS renamed to C-h'
 has '#key M-BS renamed to M-C-h'
+has '#key Del renamed to Backspace'
 has '#bind C-h ^H=&del-char-left'
 has '#bind Delete ^[[3~=&del-char-right'
 has '#C-w now deletes back to the previous space; M-q puts the line in history'
@@ -514,7 +516,7 @@ has '#killing and yanking:'
 has '&abort                  stop searching (C-g)'
 has '&clear-line             clear the input line'
 has '&prev-line              show the previous history line (C-p, Up)'
-has '&del-char-left          delete the character left of the cursor (C-h, Del)'
+has '&del-char-left          delete the character before the cursor (Backspace, C-h)'
 has '&del-char-right         delete the character under the cursor (C-d, Delete)'
 long=$(sed -n '/#editing functions:/,$p' "$tmp/out" | awk 'length > 79')
 [ -z "$long" ] || fail "lines longer than 79 columns: $long"
@@ -552,7 +554,7 @@ unset POWWOWHELP
 run 'help from the source tree' '#help -P keys'
 POWWOWHELP=${srcdir:-.}/../doc
 export POWWOWHELP
-has 'C-x 8 Ret &insert-char'
+has 'C-x 8 Ret   &insert-char'
 
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
