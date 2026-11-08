@@ -328,6 +328,10 @@ if [ -n "$utf8" ]; then
         "#print ǆUNGLA ΟΔΟΣ 12ab${esc}b${esc}b${esc}b${esc}c${esc}c${esc}c!
 "
     has 'ǅungla Οδος 12Ab!'
+
+    run 'escapes insert characters by name or code point' \
+        '#print ("x\N{em dash}y \u{e9} \N{U+263A} \N{nosuch}")'
+    has 'x—y é ☺ N{nosuch}'
     LC_ALL=C
 fi
 

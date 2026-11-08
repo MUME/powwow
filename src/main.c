@@ -65,6 +65,7 @@
 #include "utils.h"
 #include "sgr.h"
 #include "width.h"
+#include "charname.h"
 
 #ifdef USE_LOCALE
   /* UTF-8 */
@@ -83,6 +84,7 @@
 
 #define HELPNAME "powwow.help"
 #define COPYNAME "COPYING"
+#define NAMESNAME "unicode-names.txt"
 
 /*     local function declarations       */
 #ifdef MOTDFILE
@@ -403,6 +405,11 @@ int main(int argc, char **argv)
     strcat(helpfile, helpname);
     if (access(helpfile, R_OK) == -1 && !access(helpname, R_OK))
 	strcpy(helpfile, helpname);
+
+    /* the names of the characters are next to the help file */
+    strcpy(namesfile, helpfile);
+    char *slash = strrchr(namesfile, '/');
+    strcpy(slash != NULL ? slash + 1 : namesfile, NAMESNAME);
 
     if (powwow_dir[0])
 	strcpy(copyfile, powwow_dir);

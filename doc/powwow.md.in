@@ -135,7 +135,10 @@ are converted from ISO-8859-1 when loaded, and saved as UTF-8.
 
 Escapes like `\351` denote the ISO-8859-1 character with that
 octal code (here, e with an acute accent), except in `#rawsend` and
-`#rawprint`, where they denote a raw byte.
+`#rawprint`, where they denote a raw byte. Escapes like `\u{e9}` and
+`\N{latin small letter e with acute}` denote the character with that
+Unicode code point or name, in any command; case, and spaces and hyphens,
+do not matter in names.
 
 ## Quitting powwow
 

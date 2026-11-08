@@ -37,6 +37,7 @@
 #include "charset.h"
 #include "width.h"
 #include "sgr.h"
+#include "charname.h"
 
 enum {
     SAVEFILEVER = 9,            /* current version */
@@ -206,6 +207,30 @@ char *(first_regular)(const char *p, char c)
 }
 
 /*
+ * the length of the escape \u{XXXX} or \N{name} at 's', after its
+ * backslash, of at most 'len' bytes, setting its character in 'cp'; 0 if
+ * there is none
+ */
+static int char_escape_len(const char *s, int len, uint32_t *cp)
+{
+    if (len < 4 || (s[0] != 'u' && s[0] != 'N') || s[1] != '{')
+        return 0;
+    const char *end = memchr(s + 2, '}', len - 2);
+    if (end == NULL || end == s + 2)
+        return 0;
+    size_t n = end - (s + 2);
+    if (s[0] == 'u') {
+        for (size_t i = 0; i < n; ++i) {
+            if (!isxdigit((unsigned char)s[2 + i]))
+                return 0;
+        }
+    }
+    if (!charname_lookup(s + 2, n, cp))
+        return 0;
+    return end + 1 - s;
+}
+
+/*
  * remove escapes (backslashes) from a string
  */
 int memunescape(char *p, int lenp, bool raw)
@@ -235,7 +260,14 @@ int memunescape(char *p, int lenp, bool raw)
 	else if (*s == ESC2)
 	    state = NORM, *p++ = ESC, s++, lenp--;
 	else {
-	    if (state == ESCSINGLE && lenp >= 3 &&
+	    uint32_t cp;
+	    int n;
+	    if (state == ESCSINGLE && (n = char_escape_len(s, lenp, &cp)) > 0) {
+		/* a character by code point or name, never longer in UTF-8
+		 * than its escape */
+		p += utf8_put(cp, p);
+		s += n, lenp -= n;
+	    } else if (state == ESCSINGLE && lenp >= 3 &&
 		is_odigit(s[0]) && is_odigit(s[1]) && is_odigit(s[2])) {
 
 		int c = ((s[0]-'0') << 6) | ((s[1]-'0') << 3) | (s[2]-'0');
