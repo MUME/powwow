@@ -27,21 +27,58 @@ fail() {
     failed=1
 }
 
+# wait until powwow has printed the text $1, for at most 5 seconds
+wait_for() {
+    i=0
+    until grep -Fq -e "$1" "$tmp/raw" 2>/dev/null || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+}
+
+# wait until powwow has run everything sent so far, by sending a command
+# that prints the text "<sync$1>"; the input line must be empty
+sync_powwow() {
+    printf '#print ("<syn" + "c%s>")\n' "$1"
+    wait_for "<sync$1>"
+}
+
 # start test $1, running the commands in $2; then, if given, type the keys in
-# $3 once powwow is waiting for them, and then the keys in $4
+# $3 once powwow has run them, and then the keys in $4; the keys must leave
+# the input line empty, and the commands sent to wait for powwow are in the
+# history
+#
+# options: --bind when $2 ends with a #bind that reads the key $3, and
+# --until TEXT to wait for powwow to print TEXT before quitting
 run() {
+    bind= until=
+    while :; do
+        case $1 in
+            --bind) bind=1; shift ;;
+            --until) until=$2; shift 2 ;;
+            *) break ;;
+        esac
+    done
     name=$1
+    : > "$tmp/raw"
     {
         printf '%s\n' "$2"
         if [ $# -gt 2 ]; then
-            sleep 1
-            printf '%s' "$3"
-            sleep 1
+            if [ -n "$bind" ]; then
+                wait_for '#please press the key'
+                printf '%s' "$3"
+                wait_for '#new key binding'
+            else
+                sync_powwow 1
+                printf '%s' "$3"
+            fi
+            sync_powwow 2
             if [ $# -gt 3 ]; then
                 printf '%s' "$4"
-                sleep 1
+                sync_powwow 3
             fi
         fi
+        [ -z "$until" ] || wait_for "$until"
         printf '#quit\n'
     } | "$POWWOW" > "$tmp/raw" 2>&1 &
     pid=$!
@@ -172,7 +209,8 @@ has 'Z x bar'
 run 'emulate without a connection' '#emulate hello'
 has 'hello'
 
-run 'bind reads a whole key sequence' '#bind foo=bar' "$esc[A"
+run --bind 'bind reads a whole key sequence' '#bind foo=bar' \
+    "$esc[A"
 has '#new key binding: foo ^[[A=bar'
 
 run 'word operators skip trailing delimiters' '#print ("foo bar  baz  " >: 1)
@@ -190,7 +228,8 @@ run 'NUL is not a word delimiter' '#($a = "a  \000  b")
 #print (:?$a)'
 has '3'
 
-run 'transpose words at the end of a line' '#bind foo=&transpose-words' \
+run --bind 'transpose words at the end of a line' \
+    '#bind foo=&transpose-words' \
     "$esc[A" "#print foo bar $esc[A
 "
 has 'bar  foo'
@@ -262,11 +301,10 @@ run 'C-g restores the line, and C-r C-r repeats the last search' \
 has 'typed'
 has 'banana!'
 
-run 'C-n after a search goes on to the line being typed' "$history" \
-    "#print typed${cr}ban${ce}$(printf '\016\016')
+run 'C-n after a search goes on to the next line' "$history" \
+    "#print typed${cr}ban${ce}$(printf '\016')!
 "
-has 'typed'
-lacks 'bananatyped'
+has 'apple two!'
 
 run 'BS deletes from the search text' "$history" \
     "${cr}appz$(printf '\b')le${cr}${ce}!
@@ -294,7 +332,8 @@ has '0'
 has '#var: #error: operand or index out of range.'
 lacks '99999999999999999999'
 
-run 'rebind rejects an empty key sequence' '#bind foo=bar' "$esc[A" "#rebind foo =
+run --bind 'rebind rejects an empty key sequence' \
+    '#bind foo=bar' "$esc[A" "#rebind foo =
 "
 has '#rebind: empty key sequence.'
 
@@ -331,7 +370,7 @@ has '                                otherwise execute "instr2"'
 
 # a background pager must not write over the screen
 POWWOWPAGER='&printf "one\ntwo\n"; echo err >&2; printf partial #'
-run 'background editor output' '#help mark' ''
+run --until '#editor: partial' 'background editor output' '#help mark' ''
 POWWOWPAGER=cat
 has '#editor: one'
 has '#editor: two'
