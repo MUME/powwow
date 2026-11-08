@@ -10,7 +10,6 @@
  *
  */
 
-#include <alloca.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -800,7 +799,7 @@ void tcp_write_escape_iac(connsess *conn, const void *data, size_t len)
  */
 void tcp_write_chars(connsess *conn, const char *data, size_t len)
 {
-    char *enc = alloca(len);
+    char enc[len + 1];
     len = charset_encode(conn->charset, data, len, enc);
     tcp_write_escape_iac(conn, enc, len);
 }
@@ -863,9 +862,9 @@ void tcp_write(connsess *conn, const char *data)
 	reprint_writeline(data);
     }
 
+    /* the encoded data is never longer than the original */
+    char enc[conn->charset != CS_UTF8 ? len + 1 : 1];
     if (conn->charset != CS_UTF8) {
-        /* never longer than the original */
-        char *enc = alloca(len + 1);
         len = charset_encode(conn->charset, data, len, enc);
         data = enc;
     }

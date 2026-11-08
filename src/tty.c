@@ -9,7 +9,6 @@
  *  (at your option) any later version.
  *
  */
-#include <alloca.h>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -907,12 +906,15 @@ int tty_printf(const char *format, ...)
     res = vsnprintf(buf, sizeof buf, format, va);
     va_end(va);
 
-    if (res >= sizeof buf) {
-	bufp = alloca(res + 1);
-	va_start(va, format);
-	vsprintf(bufp, format, va);
-        assert(strlen(bufp) == res);
-	va_end(va);
+    /* a longer text is formatted again into big */
+    bool too_long = (res >= 0 && (size_t)res >= sizeof(buf));
+    char big[too_long ? res + 1 : 1];
+    if (too_long) {
+        bufp = big;
+        va_start(va, format);
+        vsnprintf(big, sizeof(big), format, va);
+        va_end(va);
+        assert(strlen(big) == (size_t)res);
     }
 
     setlocale(LC_ALL, old_locale);
@@ -1018,15 +1020,15 @@ int tty_read(char *buf, size_t count)
 
 void tty_gets(char *s, int size)
 {
-    wchar_t *ws = alloca(size * sizeof *ws);
+    wchar_t ws[size];
     char *end = s + size - 1;
 
     if (!fgetws(ws, size, stdin))
 	return;
 
-    for (; *ws; ++ws) {
+    for (const wchar_t *w = ws; *w != L'\0'; ++w) {
         char buf[UTF8_MAX];
-        int n = utf8_put(*ws, buf);
+        int n = utf8_put(*w, buf);
         if (s + n > end)
             break;
         memcpy(s, buf, n);

@@ -27,7 +27,6 @@
 #include "defines.h"
 
 #include <assert.h>
-#include <alloca.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -137,7 +136,7 @@ char *utf8_fgets(char *buf, int size, FILE *f)
         return NULL;
 
     size_t len = strlen(buf);
-    char *tmp = alloca(3 * len + 1);
+    char tmp[3 * len + 1];
     size_t n = utf8_sanitize(buf, len, tmp);
     if (n == len && memcmp(buf, tmp, len) == 0)
         return buf;             /* valid */
