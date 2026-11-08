@@ -658,6 +658,14 @@ run 'Tab completes the flags of #help and the topic after them' '' \
 [ "$(grep -c 'Execute a speedwalk sequence' "$tmp/out")" -eq 2 ] \
     || fail "expected the help on #speedwalk twice"
 
+run 'Tab completes the arguments of #hilite' '' \
+    "#hil	inp	un	Ye	o	cy	
+#hil	me	b		
+"
+grep -aq 'input highlighting is now <ESC>\[4;93;46mon' "$tmp/out" \
+    || fail "expected underline Yellow on cyan"
+has 'black  blink  blue   bold'
+
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 
