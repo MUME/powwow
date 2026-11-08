@@ -1,14 +1,47 @@
-2019-03-18    powwow@askgustav.com <powwow@askgustav.com>
-        * handle more control characters in prompts
-	* drop support for non-ANSI C
+Changes from 1.3.1 to 1.3.2 (unreleased)
+	* Removed the #color command.
+	* #mark and #hilite attributes accept the effects dim, italic,
+	  hidden, strike and overline, the 256-color palette (0-255)
+	  and RGB colors (#rrggbb).
+	* #help -P shows help on the screen instead of in the pager.
+	* Output from background editors (starting with `&') is shown
+	  as `#editor:' lines.
+
+Changes from 1.3.0 to 1.3.1
+	* New command #substitute.
+	* #mark patterns starting with `^' match only at the beginning of
+	  a line.
+	* #help has an entry for every command, and prefers an exact
+	  match over an abbreviation.
+	* Documentation is now in doc/powwow.md.
+	* Operators `<:' and `>:' skip trailing delimiters.
+	* Removed catrw; use `cat <> fifo' instead.
+	* Fixed a crash in #emulate without an open connection, a hang
+	  in interactive #bind, and memory errors in #mark,
+	  #substitute, #load and MPI editor messages.
+
+Changes from 1.2.5 to 1.3.0
+	* New commands: #addstatic, #group, #groupdelim, #module and
+	  #speedwalk.
+	* Text is handled as UTF-8 internally and converted to and from
+	  the terminal's locale; the connection can use UTF-8,
+	  ISO-8859-1 or US-ASCII, negotiated with the telnet CHARSET
+	  option.
+	* Connections use TLS by default.  #host and #connect take
+	  --tls[=options], --no-tls, --utf8 and --latin1.
+	* Command-line options: -h/--help, --tls, -n/--no-tls,
+	  -l/--latin1, -u/--utf8 and -v/--version.
+	* #option lists all options; `#option list' describes them.
+	  wrap, compact, echo, info and debug are set with #option.
+	* Prompts can contain more control characters.
 
 Changes from 1.2.4 to 1.2.5 (Massimiliano Ghilardi, ...) 21 Jan 2002
- 	* Added append-mode to #capture: use #capture >file-name
+	* Added append-mode to #capture: use #capture >file-name
 	* Cleaned #spawned commands interface: text they print on
 	  standard output *MUST* terminate with a newline ('\n')
 	  in order for powwow to execute it.
- 	* Fixed missing #include <time.h> in main.h.
- 	* Fixed broken matching of #mark patterns starting with $
+	* Fixed missing #include <time.h> in main.h.
+	* Fixed broken matching of #mark patterns starting with $
 	* Added the following user-contributed patches:
 	  * Put also 1-char lines into history;
 	  * Do not capture/movie data coming from spawned commands;
@@ -279,7 +312,7 @@ Changes from 0.9.9 to 1.0.0 (Massimiliano Ghilardi) 13 May 1998
 	  and other things.
 
 Changes from 0.9.8 to 0.9.9 (Massimiliano Ghilardi) 12 May 1998
- 	* Changed rx.h to regex.h in includes
+	* Changed rx.h to regex.h in includes
 	* Fixed behaviour on prompts and lines received in multiple packets:
 	  0.9.7 and 0.9.8 sometimes print garbage.
 	* Added some flush()es in the code to cope with the new
