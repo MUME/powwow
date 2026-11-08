@@ -294,6 +294,14 @@ run 'M-. inserts the last word of the previous lines' '' \
 "
 has 'two!'
 
+cu=$(printf '\037')
+run 'C-_ undoes typing and kills, and M-C-_ redoes' '' \
+    "#print one${esc}btwo ${cu}
+#print a b$(printf '\027')${cu}${esc}${cu}c
+"
+has 'one'
+has 'a c'
+
 run 'consecutive kills are yanked together' '' \
     "#print foo bar${esc}$(printf '\b')${esc}$(printf '\b')x $(printf '\031')
 "
@@ -342,6 +350,13 @@ run 'M-< and M-> go to the first history line and back' "$history" \
 has 'typed!'
 has 'apple one!'
 
+run 'C-_ undoes moving in the history and searching' "$history" \
+    "#print typed$(printf '\020')${cu}!
+" "#print typed${cr}ban${ce}${cu}?
+"
+has 'typed!'
+has 'typed?'
+
 run 'C-n after a search goes on to the next line' "$history" \
     "#print typed${cr}ban${ce}$(printf '\016')!
 "
@@ -389,6 +404,12 @@ ${cx8}sm face		$(printf '\007')
 "
     has 'aα'
     has 'smirking face'
+
+    run 'C-_ undoes editing the character name, and inserting it' '' \
+        "#print a${cx8}em dash$(printf '\027')${cu}
+${cu}b
+"
+    has 'ab'
 
     run 'Ret inserts the only character whose name matches' '' \
         "#print a${cx8}lat let yr

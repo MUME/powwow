@@ -100,6 +100,10 @@ const edit_function internal_functions[] = {
       .help = "lowercase to the end of the word" },
     { .name = "&capitalize-word", .funct = capitalize_word, .group = "changing text",
       .help = "capitalize to the end of the word" },
+    { .name = "&undo", .funct = undo, .group = "changing text",
+      .help = "undo the last change of the line" },
+    { .name = "&redo", .funct = redo, .group = "changing text",
+      .help = "redo the last change undone" },
     { .name = "&insert-char", .funct = insert_named_char,
       .group = "changing text",
       .help = "insert a character by name or code point" },
@@ -403,6 +407,135 @@ void transpose_chars(char *dummy)
     memcpy(buf, edbuf + j, k - j);
     memcpy(buf + k - j, edbuf + i, j - i);
     input_replace(i, k - i, buf, k - i);
+}
+
+/*
+ * undo and redo: copies of the input line and the cursor before each
+ * change; while reading a character name, its own lists are used
+ */
+enum { UNDO_MAX = 256 };
+
+struct undo_step {
+    char *line;
+    int pos;
+};
+
+struct undo_list {
+    struct undo_step steps[UNDO_MAX];
+    int count;
+};
+
+static struct undo_lists {
+    struct undo_list undo, redo;
+} line_undo, name_undo, *undos = &line_undo;
+
+static bool searching(void);
+
+/* the line before the command that runs, and whether to compare it after */
+static struct {
+    char line[BUFSIZE];
+    int pos;
+    struct undo_lists *lists;   /* NULL if not recording */
+    bool typing;                /* characters are being typed */
+} undo_cmd;
+
+static void undo_push(struct undo_list *list, const char *line, int pos)
+{
+    char *copy = my_strdup(line);
+    if (copy == NULL)
+        return;
+    if (list->count == UNDO_MAX) {
+        free(list->steps[0].line);
+        memmove(list->steps, list->steps + 1,
+                (UNDO_MAX - 1) * sizeof(*list->steps));
+        --list->count;
+    }
+    list->steps[list->count++] = (struct undo_step){ .line = copy, .pos = pos };
+}
+
+static void undo_clear(struct undo_list *list)
+{
+    while (list->count > 0)
+        free(list->steps[--list->count].line);
+}
+
+/* record 'line' with the cursor at 'pos' as the line before a change */
+static void undo_record(const char *line, int pos)
+{
+    undo_push(&undos->undo, line, pos);
+    undo_clear(&undos->redo);
+}
+
+/*
+ * before a command bound to a key runs: keep the line, to record it if
+ * the command changes it; not while searching, which records its result
+ */
+void undo_before(void)
+{
+    undo_cmd.typing = false;
+    undo_cmd.lists = searching() ? NULL : undos;
+    strcpy(undo_cmd.line, edbuf);
+    undo_cmd.pos = pos;
+}
+
+/*
+ * after the command 'funct', which 'ran' unless a mode handled the key
+ * instead: record the line if it changed it
+ */
+void undo_after(function_str funct, bool ran)
+{
+    if (ran && funct == enter_line) {
+        undo_clear(&line_undo.undo);
+        undo_clear(&line_undo.redo);
+        return;
+    }
+    if (undo_cmd.lists != undos || funct == undo || funct == redo)
+        return;                 /* a mode started or ended, or not recording */
+    if (strcmp(undo_cmd.line, edbuf) != 0)
+        undo_record(undo_cmd.line, undo_cmd.pos);
+}
+
+/* before a character is typed: record the line at the start of typing */
+static void undo_typing(void)
+{
+    if (!undo_cmd.typing) {
+        undo_cmd.typing = true;
+        undo_record(edbuf, pos);
+    }
+}
+
+/*
+ * edit the line of the last step of 'from' again, keeping the line as it
+ * is in 'to'
+ */
+static void undo_move(struct undo_list *from, struct undo_list *to)
+{
+    if (from->count == 0) {
+        tty_putc('\007');
+        return;
+    }
+    struct undo_step step = from->steps[--from->count];
+    undo_push(to, edbuf, pos);
+    input_replace(0, edlen, step.line, strlen(step.line));
+    input_moveto(step.pos);
+    free(step.line);
+    undo_cmd.typing = false;
+}
+
+/*
+ * undo the last change of the input line, like undo in readline
+ */
+void undo(char *dummy)
+{
+    undo_move(&undos->undo, &undos->redo);
+}
+
+/*
+ * redo the last change undone, like undo-redo in Emacs
+ */
+void redo(char *dummy)
+{
+    undo_move(&undos->redo, &undos->undo);
 }
 
 /*
@@ -1224,6 +1357,11 @@ static struct {
 } isearch;
 static char last_query[BUFSIZE];  /* repeated by C-r or C-s with no query */
 
+static bool searching(void)
+{
+    return isearch.active;
+}
+
 static const char *isearch_line(int index)
 {
     return index == isearch.origin ? isearch.saved : hist[index];
@@ -1322,6 +1460,8 @@ static void isearch_end(bool accept)
             line = hist[pickline];
         }
     }
+    if (accept && strcmp(line, isearch.saved) != 0)
+        undo_record(isearch.saved, isearch.saved_pos);
     input_replace(0, edlen, line, strlen(line));
     input_moveto(new_pos);
 }
@@ -1456,6 +1596,9 @@ static void charin_set_name(const char *name)
 static void charin_end(void)
 {
     charin.active = false;
+    undo_clear(&name_undo.undo);
+    undo_clear(&name_undo.redo);
+    undos = &line_undo;
     edstart = 0;
     input_replace(0, edlen, charin.saved, strlen(charin.saved));
     input_moveto(charin.saved_pos);
@@ -1474,6 +1617,7 @@ void insert_named_char(char *dummy)
     charin.saved_pos = pos;
     input_replace(0, edlen, charin_prompt, strlen(charin_prompt));
     edstart = edlen;
+    undos = &name_undo;
 }
 
 /*
@@ -1651,6 +1795,7 @@ static void charin_insert(void)
         }
     }
     charin_end();
+    undo_record(charin.saved, charin.saved_pos);
     char buf[UTF8_MAX];
     input_insert_follow_chars(buf, utf8_put(cp, buf));
 }
@@ -1663,7 +1808,7 @@ static bool charin_can_edit(function_str funct)
         next_word, del_char_left, del_char_right, del_word_left,
         del_word_right, del_unix_word_left, kill_to_eol, kill_to_bol, yank,
         yank_pop, transpose_chars, upcase_word, downcase_word,
-        capitalize_word, redraw_line, insert_string,
+        capitalize_word, redraw_line, insert_string, undo, redo,
     };
     for (size_t i = 0; i < sizeof(editing) / sizeof(*editing); ++i) {
         if (funct == editing[i])
@@ -1837,6 +1982,7 @@ void insert_char(char c)
     }
     if (charin.active)
         charin.tabbed = false;
+    undo_typing();
     if (edlen + ninsbuf < BUFSIZE - n - 1) {
         memcpy(insbuf + ninsbuf, pend, n);
         ninsbuf += n;

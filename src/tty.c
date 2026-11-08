@@ -474,6 +474,12 @@ static const default_bind default_binds[] = {
       .since = READLINE_KEYS_SAVEFILEVER },
     { .label = "M-.", .seq = "\033.", .funct = yank_last_word,
       .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "C-_", .seq = "\037", .funct = undo,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "C-x-C-u", .seq = "\030\025", .funct = undo,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "M-C-_", .seq = "\033\037", .funct = redo,
+      .since = READLINE_KEYS_SAVEFILEVER },
 };
 
 /* is the key 'label' or the key sequence 'seq' bound? */

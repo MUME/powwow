@@ -234,8 +234,10 @@ C-t         &transpose                  M-t         &transpose-words
 C-u         &kill-to-bol                M-u         &upcase-word
 C-w         &del-unix-word-left
 C-x 8 Ret   &insert-char
+C-x C-u     &undo
 C-y         &yank                       M-y         &yank-pop
 C-z         &suspend
+C-_         &undo                       M-C-_       &redo
                                         M-.         &yank-last-word
                                         M-<         &begin-of-history
                                         M->         &end-of-history
