@@ -2704,6 +2704,11 @@ int print_all_options(FILE *file)
     return 1;
 }
 
+const char *option_name(int i)
+{
+    return options[i].name;
+}
+
 static void cmd_option(char *arg)
 {
     char buf[BUFSIZE];
