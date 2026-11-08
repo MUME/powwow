@@ -658,6 +658,17 @@ run 'Tab completes the flags of #help and the topic after them' '' \
 [ "$(grep -c 'Execute a speedwalk sequence' "$tmp/out")" -eq 2 ] \
     || fail "expected the help on #speedwalk twice"
 
+run 'Tab completes the arguments of #delim, #option and #group' '' \
+    "#del	pr	
+#delim
+#option +autop	
+#alias k@fights=kill
+#group fi	of	
+"
+grep -aq '^#delim: "program" ' "$tmp/out" || fail "expected #delim program"
+has '#option autoprint is now on.'
+grep -aq 'fights off $' "$tmp/out" || fail "expected #group fights off"
+
 run 'Tab completes the arguments of #hilite' '' \
     "#hil	inp	un	Ye	o	cy	
 #hil	me	b		

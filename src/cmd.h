@@ -20,5 +20,8 @@ void initialize_cmd(void);
 
 int print_all_options(FILE *file);
 
+/* the name of option 'i', or NULL after the last one */
+const char *option_name(int i);
+
 #endif /* _CMD_H_ */
 
