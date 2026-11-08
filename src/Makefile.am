@@ -1,5 +1,5 @@
 # Default help file directory
-AM_CPPFLAGS=-D_XOPEN_SOURCE=700 -DPOWWOW_DIR=\"$(pkgdatadir)\" \
+AM_CPPFLAGS=-D_XOPEN_SOURCE=700 @feature_cppflags@ -DPOWWOW_DIR=\"$(pkgdatadir)\" \
 	-DPLUGIN_DIR=\"$(plugindir)\"
 
 bin_PROGRAMS = powwow powwow-muc powwow-movieplay

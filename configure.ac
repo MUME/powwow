@@ -47,10 +47,17 @@ AS_IF([ test "${enable_ansi_bug}" != no ],
     [ AC_DEFINE(USE_ANSIBUG, 1,
           [Enable fix for "#mark" ANSI bugs on some terminals.]) ])
 
+# _XOPEN_SOURCE hides extensions such as SIGWINCH; make these systems
+# show them
 is_darwin=
+feature_cppflags=
 case "${host_os}" in
-    darwin*) is_darwin=t ;;
+    darwin*) is_darwin=t; feature_cppflags=-D_DARWIN_C_SOURCE ;;
+    freebsd* | dragonfly*) feature_cppflags=-D__BSD_VISIBLE=1 ;;
+    openbsd*) feature_cppflags=-D_BSD_SOURCE ;;
+    netbsd*) feature_cppflags=-D_NETBSD_SOURCE ;;
 esac
+AC_SUBST(feature_cppflags)
 
 AC_ARG_ENABLE(tls,
     AS_HELP_STRING([--disable-tls],[disables TLS support]),

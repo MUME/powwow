@@ -10,20 +10,6 @@
  *
  */
 
-/*
- * _XOPEN_SOURCE=700 hides SIGWINCH on these systems; these must come
- * before any system header
- */
-#if defined(__APPLE__)
-#  define _DARWIN_C_SOURCE 1
-#elif defined(__FreeBSD__) || defined(__DragonFly__)
-#  define __BSD_VISIBLE 1
-#elif defined(__OpenBSD__)
-#  define _BSD_SOURCE 1
-#elif defined(__NetBSD__)
-#  define _NETBSD_SOURCE 1
-#endif
-
 #include "defines.h"
 
 #include <assert.h>
