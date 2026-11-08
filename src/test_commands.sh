@@ -51,7 +51,9 @@ run() {
     rc=$?
     kill $watchdog 2>/dev/null
     wait $watchdog 2>/dev/null
-    sed -e "s/$esc\[K//g" -e "s/$cr//g" -e "s/$esc/<ESC>/g" "$tmp/raw" > "$tmp/out"
+    # ESC[0m and ESC[m both reset the attributes; termcaps use either
+    sed -e "s/$esc\[K//g" -e "s/$cr//g" -e "s/$esc\[0m/$esc[m/g" \
+        -e "s/$esc/<ESC>/g" "$tmp/raw" > "$tmp/out"
     [ $rc -eq 0 ] || fail "exit status $rc"
 }
 
@@ -121,7 +123,7 @@ has '#substitute ^beg= d'
 run 'substitute before mark' '#substitute foo=bar
 #mark bar=bold
 #print ("foo")'
-has '<ESC>[1mbar<ESC>[0m'
+has '<ESC>[1mbar<ESC>[m'
 
 run 'substitute keeps the original for actions' '#substitute foo=bar
 #action >+a foo=#print ("right")
@@ -139,11 +141,11 @@ run 'mark anchor' '#mark ^foo=bold
 #print ("xfoo foo")
 #print ("foo x")'
 has 'xfoo foo'
-has '<ESC>[1mfoo<ESC>[0m x'
+has '<ESC>[1mfoo<ESC>[m x'
 
 run 'mark the first word' '#mark ^$=bold
 #print ("foo x bar")'
-has '<ESC>[1mfoo<ESC>[0m x bar'
+has '<ESC>[1mfoo<ESC>[m x bar'
 
 run 'mark with 256 and RGB colors' '#mark foo=bold 208 on #202020
 #mark bar=italic strike on 22
@@ -152,7 +154,7 @@ run 'mark with 256 and RGB colors' '#mark foo=bold 208 on #202020
 has '#new mark: foo=bold 208 on #202020'
 has '#mark foo=bold 208 on #202020'
 has '#mark bar=italic strike on 22'
-has '<ESC>[1;38;5;208;48;2;32;32;32mfoo<ESC>[0m <ESC>[3;9;48;5;22mbar<ESC>[0m'
+has '<ESC>[1;38;5;208;48;2;32;32;32mfoo<ESC>[m <ESC>[3;9;48;5;22mbar<ESC>[m'
 
 run 'mark with an invalid color' '#mark foo=#ff00
 #mark foo=256
