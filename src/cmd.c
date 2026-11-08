@@ -494,8 +494,7 @@ static void show_help_text(char *text, bool use_pager)
 	return;
     }
     const char *body = strchr(text, '\n');
-    status(1);
-    tty_puts(body != NULL ? body + 1 : text);
+    PRINTF("%s", body != NULL ? body + 1 : text);
     free(text);
 }
 
