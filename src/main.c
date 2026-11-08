@@ -640,22 +640,32 @@ static int typed_hint_wait(void)
     return waited >= TYPED_HINT_DELAY ? 0 : TYPED_HINT_DELAY - (int)waited;
 }
 
+/*
+ * write the names of the 'len' keys of 'seq', as "C-x 8", into 'buf' of
+ * 'size' bytes, leaving room for a few more
+ */
+static void key_names(const char *seq, int len, char *buf, size_t size)
+{
+    size_t n = 0;
+    *buf = '\0';
+    for (int i = 0; i < len && n + 8 < size; ++i) {
+        unsigned char c = seq[i];
+        const char *sep = i > 0 ? " " : "";
+        if (c == '\033')
+            n += snprintf(buf + n, size - n, "%sESC", sep);
+        else if (c < ' ')
+            n += snprintf(buf + n, size - n, "%sC-%c", sep, c + '`');
+        else
+            n += snprintf(buf + n, size - n, "%s%c", sep, c);
+    }
+}
+
 /* show the keys typed so far after the input line, as "C-x 8-" */
 static void show_typed_hint(void)
 {
     char hint[64];
-    size_t n = 0;
-    for (int i = 0; i < nchars && n < sizeof(hint) - 8; ++i) {
-        unsigned char c = typed[i];
-        const char *sep = i > 0 ? " " : "";
-        if (c == '\033')
-            n += snprintf(hint + n, sizeof(hint) - n, "%sESC", sep);
-        else if (c < ' ')
-            n += snprintf(hint + n, sizeof(hint) - n, "%sC-%c", sep, c + '`');
-        else
-            n += snprintf(hint + n, sizeof(hint) - n, "%s%c", sep, c);
-    }
-    snprintf(hint + n, sizeof(hint) - n, "-");
+    key_names(typed, nchars, hint, sizeof(hint) - 1);
+    strcat(hint, "-");
     input_show_hint(hint);
     typed_shown = true;
 }
@@ -1921,6 +1931,17 @@ static void get_user_input(void)
 		     * one, as a whole once it is complete, or else type the
 		     * first character; then keep processing the rest
 		     */
+		    if (nchars >= 2 && typed[nchars - 1] == '\b') {
+			/* a key sequence and C-h: list how it can go on */
+			clear_input_line(0);
+			tty_putc('\n');
+			char names[64];
+			key_names(typed, nchars - 1, names, sizeof(names));
+			show_binds_starting(typed, nchars - 1, names);
+			last_edit_cmd = (function_str)0;
+			nchars = 0;
+			break;
+		    }
 		    int skip = unbound_key_len(typed, nchars);
 		    if (skip < 0 && nchars < CAPLEN)
 			break;		/* wait for the rest */

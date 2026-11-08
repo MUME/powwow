@@ -1140,6 +1140,19 @@ static void show_single_bind(char *msg, keynode *p)
  * list keyboard bindings
  */
 /*
+ * list the key bindings whose sequences start with the 'len' bytes of
+ * 'prefix', the keys named 'names', for a key sequence followed by C-h
+ */
+void show_binds_starting(const char *prefix, int len, const char *names)
+{
+    PRINTF("#key bindings starting with %s:\n", names);
+    for (keynode *p = keydefs; p != NULL; p = p->next) {
+        if (p->seqlen > len && memcmp(p->sequence, prefix, len) == 0)
+            show_single_bind("bind", p);
+    }
+}
+
+/*
  * list all the editing functions by group, with their descriptions and the
  * keys bound to them
  */

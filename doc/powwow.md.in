@@ -2297,7 +2297,8 @@ way doesn't work on all terminals.
 
 When a key, such as `C-x`, starts a longer key sequence, the keys typed so
 far, such as `C-x 8-`, are shown after the input line if the next key does
-not follow within a second.
+not follow within a second, and `C-h` after them, as `C-x C-h`, lists the
+key bindings that start with them.
 
 `C-c` cannot be bound, as it is the break key: see below.
 
