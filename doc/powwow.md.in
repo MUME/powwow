@@ -746,13 +746,13 @@ has a few side effects.
 
 | Argument | Effect |
 | --- | --- |
-| `all` | clear everything (apply all lines below) |
-| `alias` | clear all aliases |
 | `action` | clear all actions |
-| `bind` | clear all key bindings and restart with default settings. Note that also editing keys are resetted to default function. |
-| `bind <key>` | reset the key to its default binding, or delete it if it has none |
+| `alias` | clear all aliases |
+| `all` | clear all of the lists |
 | `at` | clear all delayed commands |
-| `in` | (same thing) |
+| `bind` | clear all key bindings and restore the default ones, also for the editing keys |
+| `bind <key>` | reset the key to its default binding, or delete it if it has none |
+| `in` | clear all delayed commands, like `at` |
 | `mark` | clear all markers |
 | `prompt` | clear all prompts |
 | `substitute` | clear all substitutions |

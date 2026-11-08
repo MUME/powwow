@@ -1343,8 +1343,8 @@ static void reset_usage(const char *arg)
         PRINTF("#reset: must specify one of:\n");
     else
         PRINTF("#reset: unknown list \"%s\", must specify one of:\n", arg);
-    tty_puts(" alias, action, bind [<key>], in (or at), mark, prompt,"
-             " substitute, var, all.\n");
+    tty_puts(" action, alias, all, at, bind [<key>], in, mark, prompt,"
+             " substitute, var.\n");
 }
 
 static void cmd_reset(char *arg)
