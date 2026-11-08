@@ -31,15 +31,91 @@ static char name_char(char c)
     return toupper((unsigned char)c);
 }
 
-/* does 'name' start with the 'len' characters of 'prefix'? */
-static bool name_starts_with(const char *name, const char *prefix,
-                             size_t len)
+/* is 'c' between words of a name? */
+static bool is_name_sep(char c)
 {
-    for (size_t i = 0; i < len; ++i) {
-        if (name[i] == '\0' || name_char(name[i]) != name_char(prefix[i]))
+    return c == ' ' || c == '-' || c == '_';
+}
+
+/*
+ * does each word of 'pattern' match the start of a word of 'name', in
+ * order, and the first word the start of 'name' if 'anchored'? case, and
+ * spaces, hyphens and underscores do not matter
+ */
+bool charname_words_match(const char *pattern, const char *name,
+                          bool anchored)
+{
+    const char *n = name;
+    for (const char *w = pattern; *w != '\0'; ) {
+        if (is_name_sep(*w)) {
+            ++w;
+            continue;
+        }
+        size_t len = 0;
+        while (w[len] != '\0' && !is_name_sep(w[len]))
+            ++len;
+        /* find a word of the name, from 'n' on, that starts with 'w' */
+        for (;; ++n) {
+            if (*n == '\0' || (anchored && w == pattern && n > name))
+                return false;
+            if ((n == name || is_name_sep(n[-1])) && !is_name_sep(*n)) {
+                size_t i = 0;
+                while (i < len && n[i] != '\0'
+                       && toupper((unsigned char)n[i])
+                          == toupper((unsigned char)w[i]))
+                    ++i;
+                if (i == len)
+                    break;
+            }
+        }
+        n += len;
+        w += len;
+    }
+    return true;
+}
+
+/* does 'name' start with 'prefix'? case, and the separators, do not matter */
+bool charname_starts_with(const char *prefix, const char *name)
+{
+    for (; *prefix != '\0'; ++prefix, ++name) {
+        if (*name == '\0' || name_char(*prefix) != name_char(*name))
             return false;
     }
     return true;
+}
+
+/*
+ * does each word of 'pattern' match the start of the word of 'name' in
+ * the same place, and 'name' have no more words? case, and the
+ * separators, do not matter
+ */
+bool charname_words_abbreviate(const char *pattern, const char *name)
+{
+    const char *w = pattern, *n = name;
+    for (;;) {
+        while (is_name_sep(*w))
+            ++w;
+        while (is_name_sep(*n))
+            ++n;
+        if (*w == '\0' || *n == '\0')
+            return *w == '\0' && *n == '\0';
+        for (; *w != '\0' && !is_name_sep(*w); ++w, ++n) {
+            if (toupper((unsigned char)*w) != toupper((unsigned char)*n))
+                return false;
+        }
+        while (*n != '\0' && !is_name_sep(*n))
+            ++n;
+    }
+}
+
+/* are the 'len' bytes of 'a' the same name as 'b'? */
+static bool same_name(const char *a, size_t len, const char *b)
+{
+    for (size_t i = 0; i < len; ++i) {
+        if (b[i] == '\0' || name_char(a[i]) != name_char(b[i]))
+            return false;
+    }
+    return b[len] == '\0';
 }
 
 /* is 'cp' a character that can be typed, not a control or a surrogate? */
@@ -113,7 +189,7 @@ bool charname_lookup(const char *name, size_t len, uint32_t *cp)
     char entry[128];
     long found = -1;
     for (long c; found < 0 && (c = read_name(f, entry, sizeof(entry))) >= 0; ) {
-        if (strlen(entry) == len && name_starts_with(entry, name, len))
+        if (same_name(name, len, entry))
             found = c;
     }
     fclose(f);
@@ -124,33 +200,23 @@ bool charname_lookup(const char *name, size_t len, uint32_t *cp)
 }
 
 /*
- * find the names that start with 'prefix': return how many there are, and
- * copy the 'n'th one into 'name', and their longest common prefix into
- * 'common', both of 'size' bytes; return -1 if the names cannot be read
+ * call 'fn' with each name, in lowercase, that 'pattern' matches as in
+ * charname_words_match(), and 'data'; return how many there are, or -1 if
+ * the names cannot be read
  */
-int charname_complete(const char *prefix, int n, char *name, char *common,
-                      size_t size)
+int charname_find(const char *pattern, charname_fn fn, void *data)
 {
     FILE *f = fopen(namesfile, "r");
     if (f == NULL)
         return -1;
-    size_t len = strlen(prefix);
     char entry[128];
     int count = 0;
-    *name = *common = '\0';
     while (read_name(f, entry, sizeof(entry)) >= 0) {
-        if (!name_starts_with(entry, prefix, len))
+        if (!charname_words_match(pattern, entry, false))
             continue;
-        if (count == n)
-            snprintf(name, size, "%s", entry);
-        if (count == 0) {
-            snprintf(common, size, "%s", entry);
-        } else {
-            size_t i = 0;
-            while (common[i] != '\0' && common[i] == entry[i])
-                ++i;
-            common[i] = '\0';
-        }
+        for (char *p = entry; *p != '\0'; ++p)
+            *p = tolower((unsigned char)*p);
+        fn(entry, data);
         ++count;
     }
     fclose(f);

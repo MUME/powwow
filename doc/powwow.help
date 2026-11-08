@@ -215,37 +215,45 @@ If <initstr> is specified, it is sent to host on connection.
 @keys
 Default editing keys:
 
-C-a     &begin-of-line
-C-b     &prev-char              M-b     &prev-word
-                                M-c     &capitalize-word
-C-d     &del-char-right         M-d     &del-word-right
-C-e     &end-of-line
-C-f     &next-char              M-f     &next-word
-C-g     &abort
-C-h     &del-char-left          M-C-h   &del-word-left
-C-k     &kill-to-eol            M-k     &redraw-line-noprompt
-C-l     &redraw-line            M-l     &downcase-word
-C-n     &next-line
-C-p     &prev-line
-                                M-q     &to-history
-C-r     &reverse-search
-C-s     &forward-search
-C-t     &transpose              M-t     &transpose-words
-C-u     &kill-to-bol            M-u     &upcase-word
-C-w     &del-unix-word-left
-C-y     &yank                   M-y     &yank-pop
-C-z     &suspend
-Del     &del-char-left          M-Del   &del-word-left
-Delete  &del-char-right
-LF      &enter-line
-Ret     &enter-line
-Tab     &complete-word          M-Tab   &complete-line
+C-a       &begin-of-line
+C-b       &prev-char                M-b       &prev-word
+                                    M-c       &capitalize-word
+C-d       &del-char-right           M-d       &del-word-right
+C-e       &end-of-line
+C-f       &next-char                M-f       &next-word
+C-g       &abort
+C-h       &del-char-left            M-C-h     &del-word-left
+C-k       &kill-to-eol              M-k       &redraw-line-noprompt
+C-l       &redraw-line              M-l       &downcase-word
+C-n       &next-line
+C-p       &prev-line
+                                    M-q       &to-history
+C-r       &reverse-search
+C-s       &forward-search
+C-t       &transpose                M-t       &transpose-words
+C-u       &kill-to-bol              M-u       &upcase-word
+C-w       &del-unix-word-left
+C-x 8 Ret &insert-char
+C-y       &yank                     M-y       &yank-pop
+C-z       &suspend
+Del       &del-char-left            M-Del     &del-word-left
+Delete    &del-char-right
+LF        &enter-line
+Ret       &enter-line
+Tab       &complete-word            M-Tab     &complete-line
 
 not assigned: &clear-line, &insert-string
 
 #bind functions lists all the editing functions and their keys.
 
 Del is the Backspace key on most terminals, and Delete the Delete key.
+
+C-x 8 Ret reads the Unicode name of a character, such as em dash, or its
+code point, such as U+2014, and inserts the character; the name can be
+edited like the input line. Tab completes the name, where each word typed
+can be the start of a word of the name, as gr sm al for greek small letter
+alpha; Tab again lists the names.
+In text, \N{em dash} and \u{2014} insert a character the same way.
 
 C-c, the interrupt key of the terminal, cannot be bound: it stops a command
 that is running, such as a #while loop, and pressed twice it quits powwow.

@@ -71,6 +71,7 @@ extern int isprompt_len;        /* see main.c */
 extern char edbuf[];		/* input line buffer */
 extern int edlen;		/* characters in edbuf */
 extern int pos;			/* cursor position in edbuf */
+extern int edstart;		/* start of the editable text in edbuf */
 extern char edattrbeg[], edattrend[];
 extern int edattrbg;
 

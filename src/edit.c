@@ -33,6 +33,7 @@
 #include "eval.h"
 #include "log.h"
 #include "charset.h"
+#include "charname.h"
 #include "width.h"
 
 #ifdef USE_LOCALE
@@ -93,6 +94,9 @@ const edit_function internal_functions[] = {
       .help = "lowercase to the end of the word" },
     { .name = "&capitalize-word", .funct = capitalize_word, .group = "changing text",
       .help = "capitalize to the end of the word" },
+    { .name = "&insert-char", .funct = insert_named_char,
+      .group = "changing text",
+      .help = "insert a character by name or code point" },
     { .name = "&insert-string", .funct = insert_string, .group = "changing text",
       .help = "insert the text after the function name" },
     { .name = "&kill-to-eol", .funct = kill_to_eol, .group = "killing and yanking",
@@ -380,7 +384,7 @@ void transpose_chars(char *dummy)
     int i, j, k;
     char buf[2 * BUFSIZE];
 
-    if (pos == 0 || (pos == edlen && prev_cell(pos) == 0))
+    if (pos <= edstart || (pos == edlen && prev_cell(pos) <= edstart))
         return;
     if (pos < edlen) {
         j = pos;
@@ -496,7 +500,7 @@ void yank_pop(char *dummy)
  */
 void kill_to_bol(char *dummy)
 {
-    kill_left(pos);
+    kill_left(pos - edstart);
 }
 
 /*
@@ -549,7 +553,7 @@ void del_char_right(char *dummy)
  */
 void del_char_left(char *dummy)
 {
-    if (pos) {
+    if (pos > edstart) {
         int p = pos;
 	input_moveto(prev_cell(pos));
 	input_delete_nofollow_chars(p - pos);
@@ -893,9 +897,9 @@ void next_word(char *dummy)
 void prev_word(char *dummy)
 {
     int i;
-    for (i = pos; i && !word_at(prev_cell(i)); i = prev_cell(i))
+    for (i = pos; i > edstart && !word_at(prev_cell(i)); i = prev_cell(i))
 	;
-    while (i && word_at(prev_cell(i)))
+    while (i > edstart && word_at(prev_cell(i)))
 	i = prev_cell(i);
     input_moveto(i);
 }
@@ -919,9 +923,9 @@ void del_word_right(char *dummy)
 void del_word_left(char *dummy)
 {
     int i;
-    for (i = pos; i && !word_at(prev_cell(i)); i = prev_cell(i))
+    for (i = pos; i > edstart && !word_at(prev_cell(i)); i = prev_cell(i))
 	;
-    while (i && word_at(prev_cell(i)))
+    while (i > edstart && word_at(prev_cell(i)))
 	i = prev_cell(i);
     kill_left(pos - i);
 }
@@ -933,9 +937,9 @@ void del_word_left(char *dummy)
 void del_unix_word_left(char *dummy)
 {
     int i = pos;
-    while (i > 0 && (edbuf[i - 1] == ' ' || edbuf[i - 1] == '\t'))
+    while (i > edstart && (edbuf[i - 1] == ' ' || edbuf[i - 1] == '\t'))
         --i;
-    while (i > 0 && edbuf[i - 1] != ' ' && edbuf[i - 1] != '\t')
+    while (i > edstart && edbuf[i - 1] != ' ' && edbuf[i - 1] != '\t')
         --i;
     kill_left(pos - i);
 }
@@ -1335,7 +1339,7 @@ static void isearch_del_char(void)
  * search and then run on the line found; return true if 'funct' was
  * handled here
  */
-bool isearch_command(function_str funct)
+static bool isearch_command(function_str funct)
 {
     if (!isearch.active
         || funct == reverse_search || funct == forward_search
@@ -1350,12 +1354,292 @@ bool isearch_command(function_str funct)
 }
 
 /*
- * cancel any search, before the input line is used without editing
+ * reading the name of a character to insert, like insert-char in Emacs:
+ * the input line shows a prompt and the name, which can be edited, and the
+ * line being edited is in 'saved'
  */
-void isearch_cancel(void)
+static struct {
+    bool active;
+    bool tabbed;                /* Tab completed nothing, list on the next */
+    char name[BUFSIZE / 2];     /* the name, as last taken from the line */
+    char saved[BUFSIZE];
+    int saved_pos;
+} charin;
+
+static const char charin_prompt[] = "(insert-char) name or hex: ";
+
+/* the names that Tab lists at most */
+enum { CHARIN_LIST_MAX = 20 };
+
+/* take the name from the input line */
+static void charin_get_name(void)
+{
+    int len = edlen - edstart;
+    if (len >= (int)sizeof(charin.name))
+        len = sizeof(charin.name) - 1;
+    memcpy(charin.name, edbuf + edstart, len);
+    charin.name[len] = '\0';
+}
+
+/* replace the name in the input line with 'name' */
+static void charin_set_name(const char *name)
+{
+    input_replace(edstart, edlen - edstart, name, strlen(name));
+}
+
+/* stop reading the name, and edit the line as it was */
+static void charin_end(void)
+{
+    charin.active = false;
+    edstart = 0;
+    input_replace(0, edlen, charin.saved, strlen(charin.saved));
+    input_moveto(charin.saved_pos);
+}
+
+/*
+ * read the name or code point of a character, and insert it
+ */
+void insert_named_char(char *dummy)
+{
+    if (charin.active)
+        return;
+    charin.active = true;
+    charin.tabbed = false;
+    strcpy(charin.saved, edbuf);
+    charin.saved_pos = pos;
+    input_replace(0, edlen, charin_prompt, strlen(charin_prompt));
+    edstart = edlen;
+}
+
+/*
+ * how well 'name' matches the name being read: 0 if it starts with it, 1
+ * if it starts with its first word, or else 2
+ */
+static int charin_tier(const char *name)
+{
+    if (charname_starts_with(charin.name, name))
+        return 0;
+    if (charname_words_match(charin.name, name, true))
+        return 1;
+    return 2;
+}
+
+/* some of the names that match: how many, the first, and their common start */
+struct name_set {
+    int count;
+    char first[BUFSIZE / 2];
+    char common[BUFSIZE / 2];
+};
+
+static void name_set_add(struct name_set *set, const char *name)
+{
+    if (set->count++ == 0) {
+        snprintf(set->first, sizeof(set->first), "%s", name);
+        snprintf(set->common, sizeof(set->common), "%s", name);
+    } else {
+        size_t i = 0;
+        while (set->common[i] != '\0' && set->common[i] == name[i])
+            ++i;
+        set->common[i] = '\0';
+    }
+}
+
+/*
+ * the names that the name being read matches: all of them, those that
+ * start with it, those that start with its first word, and those whose
+ * words it abbreviates, one by one
+ */
+struct charin_matches {
+    struct name_set all, prefixed, anchored, abbreviated;
+};
+
+static void charin_match(const char *name, void *data)
+{
+    struct charin_matches *m = data;
+    int tier = charin_tier(name);
+    name_set_add(&m->all, name);
+    if (charname_words_abbreviate(charin.name, name))
+        name_set_add(&m->abbreviated, name);
+    if (tier == 0)
+        name_set_add(&m->prefixed, name);
+    if (tier <= 1)
+        name_set_add(&m->anchored, name);
+}
+
+/* what the name being read can be completed to, from the names in 'set' */
+static const char *name_set_completion(const struct name_set *set)
+{
+    return set->count == 1 ? set->first : set->common;
+}
+
+/* the names that match, to list them */
+struct charin_listing {
+    int count, size;
+    struct listed_name {
+        int tier;
+        char *name;
+    } *names;
+};
+
+static void charin_list_add(const char *name, void *data)
+{
+    struct charin_listing *l = data;
+    if (l->count == l->size) {
+        int size = l->size > 0 ? 2 * l->size : 64;
+        struct listed_name *names = realloc(l->names, size * sizeof(*names));
+        if (names == NULL)
+            return;
+        l->names = names;
+        l->size = size;
+    }
+    char *copy = my_strdup(name);
+    if (copy == NULL)
+        return;
+    l->names[l->count++] = (struct listed_name){
+        .tier = charin_tier(name), .name = copy
+    };
+}
+
+/* the best match first: by tier, then the shortest, then alphabetically */
+static int compare_listed(const void *a, const void *b)
+{
+    const struct listed_name *x = a, *y = b;
+    if (x->tier != y->tier)
+        return x->tier - y->tier;
+    size_t xlen = strlen(x->name), ylen = strlen(y->name);
+    if (xlen != ylen)
+        return xlen < ylen ? -1 : 1;
+    return strcmp(x->name, y->name);
+}
+
+/* list the names that match above the input line, the best ones first */
+static void charin_list(void)
+{
+    struct charin_listing l = { 0 };
+    charname_find(charin.name, charin_list_add, &l);
+    if (l.count > 0)            /* else names is NULL, which qsort rejects */
+        qsort(l.names, l.count, sizeof(*l.names), compare_listed);
+
+    clear_input_line(0);
+    tty_putc('\n');
+    for (int i = 0; i < l.count; ++i) {
+        if (i < CHARIN_LIST_MAX)
+            tty_printf("%s\n", l.names[i].name);
+        free(l.names[i].name);
+    }
+    if (l.count > CHARIN_LIST_MAX)
+        tty_printf("#and %d more.\n", l.count - CHARIN_LIST_MAX);
+    free(l.names);
+    status(1);
+}
+
+/*
+ * complete the name, like readline: to the only name that matches, or to
+ * the start that those that match have in common, preferring those that
+ * start with it, and then those that start with its first word; if that
+ * adds nothing, beep, and list them if Tab is pressed again
+ */
+static void charin_complete(void)
+{
+    charin_get_name();
+    struct charin_matches m = { 0 };
+    if (charname_find(charin.name, charin_match, &m) <= 0) {
+        tty_putc('\007');
+        return;
+    }
+    const char *longer = (m.all.count == 1 || m.anchored.count == 0
+                          ? name_set_completion(&m.all)
+                          : m.prefixed.count > 0
+                          ? name_set_completion(&m.prefixed)
+                          : name_set_completion(&m.anchored));
+    if (strlen(longer) > strlen(charin.name)
+        && charname_words_match(charin.name, longer, false)) {
+        charin_set_name(longer);
+        charin.tabbed = false;
+    } else if (!charin.tabbed) {
+        charin.tabbed = true;
+        tty_putc('\007');
+    } else {
+        charin_list();
+    }
+}
+
+/*
+ * insert the character named, or the only one whose name matches, as for
+ * Tab, or the only one whose words the words typed abbreviate, as "lat sma
+ * let dz" does "latin small letter dz", or else beep
+ */
+static void charin_insert(void)
+{
+    uint32_t cp;
+    charin_get_name();
+    if (!charname_lookup(charin.name, strlen(charin.name), &cp)) {
+        struct charin_matches m = { 0 };
+        const char *name = NULL;
+        if (charname_find(charin.name, charin_match, &m) == 1)
+            name = m.all.first;
+        else if (m.abbreviated.count == 1)
+            name = m.abbreviated.first;
+        if (name == NULL || !charname_lookup(name, strlen(name), &cp)) {
+            tty_putc('\007');
+            return;
+        }
+    }
+    charin_end();
+    char buf[UTF8_MAX];
+    input_insert_follow_chars(buf, utf8_put(cp, buf));
+}
+
+/* can 'funct' edit the name being read? */
+static bool charin_can_edit(function_str funct)
+{
+    static const function_str editing[] = {
+        prev_char, next_char, begin_of_line, end_of_line, prev_word,
+        next_word, del_char_left, del_char_right, del_word_left,
+        del_word_right, del_unix_word_left, kill_to_eol, kill_to_bol, yank,
+        yank_pop, transpose_chars, upcase_word, downcase_word,
+        capitalize_word, redraw_line, insert_string,
+    };
+    for (size_t i = 0; i < sizeof(editing) / sizeof(*editing); ++i) {
+        if (funct == editing[i])
+            return true;
+    }
+    return false;
+}
+
+/*
+ * while reading or searching, handle the command 'funct' bound to a key;
+ * return true if 'funct' was handled here and must not run
+ */
+bool edit_mode_command(function_str funct)
+{
+    if (!charin.active)
+        return isearch_command(funct);
+    if (funct != complete_word)
+        charin.tabbed = false;
+    if (funct == complete_word)
+        charin_complete();
+    else if (funct == enter_line)
+        charin_insert();
+    else if (funct == abort_edit)
+        charin_end();
+    else if (charin_can_edit(funct))
+        return false;
+    else
+        tty_putc('\007');
+    return true;
+}
+
+/*
+ * cancel any search or reading, before the input line is used without
+ * editing
+ */
+void edit_mode_cancel(void)
 {
     if (isearch.active)
         isearch_end(false);
+    if (charin.active)
+        charin_end();
 }
 
 /*
@@ -1486,6 +1770,8 @@ void insert_char(char c)
         isearch_add(pend, n);
         return;
     }
+    if (charin.active)
+        charin.tabbed = false;
     if (edlen + ninsbuf < BUFSIZE - n - 1) {
         memcpy(insbuf + ninsbuf, pend, n);
         ninsbuf += n;

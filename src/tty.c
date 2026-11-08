@@ -412,6 +412,9 @@ static const default_bind default_binds[] = {
     { .label = "C-u", .seq = "\025", .funct = kill_to_bol,
       .since = READLINE_KEYS_SAVEFILEVER },
     { .label = "C-w", .seq = "\027", .funct = del_unix_word_left },
+    { .label = "C-x-8-Ret", .seq = "\030" "8\r",
+      .funct = insert_named_char,
+      .since = READLINE_KEYS_SAVEFILEVER },
     { .label = "C-y", .seq = "\031", .funct = yank,
       .since = READLINE_KEYS_SAVEFILEVER },
     { .label = "C-z", .seq = "\032", .funct = suspend_key },
@@ -745,8 +748,8 @@ void input_moveto(int new_pos)
      * than lines - 1, if the display is too small to hold the whole editline.
      * In that case, the input line should be (partially) redrawn.
      */
-    if (new_pos < 0)
-	new_pos = 0;
+    if (new_pos < edstart)
+	new_pos = edstart;
     else if (new_pos > edlen)
 	new_pos = edlen;
     if (new_pos == pos)

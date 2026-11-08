@@ -203,6 +203,8 @@ int line0;                /* screen line where the input line starts */
 char edbuf[BUFSIZE];      /* line editing buffer */
 int edlen;                /* length of current input line */
 int pos = 0;              /* cursor position in line */
+int edstart = 0;          /* where the text that can be edited starts, after
+                           * a prompt in edbuf such as for C-x 8 Ret */
 int isprompt_len = 0;     /* set by #isprompt: 0 if not a prompt, -1 if a
                              prompt of unknown length, else its length */
 bool verbatim = false;    /* don't expand aliases or process semicolons */
@@ -1800,7 +1802,7 @@ static void get_user_input(void)
     c[chunk] = '\0';
 
     if (linemode & (LM_CHAR | LM_NOECHO))
-        isearch_cancel();
+        edit_mode_cancel();
 
     if (linemode & LM_CHAR) {
 	/* char mode. chunk == 1; send complete UTF-8 characters */
@@ -1889,7 +1891,7 @@ static void get_user_input(void)
 			putbackcursor();
 		    /* the command may delete p, for example with #load */
 		    function_str funct = p->funct;
-		    if (!isearch_command(funct))
+		    if (!edit_mode_command(funct))
 			funct(p->call_data);
 		    last_edit_cmd = funct;
 		    nchars = 0;

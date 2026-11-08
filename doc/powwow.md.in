@@ -2277,6 +2277,7 @@ functions by typing `#bind functions`):
 | `C-u` | `&kill-to-bol` | kill to beginning of line |
 | `M-u` | `&upcase-word` | uppercase the word from the cursor, and move after it |
 | `C-w` | `&del-unix-word-left` | delete left of cursor to the previous space |
+| `C-x 8 Ret` | `&insert-char` | insert a character by its Unicode name, such as `em dash`, or code point, such as `U+2014`, which can be edited like the input line; `Tab` completes the name, where each word typed can be the start of a word of the name, as `gr sm al` for `greek small letter alpha`, and `Tab` again lists the names; `Ret` inserts the character |
 | `C-y` | `&yank` | insert the last killed text |
 | `M-y` | `&yank-pop` | right after `C-y` or `M-y`, replace the inserted text with the kill before it |
 | `C-z` | `&suspend` | suspend powwow in the background |

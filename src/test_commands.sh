@@ -329,6 +329,50 @@ if [ -n "$utf8" ]; then
 "
     has 'ǅungla Οδος 12Ab!'
 
+    cx8=$(printf '\0308\r')
+    run 'C-x 8 inserts a character by name or code point' '' \
+        "#print a${cx8}em dash
+b${cx8}latin small letter e with acu	
+${cx8}u+263a
+${cx8}nosuch
+$(printf '\007')c
+"
+    has 'a—bé☺c'
+
+    run 'the character name can be edited' '' \
+        "#print a${cx8}dash$(printf '\001\001')em $(printf '\005')x$(printf '\177')
+
+"
+    has 'a—'
+
+    run 'Ret inserts the character whose words the words typed abbreviate' \
+        '' "#print a${cx8}lat sma let dz
+${cx8}lat sma let
+$(printf '\007')b
+"
+    has 'aǳb'
+
+    run 'Tab completes character names by the starts of their words' '' \
+        "#print a${cx8}gr sm al	
+${cx8}sm face		$(printf '\007')
+"
+    has 'aα'
+    has 'smirking face'
+
+    run 'Ret inserts the only character whose name matches' '' \
+        "#print a${cx8}lat let yr
+
+"
+    has 'aƦ'
+
+    run 'Tab lists the best names first' '' \
+        "${cx8}en 		$(printf '\007')
+"
+    sed -n '/^en dash$/,$p' "$tmp/out" | sed -n 2,4p > "$tmp/first"
+    [ "$(cat "$tmp/first")" = "en quad
+en space
+envelope" ] || fail "en dash, en quad, en space and envelope are not first"
+
     run 'escapes insert characters by name or code point' \
         '#print ("x\N{em dash}y \u{e9} \N{U+263A} \N{nosuch}")'
     has 'x—y é ☺ N{nosuch}'
@@ -383,7 +427,7 @@ old_savefile() {
     run 'save a file to make an old one' "#save $tmp/cfg"
     script='s/^#savefile-version .*/#savefile-version 8/'
     for f in abort reverse-search forward-search kill-to-bol yank yank-pop \
-             capitalize-word to-history; do
+             capitalize-word to-history insert-char; do
         script="$script
 /=&$f\$/d"
     done
@@ -398,7 +442,7 @@ old_savefile to-history
 echo '#bind M-c ^[c=&upcase-word' >> "$tmp/old"
 run 'new default keys are added to an old save-file' "#load $tmp/old
 #bind edit"
-has '#new default editing keys added: C-g C-r C-s C-u C-y M-y M-q Delete'
+has '#new default editing keys added: C-g C-r C-s C-u C-x-8-Ret C-y M-y M-q Delete'
 has '#key BS renamed to C-h'
 has '#key M-BS renamed to M-C-h'
 has '#bind C-h ^H=&del-char-left'
