@@ -115,7 +115,7 @@ An attribute is zero or more effects, then a foreground color, then
 Effects:  bold, dim, italic, underline, blink, inverse, hidden,
           strike, overline
 Colors:   black, red, green, yellow, blue, magenta, cyan, white
-          BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE (bright)
+          Black, Red, Green, Yellow, Blue, Magenta, Cyan, White (bright)
           0 to 255 (256-color palette)
           #rrggbb (RGB)
           none (default color)

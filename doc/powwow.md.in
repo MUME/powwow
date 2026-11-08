@@ -2162,7 +2162,7 @@ Effect names are not case sensitive. A color is one of:
 | Color | Meaning |
 | --- | --- |
 | `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white` | the 8 ANSI colors |
-| `BLACK`, `RED`, `GREEN`, `YELLOW`, `BLUE`, `MAGENTA`, `CYAN`, `WHITE` | their bright variants |
+| `Black`, `Red`, `Green`, `Yellow`, `Blue`, `Magenta`, `Cyan`, `White` | their bright variants |
 | `0` to `255` | an entry in the 256-color palette |
 | `#rrggbb` | a 24-bit RGB color, in hexadecimal |
 | `none` | use the default color |

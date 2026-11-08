@@ -661,7 +661,7 @@ void show_attr_syntax(void)
            "  effects:  bold, dim, italic, underline, blink, inverse, hidden,\n"
            "            strike, overline\n"
            "  colors:   black, red, green, yellow, blue, magenta, cyan, white,\n"
-           "            bright in capitals (BLACK, RED, ...), 0 to 255 for the\n"
+           "            bright with a capital (Black, Red, ...), 0 to 255 for the\n"
            "            256-color palette, #rrggbb or none\n"
            "  example:  bold yellow on blue\n");
 }
