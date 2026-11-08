@@ -38,6 +38,9 @@
 #ifdef USE_LOCALE
 #  include <wctype.h>
 #endif
+#ifdef HAVE_LIBGRAPHEME
+#  include <grapheme.h>
+#endif
 
 static void insert_string(char *arg);
 
@@ -782,6 +785,7 @@ void del_word_left(char *dummy)
 
 enum case_change { CASE_UPPER, CASE_LOWER, CASE_CAPITALIZE };
 
+#ifndef HAVE_LIBGRAPHEME
 /* the case mappings of one character */
 static uint32_t to_upper(uint32_t cp)
 {
@@ -862,11 +866,12 @@ static int change_case(enum case_change change, const char *src, int len,
     }
     return n;
 }
+#endif
 
 /*
  * change the case of the word at or after the cursor, from the cursor
  * to the end of the word, and move the cursor there, like readline; the
- * UTF-8 length of the text may change
+ * UTF-8 length of the text may change, such as from ß to SS
  */
 static void change_case_word(enum case_change change)
 {
@@ -877,8 +882,29 @@ static void change_case_word(enum case_change change)
     while (end < edlen && word_at(end))
         end = next_cell(end);
 
-    char buf[2 * BUFSIZE];
+    /* a character becomes at most three, each no longer in UTF-8 */
+    char buf[3 * BUFSIZE];
+#ifdef HAVE_LIBGRAPHEME
+    size_t n = 0;
+    switch (change) {
+    case CASE_UPPER:
+        n = grapheme_to_uppercase_utf8(edbuf + start, end - start,
+                                       buf, sizeof(buf));
+        break;
+    case CASE_LOWER:
+        n = grapheme_to_lowercase_utf8(edbuf + start, end - start,
+                                       buf, sizeof(buf));
+        break;
+    case CASE_CAPITALIZE:
+        n = grapheme_to_titlecase_utf8(edbuf + start, end - start,
+                                       buf, sizeof(buf));
+        break;
+    }
+    if (n >= sizeof(buf))
+        n = sizeof(buf) - 1;
+#else
     int n = change_case(change, edbuf + start, end - start, buf);
+#endif
     input_replace(start, end - start, buf, n);
 }
 
