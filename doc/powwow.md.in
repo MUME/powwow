@@ -2239,7 +2239,7 @@ calculator such as `:<` and `>:`, and to `$` in patterns.
 
 ## Command line editing
 
-The default key bindings for line editing follow quite closely Emacs:
+The default key bindings for line editing follow readline, as in bash.
 These are all the keys, together with the reserved names that identify
 their function (they can be listed typing `#bind edit`):
 
@@ -2254,6 +2254,8 @@ their function (they can be listed typing `#bind edit`):
 | `^D` | `&del-char-right` | delete character under cursor |
 | `BS` | `&del-char-left` | delete character left of cursor |
 | `^K` | `&kill-to-eol` | kill to end of line |
+| `^U` | `&kill-to-bol` | kill to beginning of line |
+| `^Y` | `&yank` | insert the last killed text |
 | `^T` | `&transpose` | transpose previous character with next (if at the end of the line, the two last) |
 | `^L` | `&redraw-line` | redraw your command line. This is useful if something garbles your input line. |
 | `^Q` | `&clear-line` | clear input line. |
@@ -2271,6 +2273,7 @@ their function (they can be listed typing `#bind edit`):
 | `M-q` | `&to-history` | put current line in history and clear input line. This is useful when you are typing a long line and need to send another urgent command first. |
 | `M-t` | `&transpose-words` | transpose previous word with next |
 | `M-u` | `&upcase-word` | uppercase the word from the cursor, and move after it |
+| `M-y` | `&yank-pop` | right after `^Y` or `M-y`, replace the inserted text with the kill before it |
 | `Ret` | `&enter-line` | the most obvious: execute the typed line |
 | `LF` | `&enter-line` | same thing, but for `^J` key (some terminals send this when you hit return) |
 | (none) | `&insert-string` | insert on command line the specified chars |

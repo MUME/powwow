@@ -71,6 +71,9 @@ const edit_function internal_functions[] = {
     {"&begin-of-line", begin_of_line, },
     {"&end-of-line", end_of_line, },
     {"&kill-to-eol", kill_to_eol, },
+    {"&kill-to-bol", kill_to_bol, },
+    {"&yank", yank, },
+    {"&yank-pop", yank_pop, },
     {"&transpose", transpose_chars, },
     {"&transpose-words", transpose_words, },
     {"&suspend", suspend_key, },
@@ -357,10 +360,114 @@ void transpose_chars(char *dummy)
 }
 
 /*
+ * the kill ring: the text deleted by the kill commands, to yank it back
+ */
+#define KILL_RING_SIZE 10
+static char *kill_ring[KILL_RING_SIZE];
+static int kill_last;                   /* index of the last kill */
+static int yank_index;                  /* index of the text yanked last */
+static int yank_start;                  /* where that text starts */
+
+static bool is_kill_cmd(function_str funct)
+{
+    return (funct == kill_to_eol || funct == kill_to_bol
+            || funct == del_word_left || funct == del_word_right
+            || funct == del_unix_word_left);
+}
+
+/*
+ * save the 'len' bytes at 'p' in the kill ring; if the previous command
+ * also killed, add them to its kill, before it if 'before'; nothing is
+ * saved in no-echo mode, so that passwords are not kept
+ */
+static void kill_text(const char *p, int len, bool before)
+{
+    if (len <= 0 || (linemode & LM_NOECHO))
+        return;
+    if (!is_kill_cmd(last_edit_cmd) || kill_ring[kill_last] == NULL) {
+        kill_last = (kill_last + 1) % KILL_RING_SIZE;
+        free(kill_ring[kill_last]);
+        kill_ring[kill_last] = NULL;
+    }
+    char *old = kill_ring[kill_last];
+    const char *old_text = old != NULL ? old : "";  /* not NULL for memcpy */
+    size_t old_len = strlen(old_text);
+    char *s = malloc(old_len + len + 1);
+    if (s == NULL) {
+        out_of_memory();
+        return;
+    }
+    if (before) {
+        memcpy(s, p, len);
+        memcpy(s + len, old_text, old_len);
+    } else {
+        memcpy(s, old_text, old_len);
+        memcpy(s + old_len, p, len);
+    }
+    s[old_len + len] = '\0';
+    free(old);
+    kill_ring[kill_last] = s;
+}
+
+/* kill the 'n' bytes to the left or right of the cursor */
+static void kill_left(int n)
+{
+    kill_text(edbuf + pos - n, n, true);
+    input_moveto(pos - n);
+    input_delete_nofollow_chars(n);
+}
+
+static void kill_right(int n)
+{
+    kill_text(edbuf + pos, n, false);
+    input_delete_nofollow_chars(n);
+}
+
+/*
+ * insert the last killed text
+ */
+void yank(char *dummy)
+{
+    if ((linemode & LM_NOECHO) || kill_ring[kill_last] == NULL)
+        return;
+    yank_index = kill_last;
+    yank_start = pos;
+    input_insert_follow_chars(kill_ring[kill_last],
+                              strlen(kill_ring[kill_last]));
+}
+
+/*
+ * replace the text just yanked with the kill before it
+ */
+void yank_pop(char *dummy)
+{
+    if ((linemode & LM_NOECHO)
+        || (last_edit_cmd != yank && last_edit_cmd != yank_pop)
+        || yank_start > pos)
+        return;
+    int i = yank_index;
+    do {
+        i = (i + KILL_RING_SIZE - 1) % KILL_RING_SIZE;
+    } while (kill_ring[i] == NULL);
+    yank_index = i;
+    input_replace(yank_start, pos - yank_start,
+                  kill_ring[i], strlen(kill_ring[i]));
+}
+
+/*
+ * kill everything before the cursor
+ */
+void kill_to_bol(char *dummy)
+{
+    kill_left(pos);
+}
+
+/*
  * erase everything to the end of line
  */
 void kill_to_eol(char *dummy)
 {
+    kill_text(edbuf + pos, edlen - pos, false);
     if (line_status == 0) {
 	if (edattrbg)
 	    tty_printf("%s%s", edattrend, tty_clreoln);
@@ -766,7 +873,7 @@ void del_word_right(char *dummy)
 	;
     while (i < edlen && word_at(i))
 	i = next_cell(i);
-    input_delete_nofollow_chars(i - pos);
+    kill_right(i - pos);
 }
 
 /*
@@ -779,9 +886,7 @@ void del_word_left(char *dummy)
 	;
     while (i && word_at(prev_cell(i)))
 	i = prev_cell(i);
-    i = pos - i;
-    input_moveto(pos - i);
-    input_delete_nofollow_chars(i);
+    kill_left(pos - i);
 }
 
 /*
@@ -795,9 +900,7 @@ void del_unix_word_left(char *dummy)
         --i;
     while (i > 0 && edbuf[i - 1] != ' ' && edbuf[i - 1] != '\t')
         --i;
-    int n = pos - i;
-    input_moveto(i);
-    input_delete_nofollow_chars(n);
+    kill_left(pos - i);
 }
 
 enum case_change { CASE_UPPER, CASE_LOWER, CASE_CAPITALIZE };

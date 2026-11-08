@@ -226,8 +226,9 @@ BS      &del-char-left          M-BS    &del-word-left
 ^L      &redraw-line            M-l     &downcase-word
 ^T      &transpose              M-t     &transpose-words
 ^Q      &clear-line             M-c     &capitalize-word
-                                M-u     &upcase-word
+^U      &kill-to-bol            M-u     &upcase-word
 ^W      &del-unix-word-left     M-q     &to-history
+^Y      &yank                   M-y     &yank-pop
 ^Z      &suspend
 Tab     &complete-word          M-Tab   &complete-line
 Ret     &enter-line

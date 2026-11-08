@@ -221,6 +221,21 @@ run 'C-w deletes back to a space and M-q puts the line in history' '' \
 has 'foo  qux'
 lacks 'one'
 
+run 'consecutive kills are yanked together' '' \
+    "#print foo bar${esc}$(printf '\b')${esc}$(printf '\b')x $(printf '\031')
+"
+has 'x foo bar'
+
+run 'M-y replaces the yanked text with the kill before it' '' \
+    "#print X aaa bbb${esc}$(printf '\b\002')${esc}$(printf '\b\005\031')${esc}y
+"
+has 'X  bbb'
+
+run 'C-u kills to the start of the line' '' \
+    "#print abc$(printf '\025')#print z $(printf '\031')
+"
+has 'z #print abc'
+
 utf8=$(locale -a 2>/dev/null | grep -iE '^(C|en_US)\.utf-?8$' | head -n 1)
 if [ -n "$utf8" ]; then
     LC_ALL=$utf8
