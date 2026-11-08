@@ -57,20 +57,22 @@ typedef struct {
  */
 
 enum op_codes {
-  null=0, comma, eq, or_or_eq, xor_xor_eq, and_and_eq, or_eq, xor_eq, and_eq,
-  lshift_eq, rshift_eq, plus_eq, minus_eq, times_eq, div_eq, ampersand_eq,
-  or_or, xor_xor, and_and, or, xor, and,
-  less, less_eq, greater, greater_eq, eq_eq, not_eq,
-  lshift, rshift, plus, minus, times, division, ampersand,
+  op_null=0, op_comma, op_eq,
+  op_or_or_eq, op_xor_xor_eq, op_and_and_eq, op_or_eq, op_xor_eq, op_and_eq,
+  op_lshift_eq, op_rshift_eq, op_plus_eq, op_minus_eq, op_times_eq,
+  op_div_eq, op_ampersand_eq,
+  op_or_or, op_xor_xor, op_and_and, op_or, op_xor, op_and,
+  op_less, op_less_eq, op_greater, op_greater_eq, op_eq_eq, op_not_eq,
+  op_lshift, op_rshift, op_plus, op_minus, op_times, op_division, op_ampersand,
 
-  colon_less, colon_greater, less_colon, greater_colon,
-  point_less, point_greater, less_point, greater_point,
-  colon, point, question, another_null,
+  op_colon_less, op_colon_greater, op_less_colon, op_greater_colon,
+  op_point_less, op_point_greater, op_less_point, op_greater_point,
+  op_colon, op_point, op_question, op_another_null,
 
-  left_paren, right_paren, not, tilde,
-  pre_plus_plus, post_plus_plus, pre_minus_minus, post_minus_minus,
-  star, print, _random_, _attr_, colon_question, point_question,
-  pre_plus, pre_minus, a_circle, dollar, pre_null, post_null
+  op_left_paren, op_right_paren, op_not, op_tilde,
+  op_pre_plus_plus, op_post_plus_plus, op_pre_minus_minus, op_post_minus_minus,
+  op_star, op_print, op_random, op_attr, op_colon_question, op_point_question,
+  op_pre_plus, op_pre_minus, op_a_circle, op_dollar, op_pre_null, op_post_null
 };
 
 typedef enum op_codes operator;
@@ -120,92 +122,92 @@ char *error_msg[] = {
 };
 
 static operator_list op_list[] = {
-    { 0, 0,     0,	    "",     null		},
+    { 0, 0,     0,          "",     op_null             },
 
-    { 1, LEFT,  BINARY,     ",",    comma		},
+    { 1, LEFT,  BINARY,     ",",    op_comma            },
 
-    { 2, RIGHT, BINARY,     "=",    eq			},
-    { 2, RIGHT, BINARY,     "||=",  or_or_eq		},
-    { 2, RIGHT, BINARY,     "^^=",  xor_xor_eq		},
-    { 2, RIGHT, BINARY,     "&&=",  and_and_eq		},
-    { 2, RIGHT, BINARY,     "|=",   or_eq		},
-    { 2, RIGHT, BINARY,     "^=",   xor_eq		},
-    { 2, RIGHT, BINARY,     "&=",   and_eq		},
-    { 2, RIGHT, BINARY,     "<<=",  lshift_eq		},
-    { 2, RIGHT, BINARY,     ">>=",  rshift_eq		},
-    { 2, RIGHT, BINARY,     "+=",   plus_eq		},
-    { 2, RIGHT, BINARY,     "-=",   minus_eq		},
-    { 2, RIGHT, BINARY,     "*=",   times_eq		},
-    { 2, RIGHT, BINARY,     "/=",   div_eq		},
-    { 2, RIGHT, BINARY,     "%=",   ampersand_eq	},
+    { 2, RIGHT, BINARY,     "=",    op_eq               },
+    { 2, RIGHT, BINARY,     "||=",  op_or_or_eq         },
+    { 2, RIGHT, BINARY,     "^^=",  op_xor_xor_eq       },
+    { 2, RIGHT, BINARY,     "&&=",  op_and_and_eq       },
+    { 2, RIGHT, BINARY,     "|=",   op_or_eq            },
+    { 2, RIGHT, BINARY,     "^=",   op_xor_eq           },
+    { 2, RIGHT, BINARY,     "&=",   op_and_eq           },
+    { 2, RIGHT, BINARY,     "<<=",  op_lshift_eq        },
+    { 2, RIGHT, BINARY,     ">>=",  op_rshift_eq        },
+    { 2, RIGHT, BINARY,     "+=",   op_plus_eq          },
+    { 2, RIGHT, BINARY,     "-=",   op_minus_eq         },
+    { 2, RIGHT, BINARY,     "*=",   op_times_eq         },
+    { 2, RIGHT, BINARY,     "/=",   op_div_eq           },
+    { 2, RIGHT, BINARY,     "%=",   op_ampersand_eq     },
 
-    { 3, LEFT,  BINARY,     "||",   or_or		},
+    { 3, LEFT,  BINARY,     "||",   op_or_or            },
 
-    { 4, LEFT,  BINARY,     "^^",   xor_xor		},
+    { 4, LEFT,  BINARY,     "^^",   op_xor_xor          },
 
-    { 5, LEFT,  BINARY,     "&&",   and_and		},
+    { 5, LEFT,  BINARY,     "&&",   op_and_and          },
 
-    { 6, LEFT,  BINARY,     "|",    or			},
+    { 6, LEFT,  BINARY,     "|",    op_or               },
 
-    { 7, LEFT,  BINARY,     "^",    xor			},
+    { 7, LEFT,  BINARY,     "^",    op_xor              },
 
-    { 8, LEFT,  BINARY,     "&",    and			},
+    { 8, LEFT,  BINARY,     "&",    op_and              },
 
-    { 9, LEFT,  BINARY,     "<",    less		},
-    { 9, LEFT,  BINARY,     "<=",   less_eq		},
-    { 9, LEFT,  BINARY,     ">",    greater		},
-    { 9, LEFT,  BINARY,     ">=",   greater_eq		},
-    { 9, LEFT,  BINARY,     "==",   eq_eq		},
-    { 9, LEFT,  BINARY,     "!=",   not_eq		},
+    { 9, LEFT,  BINARY,     "<",    op_less             },
+    { 9, LEFT,  BINARY,     "<=",   op_less_eq          },
+    { 9, LEFT,  BINARY,     ">",    op_greater          },
+    { 9, LEFT,  BINARY,     ">=",   op_greater_eq       },
+    { 9, LEFT,  BINARY,     "==",   op_eq_eq            },
+    { 9, LEFT,  BINARY,     "!=",   op_not_eq           },
 
-    {10, LEFT,  BINARY,     "<<",   lshift		},
-    {10, LEFT,  BINARY,     ">>",   rshift		},
+    {10, LEFT,  BINARY,     "<<",   op_lshift           },
+    {10, LEFT,  BINARY,     ">>",   op_rshift           },
 
-    {11, LEFT,  BINARY,     "+",    plus		},
-    {11, LEFT,  BINARY,     "-",    minus		},
+    {11, LEFT,  BINARY,     "+",    op_plus             },
+    {11, LEFT,  BINARY,     "-",    op_minus            },
 
-    {12, LEFT,  BINARY,     "*",    times		},
-    {12, LEFT,  BINARY,     "/",    division		},
-    {12, LEFT,  BINARY,     "%",    ampersand		},
+    {12, LEFT,  BINARY,     "*",    op_times            },
+    {12, LEFT,  BINARY,     "/",    op_division         },
+    {12, LEFT,  BINARY,     "%",    op_ampersand        },
 
-    {14, LEFT,  BINARY,     ":<",   colon_less		},
-    {14, LEFT,  BINARY,     ":>",   colon_greater	},
-    {14, LEFT,  BINARY,     "<:",   less_colon		},
-    {14, LEFT,  BINARY,     ">:",   greater_colon	},
-    {14, LEFT,  BINARY,     ".<",   point_less		},
-    {14, LEFT,  BINARY,     ".>",   point_greater	},
-    {14, LEFT,  BINARY,     "<.",   less_point		},
-    {14, LEFT,  BINARY,     ">.",   greater_point	},
-    {14, LEFT,  BINARY,     ":",    colon		},
-    {14, LEFT,  BINARY,     ".",    point		},
-    {14, LEFT,  BINARY,     "?",    question		},
+    {14, LEFT,  BINARY,     ":<",   op_colon_less       },
+    {14, LEFT,  BINARY,     ":>",   op_colon_greater    },
+    {14, LEFT,  BINARY,     "<:",   op_less_colon       },
+    {14, LEFT,  BINARY,     ">:",   op_greater_colon    },
+    {14, LEFT,  BINARY,     ".<",   op_point_less       },
+    {14, LEFT,  BINARY,     ".>",   op_point_greater    },
+    {14, LEFT,  BINARY,     "<.",   op_less_point       },
+    {14, LEFT,  BINARY,     ">.",   op_greater_point    },
+    {14, LEFT,  BINARY,     ":",    op_colon            },
+    {14, LEFT,  BINARY,     ".",    op_point            },
+    {14, LEFT,  BINARY,     "?",    op_question         },
 
-    { 0, 0,     0,	    "",     another_null	},
+    { 0, 0,     0,          "",     op_another_null     },
 
-    { 0, RIGHT, PRE_UNARY,  "(",    left_paren		},
-    { 0, RIGHT, POST_UNARY, ")",    right_paren		},
+    { 0, RIGHT, PRE_UNARY,  "(",    op_left_paren       },
+    { 0, RIGHT, POST_UNARY, ")",    op_right_paren      },
 
-    {13, RIGHT, PRE_UNARY,  "!",    not			},
-    {13, RIGHT, PRE_UNARY,  "~",    tilde		},
-    {13, RIGHT, PRE_UNARY,  "++",   pre_plus_plus	},
-    {13, RIGHT, POST_UNARY, "++",   post_plus_plus	},
-    {13, RIGHT, PRE_UNARY,  "--",   pre_minus_minus	},
-    {13, RIGHT, POST_UNARY, "--",   post_minus_minus	},
-    {13, RIGHT, PRE_UNARY,  "*",    star		},
-    {13, RIGHT, PRE_UNARY,  "%",    print		},
-    {13, RIGHT, PRE_UNARY,  "rand", _random_		},
-    {13, RIGHT, PRE_UNARY,  "attr", _attr_		},
+    {13, RIGHT, PRE_UNARY,  "!",    op_not              },
+    {13, RIGHT, PRE_UNARY,  "~",    op_tilde            },
+    {13, RIGHT, PRE_UNARY,  "++",   op_pre_plus_plus    },
+    {13, RIGHT, POST_UNARY, "++",   op_post_plus_plus   },
+    {13, RIGHT, PRE_UNARY,  "--",   op_pre_minus_minus  },
+    {13, RIGHT, POST_UNARY, "--",   op_post_minus_minus },
+    {13, RIGHT, PRE_UNARY,  "*",    op_star             },
+    {13, RIGHT, PRE_UNARY,  "%",    op_print            },
+    {13, RIGHT, PRE_UNARY,  "rand", op_random           },
+    {13, RIGHT, PRE_UNARY,  "attr", op_attr             },
 
-    {14, LEFT,  PRE_UNARY,  ":?",   colon_question	},
-    {14, LEFT,  PRE_UNARY,  ".?",   point_question	},
+    {14, LEFT,  PRE_UNARY,  ":?",   op_colon_question   },
+    {14, LEFT,  PRE_UNARY,  ".?",   op_point_question   },
 
-    {15, RIGHT, PRE_UNARY,  "+",    pre_plus		},
-    {15, RIGHT, PRE_UNARY,  "-",    pre_minus		},
-    {15, RIGHT, PRE_UNARY,  "@",    a_circle		},
-    {15, RIGHT, PRE_UNARY,  "$",    dollar		},
+    {15, RIGHT, PRE_UNARY,  "+",    op_pre_plus         },
+    {15, RIGHT, PRE_UNARY,  "-",    op_pre_minus        },
+    {15, RIGHT, PRE_UNARY,  "@",    op_a_circle         },
+    {15, RIGHT, PRE_UNARY,  "$",    op_dollar           },
 
-    { 0, 0,     PRE_UNARY,  "",     pre_null		},
-    { 0, 0,     POST_UNARY, "",     post_null		}
+    { 0, 0,     PRE_UNARY,  "",     op_pre_null         },
+    { 0, 0,     POST_UNARY, "",     op_post_null        }
 };
 
 static stack stk;
@@ -307,7 +309,7 @@ static int check_operator(char side, operator *op, int mindepth)
     char *name, c, d;
 
     if (!(c=*line) || c == CMDSEP) {
-	*op = side==BINARY ? null : side==LEFT ? pre_null : post_null;
+	*op = side==BINARY ? op_null : side==LEFT ? op_pre_null : op_post_null;
 	return 1;
     }
     else if ((c=='$' || c=='@') && (d=line[1]) && (isalpha(d) || d=='_'))
@@ -316,22 +318,22 @@ static int check_operator(char side, operator *op, int mindepth)
     else if (side==LEFT && c=='(') {
 	line++;
 	depth++;
-	*op=left_paren;
+	*op=op_left_paren;
 	return 1;
     }
     else if (side==RIGHT && c==')') {
 	if (--depth >= mindepth) {
 	    line++;
-	    *op=right_paren;
+	    *op=op_right_paren;
 	}
 	else 		   /* exit without touching the parenthesis */
-	    *op=post_null;
+	    *op=op_post_null;
 	return 1;
     }
     else if (side==RIGHT && (c=='}' || c==']') && depth == mindepth) {
 	/* allow also exiting with a '}' or a ']' */
 	--depth;
-	*op=post_null;
+	*op=op_post_null;
 	return 1;
     }
 
@@ -350,7 +352,7 @@ static int check_operator(char side, operator *op, int mindepth)
 	return 1;
     }
     else {
-	*op= side==BINARY ? null : side==PRE_UNARY ? pre_null : post_null;
+	*op= side==BINARY ? op_null : side==PRE_UNARY ? op_pre_null : op_post_null;
 	if (side==BINARY)
 	    error=NO_OPERATOR_ERROR;
     }
@@ -479,15 +481,15 @@ static int exe_op(operator *op)
     char *ssrc, *tmp;
     int ret=0, i=0, j=0, danger=0;
 
-    switch ((int)*op) {
-      case (int)comma:
+    switch (*op) {
+      case op_comma:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
 	check_delete(&o1);
 	p=&o2;
 	ret=1;
 	break;
-      case (int)eq:
+      case op_eq:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
@@ -518,19 +520,19 @@ static int exe_op(operator *op)
 	else
 	    error=SYNTAX_ERROR;
 	break;
-      case (int)or_or_eq:
-      case (int)xor_xor_eq:
-      case (int)and_and_eq:
-      case (int)or_eq:
-      case (int)xor_eq:
-      case (int)and_eq:
-      case (int)lshift_eq:
-      case (int)rshift_eq:
-      case (int)plus_eq:
-      case (int)minus_eq:
-      case (int)times_eq:
-      case (int)div_eq:
-      case (int)ampersand_eq:
+      case op_or_or_eq:
+      case op_xor_xor_eq:
+      case op_and_and_eq:
+      case op_or_eq:
+      case op_xor_eq:
+      case op_and_eq:
+      case op_lshift_eq:
+      case op_rshift_eq:
+      case op_plus_eq:
+      case op_minus_eq:
+      case op_times_eq:
+      case op_div_eq:
+      case op_ampersand_eq:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
@@ -542,27 +544,29 @@ static int exe_op(operator *op)
 	if (o1.type==TYPE_NUM_VAR && o2.type==TYPE_NUM) {
 	    l=VAR[o1.num].num;
 
-	    switch ((int)*op) {
-	      case (int)or_or_eq:  if ( o2.num) *l = 1;   else *l = !!*l; break;
-	      case (int)xor_xor_eq:if ( o2.num) *l = !*l; else *l = !!*l; break;
-	      case (int)and_and_eq:if (!o2.num) *l = 0;   else *l = !!*l; break;
-	      case (int)or_eq:     *l  |= o2.num; break;
-	      case (int)xor_eq:    *l  ^= o2.num; break;
-	      case (int)and_eq:    *l  &= o2.num; break;
-	      case (int)lshift_eq: *l <<= o2.num; break;
-	      case (int)rshift_eq: *l >>= o2.num; break;
-	      case (int)plus_eq:   *l  += o2.num; break;
-	      case (int)minus_eq:  *l  -= o2.num; break;
-	      case (int)times_eq:  *l  *= o2.num; break;
-	      case (int)div_eq:    *l  /= o2.num; break;
-	      case (int)ampersand_eq:
+	    switch (*op) {
+	      case op_or_or_eq:    if ( o2.num) *l = 1;   else *l = !!*l; break;
+	      case op_xor_xor_eq:  if ( o2.num) *l = !*l; else *l = !!*l; break;
+	      case op_and_and_eq:  if (!o2.num) *l = 0;   else *l = !!*l; break;
+	      case op_or_eq:       *l  |= o2.num; break;
+	      case op_xor_eq:      *l  ^= o2.num; break;
+	      case op_and_eq:      *l  &= o2.num; break;
+	      case op_lshift_eq:   *l <<= o2.num; break;
+	      case op_rshift_eq:   *l >>= o2.num; break;
+	      case op_plus_eq:     *l  += o2.num; break;
+	      case op_minus_eq:    *l  -= o2.num; break;
+	      case op_times_eq:    *l  *= o2.num; break;
+	      case op_div_eq:      *l  /= o2.num; break;
+	      case op_ampersand_eq:
 		if ((*l %= o2.num) < 0) *l += o2.num; break;
+	      default:
+	          break;
 	    }
 	    o2.num=*l;
 	    p=&o2;
 	    ret=1;
 	}
-	else if (*op==plus_eq && o1.type==TYPE_TXT_VAR &&
+	else if (*op==op_plus_eq && o1.type==TYPE_TXT_VAR &&
 		 (o2.type==TYPE_TXT || o2.type==TYPE_TXT_VAR)) {
 
 	    if (o2.type==TYPE_TXT)
@@ -581,7 +585,7 @@ static int exe_op(operator *op)
 	    p=&o1;
 	    ret=1;
 	}
-	else if (*op==times_eq && o1.type==TYPE_TXT_VAR &&
+	else if (*op==op_times_eq && o1.type==TYPE_TXT_VAR &&
 		 (o2.type==TYPE_NUM || o2.type==TYPE_NUM_VAR)) {
 
 	    if (o2.type==TYPE_NUM_VAR) {
@@ -615,25 +619,25 @@ static int exe_op(operator *op)
 	else
 	    error=SYNTAX_ERROR;
 	break;
-      case (int)or_or:
-      case (int)xor_xor:
-      case (int)and_and:
-      case (int)or:
-      case (int)xor:
-      case (int)and:
-      case (int)less:
-      case (int)less_eq:
-      case (int)greater:
-      case (int)greater_eq:
-      case (int)eq_eq:
-      case (int)not_eq:
-      case (int)lshift:
-      case (int)rshift:
-      case (int)minus:
-      case (int)plus:
-      case (int)times:
-      case (int)division:
-      case (int)ampersand:
+      case op_or_or:
+      case op_xor_xor:
+      case op_and_and:
+      case op_or:
+      case op_xor:
+      case op_and:
+      case op_less:
+      case op_less_eq:
+      case op_greater:
+      case op_greater_eq:
+      case op_eq_eq:
+      case op_not_eq:
+      case op_lshift:
+      case op_rshift:
+      case op_minus:
+      case op_plus:
+      case op_times:
+      case op_division:
+      case op_ampersand:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
@@ -648,32 +652,34 @@ static int exe_op(operator *op)
 
 	if (o1.type==TYPE_NUM && o2.type==TYPE_NUM) {
 	    if (!o2.num &&
-		(*op==division || *op==ampersand)) {
+		(*op==op_division || *op==op_ampersand)) {
 		error=DIV_BY_ZERO_ERROR;
 		break;
 	    }
 
-	    switch ((int)*op) {
-	      case (int)less:      o1.num = o1.num <  o2.num ? 1 : 0; break;
-	      case (int)less_eq:   o1.num = o1.num <= o2.num ? 1 : 0; break;
-	      case (int)greater:   o1.num = o1.num >  o2.num ? 1 : 0; break;
-	      case (int)greater_eq:o1.num = o1.num >= o2.num ? 1 : 0; break;
-	      case (int)eq_eq:     o1.num = o1.num == o2.num ? 1 : 0; break;
-	      case (int)not_eq:    o1.num = o1.num != o2.num ? 1 : 0; break;
-	      case (int)or_or:     o1.num = o1.num || o2.num; break;
-	      case (int)xor_xor:if (o2.num) o1.num = !o1.num; break;
-	      case (int)and_and:   o1.num = o1.num && o2.num; break;
-	      case (int)or:  o1.num |= o2.num; break;
-	      case (int)xor: o1.num ^= o2.num; break;
-	      case (int)and: o1.num &= o2.num; break;
-	      case (int)lshift:    o1.num <<= o2.num; break;
-	      case (int)rshift:    o1.num >>= o2.num; break;
-	      case (int)minus:   o1.num -= o2.num; break;
-	      case (int)plus:    o1.num += o2.num; break;
-	      case (int)times:   o1.num *= o2.num; break;
-	      case (int)division:o1.num /= o2.num; break;
-	      case (int)ampersand:
+	    switch (*op) {
+	      case op_less:        o1.num = o1.num <  o2.num ? 1 : 0; break;
+	      case op_less_eq:     o1.num = o1.num <= o2.num ? 1 : 0; break;
+	      case op_greater:     o1.num = o1.num >  o2.num ? 1 : 0; break;
+	      case op_greater_eq:  o1.num = o1.num >= o2.num ? 1 : 0; break;
+	      case op_eq_eq:       o1.num = o1.num == o2.num ? 1 : 0; break;
+	      case op_not_eq:      o1.num = o1.num != o2.num ? 1 : 0; break;
+	      case op_or_or:       o1.num = o1.num || o2.num; break;
+	      case op_xor_xor:     if (o2.num) o1.num = !o1.num; break;
+	      case op_and_and:     o1.num = o1.num && o2.num; break;
+	      case op_or:          o1.num |= o2.num; break;
+	      case op_xor:         o1.num ^= o2.num; break;
+	      case op_and:         o1.num &= o2.num; break;
+	      case op_lshift:      o1.num <<= o2.num; break;
+	      case op_rshift:      o1.num >>= o2.num; break;
+	      case op_minus:       o1.num -= o2.num; break;
+	      case op_plus:        o1.num += o2.num; break;
+	      case op_times:       o1.num *= o2.num; break;
+	      case op_division:    o1.num /= o2.num; break;
+	      case op_ampersand:
 		if ((o1.num %= o2.num) < 0) o1.num += o2.num; break;
+	      default:
+	          break;
 	    }
 
 	    p=&o1;
@@ -693,19 +699,19 @@ static int exe_op(operator *op)
 	    else
 		src=*VAR[o2.num].str;
 
-	    if (*op == plus) {
+	    if (*op == op_plus) {
 		dst = ptrcat(dst, src);
 		o1.type = TYPE_TXT;
 	    } else {
 		o1.num = ptrcmp(dst, src);
-		switch ((int)*op) {
-		  case (int)minus:			      break;
-		  case (int)less:       o1.num = o1.num <  0; break;
-		  case (int)less_eq:    o1.num = o1.num <= 0; break;
-		  case (int)greater:    o1.num = o1.num >  0; break;
-		  case (int)greater_eq: o1.num = o1.num >= 0; break;
-		  case (int)eq_eq:      o1.num = o1.num == 0; break;
-		  case (int)not_eq:     o1.num = o1.num != 0; break;
+		switch (*op) {
+		  case op_minus:			      break;
+		  case op_less:       o1.num = o1.num <  0; break;
+		  case op_less_eq:    o1.num = o1.num <= 0; break;
+		  case op_greater:    o1.num = o1.num >  0; break;
+		  case op_greater_eq: o1.num = o1.num >= 0; break;
+		  case op_eq_eq:      o1.num = o1.num == 0; break;
+		  case op_not_eq:     o1.num = o1.num != 0; break;
 		  default:
 		    error=SYNTAX_ERROR;
 		    p=NULL; ret=0; break;
@@ -722,7 +728,7 @@ static int exe_op(operator *op)
 		ret=1;
 	    }
 	}
-	else if (*op==times
+	else if (*op==op_times
 		 && (o1.type==TYPE_TXT_VAR || o1.type==TYPE_TXT)
 		 && o2.type==TYPE_NUM) {
 
@@ -756,16 +762,16 @@ static int exe_op(operator *op)
 	else
 	    error=SYNTAX_ERROR;
 	break;
-      case (int)colon_less:
-      case (int)colon_greater:
-      case (int)less_colon:
-      case (int)greater_colon:
-      case (int)colon:
-      case (int)point_less:
-      case (int)point_greater:
-      case (int)less_point:
-      case (int)greater_point:
-      case (int)point:
+      case op_colon_less:
+      case op_colon_greater:
+      case op_less_colon:
+      case op_greater_colon:
+      case op_colon:
+      case op_point_less:
+      case op_point_greater:
+      case op_less_point:
+      case op_greater_point:
+      case op_point:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
@@ -811,8 +817,8 @@ static int exe_op(operator *op)
 	int nchars = utf8_count(ssrc, srclen);
 #define BYTES(n) ((int)utf8_offset(ssrc, srclen, (n)))
 
-	switch ((int)*op) {
-	  case (int)colon_less:
+	switch (*op) {
+	  case op_colon_less:
 	    while (o2.num && srclen) {
 		/* skip span of multiple word delimeters */
 		while (srclen && IS_DELIM(*ssrc))
@@ -835,8 +841,8 @@ static int exe_op(operator *op)
 		    dst = ptrmcpy(dst, ptrdata(start), j);
 	    }
 	    break;
-	  case (int)colon:
-	  case (int)colon_greater:
+	  case op_colon:
+	  case op_colon_greater:
 	    o2.num--;
 	    /* skip span of multiple word delimeters */
 	    while (srclen && IS_DELIM(*ssrc))
@@ -854,7 +860,7 @@ static int exe_op(operator *op)
 	    if (o2.num)  /* end of valid string before the n-th word */
 		ptrzero(dst);
 	    else {
-		if (*op==colon &&
+		if (*op==op_colon &&
 		    (tmp = memchrs(ssrc, srclen, DELIM, DELIM_LEN))) {
 		    dst = ptrmcpy(dst, ssrc, tmp-ssrc);
 		}
@@ -862,7 +868,7 @@ static int exe_op(operator *op)
 		    dst = ptrmcpy(dst, ssrc, srclen);
 	    }
 	    break;
-	  case (int)less_colon:
+	  case op_less_colon:
 	    o2.num--;
 	    while (o2.num && srclen) {
 		/* skip span of multiple word delimeters */
@@ -879,7 +885,7 @@ static int exe_op(operator *op)
 	    else
 		dst = ptrmcpy(dst, ssrc, srclen);
 	    break;
-	  case (int)greater_colon:
+	  case op_greater_colon:
 	    while (o2.num && srclen) {
 		/* skip span of multiple word delimeters */
 		while (srclen && IS_DELIM(ssrc[srclen - 1]))
@@ -896,18 +902,18 @@ static int exe_op(operator *op)
 		dst = ptrmcpy(dst, ssrc+srclen+1,
 			      ptrlen(start) - (ssrc+srclen+1 - ptrdata(start)));
 	    break;
-	  case (int)point:
+	  case op_point:
 	    j = BYTES(o2.num <= nchars ? o2.num-1 : nchars);
 	    dst = ptrmcpy(dst, ssrc+j, BYTES(o2.num <= nchars ? o2.num : nchars) - j);
 	    break;
-	  case (int)point_less:
+	  case op_point_less:
 	    j = BYTES(o2.num < nchars ? o2.num : nchars);
 	    if (danger)
 		ptrtrunc(dst, j);
 	    else
 		dst = ptrmcpy(dst, ssrc, j);
 	    break;
-	  case (int)less_point:
+	  case op_less_point:
 	    j = nchars-o2.num+1;
 	    j = j < 0 ? 0 : BYTES(j);
 	    if (danger)
@@ -915,15 +921,17 @@ static int exe_op(operator *op)
 	    else
 		dst = ptrmcpy(dst, ssrc, j);
 	    break;
-	  case (int)point_greater:
+	  case op_point_greater:
 	    j = BYTES(o2.num-1 < nchars ? o2.num-1 : nchars);
 	    dst = ptrmcpy(dst, ssrc+j, srclen-j);
 	    break;
-	  case (int)greater_point:
+	  case op_greater_point:
 	    j = nchars-o2.num;
 	    j = j < 0 ? 0 : BYTES(j);
 	    dst = ptrmcpy(dst, ssrc+j, srclen-j);
 	    break;
+	  default:
+	      break;
 	}
 #undef BYTES
 	check_delete(&o2);
@@ -932,8 +940,8 @@ static int exe_op(operator *op)
 	    p=&o1; ret=1;
         }
 	break;
-      case (int)colon_question:
-      case (int)point_question:
+      case op_colon_question:
+      case op_point_question:
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
@@ -958,7 +966,7 @@ static int exe_op(operator *op)
 	ssrc = ptrdata(src);
 	srclen = ptrlen(src);
 
-	if (*op==colon_question) {
+	if (*op==op_colon_question) {
 	    o1.num = 0;
 	    /* skip span of multiple word delimeters */
 	    while (srclen && IS_DELIM(*ssrc))
@@ -984,7 +992,7 @@ static int exe_op(operator *op)
 	p=&o1;
 	ret=1;
 	break;
-      case (int)question:
+      case op_question:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
@@ -1014,8 +1022,8 @@ static int exe_op(operator *op)
 	check_delete(&o1);
 	check_delete(&o2);
 	break;
-      case (int)null:
-      case (int)another_null:
+      case op_null:
+      case op_another_null:
 	if (pop_obj(&o2) && pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
@@ -1027,24 +1035,24 @@ static int exe_op(operator *op)
 	p=&o1;
 	ret=1;
 	break;
-      case (int)left_paren:
+      case op_left_paren:
 	error=MISSING_PAREN_ERROR;
 	break;
-      case (int)right_paren:
+      case op_right_paren:
 	if (pop_op(op));
 	else if (REAL_ERROR) break;
 
-	if (*op!=left_paren)
+	if (*op!=op_left_paren)
 	    error=MISMATCH_PAREN_ERROR;
 	else
 	    ret=1;
 
 	break;
-      case (int)_random_:
-      case (int)pre_plus:
-      case (int)pre_minus:
-      case (int)not:
-      case (int)tilde:
+      case op_random:
+      case op_pre_plus:
+      case op_pre_minus:
+      case op_not:
+      case op_tilde:
 
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
@@ -1054,13 +1062,13 @@ static int exe_op(operator *op)
 	    o1.type = TYPE_NUM;
 	}
 	if (o1.type==TYPE_NUM) {
-	    if (*op==pre_minus)
+	    if (*op==op_pre_minus)
 		o1.num=-o1.num;
-	    else if (*op==not)
+	    else if (*op==op_not)
 		o1.num=!o1.num;
-	    else if (*op==tilde)
+	    else if (*op==op_tilde)
 		o1.num=~o1.num;
-	    else if (*op==_random_) {
+	    else if (*op==op_random) {
 		if (o1.num <= 0) {
 		    error=OUT_RANGE_ERROR;
 		    break;
@@ -1073,7 +1081,7 @@ static int exe_op(operator *op)
 	else
 	    error=SYNTAX_ERROR;
 	break;
-      case (int)_attr_:
+      case op_attr:
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
@@ -1101,8 +1109,8 @@ static int exe_op(operator *op)
 	    error=NO_STRING_ERROR;
 	break;
 
-      case (int)star:
-      case (int)print:
+      case op_star:
+      case op_print:
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
@@ -1113,7 +1121,7 @@ static int exe_op(operator *op)
 
 	if (o1.type==TYPE_NUM || o1.type==TYPE_NUM_VAR) {
 	    o1.txt = NULL;
-	    if (*op==print) {
+	    if (*op==op_print) {
 		char buf[LONGLEN];
 		sprintf(buf, "%ld", o1.num);
 		o1.txt = ptrmcpy(o1.txt, buf, strlen(buf));
@@ -1129,7 +1137,7 @@ static int exe_op(operator *op)
 	    p=&o1; ret=1;
 	}
 	else if (o1.type==TYPE_TXT || o1.type==TYPE_TXT_VAR) {
-	    if (*op==print) {
+	    if (*op==op_print) {
 		if (o1.txt && ptrlen(o1.txt))
 		    o1.num = atol(ptrdata(o1.txt));
 		else
@@ -1150,10 +1158,10 @@ static int exe_op(operator *op)
 	else
 	    error=SYNTAX_ERROR;
 	break;
-      case (int)pre_plus_plus:
-      case (int)post_plus_plus:
-      case (int)pre_minus_minus:
-      case (int)post_minus_minus:
+      case op_pre_plus_plus:
+      case op_post_plus_plus:
+      case op_pre_minus_minus:
+      case op_post_minus_minus:
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
@@ -1161,11 +1169,11 @@ static int exe_op(operator *op)
 	    l=VAR[o1.num].num;
 	    o1.type=TYPE_NUM;
 
-	    if (*op==pre_plus_plus)
+	    if (*op==op_pre_plus_plus)
 		o1.num=++*l;
-	    else if (*op==post_plus_plus)
+	    else if (*op==op_post_plus_plus)
 		o1.num=(*l)++;
-	    else if (*op==pre_minus_minus)
+	    else if (*op==op_pre_minus_minus)
 		o1.num=--*l;
 	    else
 		o1.num=(*l)--;
@@ -1176,12 +1184,12 @@ static int exe_op(operator *op)
 	else
 	    error=SYNTAX_ERROR;
 	break;
-      case (int)a_circle:
-      case (int)dollar:
+      case op_a_circle:
+      case op_dollar:
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
-	if (*op == dollar)
+	if (*op == op_dollar)
 	    delta = 1;
 	else
 	    delta = 0;
@@ -1235,8 +1243,8 @@ static int exe_op(operator *op)
 	    ret=1;
 	}
 	break;
-      case (int)pre_null:
-      case (int)post_null:
+      case op_pre_null:
+      case op_post_null:
 	ret=1;
 	break;
       default:
