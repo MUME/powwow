@@ -331,6 +331,11 @@ if [ -n "$utf8" ]; then
     LC_ALL=C
 fi
 
+run '#while needs a parenthesis' '#while 1
+#while (@1<3) {#print (@1);#(\@1++)}'
+has '#while: #error: missing left parenthesis.'
+has '2'
+
 run '#var numbers' '#var @x=-5
 #print (@x)
 #var @y=99999999999999999999

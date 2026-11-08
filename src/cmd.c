@@ -2249,7 +2249,7 @@ static void cmd_while(char *arg)
     char *check, *tmp;
 
     arg = skipspace(arg);
-    if (!*arg) {
+    if (*arg != '(') {
 	PRINTF("#while: ");
 	print_error(error=MISMATCH_PAREN_ERROR);
 	return;
