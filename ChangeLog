@@ -8,6 +8,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  as `#editor:' lines.
 	* Removed the configure option --enable-bsd; all systems use
 	  POSIX termios for the terminal.
+	* autogen.sh finds GnuTLS, PCRE2 and libgrapheme using pkg-config,
+	  such as in /usr/local on FreeBSD or /opt/homebrew on macOS.
 
 Changes from 1.3.0 to 1.3.1
 	* New command #substitute.
