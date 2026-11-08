@@ -684,6 +684,9 @@ grep -aq '#action -hpcheck $' "$tmp/out" || fail "expected #action -hpcheck"
 grep -aq '#mark troll $' "$tmp/out" || fail "expected #mark troll"
 grep -aq '#var \$target $' "$tmp/out" || fail "expected #var \$target"
 
+run 'the spaces after a file name are not part of it' "#save $tmp/saved "
+[ -f "$tmp/saved" ] || fail "expected $tmp/saved"
+
 run 'Tab completes the arguments of #hilite' '' \
     "#hil	inp	un	Ye	o	cy	
 #hil	me	b		

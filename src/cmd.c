@@ -2315,6 +2315,7 @@ static void cmd_while(char *arg)
 static void cmd_capture(char *arg)
 {
     arg = skipspace(arg);
+    strip_end(arg);        /* such as after Tab completion */
 
     if (!*arg) {
         if (capturefile) {
@@ -2349,6 +2350,7 @@ static void cmd_capture(char *arg)
 static void cmd_movie(char *arg)
 {
     arg = skipspace(arg);
+    strip_end(arg);        /* such as after Tab completion */
 
     if (!*arg) {
         if (moviefile) {
@@ -2382,6 +2384,7 @@ static void cmd_movie(char *arg)
 static void cmd_record(char *arg)
 {
     arg = skipspace(arg);
+    strip_end(arg);        /* such as after Tab completion */
 
     if (!*arg) {
         if (recordfile) {
@@ -2786,6 +2789,7 @@ static void cmd_option(char *arg)
 static void cmd_file(char *arg)
 {
     arg = skipspace(arg);
+    strip_end(arg);        /* such as after Tab completion */
     if (*arg == '=') {
 	set_deffile(++arg);
 	if (opt_info) {
@@ -2805,6 +2809,7 @@ static void cmd_file(char *arg)
 static void cmd_save(char *arg)
 {
     arg = skipspace(arg);
+    strip_end(arg);        /* such as after Tab completion */
     if (*arg) {
 	set_deffile(arg);
 	if (opt_info) {
@@ -2825,6 +2830,7 @@ static void cmd_load(char *arg)
     int res;
 
     arg = skipspace(arg);
+    strip_end(arg);        /* such as after Tab completion */
     if (*arg) {
 	set_deffile(arg);
 	if (opt_info) {
