@@ -277,10 +277,22 @@ has '#key bindings starting with C-x 8:'
 has '#bind C-x-8-Ret ^X8^M=&insert-char'
 has 'x'
 
+run 'Home and End move to the start and end of the line' '' \
+    "bc${esc}OH#print a${esc}OFd
+"
+has 'abcd'
+
 run 'M-t swaps the word at the cursor with the one before' '' \
     "#print one two three$(printf '\002\002')${esc}t!
 "
 has 'one three two!'
+
+run 'M-. inserts the last word of the previous lines' '' \
+    "#print one two
+#print x three
+#print ${esc}.${esc}.!
+"
+has 'two!'
 
 run 'consecutive kills are yanked together' '' \
     "#print foo bar${esc}$(printf '\b')${esc}$(printf '\b')x $(printf '\031')
@@ -322,6 +334,13 @@ run 'C-g restores the line, and C-r C-r repeats the last search' \
 "
 has 'typed'
 has 'banana!'
+
+run 'M-< and M-> go to the first history line and back' "$history" \
+    "#print typed${esc}<${esc}>!
+" "${esc}<!
+"
+has 'typed!'
+has 'apple one!'
 
 run 'C-n after a search goes on to the next line' "$history" \
     "#print typed${cr}ban${ce}$(printf '\016')!

@@ -236,8 +236,13 @@ C-w       &del-unix-word-left
 C-x 8 Ret &insert-char
 C-y       &yank                     M-y       &yank-pop
 C-z       &suspend
+                                    M-.       &yank-last-word
+                                    M-<       &begin-of-history
+                                    M->       &end-of-history
 Del       &del-char-left            M-Del     &del-word-left
 Delete    &del-char-right
+End       &end-of-line
+Home      &begin-of-line
 LF        &enter-line
 Ret       &enter-line
 Tab       &complete-word            M-Tab     &complete-line
