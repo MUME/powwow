@@ -50,8 +50,8 @@ int pickline = 0;	/* line to pick history from */
 wordnode words[MAX_WORDS];
 int wordindex = 0;
 
-edit_function internal_functions[] = {
-    {(char *)0, (function_str)0, },
+const edit_function internal_functions[] = {
+    {NULL, (function_str)0, },
     {"&enter-line", enter_line, },
     {"&complete-word", complete_word, },
     {"&complete-line", complete_line, },
@@ -78,13 +78,14 @@ edit_function internal_functions[] = {
     {"&downcase-word", downcase_word, },
     {"&next-word", next_word, },
     {"&insert-string", insert_string, },
-    {(char *)0, (function_str)0 }
+    {NULL, (function_str)0 }
 };
 
 int lookup_edit_name(char *name, char **arg)
 {
     int i, len, flen;
-    char *fname, *extra = NULL;
+    const char *fname;
+    char *extra = NULL;
 
     if ((fname = strchr(name, ' ')))
 	len = fname - name;

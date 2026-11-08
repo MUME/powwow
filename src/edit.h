@@ -4,11 +4,11 @@
 #define _EDIT_H_
 
 typedef struct {
-  char *name;
+  const char *name;
   function_str funct;
 } edit_function;
 
-extern edit_function internal_functions[];
+extern const edit_function internal_functions[];
 
 /*
  * completion list:

@@ -1293,9 +1293,10 @@ void parse_bind(char *arg)
 	    if (np->funct == key_run_command)
 		fmt_next_edit("#bind %s %s=%s", name, seqname, np->call_data);
 	    else {
-		p = internal_functions[lookup_edit_function(np->funct)].name;
+		const char *fname
+                    = internal_functions[lookup_edit_function(np->funct)].name;
 		fmt_next_edit("#bind %s %s=%s%s%s",
-                              name, seqname, p,
+                              name, seqname, fname,
                               np->call_data ? " " : "",
                               np->call_data ? np->call_data : "");
 	    }

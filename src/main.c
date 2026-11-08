@@ -231,7 +231,7 @@ char *delim_list[] = { DELIMSET_NORMAL, DELIMSET_PROGRAM, NULL };
 int   delim_len [] = {
     sizeof DELIMSET_NORMAL - 1, sizeof DELIMSET_PROGRAM - 1, 0
 };
-char *delim_name[] = { "normal",    "program", "custom" };
+const char *const delim_name[] = { "normal", "program", "custom" };
 int   delim_mode = DELIM_NORMAL;
 
 /* Group delimiter */

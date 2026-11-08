@@ -129,7 +129,7 @@ extern function_str last_edit_cmd;
 
 extern char *delim_list[];
 extern int   delim_len[];
-extern char *delim_name[];
+extern const char *const delim_name[];
 extern int   delim_mode;
 
 /* Group delimiter for actions/aliases, defaults to @ */
