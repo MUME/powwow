@@ -1139,6 +1139,28 @@ static void show_single_bind(char *msg, keynode *p)
 /*
  * list keyboard bindings
  */
+/*
+ * list all the editing functions, with their descriptions and the keys
+ * bound to them
+ */
+void show_edit_functions(void)
+{
+    enum { FUNCTION_COLUMN = 24 };
+    PRINTF("#editing functions:\n");
+    for (const edit_function *f = internal_functions + 1; f->name != NULL;
+         ++f) {
+        char keys[BUFSIZE];
+        int n = 0;
+        for (const keynode *k = keydefs; k != NULL; k = k->next) {
+            if (k->funct == f->funct && n < (int)sizeof(keys))
+                n += snprintf(keys + n, sizeof(keys) - n, "%s%s",
+                              n == 0 ? " (" : ", ", k->name);
+        }
+        PRINTF("%-*s%s%s%s\n", FUNCTION_COLUMN, f->name, f->help,
+               n > 0 ? keys : "", n > 0 ? ")" : "");
+    }
+}
+
 void show_binds(char edit)
 {
     keynode *p;

@@ -57,7 +57,7 @@ a regexp that starts with '(' has to be surrounded by  ("...")
 For regexp actions, $0 = the line, $1 = the whole match and $2... contain the
 submatches.
 @bind
-#bind [edit|key[=[command]]]
+#bind [edit|functions|key[=[command]]]
 
 You can bind most function keys and control keys to enter a command for you
 when the key is pressed. You cannot (yet) redefine a key already used for an
@@ -71,6 +71,7 @@ powwow can record the control sequence your terminal sends. Examples:
 #bind f1                                        (lets you edit the definition)
 #bind f1=                                       (removes the key)
 #bind edit                                      (lists editing keys)
+#bind functions                                 (lists all editing functions)
 
 By default, the vt100 numeric keypad is partially used to walk around
 @key
@@ -228,7 +229,7 @@ BS      &del-char-left          M-BS    &del-word-left
 ^K      &kill-to-eol            M-k     &redraw-line-noprompt
 ^L      &redraw-line            M-l     &downcase-word
 ^T      &transpose              M-t     &transpose-words
-^Q      &clear-line             M-c     &capitalize-word
+                                M-c     &capitalize-word
 ^U      &kill-to-bol            M-u     &upcase-word
 ^W      &del-unix-word-left     M-q     &to-history
 ^Y      &yank                   M-y     &yank-pop
@@ -237,7 +238,9 @@ Tab     &complete-word          M-Tab   &complete-line
 Ret     &enter-line
 LF      &enter-line
 
-not assigned: &insert-string
+not assigned: &clear-line, &insert-string
+
+#bind functions lists all the editing functions and their keys.
 
 M-<key> means press escape and then <key>, or press meta/alt key at the same
 time as <key>. ^ means control.

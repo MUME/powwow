@@ -6,6 +6,7 @@
 typedef struct {
   const char *name;
   function_str funct;
+  const char *help;             /* description, for #bind functions */
 } edit_function;
 
 extern const edit_function internal_functions[];

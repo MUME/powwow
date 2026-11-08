@@ -603,6 +603,7 @@ Examples:
 | --- | --- |
 | `#bind` | lists all user key bindings |
 | `#bind edit` | lists all line editing keys |
+| `#bind functions` | lists all editing functions, with the keys bound to them |
 | `#bind f1=recite scroll` | you'll have to press f1 then |
 | `#bind f1=cast 'sanctuary'` | change existing definition |
 | `#bind f1` | lets you edit the definition |
@@ -2241,7 +2242,8 @@ calculator such as `:<` and `>:`, and to `$` in patterns.
 
 The default key bindings for line editing follow readline, as in bash.
 These are all the keys, together with the reserved names that identify
-their function (they can be listed typing `#bind edit`):
+their function (they can be listed typing `#bind edit`, or with all the
+functions by typing `#bind functions`):
 
 | Key | Function name | Description |
 | --- | --- | --- |
@@ -2261,7 +2263,6 @@ their function (they can be listed typing `#bind edit`):
 | `^Y` | `&yank` | insert the last killed text |
 | `^T` | `&transpose` | transpose previous character with next (if at the end of the line, the two last) |
 | `^L` | `&redraw-line` | redraw your command line. This is useful if something garbles your input line. |
-| `^Q` | `&clear-line` | clear input line. |
 | `^W` | `&del-unix-word-left` | delete left of cursor to the previous space |
 | `^Z` | `&suspend` | suspend powwow in the background |
 | `Tab` | `&complete-word` | complete the word being typed to the last matching word in the history (or added with an `#add` command; see above). Hit multiple times to browse the possible completions. This is similar to the GNU Emacs `M-/` command. |
@@ -2279,6 +2280,7 @@ their function (they can be listed typing `#bind edit`):
 | `M-y` | `&yank-pop` | right after `^Y` or `M-y`, replace the inserted text with the kill before it |
 | `Ret` | `&enter-line` | the most obvious: execute the typed line |
 | `LF` | `&enter-line` | same thing, but for `^J` key (some terminals send this when you hit return) |
+| (none) | `&clear-line` | clear input line. |
 | (none) | `&insert-string` | insert on command line the specified chars |
 
 M-x means pressing the META or Alt key at the same time as x,

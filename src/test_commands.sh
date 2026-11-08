@@ -314,6 +314,13 @@ lacks 'Normally, powwow prints on screen some messages each time you'
 run 'help accepts an abbreviation' '#help speedw' ''
 has 'Execute a speedwalk sequence even if the speedwalk option is disabled.'
 
+run '#bind functions lists all editing functions' '#bind functions'
+has '&abort                  stop searching (C-g)'
+has '&clear-line             clear the input line'
+has '&prev-line              show the previous history line (C-p, Up)'
+long=$(sed -n '/#editing functions:/,$p' "$tmp/out" | awk 'length > 79')
+[ -z "$long" ] || fail "lines longer than 79 columns: $long"
+
 run 'help aligns the list of commands' '#help' ''
 has '#addstatic {string|(expr)}      add the string to the static completion list'
 long=$(sed -n '/#commands available:/,$p' "$tmp/out" | awk 'length > 79')

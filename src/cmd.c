@@ -100,7 +100,7 @@ static cmdstruct default_commands[] =
     C("beep",       cmd_beep,
       "\tmake your terminal beep (like #print (*7))"),
     C("bind",       cmd_bind,
-      "[edit|name [seq][=[command]]]\tdelete/list/define key bindings"),
+      "[edit|functions|name [seq][=[command]]]\tdelete/list/define key bindings"),
     C("cancel",     cmd_cancel,
       "[number]\tcancel editing session"),
     C("capture",    cmd_capture,
@@ -705,6 +705,8 @@ static void cmd_bind(char *arg)
 	show_binds(0);
     else if (!strcmp(arg, "edit"))
 	show_binds(1);
+    else if (strcmp(arg, "functions") == 0)
+        show_edit_functions();
     else
 	parse_bind(arg);
 }
