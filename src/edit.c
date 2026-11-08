@@ -87,7 +87,7 @@ const edit_function internal_functions[] = {
     { .name = "&to-history", .funct = to_history, .group = "history",
       .help = "put the line in the history, and clear it" },
     { .name = "&del-char-left", .funct = del_char_left, .group = "changing text",
-      .help = "delete the character left of the cursor" },
+      .help = "delete the character before the cursor" },
     { .name = "&del-char-right", .funct = del_char_right, .group = "changing text",
       .help = "delete the character under the cursor" },
     { .name = "&transpose", .funct = transpose_chars, .group = "changing text",
