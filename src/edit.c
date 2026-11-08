@@ -900,20 +900,67 @@ static void complete_hilite(struct word_list *l, int arg, const char *args)
     attr_next_words(args, add_word, l);
 }
 
+/* the modes of #delim */
+static void complete_delim(struct word_list *l, int arg, const char *args)
+{
+    if (arg != 0)
+        return;
+    for (int i = 0; i < DELIM_MODES; ++i)
+        word_list_add(l, delim_name[i]);
+}
+
+/* the options of #option, after +, - or =, and list */
+static void complete_option(struct word_list *l, int arg, const char *args)
+{
+    for (int i = 0; option_name(i) != NULL; ++i)
+        word_list_add(l, option_name(i));
+    word_list_add(l, "list");
+}
+
+/* the groups of the aliases and actions */
+static void add_group_names(struct word_list *l)
+{
+    for (const aliasnode *p = sortedaliases; p != NULL; p = p->snext) {
+        if (p->group != NULL)
+            word_list_add(l, p->group);
+    }
+    for (const actionnode *p = actions; p != NULL; p = p->next) {
+        if (p->group != NULL)
+            word_list_add(l, p->group);
+    }
+}
+
+/* the arguments of #group: the name of a group, and on or off */
+static void complete_group(struct word_list *l, int arg, const char *args)
+{
+    if (arg == 0) {
+        add_group_names(l);
+    } else if (arg == 1) {
+        word_list_add(l, "on");
+        word_list_add(l, "off");
+    }
+}
+
 /*
  * how the arguments of commands are completed: a function that adds the
- * words that argument 'arg' can be, after the arguments 'args' before it
+ * words that argument 'arg' can be, after the arguments 'args' before it;
+ * the characters of 'prefix' at the start of the word, such as + before
+ * an option, are not part of it
  */
 static const struct {
     const char *command;
     void (*complete)(struct word_list *l, int arg, const char *args);
+    const char *prefix;
 } arg_completions[] = {
-    { "bind", complete_bind },
-    { "help", complete_help },
-    { "hilite", complete_hilite },
-    { "key", complete_key },
-    { "rebind", complete_key },
-    { "reset", complete_reset },
+    { "bind", complete_bind, "" },
+    { "delim", complete_delim, "" },
+    { "group", complete_group, "" },
+    { "help", complete_help, "" },
+    { "hilite", complete_hilite, "" },
+    { "key", complete_key, "" },
+    { "option", complete_option, "+-=" },
+    { "rebind", complete_key, "" },
+    { "reset", complete_reset, "" },
 };
 
 /* the command that 'name' runs, as its start, or NULL */
@@ -1031,6 +1078,9 @@ static bool complete_command(void)
         char before[BUFSIZE];
         snprintf(before, sizeof(before), "%.*s", word - args, edbuf + args);
         arg_completions[i].complete(&l, arg, before);
+        while (word < pos && edbuf[word] != '\0'
+               && strchr(arg_completions[i].prefix, edbuf[word]) != NULL)
+            ++word;
     }
     if (l.count > 0)            /* else words is NULL, which qsort rejects */
         qsort(l.words, l.count, sizeof(*l.words), compare_words);
