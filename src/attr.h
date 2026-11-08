@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* effects; each is a bit in struct attr.flags */
+/* styles; each is a bit in struct attr.flags */
 enum attr_flag {
     ATTR_BOLD      = 1 << 0,
     ATTR_BLINK     = 1 << 1,
@@ -32,7 +32,7 @@ struct color {
     uint32_t value;
 };
 
-/* colors and effects; all-zero means no attribute */
+/* colors and styles; all-zero means no attribute */
 struct attr {
     unsigned flags;
     struct color fg, bg;
@@ -55,7 +55,7 @@ bool attr_parse_why(const char *text, struct attr *attr, char *why,
 
 /*
  * call 'fn' with each word that can follow the words of an attribute in
- * 'text', and 'data': effects, color names and "on"
+ * 'text', and 'data': styles, color names and "on"
  */
 typedef void (*attr_word_fn)(const char *word, void *data);
 void attr_next_words(const char *text, attr_word_fn fn, void *data);

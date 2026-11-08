@@ -203,9 +203,9 @@ has '#no markers are defined.'
 run 'hilite with an invalid attribute' '#hilite ?
 #hilite red blue
 #hilite purple'
-has '#hilite: "?" is not an effect or a color.'
+has '#hilite: "?" is not a style or a color.'
 has '#hilite: "blue" follows the color: write "on" before a background color.'
-has '#hilite: "purple" is not an effect or a color.'
+has '#hilite: "purple" is not a style or a color.'
 has '#syntax: #hilite [input|messages] [<attribute>]'
 has '  example:  bold yellow on blue'
 
