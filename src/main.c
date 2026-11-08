@@ -1767,6 +1767,9 @@ static void get_user_input(void)
 
     c[chunk] = '\0';
 
+    if (linemode & (LM_CHAR | LM_NOECHO))
+        isearch_cancel();
+
     if (linemode & LM_CHAR) {
 	/* char mode. chunk == 1; send complete UTF-8 characters */
 	static char pend[UTF8_MAX];
@@ -1844,7 +1847,8 @@ static void get_user_input(void)
 			putbackcursor();
 		    /* the command may delete p, for example with #load */
 		    function_str funct = p->funct;
-		    funct(p->call_data);
+		    if (!isearch_command(funct))
+			funct(p->call_data);
 		    last_edit_cmd = funct;
 		    nchars = 0;
 		}

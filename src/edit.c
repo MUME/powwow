@@ -74,6 +74,9 @@ const edit_function internal_functions[] = {
     {"&kill-to-bol", kill_to_bol, },
     {"&yank", yank, },
     {"&yank-pop", yank_pop, },
+    {"&reverse-search", reverse_search, },
+    {"&forward-search", forward_search, },
+    {"&abort", abort_edit, },
     {"&transpose", transpose_chars, },
     {"&transpose-words", transpose_words, },
     {"&suspend", suspend_key, },
@@ -1103,6 +1106,225 @@ void next_line(char *dummy)
 }
 
 /*
+ * incremental history search, like C-r and C-s in readline: while it is
+ * active, the input line shows the search and the line found, and the
+ * line being edited is kept in 'saved'
+ */
+static struct {
+    bool active, reverse, failed;
+    char query[BUFSIZE];
+    int query_len;
+    int origin;                 /* history index of the line being edited */
+    char saved[BUFSIZE];
+    int saved_pos;
+    int index, offset;          /* where the line found matches */
+} isearch;
+static char last_query[BUFSIZE];  /* repeated by C-r or C-s with no query */
+
+static const char *isearch_line(int index)
+{
+    return index == isearch.origin ? isearch.saved : hist[index];
+}
+
+/*
+ * find the query from 'offset' in history line 'index', backward or
+ * forward, and then in the lines beyond it
+ */
+static void isearch_find(int index, int offset)
+{
+    for (;;) {
+        const char *line = isearch_line(index);
+        if (line == NULL)
+            break;
+        int found = -1;
+        int len = strlen(line);
+        if (isearch.query_len == 0) {
+            if (offset >= 0)
+                found = offset < len ? offset : len;
+        } else if (isearch.reverse) {
+            for (const char *p = line;
+                 (p = strstr(p, isearch.query)) != NULL && p - line <= offset;
+                 ++p)
+                found = p - line;
+        } else if (offset <= len) {
+            const char *p = strstr(line + offset, isearch.query);
+            if (p != NULL)
+                found = p - line;
+        }
+        if (found >= 0) {
+            isearch.index = index;
+            isearch.offset = found;
+            isearch.failed = false;
+            return;
+        }
+        if (isearch.reverse) {
+            index = (index + MAX_HIST - 1) % MAX_HIST;
+            if (index == curline)
+                break;
+            offset = INT_MAX;
+        } else {
+            if (index == curline)
+                break;
+            index = (index + 1) % MAX_HIST;
+            offset = 0;
+        }
+    }
+    isearch.failed = true;
+}
+
+/* show the search and the line found in the input line */
+static void isearch_show(void)
+{
+    char buf[2 * BUFSIZE];
+    int n = snprintf(buf, sizeof(buf), "(%s%s) '%s': ",
+                     isearch.failed ? "failed " : "",
+                     isearch.reverse ? "reverse-i-search" : "i-search",
+                     isearch.query);
+    int cursor = n + isearch.offset;
+    n += snprintf(buf + n, sizeof(buf) - n, "%s",
+                  isearch_line(isearch.index));
+    if (n >= (int)sizeof(buf))
+        n = sizeof(buf) - 1;
+    input_replace(0, edlen, buf, n);
+    input_moveto(cursor < edlen ? cursor : edlen);
+}
+
+/*
+ * end the search, and edit the line found if 'accept', or else the line
+ * that was edited before
+ */
+static void isearch_end(bool accept)
+{
+    isearch.active = false;
+    if (isearch.query_len > 0)
+        strcpy(last_query, isearch.query);
+
+    const char *line = isearch.saved;
+    int new_pos = isearch.saved_pos;
+    if (accept) {
+        new_pos = isearch.offset;
+        if (isearch.index != isearch.origin) {
+            /* keep the line edited before in the history, like C-p */
+            int o = isearch.origin;
+            if (hist[o] == NULL || strcmp(hist[o], isearch.saved) != 0) {
+                char *s = my_strdup(isearch.saved);
+                if (s == NULL) {
+                    out_of_memory();
+                    return;
+                }
+                free(hist[o]);
+                hist[o] = s;
+            }
+            pickline = isearch.index;
+            line = hist[pickline];
+        }
+    }
+    input_replace(0, edlen, line, strlen(line));
+    input_moveto(new_pos);
+}
+
+static void isearch_start_or_repeat(bool reverse)
+{
+    if (!isearch.active) {
+        isearch.active = true;
+        isearch.reverse = reverse;
+        isearch.failed = false;
+        isearch.query[isearch.query_len = 0] = '\0';
+        isearch.origin = isearch.index = pickline;
+        strcpy(isearch.saved, edbuf);
+        isearch.saved_pos = isearch.offset = pos;
+    } else if (isearch.query_len == 0) {
+        /* search again for the last query */
+        isearch.reverse = reverse;
+        strcpy(isearch.query, last_query);
+        isearch.query_len = strlen(last_query);
+        if (isearch.query_len > 0)
+            isearch_find(isearch.index, isearch.offset);
+    } else {
+        isearch.reverse = reverse;
+        isearch_find(isearch.index,
+                     isearch.offset + (reverse ? -1 : 1));
+    }
+    isearch_show();
+}
+
+/*
+ * search the history backward or forward for the text typed next
+ */
+void reverse_search(char *dummy)
+{
+    isearch_start_or_repeat(true);
+}
+
+void forward_search(char *dummy)
+{
+    isearch_start_or_repeat(false);
+}
+
+/*
+ * stop searching and edit the line as it was before
+ */
+void abort_edit(char *dummy)
+{
+    if (isearch.active)
+        isearch_end(false);
+}
+
+/* add the UTF-8 character 's' of 'n' bytes to the query, and search again */
+static void isearch_add(const char *s, int n)
+{
+    if (isearch.query_len + n >= BUFSIZE / 2)
+        return;
+    memcpy(isearch.query + isearch.query_len, s, n);
+    isearch.query[isearch.query_len += n] = '\0';
+    isearch_find(isearch.index, isearch.offset);
+    isearch_show();
+}
+
+/* delete the last character of the query, and search again */
+static void isearch_del_char(void)
+{
+    if (isearch.query_len == 0)
+        return;
+    int n = utf8_prev_cell(isearch.query, isearch.query + isearch.query_len)
+        - isearch.query;
+    isearch.query[isearch.query_len = n] = '\0';
+    isearch.index = isearch.origin;
+    isearch.offset = isearch.saved_pos;
+    isearch_find(isearch.index, isearch.offset);
+    isearch_show();
+}
+
+/*
+ * while searching, handle the command 'funct' bound to a key: BS deletes
+ * from the query, and other commands except the search commands end the
+ * search and then run on the line found; return true if 'funct' was
+ * handled here
+ */
+bool isearch_command(function_str funct)
+{
+    if (!isearch.active
+        || funct == reverse_search || funct == forward_search
+        || funct == abort_edit)
+        return false;
+    if (funct == del_char_left) {
+        isearch_del_char();
+        return true;
+    }
+    isearch_end(true);
+    return false;
+}
+
+/*
+ * cancel any search, before the input line is used without editing
+ */
+void isearch_cancel(void)
+{
+    if (isearch.active)
+        isearch_end(false);
+}
+
+/*
  * move one char backward
  */
 void prev_char(char *dummy)
@@ -1226,6 +1448,10 @@ void insert_char(char c)
     if (utf8_get(pend, n, &cp) != n || (cp >= 0x80 && cp < 0xa0))
         return;                 /* invalid or C1 control */
 
+    if (isearch.active) {
+        isearch_add(pend, n);
+        return;
+    }
     if (edlen + ninsbuf < BUFSIZE - n - 1) {
         memcpy(insbuf + ninsbuf, pend, n);
         ninsbuf += n;

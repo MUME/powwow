@@ -30,6 +30,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* C-y (&yank) inserts text deleted by C-k, C-w, M-d, M-BS and the
 	  new C-u (&kill-to-bol), and M-y (&yank-pop) replaces it with the
 	  previously deleted text, as in readline.
+	* C-r and C-s (&reverse-search and &forward-search) search the
+	  history incrementally, and C-g (&abort) stops searching, as in
+	  readline.
 
 Changes from 1.3.0 to 1.3.1
 	* New command #substitute.

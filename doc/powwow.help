@@ -220,6 +220,9 @@ Default editing keys:
 ^F      &next-char              M-f     &next-word
 ^P      &prev-line
 ^N      &next-line
+^R      &reverse-search
+^S      &forward-search
+^G      &abort
 ^D      &del-char-right         M-d     &del-word-right
 BS      &del-char-left          M-BS    &del-word-left
 ^K      &kill-to-eol            M-k     &redraw-line-noprompt

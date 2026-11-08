@@ -236,6 +236,43 @@ run 'C-u kills to the start of the line' '' \
 "
 has 'z #print abc'
 
+cr=$(printf '\022')
+cs=$(printf '\023')
+ce=$(printf '\005')
+history='#print apple one
+#print banana
+#print apple two'
+
+run 'C-r finds the last line with the text' "$history" \
+    "${cr}ban${ce}s
+"
+has 'bananas'
+
+run 'C-r again finds an older line, and C-s a newer one' "$history" \
+    "${cr}apple${cr}${ce}!
+" "${cr}apple${cr}${cr}${cs}${ce}?
+"
+has 'apple one!'
+has 'apple two?'
+
+run 'C-g restores the line, and C-r C-r repeats the last search' \
+    "$history" "#print typed${cr}ban$(printf '\007')
+" "${cr}${cr}${ce}!
+"
+has 'typed'
+has 'banana!'
+
+run 'C-n after a search goes on to the line being typed' "$history" \
+    "#print typed${cr}ban${ce}$(printf '\016\016')
+"
+has 'typed'
+lacks 'bananatyped'
+
+run 'BS deletes from the search text' "$history" \
+    "${cr}appz$(printf '\b')le${cr}${ce}!
+"
+has 'apple one!'
+
 utf8=$(locale -a 2>/dev/null | grep -iE '^(C|en_US)\.utf-?8$' | head -n 1)
 if [ -n "$utf8" ]; then
     LC_ALL=$utf8

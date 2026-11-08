@@ -2251,6 +2251,9 @@ their function (they can be listed typing `#bind edit`):
 | `^F` | `&next-char` | forward one character |
 | `^P` | `&prev-line` | use previous line in history (step backward) |
 | `^N` | `&next-line` | use next line in history (step forward) |
+| `^R` | `&reverse-search` | search backward in history for the text typed next; hit again to find an older line. Any editing key ends the search on the line found, and `Ret` executes it. |
+| `^S` | `&forward-search` | search forward in history, like `^R` |
+| `^G` | `&abort` | stop searching, and restore the line typed before |
 | `^D` | `&del-char-right` | delete character under cursor |
 | `BS` | `&del-char-left` | delete character left of cursor |
 | `^K` | `&kill-to-eol` | kill to end of line |
