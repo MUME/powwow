@@ -25,6 +25,7 @@
 
 #include "defines.h"
 #include "main.h"
+#include "attr.h"
 #include "utils.h"
 #include "cmd.h"
 #include "edit.h"
@@ -880,6 +881,25 @@ static void complete_reset(struct word_list *l, int arg, const char *args)
     }
 }
 
+static void add_word(const char *word, void *data)
+{
+    word_list_add(data, word);
+}
+
+/* the arguments of #hilite: input or messages, and then an attribute */
+static void complete_hilite(struct word_list *l, int arg, const char *args)
+{
+    size_t len = strcspn(args, " ");
+    if ((len == 5 && strncmp(args, "input", 5) == 0)
+        || (len == 8 && strncmp(args, "messages", 8) == 0)) {
+        args += len;
+    } else if (arg == 0) {
+        word_list_add(l, "input");
+        word_list_add(l, "messages");
+    }
+    attr_next_words(args, add_word, l);
+}
+
 /*
  * how the arguments of commands are completed: a function that adds the
  * words that argument 'arg' can be, after the arguments 'args' before it
@@ -890,6 +910,7 @@ static const struct {
 } arg_completions[] = {
     { "bind", complete_bind },
     { "help", complete_help },
+    { "hilite", complete_hilite },
     { "key", complete_key },
     { "rebind", complete_key },
     { "reset", complete_reset },
