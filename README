@@ -21,7 +21,7 @@ Files you should have received:
 
 COMPILING
 
-	powwow is supported on Linux, macOS and FreeBSD.  It needs a C99
+	powwow is supported on Linux, macOS and FreeBSD.  It needs a C11
 	compiler, GnuTLS (unless configured with --disable-tls), and
 	ncurses (unless configured with --enable-vt100).  PCRE2 and
 	libgrapheme are used if available.

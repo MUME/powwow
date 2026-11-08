@@ -71,8 +71,8 @@ AS_IF([ test "${enable_tls}" != no ],
 AC_PROG_CC
 AC_MSG_CHECKING([C version])
 case "x${ac_prog_cc_stdc}" in
-    xc89 ) AC_MSG_ERROR([C99 or later is required; found C89]) ;;
-    xc99 ) AC_MSG_RESULT(C99) ;;
+    xc89 ) AC_MSG_ERROR([C11 or later is required; found C89]) ;;
+    xc99 ) AC_MSG_ERROR([C11 or later is required; found C99]) ;;
     xc11 ) AC_MSG_RESULT(C11) ;;
     xc23 ) AC_MSG_RESULT(C23) ;;
     x ) AC_MSG_ERROR([not found]) ;;
