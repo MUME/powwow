@@ -51,7 +51,6 @@ static const char begoln[] = "\r";
 static const char clreoln[] = "\033[K";
 static const char clreoscr[] = "\033[J";
 static const char leftcur[] = "\033[D";
-static const char rightcur[] = "\033[C";
 static const char upcur[] = "\033[A";
 static const char cursor_left[] = "\033[D";
 static const char cursor_right[] = "\033[C";
@@ -68,7 +67,6 @@ static const char modestandon[] = "";
 static const char modestandoff[] = "";
 static const char modenorm[] = "\033[m";
 
-#define insertfinish (0)
 static int len_begoln = 1, len_leftcur = 3, len_upcur = 3, gotocost = 8;
 
 #else /* not USE_VT100, termcap function declarations */
@@ -82,10 +80,8 @@ char *tgoto(const char *cap, int col, int row);
 /* terminal escape sequences, from termcap */
 static char kpadstart[CAPLEN], kpadend[CAPLEN];
 static char begoln[CAPLEN], clreoln[CAPLEN], clreoscr[CAPLEN];
-static char leftcur[CAPLEN], rightcur[CAPLEN], upcur[CAPLEN];
+static char leftcur[CAPLEN], upcur[CAPLEN];
 static char curgoto[CAPLEN];
-static char delchar[CAPLEN], insstart[CAPLEN], insstop[CAPLEN];
-static char inschar[CAPLEN];
 static char cursor_left[CAPLEN], cursor_right[CAPLEN];
 static char cursor_up[CAPLEN], cursor_down[CAPLEN];
 static char cursor_delete[CAPLEN];
@@ -95,8 +91,7 @@ static char modebold[CAPLEN], modeblink[CAPLEN], modeinv[CAPLEN];
 static char modeuline[CAPLEN], modestandon[CAPLEN], modestandoff[CAPLEN];
 static char modenorm[CAPLEN];
 
-static int len_begoln, len_clreoln, len_leftcur, len_upcur, gotocost;
-static int deletecost, insertcost, insertfinish, inscharcost;
+static int len_begoln, len_leftcur, len_upcur, gotocost;
 
 static int extract(char *cap, char *buf);
 
@@ -281,18 +276,11 @@ void tty_bootstrap(void)
     };
     static struct tc_init_node tc_init[] = {
 	{ "cm", curgoto, 0, 1 },
-	{ "ce", clreoln, &len_clreoln, 1 },
+	{ "ce", clreoln, 0, 1 },
 	{ "cd", clreoscr, 0, 1 },
-	{ "nd", rightcur, 0, 1 },
 	{ "le", leftcur, &len_leftcur, 0 },
 	{ "up", upcur,   &len_upcur,  0 },
 	{ "cr", begoln,  &len_begoln, 0 },
-	{ "ic", inschar, &inscharcost, 0 },
-	{ "im", insstart, &insertcost, 0 },
-	{ "ei", insstop, &insertcost, 0 },
-	{ "dm", delchar, &deletecost, 0 },
-	{ "dc", delchar, &deletecost, 0 },
-	{ "ed", delchar, &deletecost, 0 },
 	{ "me", modenorm, 0, 0 },
 	{ "md", modebold, 0, 0 },
 	{ "mb", modeblink, 0, 0 },
@@ -353,7 +341,6 @@ void tty_bootstrap(void)
 	strcpy(leftcur, "\b"), len_leftcur = 1;
 
     gotocost = strlen(tgoto(curgoto, cols - 1, lines - 1));
-    insertfinish = gotocost + len_clreoln;
 
     /* this must be before getting window size */
     wrapglitch = tgetflag("xn");
