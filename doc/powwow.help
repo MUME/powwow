@@ -524,8 +524,9 @@ This construct repeats a command while expression keeps true. As with #alias,
 Examples:
 
 #while (@0<13) {read @0;#(\@0++)}         (read messages 0-12)
-        (As you can see, the last @0 is escaped to avoid it to be
-         substituted with its value - we want to decrease the variable!)
+
+The last @0 is escaped with a backslash, so that it is not replaced with its
+value when the command runs: it is the variable that must be incremented.
 @math
 The inline calculator is used to evaluate expressions inside
 #(), #print (), #exe (), #send (), #if (), #while (), #for (), #do (), etc.
