@@ -800,6 +800,7 @@ static void cmd_hilite(char *arg)
 	if (opt_info)
 	  show_attr_syntax();
     } else {
+        input_attr = attr;
 	attr_string(&attr, edattrbeg, edattrend);
 
 	edattrbg = ((attr.flags & (ATTR_INVERSE | ATTR_BLINK)) != 0

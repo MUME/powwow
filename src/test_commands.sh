@@ -577,6 +577,10 @@ has '&del-char-right         delete the character under the cursor (C-d, Delete)
 long=$(sed -n '/#editing functions:/,$p' "$tmp/out" | awk 'length > 79')
 [ -z "$long" ] || fail "lines longer than 79 columns: $long"
 
+run '#hilite is saved' "#hilite red
+#save $tmp/cfg"
+grep -Fxq '#hilite red' "$tmp/cfg" || fail "#hilite not saved"
+
 run 'help aligns the list of commands' '#help' ''
 has '#addstatic {<text>|(<expr>)}    add the string to the static completion list'
 long=$(sed -n '/#commands available:/,$p' "$tmp/out" | awk 'length > 79')
