@@ -210,8 +210,8 @@ run 'emulate without a connection' '#emulate hello'
 has 'hello'
 
 run --bind 'bind reads a whole key sequence' '#bind foo=bar' \
-    "$esc[A"
-has '#new key binding: foo ^[[A=bar'
+    "$esc[20~"
+has '#new key binding: foo ^[[20~=bar'
 
 run 'word operators skip trailing delimiters' '#print ("foo bar  baz  " >: 1)
 #print ("foo bar  baz  " <: 2)
@@ -230,7 +230,7 @@ has '3'
 
 run --bind 'transpose words at the end of a line' \
     '#bind foo=&transpose-words' \
-    "$esc[A" "#print foo bar $esc[A
+    "$esc[20~" "#print foo bar $esc[20~
 "
 has 'bar  foo'
 
@@ -343,7 +343,7 @@ has '#var: #error: operand or index out of range.'
 lacks '99999999999999999999'
 
 run --bind 'rebind rejects an empty key sequence' \
-    '#bind foo=bar' "$esc[A" "#rebind foo =
+    '#bind foo=bar' "$esc[20~" "#rebind foo =
 "
 has '#rebind: empty key sequence.'
 
@@ -404,15 +404,15 @@ run '#reset bind resets one key' '#bind M-c ^[c=&upcase-word
 #reset bind M-c
 #bind KP8 ^[Ox=north
 #reset bind KP8
-#bind foo ^[[A=bar
+#bind foo ^[[20~=bar
 #reset bind foo
 #reset bind nosuch'
 has '#default key binding: M-c ^[c=&capitalize-word'
 has '#default key binding: KP8 ^[Ox=n'
-has '#deleting key binding: foo ^[[A=bar'
+has '#deleting key binding: foo ^[[20~=bar'
 has '#no key named "nosuch", and no default for it.'
 
-run '#reset rejects unknown lists' '#bind foo ^[[A=bar
+run '#reset rejects unknown lists' '#bind foo ^[[20~=bar
 #reset bind 
 #bind foo
 #reset nosuch'
