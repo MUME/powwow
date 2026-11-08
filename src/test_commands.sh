@@ -258,6 +258,9 @@ lacks "Help on 'help'"
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 
+run 'error message' '#connect test --no-tls 127.0.0.1 1'
+has '#cannot connect to 127.0.0.1:1: Connection refused'
+
 # every named command must have a help entry
 name='every command has a help entry'
 sed -n 's/^ *C("\([^"][^"]*\)".*/\1/p' "${srcdir:-.}/cmd.c" > "$tmp/commands"

@@ -216,8 +216,7 @@ void print_error(int err_num)
 {
     clear_input_line(1);
     if (error == NO_MEM_ERROR) {
-	tty_printf("#system call error: %s (%d", "malloc", ENOMEM);
-	tty_printf(": %s)\n", strerror(ENOMEM));
+	tty_puts("#out of memory\n");
     } else
 	tty_printf("#error: %s.\n", error_msg[err_num]);
 }

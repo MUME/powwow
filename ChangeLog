@@ -10,6 +10,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  POSIX termios for the terminal.
 	* autogen.sh finds GnuTLS, PCRE2 and libgrapheme using pkg-config,
 	  such as in /usr/local on FreeBSD or /opt/homebrew on macOS.
+	* Error messages say what failed and why, such as `#cannot connect
+	  to host:port: Connection refused', instead of naming system calls
+	  and error numbers.
 
 Changes from 1.3.0 to 1.3.1
 	* New command #substitute.

@@ -524,7 +524,7 @@ static void cmd_help(char *arg)
 
 	text = tmp = (char *)malloc(size);
 	if (!text) {
-	    errmsg("malloc");
+	    out_of_memory();
 	    return;
 	}
 
@@ -544,16 +544,16 @@ static void cmd_help(char *arg)
 	struct stat stbuf;
 
 	if (stat(copyfile, &stbuf) < 0) {
-	    errmsg("stat(copyright file)");
+	    errmsg("cannot read %s", copyfile);
 	    return;
 	}
 
 	if (!(text = (char *)malloc(left = stbuf.st_size))) {
-	    errmsg("malloc");
+	    out_of_memory();
 	    return;
 	}
 	if ((fd = open(copyfile, O_RDONLY)) < 0) {
-	    errmsg("open(copyright file)");
+	    errmsg("cannot open %s", copyfile);
 	    free(text);
 	    return;
 	}
@@ -561,7 +561,7 @@ static void cmd_help(char *arg)
 	    while ((i = read(fd, text + got, left)) < 0 && errno == EINTR)
 	      ;
 	    if (i < 0 && errno == EINTR) {
-		errmsg("read (copyright file)");
+		errmsg("cannot read %s", copyfile);
 		free(text);
 		close(fd);
 		return;
@@ -593,7 +593,7 @@ static void cmd_help(char *arg)
     }
 
     if (!(text = malloc(size = BUFSIZE + 32))) {
-	errmsg("malloc");
+	out_of_memory();
 	fclose(f);
 	return;
     }
@@ -611,7 +611,7 @@ static void cmd_help(char *arg)
 	    /* Not enough space in current buffer */
 
 	    if (!(tmp = (char *)malloc(size += BUFSIZE))) {
-		errmsg("malloc");
+		out_of_memory();
 		free(text);
 		fclose(f);
 		return;

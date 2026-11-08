@@ -298,7 +298,7 @@ void tty_bootstrap(void)
 		"Please set your $TERM environment variable correctly.\n");
 	exit(1);
      default:
-	syserr("tgetent");
+	syserr("cannot read the terminal database");
     }
     for(np = tc_init; np->cap[0]; np++)
 	if ((i = extract(np->cap, np->buf))) {

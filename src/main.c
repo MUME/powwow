@@ -421,7 +421,7 @@ int main(int argc, char **argv)
 	    var[i].str = &global_var[i].str;
 	}
     } else
-	syserr("malloc");
+	syserr("out of memory");
 
     /* stack is empty */
     paramstk.curr = 0;
@@ -435,7 +435,7 @@ int main(int argc, char **argv)
 	&& !MEM_ERROR)
 	;
     else
-	syserr("malloc");
+	syserr("out of memory");
 
 
     /*
@@ -689,7 +689,7 @@ static void mainloop(void)
 	} while (err < 0 && errno == EINTR);
 
 	if (err < 0)
-	    syserr("select");
+	    syserr("cannot wait for input");
         if (tty_has_chars() && !FD_ISSET(tty_read_fd, &readfds)) {
             /* keys already read from the terminal */
             FD_SET(tty_read_fd, &readfds);
@@ -804,7 +804,7 @@ static void exec_delays(void)
 
 	    buf = ptrmcpy(buf, dying->command, strlen(dying->command));
 	    if (MEM_ERROR)
-		errmsg("malloc (#in/#at)");
+		out_of_memory();
 	    else {
 		parse_instruction(ptrdata(buf), 0, 0, 1);
 		history_done = 0;
@@ -1136,7 +1136,7 @@ static int grab_prompt(char *linestart, int len, int islast)
             len = isprompt_len = is_iac_prompt;
 	    prompt->str = ptrmcpy(prompt->str, linestart, len);
             effective_prompt();
-	    if (MEM_ERROR) { promptzero(); errmsg("malloc(prompt)"); return 0; }
+	    if (MEM_ERROR) { promptzero(); out_of_memory(); return 0; }
 	    prompt_status = 1;
 	}
 
@@ -1152,7 +1152,7 @@ static int grab_prompt(char *linestart, int len, int islast)
 	    smart_print(promptstr, 1);
     } else if (islast) {
 	prompt->str = ptrmcpy(prompt->str, linestart, len);
-	if (MEM_ERROR) { promptzero(); errmsg("malloc(prompt)"); return 0; }
+	if (MEM_ERROR) { promptzero(); out_of_memory(); return 0; }
         effective_prompt();
 	prompt_status = 1; /* good, we got what to redraw */
     } else
@@ -1724,7 +1724,7 @@ static int search_action_or_prompt(char *line, char clearline, char onprompt)
 	    set_params(line, match_s, match_e); if (error) return 0;
 	    if (onprompt == 2) {
 		prompt->str = ptrmcpy(prompt->str, line, strlen(line));
-		if (MEM_ERROR) { promptzero(); errmsg("malloc(prompt)"); return 0; }
+		if (MEM_ERROR) { promptzero(); out_of_memory(); return 0; }
 	    }
 	    if (clearline)
 		clear_input_line(1);
@@ -1766,7 +1766,7 @@ static void get_user_input(void)
         return;
 
     if (j < 0 || (chunk == 1 && j != chunk))
-	syserr("read from tty");
+	syserr("cannot read from the terminal");
 
     c[chunk] = '\0';
 

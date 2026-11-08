@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <signal.h>
@@ -940,7 +941,7 @@ void suspend_powwow(int  signum)
         tty_quit();
 
 	if (kill(0, SIGTSTP) < 0) {
-	    errmsg("suspend powwow");
+	    errmsg("cannot suspend powwow");
 	    return;
 	}
 
@@ -1027,49 +1028,66 @@ void sig_bottomhalf(void)
     sig_pending = sig_chld_got = sig_winch_got = 0;
 }
 
-void errmsg(char *msg)
+/* start a message on a line of its own */
+static void start_message(void)
 {
-    if (!msg)
-	msg = "";
-
     clear_input_line(opt_compact);
     if (!opt_compact) {
 	tty_putc('\n');
 	status(1);
     }
-    if (errno == EINTR) {
-	tty_printf("#user break: %s (%d: %s)\n",
-		  msg, errno, strerror(errno));
-    } else if (errno) {
-	tty_printf("#system call error: %s (%d", msg, errno);
-	if (errno > 0)
-	    tty_printf(": %s)\n", strerror(errno));
-	else
-	    tty_puts(")\n");
-    } else if (error == NO_MEM_ERROR) {
-	tty_printf("#system call error: %s (%d", msg, ENOMEM);
-	tty_printf(": %s)\n", strerror(ENOMEM));
-    }
+}
+
+/*
+ * print "#message: reason", where the message is printf()-formatted and
+ * the reason comes from errno
+ */
+void errmsg(const char *format, ...)
+{
+    int err = errno;
+    if (err == 0 && error == NO_MEM_ERROR)
+        err = ENOMEM;
+
+    char msg[BUFSIZE];
+    va_list ap;
+    va_start(ap, format);
+    vsnprintf(msg, sizeof(msg), format, ap);
+    va_end(ap);
+
+    start_message();
+    if (err == 0)
+        tty_printf("#%s\n", msg);
+    else if (err == EINTR)
+        tty_printf("#%s: interrupted\n", msg);
+    else
+        tty_printf("#%s: %s\n", msg, strerror(err));
+    tty_flush();
+}
+
+void out_of_memory(void)
+{
+    start_message();
+    tty_puts("#out of memory\n");
     tty_flush();
 }
 
 /*
- * print system call error message and terminate
+ * print "#fatal error: message: reason", with the reason from errno, and
+ * terminate
  */
-void syserr(char *msg)
+void syserr(const char *msg)
 {
-    if (msg && *msg) {
+    int err = errno;
+    if (msg != NULL && *msg != '\0') {
 	clear_input_line(opt_compact);
-	if (!opt_compact) {
+	if (!opt_compact)
 	    tty_putc('\n');
-	    /* status(1); */
-	}
 	tty_flush();
 
-	fprintf(stderr, "#powwow: fatal system call error:\n\t%s (%d", msg, errno);
-	if (errno > 0)
-	  fprintf(stderr, ": %s", strerror(errno));
-	fprintf(stderr, ")\n");
+	if (err == 0)
+	    fprintf(stderr, "#fatal error: %s\n", msg);
+	else
+	    fprintf(stderr, "#fatal error: %s: %s\n", msg, strerror(err));
     }
 
 #ifdef SAVE_ON_SYSERR
@@ -1243,7 +1261,7 @@ int read_settings(void)
             linesize = 3 * llen + 1;
             if ((line = malloc(linesize)) == NULL) {
                 linesize = 0;
-                errmsg("malloc");
+                out_of_memory();
                 break;
             }
         }

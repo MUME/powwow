@@ -96,7 +96,7 @@ int process_message(char *buf, int len)
 
     text = (char *)malloc(msglen);
     if (!text) {
-	errmsg("malloc");
+	out_of_memory();
 	return i;
     }
 
@@ -108,7 +108,7 @@ int process_message(char *buf, int len)
     for (i = 0; i < l && (to - text) < msglen; ++i) {
         if (got_iac) {
             if (*from != (char)IAC)
-                errmsg("got IAC in MPI message; treating as IAC IAC");
+                PRINTF("#warning: got IAC in MPI message; treating as IAC IAC\n");
             else
                 ++from;
             got_iac = 0;
@@ -126,14 +126,14 @@ int process_message(char *buf, int len)
                && errno == EINTR)
 	    ;
 	if (l == -1) {
-	    errmsg("read message from socket");
+	    errmsg("cannot read from connection \"%s\"", current_connection->id);
 	    return used > len ? len : used;
 	}
         from = to = text + i;
         for (i = 0; i < l; ++i) {
             if (got_iac) {
                 if (*from != (char)IAC)
-                    errmsg("got IAC in MPI message; treating as IAC IAC");
+                    PRINTF("#warning: got IAC in MPI message; treating as IAC IAC\n");
                 else
                     ++from;
                 got_iac = 0;
@@ -181,7 +181,7 @@ void abort_edit_fd(connsess *conn)
 	    continue;
 
 	if (kill(p->pid, SIGKILL) < 0) {       /* Editicide */
-	    errmsg("kill editor child");
+	    errmsg("cannot stop the editor");
 	    continue;
 	}
 
@@ -200,7 +200,7 @@ void cancel_edit(editsess *sp)
     char keystr[16];
 
     if (kill(sp->pid, SIGKILL) < 0) {       /* Editicide */
-	errmsg("kill editor child");
+	errmsg("cannot stop the editor");
 	return;
     }
     PRINTF("#killed \"%s\" (%u)\n", sp->descr, sp->key);
@@ -245,11 +245,11 @@ static void finish_edit(editsess *sp)
 
     fd = open(sp->file, O_RDONLY);
     if (fd == -1) {
-	errmsg("open edit file");
+	errmsg("cannot open %s", sp->file);
 	goto cleanup_file;
     }
     if (fstat(fd, &sbuf) == -1) {
-	errmsg("fstat edit file");
+	errmsg("cannot read %s", sp->file);
 	goto cleanup_fd;
     }
 
@@ -261,7 +261,7 @@ static void finish_edit(editsess *sp)
 	realtext = (char *)malloc(txtlen + 65);
 	/* +1 is for possible LF, +64 for header */
 	if (!realtext) {
-	    errmsg("malloc");
+	    out_of_memory();
 	    goto cleanup_fd;
 	}
 
@@ -303,7 +303,7 @@ static void finish_edit(editsess *sp)
 cleanup_text: if (realtext) free(realtext);
 cleanup_fd:   close(fd);
 cleanup_file: if (unlink(sp->file) < 0)
-		errmsg("unlink edit file");
+		errmsg("cannot delete %s", sp->file);
 }
 
 /*
@@ -355,12 +355,12 @@ void message_edit(char *text, int msglen, char view, char builtin)
 
     sprintf(tmpname, "/tmp/powwow.%u.%d%d", key, getpid(), abs(rand()) >> 8);
     if ((tmpfd = open(tmpname, O_WRONLY | O_CREAT, 0600)) < 0) {
-	errmsg("create temp edit file");
+	errmsg("cannot create %s", tmpname);
 	free(text);
 	return;
     }
     if (write(tmpfd, text + i, msglen - i) < msglen - i) {
-	errmsg("write to temp edit file");
+	errmsg("cannot write %s", tmpname);
 	free(text);
 	close(tmpfd);
 	return;
@@ -369,7 +369,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
 
     s = (editsess*)malloc(sizeof(editsess));
     if (!s) {
-	errmsg("malloc");
+	out_of_memory();
 	return;
     }
     s->ctime = time((time_t*)NULL);
@@ -430,7 +430,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
     /* a background editor must not write over the screen */
     int out_pipe[2] = { -1, -1 };
     if (!waitforeditor && pipe(out_pipe) < 0) {
-	errmsg("pipe");
+	errmsg("cannot capture the output of the editor");
 	out_pipe[0] = out_pipe[1] = -1;
     }
 
@@ -450,10 +450,10 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	sprintf(command_str, "%s %s", editor, s->file);
         setenv("TITLE", title, 1);
 	execvp(args[0], args);
-	syserr("execve");
+	syserr("cannot run the editor");
 	break;
       case -1:
-	errmsg("fork");
+	errmsg("cannot start the editor");
 	if (out_pipe[0] >= 0) {
 	    close(out_pipe[0]);
 	    close(out_pipe[1]);
@@ -485,7 +485,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	}
 
 	if (i == -1)
-	    errmsg("waitpid");
+	    errmsg("cannot wait for the editor");
 	else
 	    finish_edit(s);
 
@@ -528,7 +528,7 @@ static void show_edit_output(editsess *sp, bool all)
     }
     char *msg = malloc(end + nlines * sizeof(prefix) + 1);
     if (msg == NULL) {
-        errmsg("malloc");
+        out_of_memory();
         sp->out_len = 0;
         return;
     }

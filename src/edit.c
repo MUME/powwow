@@ -169,7 +169,7 @@ void draw_prompt(void)
 	int e = error;
 	error = 0;
 	marked_prompt = ptraddsubst_and_marks(marked_prompt, prompt->str);
-	if (MEM_ERROR) { promptzero(); errmsg("malloc(prompt)"); return; }
+	if (MEM_ERROR) { promptzero(); out_of_memory(); return; }
 
         /* if prompt ends in unterminated escape code, do not print
          * that part */
@@ -429,7 +429,7 @@ void put_history(char *str)
     char *p;
     if (hist[curline]) free(hist[curline]);
     if (!(hist[curline] = my_strdup(str))) {
-	errmsg("malloc");
+	out_of_memory();
 	return;
     }
 
@@ -621,7 +621,7 @@ void put_static_word(char *s)
         char **new_words = realloc(static_words.words,
                                    sizeof(new_words[0]) * size);
         if (new_words == NULL) {
-            errmsg("realloc");
+            out_of_memory();
             return;
         }
         static_words.words = new_words;
@@ -629,7 +629,7 @@ void put_static_word(char *s)
     }
 
     if ((s = my_strdup(s)) == NULL) {
-        errmsg("malloc");
+        out_of_memory();
         return;
     }
     static_words.words[static_words.used++] = s;
@@ -642,7 +642,7 @@ void put_word(char *s)
 {
     int r = wordindex;
     if (!(words[r].word = my_strdup(s))) {
-	errmsg("malloc");
+	out_of_memory();
 	return;
     }
     words[r].flags = 0;
@@ -662,7 +662,7 @@ void set_custom_delimeters(char *s)
 {
     char *old = delim_list[DELIM_CUSTOM];
     if (!(delim_list[DELIM_CUSTOM] = my_strdup(s)))
-	errmsg("malloc");
+	out_of_memory();
     else {
 	if (old)
 	    free(old);
@@ -851,7 +851,7 @@ void prev_line(char *dummy)
 	}
 	if (!hist[pickline]) {
 	    if (!(hist[pickline] = my_strdup(edbuf))) {
-		errmsg("malloc");
+		out_of_memory();
 		return;
 	    }
 	}
@@ -876,7 +876,7 @@ void next_line(char *dummy)
 	}
 	if (!hist[pickline]) {
 	    if (!(hist[pickline] = my_strdup(edbuf))) {
-		errmsg("malloc");
+		out_of_memory();
 		return;
 	    }
 	}

@@ -163,7 +163,7 @@ void add_aliasnode(char *name, char *subst)
 {
     aliasnode *new = (aliasnode*)malloc(sizeof(aliasnode));
     if (!new) {
-	errmsg("malloc");
+	out_of_memory();
 	return;
     }
 
@@ -172,7 +172,7 @@ void add_aliasnode(char *name, char *subst)
     new->name = my_strdup(name);
     new->subst = my_strdup(subst);
     if ((name && !new->name) || (subst && !new->subst)) {
-	errmsg("malloc");
+	out_of_memory();
 	if (new->name)
 	    free(new->name);
 	if (new->subst)
@@ -192,7 +192,7 @@ void add_marknode(char *pattern, const struct attr *attr, char mbeg, char wild)
     marknode **p, *new = (marknode*)malloc(sizeof(marknode));
     int i;
     if (!new) {
-	errmsg("malloc");
+	out_of_memory();
 	return;
     }
     new->next = NULL;
@@ -202,7 +202,7 @@ void add_marknode(char *pattern, const struct attr *attr, char mbeg, char wild)
     new->b.wild = wild;
     new->attr = *attr;
     if (new->b.pattern == NULL) {
-	errmsg("malloc");
+	out_of_memory();
 	free(new);
 	return;
     }
@@ -224,7 +224,7 @@ void add_substnode(char *pattern, char *replacement, char mbeg, char wild)
 {
     substnode *new = malloc(sizeof(*new));
     if (new == NULL) {
-        errmsg("malloc");
+        out_of_memory();
         return;
     }
     *new = (substnode){
@@ -232,7 +232,7 @@ void add_substnode(char *pattern, char *replacement, char mbeg, char wild)
         .replacement = my_strdup(replacement)
     };
     if (new->b.pattern == NULL || new->replacement == NULL) {
-        errmsg("malloc");
+        out_of_memory();
         delete_substnode(&new);
         return;
     }
@@ -255,7 +255,7 @@ void add_actionnode(char *pattern, char *command, char *label, int active, int t
     actionnode **p, *new = (actionnode*)malloc(sizeof(actionnode));
     int i;
     if (!new) {
-	errmsg("malloc");
+	out_of_memory();
 	return;
     }
 
@@ -269,7 +269,7 @@ void add_actionnode(char *pattern, char *command, char *label, int active, int t
     new->regexp = vregexp;
 #endif
     if (!new->pattern || (command && !new->command) || (label && !new->label)) {
-	errmsg("malloc");
+	out_of_memory();
 	if (new->pattern)
 	    free(new->pattern);
 	if (new->command)
@@ -297,7 +297,7 @@ void add_promptnode(char *pattern, char *command, char *label, int active, int t
     promptnode **p, *new = (promptnode*)malloc(sizeof(promptnode));
     int i;
     if (!new) {
-	errmsg("malloc");
+	out_of_memory();
 	return;
     }
 
@@ -310,7 +310,7 @@ void add_promptnode(char *pattern, char *command, char *label, int active, int t
     new->regexp = vregexp;
 #endif
     if (!new->pattern || (command && !new->command) || (label && !new->label)) {
-	errmsg("malloc");
+	out_of_memory();
 	if (new->pattern)
 	    free(new->pattern);
 	if (new->command)
@@ -337,7 +337,7 @@ void add_keynode(char *name, char *sequence, int seqlen, function_str funct, cha
 {
     keynode *new = (keynode*)malloc(sizeof(keynode));
     if (!new) {
-	errmsg("malloc");
+	out_of_memory();
 	return;
     }
     new->name = my_strdup(name);
@@ -348,7 +348,7 @@ void add_keynode(char *name, char *sequence, int seqlen, function_str funct, cha
     new->funct = funct;
     new->call_data = my_strdup(call_data);
     if (!new->name || !new->sequence || (call_data && !new->call_data)) {
-	errmsg("malloc");
+	out_of_memory();
 	if (new->name)
 	    free(new->name);
 	if (new->sequence)
@@ -369,13 +369,13 @@ delaynode *add_delaynode(char *name, char *command, vtime *when, int is_dead)
 {
     delaynode *new = (delaynode*)malloc(sizeof(delaynode));
     if (!new) {
-	errmsg("malloc");
+	out_of_memory();
 	return NULL;
     }
     new->name = my_strdup(name);
     new->command = my_strdup(command);
     if (!new->name || (command && !new->command)) {
-	errmsg("malloc");
+	out_of_memory();
 	if (new->name)
 	    free(new->name);
 	if (new->command)
@@ -424,7 +424,7 @@ varnode *add_varnode(char *name, int type)
 	        memmove(newvar, var, m * sizeof(vars));
 		free((void *)var);
 	    } else {
-		errmsg("malloc");
+		out_of_memory();
 		return NULL;
 	    }
 	    var = newvar;
@@ -435,12 +435,12 @@ varnode *add_varnode(char *name, int type)
 
     new = (varnode*)malloc(sizeof(varnode));
     if (!new) {
-	errmsg("malloc");
+	out_of_memory();
 	return NULL;
     }
     new->name = my_strdup(name);
     if (name && !new->name) {
-	errmsg("malloc");
+	out_of_memory();
 	free(new);
 	return NULL;
     }

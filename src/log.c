@@ -172,10 +172,10 @@ void log_resize(int newsize)
     log_reset();
     if (newsize) {
 	datalist = (char *)malloc(newsize);
-	if (!datalist) { log_reset(); errmsg("malloc"); return; }
+	if (!datalist) { log_reset(); out_of_memory(); return; }
 
 	loglist = (logentry *)malloc(newsize/16*sizeof(logentry));
-	if (!loglist) { log_reset(); errmsg("malloc"); return; }
+	if (!loglist) { log_reset(); out_of_memory(); return; }
 
 	datasize = newsize;
 	logsize = newsize / 16;

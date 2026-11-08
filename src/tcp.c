@@ -271,7 +271,7 @@ static void sendopt(byte what, byte opt)
            && errno == EINTR)
 	;
     if (i != sizeof buf) {
-	errmsg("write option to socket");
+	errmsg("cannot write to connection \"%s\"", current_connection->id);
 	return;
     }
 
@@ -355,7 +355,7 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
         err = connect(newtcp_fd, host_info->ai_addr, host_info->ai_addrlen);
 
         if (err == -1) { /* CTRL-C pressed, or other errors */
-            errmsg("connect to host");
+            errmsg("cannot connect to %s:%d", addr, port);
             close(newtcp_fd);
             return -1;
         }
@@ -363,7 +363,7 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
     }
 
     if (host_info == NULL) {
-        errmsg("failed to connect");
+        errmsg("cannot connect to %s:%d", addr, port);
         return -1;
     }
 
@@ -405,11 +405,11 @@ static void tcp_set_fdmode(int fd)
      */
     int opt = 1;
     if (setsockopt(fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt)))
-        errmsg("setsockopt(TCP_NODELAY) failed");
+        errmsg("cannot turn off delays on the connection");
 
     /* TCP keep-alive */
     if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)))
-        errmsg("setsockopt(SO_KEEPALIVE) failed");
+        errmsg("cannot turn on keep-alive on the connection");
 
     /*
      * Then, close-on-exec:
@@ -495,7 +495,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     if (i < 0) {
         /* e.g., a TLS record without data, such as a session ticket */
         if (errno != EAGAIN && errno != EWOULDBLOCK)
-            errmsg("read from socket");
+            errmsg("cannot read from connection \"%s\"", conn->id);
 	return 0;
     }
 
@@ -762,7 +762,7 @@ static void internal_tcp_raw_write(connsess *conn, const char *data, int len)
                && errno == EINTR)
 	    ;
 	if (i < 0) {
-	    errmsg("write to socket");
+	    errmsg("cannot write to connection \"%s\"", conn->id);
 	    break;
 	}
 	data += i;
@@ -958,7 +958,8 @@ void tcp_flush(void)
 	    ;
 	if (n < 0) {
 	    output_len = 0;
-	    errmsg("write to socket");
+	    errmsg("cannot write to connection \"%s\"",
+                   output_connection->id);
 	    return;
 	}
 	sent += n;
@@ -1097,7 +1098,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
     char *conn_id   = my_strdup(id);
     if (conn_host == NULL || conn_id == NULL) {
         free(conn_host);
-	errmsg("malloc");
+	out_of_memory();
 	return;
     }
 
@@ -1264,7 +1265,7 @@ void tcp_spawn(const char *id, char *cmd)
 	return;
     }
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0) {
-	errmsg("create socketpair");
+	errmsg("cannot create a connection to the command");
 	return;
     }
     if (sockets[0] >= FD_SETSIZE) {
@@ -1286,12 +1287,12 @@ void tcp_spawn(const char *id, char *cmd)
 	close(sockets[0]);
 	close(sockets[1]);
 	execl("/bin/sh", "sh", "-c", cmd, NULL);
-	syserr("execl");
+	syserr("cannot run /bin/sh");
 	break;
       case -1:
 	close(sockets[0]);
 	close(sockets[1]);
-	errmsg("fork");
+	errmsg("cannot start the command");
 	return;
     }
     close(sockets[1]);
@@ -1310,12 +1311,12 @@ void tcp_spawn(const char *id, char *cmd)
     }
 
     if (!(CONN_INDEX(i).host = my_strdup(cmd))) {
-	errmsg("malloc");
+	out_of_memory();
 	close(sockets[0]);
 	return;
     }
     if (!(CONN_INDEX(i).id = my_strdup(id))) {
-	errmsg("malloc");
+	out_of_memory();
 	free(CONN_INDEX(i).host);
 	close(sockets[0]);
 	return;

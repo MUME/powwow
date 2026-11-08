@@ -516,7 +516,7 @@ void parse_action(char *str, int onprompt)
 
 		regexp = malloc(sizeof(regex_t));
 		if (!regexp) {
-		    errmsg("malloc");
+		    out_of_memory();
 		    return;
 		}
 
@@ -533,14 +533,14 @@ void parse_action(char *str, int onprompt)
 		    tmp = (char *)malloc(n);
 		    if (tmp) {
 			if (!regerror(errcode, (regex_t *)regexp, tmp, n))
-			    errmsg("regerror");
+			    errmsg("invalid regular expression");
 			else {
 			    PRINTF("#regexp error: %s\n", tmp);
 			}
 			free(tmp);
 		    } else {
 			error = NO_MEM_ERROR;
-			errmsg("malloc");
+			out_of_memory();
 		    }
 		    regfree((regex_t *)regexp);
 		    free(regexp);
@@ -898,7 +898,7 @@ void parse_substitute(char *str)
     } else if (n != NULL) {
         char *replacement = my_strdup(p);
         if (replacement == NULL) {
-            errmsg("malloc");
+            out_of_memory();
             return;
         }
         free(n->replacement);
@@ -1000,7 +1000,7 @@ static int get_one_char(int timeout)
     if (n == 0 || (n == -1 && errno == EINTR))
 	return -1;
     if (n == -1) {
-	errmsg("select");
+	errmsg("cannot wait for the terminal");
 	return -1;
     }
  read_tty:
@@ -1011,7 +1011,7 @@ static int get_one_char(int timeout)
         return (unsigned char)c;
     if (n < 0) {
         if (errno != EAGAIN)
-	    errmsg("read from tty");
+	    errmsg("cannot read from the terminal");
         return -1;
     }
     /* n == 0: at most an incomplete character was buffered, so wait for more */
@@ -1355,7 +1355,7 @@ void parse_rebind(char *arg)
 
     char *new_seq = malloc(seqlen);
     if (new_seq == NULL) {
-	errmsg("malloc");
+	out_of_memory();
 	return;
     }
     memmove(new_seq, seq, seqlen);
