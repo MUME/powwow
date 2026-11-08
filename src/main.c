@@ -85,6 +85,7 @@
 #define HELPNAME "powwow.help"
 #define COPYNAME "COPYING"
 #define NAMESNAME "unicode-names.txt"
+#define EMOJINAME "emoji-names.txt"
 
 /*     local function declarations       */
 #ifdef MOTDFILE
@@ -430,10 +431,13 @@ int main(int argc, char **argv)
     if (access(helpfile, R_OK) == -1 && !access(helpname, R_OK))
 	strcpy(helpfile, helpname);
 
-    /* the names of the characters are next to the help file */
+    /* the names of the characters and emoji are next to the help file */
     strcpy(namesfile, helpfile);
     char *slash = strrchr(namesfile, '/');
     strcpy(slash != NULL ? slash + 1 : namesfile, NAMESNAME);
+    strcpy(emojifile, helpfile);
+    slash = strrchr(emojifile, '/');
+    strcpy(slash != NULL ? slash + 1 : emojifile, EMOJINAME);
 
     if (powwow_dir[0])
 	strcpy(copyfile, powwow_dir);

@@ -225,8 +225,10 @@ static int char_escape_len(const char *s, int len, uint32_t *cp)
                 return 0;
         }
     }
-    if (!charname_lookup(s + 2, n, cp))
+    uint32_t cps[CHARNAME_MAX];
+    if (charname_lookup(namesfile, s + 2, n, cps) != 1)
         return 0;
+    *cp = cps[0];
     return end + 1 - s;
 }
 

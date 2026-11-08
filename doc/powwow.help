@@ -234,6 +234,8 @@ C-t         &transpose                  M-t         &transpose-words
 C-u         &kill-to-bol                M-u         &upcase-word
 C-w         &del-unix-word-left
 C-x 8 Ret   &insert-char
+C-x 8 e e   &insert-emoji
+C-x 8 e s   &insert-emoji
 C-x C-u     &undo
 C-y         &yank                       M-y         &yank-pop
 C-z         &suspend
@@ -259,6 +261,8 @@ edited like the input line. Tab completes the name, where each word typed
 can be the start of a word of the name, as gr sm al for greek small letter
 alpha; Tab again lists the names.
 In text, \N{em dash} and \u{2014} insert a character the same way.
+C-x 8 e e reads the name of an emoji, such as thumbs up or flag: Sweden, the
+same way; the words of its group, such as food or animal, match too.
 
 C-c, the interrupt key of the terminal, cannot be bound: it stops a command
 that is running, such as a #while loop, and pressed twice it quits powwow.

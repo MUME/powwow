@@ -480,6 +480,10 @@ static const default_bind default_binds[] = {
       .since = READLINE_KEYS_SAVEFILEVER },
     { .label = "M-C-_", .seq = "\033\037", .funct = redo,
       .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "C-x-8-e-e", .seq = "\030" "8ee", .funct = insert_emoji,
+      .since = READLINE_KEYS_SAVEFILEVER },
+    { .label = "C-x-8-e-s", .seq = "\030" "8es", .funct = insert_emoji,
+      .since = READLINE_KEYS_SAVEFILEVER },
 };
 
 /* is the key 'label' or the key sequence 'seq' bound? */
