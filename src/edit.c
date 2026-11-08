@@ -20,6 +20,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <dirent.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 
@@ -816,7 +818,8 @@ static void word_list_free(struct word_list *l)
 }
 
 /* the topics of #help: the entries of the help file */
-static void complete_help(struct word_list *l, int arg, const char *args)
+static void complete_help(struct word_list *l, int arg, const char *args,
+                          const char *word)
 {
     size_t flag_len = strcspn(args, " ");
     if (arg == 0) {
@@ -850,7 +853,8 @@ static void add_key_names(struct word_list *l)
 }
 
 /* the arguments of #bind: edit, functions, or the name of a key */
-static void complete_bind(struct word_list *l, int arg, const char *args)
+static void complete_bind(struct word_list *l, int arg, const char *args,
+                          const char *word)
 {
     if (arg != 0)
         return;
@@ -860,14 +864,16 @@ static void complete_bind(struct word_list *l, int arg, const char *args)
 }
 
 /* the name of a key, as the first argument */
-static void complete_key(struct word_list *l, int arg, const char *args)
+static void complete_key(struct word_list *l, int arg, const char *args,
+                         const char *word)
 {
     if (arg == 0)
         add_key_names(l);
 }
 
 /* the lists of #reset, and the keys after bind */
-static void complete_reset(struct word_list *l, int arg, const char *args)
+static void complete_reset(struct word_list *l, int arg, const char *args,
+                           const char *word)
 {
     static const char *const lists[] = {
         "action", "alias", "all", "at", "bind", "in", "mark", "prompt",
@@ -887,7 +893,8 @@ static void add_word(const char *word, void *data)
 }
 
 /* the arguments of #hilite: input or messages, and then an attribute */
-static void complete_hilite(struct word_list *l, int arg, const char *args)
+static void complete_hilite(struct word_list *l, int arg, const char *args,
+                            const char *word)
 {
     size_t len = strcspn(args, " ");
     if ((len == 5 && strncmp(args, "input", 5) == 0)
@@ -901,7 +908,8 @@ static void complete_hilite(struct word_list *l, int arg, const char *args)
 }
 
 /* the modes of #delim */
-static void complete_delim(struct word_list *l, int arg, const char *args)
+static void complete_delim(struct word_list *l, int arg, const char *args,
+                           const char *word)
 {
     if (arg != 0)
         return;
@@ -910,7 +918,8 @@ static void complete_delim(struct word_list *l, int arg, const char *args)
 }
 
 /* the options of #option, after +, - or =, and list */
-static void complete_option(struct word_list *l, int arg, const char *args)
+static void complete_option(struct word_list *l, int arg, const char *args,
+                            const char *word)
 {
     for (int i = 0; option_name(i) != NULL; ++i)
         word_list_add(l, option_name(i));
@@ -931,7 +940,8 @@ static void add_group_names(struct word_list *l)
 }
 
 /* the arguments of #group: the name of a group, and on or off */
-static void complete_group(struct word_list *l, int arg, const char *args)
+static void complete_group(struct word_list *l, int arg, const char *args,
+                           const char *word)
 {
     if (arg == 0) {
         add_group_names(l);
@@ -942,7 +952,8 @@ static void complete_group(struct word_list *l, int arg, const char *args)
 }
 
 /* the names of the aliases, for #alias */
-static void complete_alias(struct word_list *l, int arg, const char *args)
+static void complete_alias(struct word_list *l, int arg, const char *args,
+                           const char *word)
 {
     if (arg != 0)
         return;
@@ -951,7 +962,8 @@ static void complete_alias(struct word_list *l, int arg, const char *args)
 }
 
 /* the labels of the actions, for #action after any of <=>% and + or - */
-static void complete_action(struct word_list *l, int arg, const char *args)
+static void complete_action(struct word_list *l, int arg, const char *args,
+                            const char *word)
 {
     if (arg != 0)
         return;
@@ -962,7 +974,8 @@ static void complete_action(struct word_list *l, int arg, const char *args)
 }
 
 /* the patterns of the marks without spaces, for #mark */
-static void complete_mark(struct word_list *l, int arg, const char *args)
+static void complete_mark(struct word_list *l, int arg, const char *args,
+                          const char *word)
 {
     if (arg != 0)
         return;
@@ -973,7 +986,8 @@ static void complete_mark(struct word_list *l, int arg, const char *args)
 }
 
 /* the named variables, as @name and $name, for #var */
-static void complete_var(struct word_list *l, int arg, const char *args)
+static void complete_var(struct word_list *l, int arg, const char *args,
+                         const char *word)
 {
     if (arg != 0)
         return;
@@ -989,28 +1003,71 @@ static void complete_var(struct word_list *l, int arg, const char *args)
 }
 
 /*
+ * the files in the directory of 'word', with that directory before them,
+ * and directories with a / after them; those starting with a dot only if
+ * the name typed does
+ */
+static void complete_file(struct word_list *l, int arg, const char *args,
+                          const char *word)
+{
+    if (arg != 0)
+        return;
+    const char *slash = strrchr(word, '/');
+    const char *base = slash != NULL ? slash + 1 : word;
+    int dir_len = slash != NULL ? (int)(slash - word) + 1 : 0;
+    char dir[BUFSIZE];
+    snprintf(dir, sizeof(dir), "%.*s", dir_len, word);
+    DIR *d = opendir(dir_len > 0 ? dir : ".");
+    if (d == NULL)
+        return;
+    for (const struct dirent *e = readdir(d); e != NULL; e = readdir(d)) {
+        if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0
+            || (e->d_name[0] == '.' && base[0] != '.'))
+            continue;
+        char path[BUFSIZE];
+        if (snprintf(path, sizeof(path), "%s%s", dir, e->d_name)
+            >= (int)sizeof(path))
+            continue;
+        struct stat st;
+        bool is_dir = stat(path, &st) == 0 && S_ISDIR(st.st_mode);
+        if (is_dir && strlen(path) + 1 < sizeof(path))
+            strcat(path, "/");
+        word_list_add(l, path);
+    }
+    closedir(d);
+}
+
+/*
  * how the arguments of commands are completed: a function that adds the
- * words that argument 'arg' can be, after the arguments 'args' before it;
+ * words that argument 'arg' can be, after the arguments 'args' before it,
+ * where 'word' is what is typed of it;
  * the characters of 'prefix' at the start of the word, such as + before
  * an option, are not part of it
  */
 static const struct {
     const char *command;
-    void (*complete)(struct word_list *l, int arg, const char *args);
+    void (*complete)(struct word_list *l, int arg, const char *args,
+                     const char *word);
     const char *prefix;
 } arg_completions[] = {
     { "action", complete_action, "<=>%+-" },
     { "alias", complete_alias, "" },
     { "bind", complete_bind, "" },
+    { "capture", complete_file, ">" },
     { "delim", complete_delim, "" },
+    { "file", complete_file, "=" },
     { "group", complete_group, "" },
     { "help", complete_help, "" },
     { "hilite", complete_hilite, "" },
     { "key", complete_key, "" },
+    { "load", complete_file, "" },
     { "mark", complete_mark, "" },
+    { "movie", complete_file, "" },
     { "option", complete_option, "+-=" },
     { "rebind", complete_key, "" },
+    { "record", complete_file, "" },
     { "reset", complete_reset, "" },
+    { "save", complete_file, "" },
     { "var", complete_var, "" },
 };
 
@@ -1026,14 +1083,15 @@ static const cmdstruct *find_command(const char *name, int len)
 
 /*
  * list the words of 'l' that start with the 'len' bytes of 'word' above the
- * input line, in columns
+ * input line, in columns, without their first 'skip' bytes, such as the
+ * directory of file names
  */
 static void word_list_show(const struct word_list *l, const char *word,
-                           int len)
+                           int len, int skip)
 {
     int width = 0;
     for (int i = 0; i < l->count; ++i) {
-        int w = (int)strlen(l->words[i]);
+        int w = (int)strlen(l->words[i]) - skip;
         if (strncmp(l->words[i], word, len) == 0 && w > width)
             width = w;
     }
@@ -1048,7 +1106,7 @@ static void word_list_show(const struct word_list *l, const char *word,
         if (strncmp(l->words[i], word, len) != 0)
             continue;
         n += snprintf(line + n, sizeof(line) - n, "%-*s", width + 2,
-                      l->words[i]);
+                      l->words[i] + skip);
         if (++column == columns) {
             while (n > 0 && line[n - 1] == ' ')
                 --n;
@@ -1098,6 +1156,7 @@ static bool complete_command(void)
     while (word > start && edbuf[word - 1] != ' ')
         --word;
     struct word_list l = { 0 };
+    bool file_names = false;
     if (word == start) {
         for (const cmdstruct *c = commands; c != NULL; c = c->next) {
             if (c->funct != NULL && isalpha((unsigned char)c->name[0])) {
@@ -1128,10 +1187,13 @@ static bool complete_command(void)
         }
         char before[BUFSIZE];
         snprintf(before, sizeof(before), "%.*s", word - args, edbuf + args);
-        arg_completions[i].complete(&l, arg, before);
         while (word < pos && edbuf[word] != '\0'
                && strchr(arg_completions[i].prefix, edbuf[word]) != NULL)
             ++word;
+        char typed[BUFSIZE];
+        snprintf(typed, sizeof(typed), "%.*s", pos - word, edbuf + word);
+        arg_completions[i].complete(&l, arg, before, typed);
+        file_names = arg_completions[i].complete == complete_file;
     }
     if (l.count > 0)            /* else words is NULL, which qsort rejects */
         qsort(l.words, l.count, sizeof(*l.words), compare_words);
@@ -1156,8 +1218,12 @@ static bool complete_command(void)
         }
     }
     if (matches == 1) {
+        /* a space after it, unless it is a directory, to go on in it */
         char text[BUFSIZE];
-        snprintf(text, sizeof(text), "%s ", only);
+        size_t only_len = strlen(only);
+        snprintf(text, sizeof(text),
+                 only_len > 0 && only[only_len - 1] == '/' ? "%s" : "%s ",
+                 only);
         input_replace(word, len, text, strlen(text));
         tabbed = false;
     } else if (matches > 1 && (int)strlen(common) > len) {
@@ -1166,7 +1232,13 @@ static bool complete_command(void)
         input_replace(word, len, common, strlen(common));
         tabbed = true;
     } else if (matches > 1 && tabbed) {
-        word_list_show(&l, edbuf + word, len);
+        /* file names without their directory, which they all have */
+        int skip = 0;
+        for (int j = 0; file_names && j < len; ++j) {
+            if (edbuf[word + j] == '/')
+                skip = j + 1;
+        }
+        word_list_show(&l, edbuf + word, len, skip);
     } else {
         tabbed = true;
         tty_putc('\007');
