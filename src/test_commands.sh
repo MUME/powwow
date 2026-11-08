@@ -182,6 +182,10 @@ has 'baz  '
 has 'foo bar '
 has 'bar  baz  '
 
+run '#delim does not split command arguments' '#delim program
+#host foo-bar.example.com 4242 --no-tls'
+has '#host set to: foo-bar.example.com 4242 --no-tls --utf8'
+
 run 'NUL is not a word delimiter' '#($a = "a  \000  b")
 #print (:?$a)'
 has '3'

@@ -852,10 +852,13 @@ void smart_print(char *line, char newline)
 }
 
 /*
- * copy first word of src into dst, and return pointer to second word of src
+ * copy first word of src into dst, and return pointer to second word of src;
+ * words end at a space or CMDSEP, not at the #delim characters, as command
+ * arguments such as host names and file names may contain those
  */
 char *split_first_word(char *dst, int dstlen, char *src)
 {
+    static const char seps[] = { ' ', CMDSEP };
     char *tmp;
     int len;
 
@@ -866,7 +869,7 @@ char *split_first_word(char *dst, int dstlen, char *src)
     }
     len = strlen(src);
 
-    tmp = memchrs(src, len, DELIM, DELIM_LEN);
+    tmp = memchrs(src, len, seps, sizeof(seps));
     if (tmp) {
 	if (dstlen > tmp-src+1) dstlen = tmp-src+1;
 	my_strncpy(dst, src, dstlen-1);
