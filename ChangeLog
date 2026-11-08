@@ -40,6 +40,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  the previously deleted text.
 	* C-r and C-s (&reverse-search and &forward-search) search the
 	  history incrementally, and C-g (&abort) stops searching.
+	* Tab completes the names of commands, and the arguments of #help,
+	  #reset, #bind, #key and #rebind, and lists them when pressed
+	  again.
 	* C-x 8 Ret (&insert-char) inserts a character by its Unicode name,
 	  such as `em dash', or code point, such as `U+2014', which can be
 	  edited like the input line; Tab completes the name from the

@@ -257,6 +257,10 @@ not assigned: &clear-line, &insert-string
 
 #bind functions lists all the editing functions and their keys.
 
+Tab completes the word being typed from the history, but in a command, it
+completes its name, as #he to #help, or its argument, as the topics of #help,
+the lists of #reset or the keys of #bind, and lists them when pressed again.
+
 C-x 8 Ret reads the Unicode name of a character, such as em dash, or its
 code point, such as U+2014, and inserts the character; the name can be
 edited like the input line. Tab completes the name, where each word typed

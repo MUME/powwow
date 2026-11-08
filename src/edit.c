@@ -779,6 +779,281 @@ static char *compl_get_word(int i)
 }
 
 /*
+ * completing the names of commands and their arguments
+ */
+
+/* the words that the word being typed can be completed to */
+struct word_list {
+    int count, size;
+    char **words;
+};
+
+static void word_list_add(struct word_list *l, const char *word)
+{
+    for (int i = 0; i < l->count; ++i) {
+        if (strcmp(l->words[i], word) == 0)
+            return;
+    }
+    if (l->count == l->size) {
+        int size = l->size > 0 ? 2 * l->size : 32;
+        char **words = realloc(l->words, size * sizeof(*words));
+        if (words == NULL)
+            return;
+        l->words = words;
+        l->size = size;
+    }
+    char *copy = my_strdup(word);
+    if (copy != NULL)
+        l->words[l->count++] = copy;
+}
+
+static void word_list_free(struct word_list *l)
+{
+    for (int i = 0; i < l->count; ++i)
+        free(l->words[i]);
+    free(l->words);
+}
+
+/* the topics of #help: the entries of the help file */
+static void complete_help(struct word_list *l, int arg, const char *args)
+{
+    size_t flag_len = strcspn(args, " ");
+    if (arg == 0) {
+        word_list_add(l, "-P");
+        word_list_add(l, "--no-pager");
+    } else if (arg == 1
+               && ((flag_len == 2 && strncmp(args, "-P", 2) == 0)
+                   || (flag_len == 10
+                       && strncmp(args, "--no-pager", 10) == 0))) {
+        arg = 0;                /* the topic, after the flag */
+    }
+    if (arg != 0)
+        return;
+    FILE *f = fopen(helpfile, "r");
+    if (f == NULL)
+        return;
+    char line[BUFSIZE];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        line[strcspn(line, "\n")] = '\0';
+        if (line[0] == '@' && isalpha((unsigned char)line[1]))
+            word_list_add(l, line + 1);
+    }
+    fclose(f);
+}
+
+/* the names of the keys bound */
+static void add_key_names(struct word_list *l)
+{
+    for (const keynode *k = keydefs; k != NULL; k = k->next)
+        word_list_add(l, k->name);
+}
+
+/* the arguments of #bind: edit, functions, or the name of a key */
+static void complete_bind(struct word_list *l, int arg, const char *args)
+{
+    if (arg != 0)
+        return;
+    word_list_add(l, "edit");
+    word_list_add(l, "functions");
+    add_key_names(l);
+}
+
+/* the name of a key, as the first argument */
+static void complete_key(struct word_list *l, int arg, const char *args)
+{
+    if (arg == 0)
+        add_key_names(l);
+}
+
+/* the lists of #reset, and the keys after bind */
+static void complete_reset(struct word_list *l, int arg, const char *args)
+{
+    static const char *const lists[] = {
+        "action", "alias", "all", "at", "bind", "in", "mark", "prompt",
+        "substitute", "var",
+    };
+    if (arg == 0) {
+        for (size_t i = 0; i < sizeof(lists) / sizeof(*lists); ++i)
+            word_list_add(l, lists[i]);
+    } else if (arg == 1 && strncmp(args, "bind ", 5) == 0) {
+        add_key_names(l);
+    }
+}
+
+/*
+ * how the arguments of commands are completed: a function that adds the
+ * words that argument 'arg' can be, after the arguments 'args' before it
+ */
+static const struct {
+    const char *command;
+    void (*complete)(struct word_list *l, int arg, const char *args);
+} arg_completions[] = {
+    { "bind", complete_bind },
+    { "help", complete_help },
+    { "key", complete_key },
+    { "rebind", complete_key },
+    { "reset", complete_reset },
+};
+
+/* the command that 'name' runs, as its start, or NULL */
+static const cmdstruct *find_command(const char *name, int len)
+{
+    for (const cmdstruct *c = commands; c != NULL; c = c->next) {
+        if (len > 0 && strncmp(name, c->name, len) == 0 && c->funct != NULL)
+            return c;
+    }
+    return NULL;
+}
+
+/*
+ * list the words of 'l' that start with the 'len' bytes of 'word' above the
+ * input line, in columns
+ */
+static void word_list_show(const struct word_list *l, const char *word,
+                           int len)
+{
+    int width = 0;
+    for (int i = 0; i < l->count; ++i) {
+        int w = (int)strlen(l->words[i]);
+        if (strncmp(l->words[i], word, len) == 0 && w > width)
+            width = w;
+    }
+    int columns = cols / (width + 2);
+    if (columns < 1)
+        columns = 1;
+    clear_input_line(0);
+    tty_putc('\n');
+    char line[BUFSIZE];
+    int n = 0, column = 0;
+    for (int i = 0; i < l->count; ++i) {
+        if (strncmp(l->words[i], word, len) != 0)
+            continue;
+        n += snprintf(line + n, sizeof(line) - n, "%-*s", width + 2,
+                      l->words[i]);
+        if (++column == columns) {
+            while (n > 0 && line[n - 1] == ' ')
+                --n;
+            line[n] = '\0';
+            tty_message("%s\n", line);
+            n = column = 0;
+        }
+    }
+    if (column > 0) {
+        while (n > 0 && line[n - 1] == ' ')
+            --n;
+        line[n] = '\0';
+        tty_message("%s\n", line);
+    }
+    status(1);
+}
+
+static int compare_words(const void *a, const void *b)
+{
+    return strcmp(*(char *const *)a, *(char *const *)b);
+}
+
+/*
+ * complete the name of a command, or its argument, like readline: to the
+ * only word that matches, and a space, or as far as those that match have
+ * in common; if that adds nothing, beep, and list them if Tab is pressed
+ * again; return false if the cursor is not in a command that can be
+ * completed
+ */
+static bool complete_command(void)
+{
+    static bool tabbed;
+    if (last_edit_cmd != complete_word)
+        tabbed = false;
+
+    /* the command the cursor is in, after any ; or { before it */
+    int start = pos;
+    while (start > 0 && edbuf[start - 1] != ';' && edbuf[start - 1] != '{')
+        --start;
+    while (start < pos && edbuf[start] == ' ')
+        ++start;
+    if (edbuf[start] != '#' || edbuf[start + 1] == '#')
+        return false;
+
+    /* the word being typed, and the arguments before it */
+    int word = pos;
+    while (word > start && edbuf[word - 1] != ' ')
+        --word;
+    struct word_list l = { 0 };
+    if (word == start) {
+        for (const cmdstruct *c = commands; c != NULL; c = c->next) {
+            if (c->funct != NULL && isalpha((unsigned char)c->name[0])) {
+                char name[64];
+                snprintf(name, sizeof(name), "#%s", c->name);
+                word_list_add(&l, name);
+            }
+        }
+    } else {
+        int name_len = strcspn(edbuf + start + 1, " ");
+        const cmdstruct *c = find_command(edbuf + start + 1, name_len);
+        if (c == NULL)
+            return false;
+        size_t i = 0;
+        while (i < sizeof(arg_completions) / sizeof(*arg_completions)
+               && strcmp(arg_completions[i].command, c->name) != 0)
+            ++i;
+        if (i == sizeof(arg_completions) / sizeof(*arg_completions))
+            return false;
+
+        int args = start + 1 + name_len;
+        while (args < word && edbuf[args] == ' ')
+            ++args;
+        int arg = 0;
+        for (int p = args; p < word; ++p) {
+            if (edbuf[p] == ' ' && edbuf[p + 1] != ' ')
+                ++arg;
+        }
+        char before[BUFSIZE];
+        snprintf(before, sizeof(before), "%.*s", word - args, edbuf + args);
+        arg_completions[i].complete(&l, arg, before);
+    }
+    if (l.count > 0)            /* else words is NULL, which qsort rejects */
+        qsort(l.words, l.count, sizeof(*l.words), compare_words);
+
+    /* the words that start with the word being typed */
+    int len = pos - word;
+    const char *only = NULL;
+    char common[BUFSIZE] = "";
+    int matches = 0;
+    for (int i = 0; i < l.count; ++i) {
+        const char *w = l.words[i];
+        if (strncmp(w, edbuf + word, len) != 0)
+            continue;
+        if (matches++ == 0) {
+            only = w;
+            snprintf(common, sizeof(common), "%s", w);
+        } else {
+            size_t j = 0;
+            while (common[j] != '\0' && common[j] == w[j])
+                ++j;
+            common[j] = '\0';
+        }
+    }
+    if (matches == 1) {
+        char text[BUFSIZE];
+        snprintf(text, sizeof(text), "%s ", only);
+        input_replace(word, len, text, strlen(text));
+        tabbed = false;
+    } else if (matches > 1 && (int)strlen(common) > len) {
+        /* more than one still matches: list them on the next Tab, as
+         * readline does */
+        input_replace(word, len, common, strlen(common));
+        tabbed = true;
+    } else if (matches > 1 && tabbed) {
+        word_list_show(&l, edbuf + word, len);
+    } else {
+        tabbed = true;
+        tty_putc('\007');
+    }
+    word_list_free(&l);
+    return true;
+}
+
+/*
  * match and complete a word referring to the word list
  */
 void complete_word(char *dummy)
@@ -794,6 +1069,11 @@ void complete_word(char *dummy)
     static int curr_word, comp_len = 0, root_len = 0;
     char *root, *p;
     int k, n;
+
+    if (complete_command()) {
+        comp_len = 0;
+        return;
+    }
 
     /* find word start */
     if (last_edit_cmd == complete_word && comp_len) {

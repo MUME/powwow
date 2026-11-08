@@ -623,6 +623,25 @@ POWWOWHELP=${srcdir:-.}/../doc
 export POWWOWHELP
 has 'C-x 8 Ret   &insert-char'
 
+run 'Tab completes commands and their arguments' '' \
+    "#he	speedw	
+#reset b	C-x-8-e			$(printf '\025')
+"
+has 'Execute a speedwalk sequence even if the speedwalk option is disabled.'
+has 'C-x-8-e-e  C-x-8-e-s'
+
+run 'Tab lists the commands right after completing part of the name' '' \
+    "#rebi		$(printf '\025')
+"
+grep -aq '#rebind  *#rebindALL  *#rebindall' "$tmp/out" || fail "expected the list"
+
+run 'Tab completes the flags of #help and the topic after them' '' \
+    "#help -P speedw	
+#help --n	speedw	
+"
+[ "$(grep -c 'Execute a speedwalk sequence' "$tmp/out")" -eq 2 ] \
+    || fail "expected the help on #speedwalk twice"
+
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 
