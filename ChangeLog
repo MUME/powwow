@@ -33,6 +33,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* C-r and C-s (&reverse-search and &forward-search) search the
 	  history incrementally, and C-g (&abort) stops searching, as in
 	  readline.
+	* ^S and ^Q no longer stop and start the output, and ^Y and ^O are
+	  no longer handled by the terminal on macOS and the BSDs.
 
 Changes from 1.3.0 to 1.3.1
 	* New command #substitute.
