@@ -687,6 +687,17 @@ grep -aq '#var \$target $' "$tmp/out" || fail "expected #var \$target"
 run 'the spaces after a file name are not part of it' "#save $tmp/saved "
 [ -f "$tmp/saved" ] || fail "expected $tmp/saved"
 
+mkdir -p "$tmp/defs/sub"
+echo '#print ("load" + "ed")' > "$tmp/defs/mud.cfg"
+run 'Tab completes file names, and directories without a space' '' \
+    "#load $tmp/def	mu	
+#capture >$tmp/defs/s	
+#save $tmp/defs/		$(printf '\025')
+"
+has 'loaded'
+has "#error writing file \"$tmp/defs/sub/\""
+has 'mud.cfg  sub/'
+
 run 'Tab completes the arguments of #hilite' '' \
     "#hil	inp	un	Ye	o	cy	
 #hil	me	b		

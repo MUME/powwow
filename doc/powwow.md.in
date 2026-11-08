@@ -2297,7 +2297,7 @@ functions by typing `#bind functions`):
 | `Home` | `&begin-of-line` | beginning of line |
 | `LF` | `&enter-line` | execute the typed line, like `Ret`, for the `C-j` key (some terminals send this when you hit return) |
 | `Ret` | `&enter-line` | the most obvious: execute the typed line |
-| `Tab` | `&complete-word` | complete the word being typed to the last matching word in the history (or added with an `#add` command; see above). Hit multiple times to browse the possible completions. This is similar to the GNU Emacs `M-/` command. In a command, it completes its name, as `#he` to `#help`, or its argument, as the topics of `#help`, the lists of `#reset` or the keys of `#bind`, `#key` and `#rebind`, and lists them when hit again. |
+| `Tab` | `&complete-word` | complete the word being typed to the last matching word in the history (or added with an `#add` command; see above). Hit multiple times to browse the possible completions. This is similar to the GNU Emacs `M-/` command. In a command, it completes its name, as `#he` to `#help`, or its argument, as the topics of `#help`, the keys of `#bind`, the names of the aliases for `#alias` or the file names of `#load`, and lists them when hit again. |
 | `M-Tab` | `&complete-line` | complete the line being typed to the last matching line in the history. Hit multiple times to browse the possible completions. |
 | (none) | `&clear-line` | clear input line. |
 | (none) | `&insert-string` | insert on command line the specified chars |
