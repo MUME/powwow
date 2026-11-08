@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -211,6 +212,25 @@ static stack stk;
 static char *line;
 static int depth;
 int error;
+
+/* return a uniformly distributed random number from 0 to n - 1 */
+static long random_below(long n)
+{
+    uint64_t un = (uint64_t)n;
+    /*
+     * skip the 2^64 % n lowest values, so that every remainder is equally
+     * likely
+     */
+    uint64_t min = -un % un;
+    uint64_t r;
+    do {
+        /* lrand48() gives 31 random bits */
+        r = (((uint64_t)lrand48() << 33)
+             | ((uint64_t)lrand48() << 2)
+             | ((uint64_t)lrand48() & 3));
+    } while (r < min);
+    return (long)(r % un);
+}
 
 void print_error(int err_num)
 {
@@ -453,7 +473,7 @@ static void check_delete(object *obj)
 static int exe_op(operator *op)
 {
     object o1 = { 0 }, o2 = { 0 }, *p=NULL;
-    long *l, rnd, delta;
+    long *l, delta;
     ptr *src = NULL, *dst = NULL, *start = NULL;
     int srclen;
     char *ssrc, *tmp;
@@ -1044,12 +1064,8 @@ static int exe_op(operator *op)
 		if (o1.num <= 0) {
 		    error=OUT_RANGE_ERROR;
 		    break;
-		} else {
-		    delta = LONG_MAX - LONG_MAX % o1.num;
-		    while (rnd = lrand48(), rnd > delta);
-		    /* skip numbers that would alterate distribution */
-		    o1.num = rnd / (delta / o1.num);
-		}
+		} else
+		    o1.num = random_below(o1.num);
 	    }
 	    p=&o1;
 	    ret=1;

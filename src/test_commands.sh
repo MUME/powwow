@@ -261,6 +261,14 @@ has '#no entry for "nosuchcommand" in the help file.'
 run 'error message' '#connect test --no-tls 127.0.0.1 1'
 has '#cannot connect to 127.0.0.1:1: Connection refused'
 
+run 'random numbers' "$(for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+    echo '#print (rand 6)'
+done)"
+grep -Ex '[0-9]+' "$tmp/out" > "$tmp/numbers"
+[ "$(wc -l < "$tmp/numbers")" -eq 20 ] || fail "expected 20 numbers"
+grep -Evx '[0-5]' "$tmp/numbers" && fail "number out of range"
+[ "$(sort -u "$tmp/numbers" | wc -l)" -gt 1 ] || fail "numbers are all the same"
+
 # every named command must have a help entry
 name='every command has a help entry'
 sed -n 's/^ *C("\([^"][^"]*\)".*/\1/p' "${srcdir:-.}/cmd.c" > "$tmp/commands"

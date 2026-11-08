@@ -15,6 +15,7 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  and error numbers.
 	* #connect tries every address of the host, and connects to IPv4
 	  addresses on systems such as FreeBSD that do not map them to IPv6.
+	* Fixed `rand' always returning 0 on 64-bit systems.
 
 Changes from 1.3.0 to 1.3.1
 	* New command #substitute.

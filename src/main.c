@@ -380,7 +380,7 @@ int main(int argc, char **argv)
     ref_time = start_time = movie_last = now;
 
     start_clock = cpu_clock = clock();
-    srand48(now.tv_sec);
+    srand48(now.tv_sec ^ now.tv_usec ^ ((long)getpid() << 16));
 
     initialize_cmd();
 
