@@ -26,6 +26,7 @@ struct name_entry {
     uint32_t cps[CHARNAME_MAX];
     int ncps;
     char name[128];
+    char group[128];            /* the group and subgroup of an emoji */
     char words[256];            /* its group, and then its name */
 };
 
@@ -173,7 +174,8 @@ static const char *copy_field(const char *p, char *dst, size_t size)
 
 /*
  * read the next entry from 'f': the code points in hex, a tab, the name,
- * and maybe a tab and the group; return false at the end of the file
+ * and for an emoji, a tab, its group, a tab, and its subgroup; return
+ * false at the end of the file
  */
 static bool read_entry(FILE *f, struct name_entry *e)
 {
@@ -191,10 +193,14 @@ static bool read_entry(FILE *f, struct name_entry *e)
         if (e->ncps == 0 || *p != '\t')
             continue;
         const char *rest = copy_field(p + 1, e->name, sizeof(e->name));
-        char group[128];
-        copy_field(rest, group, sizeof(group));
-        snprintf(e->words, sizeof(e->words), "%s%s%s", group,
-                 group[0] != '\0' ? " " : "", e->name);
+        char group[64], subgroup[64];
+        rest = copy_field(rest, group, sizeof(group));
+        copy_field(rest, subgroup, sizeof(subgroup));
+        e->group[0] = '\0';
+        if (group[0] != '\0')
+            snprintf(e->group, sizeof(e->group), "%s, %s", group, subgroup);
+        snprintf(e->words, sizeof(e->words), "%s %s %s", group, subgroup,
+                 e->name);
         return true;
     }
     return false;
@@ -234,8 +240,9 @@ int charname_lookup(const char *file, const char *name, size_t len,
 /*
  * call 'fn' with each name in 'file' that 'pattern' matches as in
  * charname_words_match(), where the words of the group of an emoji come
- * before its name, and 'data'; return how many there are, or -1 if the
- * names cannot be read
+ * before its name, with the group if the name does not match by itself,
+ * or else NULL, and 'data'; return how many there are, or -1 if the names
+ * cannot be read
  */
 int charname_find(const char *file, const char *pattern, charname_fn fn,
                   void *data)
@@ -248,7 +255,9 @@ int charname_find(const char *file, const char *pattern, charname_fn fn,
     while (read_entry(f, &e)) {
         if (!charname_words_match(pattern, e.words, false))
             continue;
-        fn(e.name, data);
+        fn(e.name,
+           charname_words_match(pattern, e.name, false) ? NULL : e.group,
+           data);
         ++count;
     }
     fclose(f);

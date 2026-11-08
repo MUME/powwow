@@ -56,8 +56,8 @@ tab=$(printf '\t')
 check "$tmp/unicode-names.txt" 30000 \
     "0041${tab}latin capital letter a" "2014${tab}em dash"
 check "$tmp/emoji-names.txt" 3000 \
-    "1F44D${tab}thumbs up${tab}People & Body hand-fingers-closed" \
-    "1F1F8 1F1EA${tab}flag: Sweden${tab}Flags country-flag"
+    "1F44D${tab}thumbs up${tab}People & Body${tab}hand-fingers-closed" \
+    "1F1F8 1F1EA${tab}flag: Sweden${tab}Flags${tab}country-flag"
 
 # copy them next to the files first, so that renaming replaces them whole
 for f in unicode-names.txt emoji-names.txt; do
