@@ -239,9 +239,9 @@ void print_error(int err_num)
 {
     clear_input_line(1);
     if (error == NO_MEM_ERROR) {
-	tty_puts("#out of memory\n");
+	tty_message("#out of memory\n");
     } else
-	tty_printf("#error: %s.\n", error_msg[err_num]);
+	tty_message("#error: %s.\n", error_msg[err_num]);
 }
 
 static int push_op(operator *op)

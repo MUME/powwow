@@ -577,9 +577,14 @@ has '&del-char-right         delete the character under the cursor (C-d, Delete)
 long=$(sed -n '/#editing functions:/,$p' "$tmp/out" | awk 'length > 79')
 [ -z "$long" ] || fail "lines longer than 79 columns: $long"
 
-run '#hilite is saved' "#hilite red
+run '#hilite sets the attributes of messages and input, and saves them' \
+    "#hilite messages bold
+#substitute
+#hilite input red
 #save $tmp/cfg"
-grep -Fxq '#hilite red' "$tmp/cfg" || fail "#hilite not saved"
+has '<ESC>[1m#no substitutions are defined.<ESC>[m'
+grep -Fxq '#hilite input red' "$tmp/cfg" || fail "#hilite input not saved"
+grep -Fxq '#hilite messages bold' "$tmp/cfg" || fail "#hilite messages not saved"
 
 run 'help aligns the list of commands' '#help' ''
 has '#addstatic {<text>|(<expr>)}    add the string to the static completion list'

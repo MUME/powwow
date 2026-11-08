@@ -307,8 +307,71 @@ void ptrunescape(ptr *p)
     p->len = memunescape(ptrdata(p), ptrlen(p), raw_escapes);
 }
 
-/* the attribute of the input line, for #hilite */
-struct attr input_attr;
+/* the attributes of the input line and of the messages, for #hilite */
+struct attr input_attr, message_attr;
+char msgattrbeg[ATTR_SGR_MAX], msgattrend[ATTR_SGR_MAX];
+
+/*
+ * print a message of powwow, with the attribute of #hilite messages
+ * around each of its lines; not in a signal handler, as it allocates
+ */
+static int vmessage(const char *format, va_list ap)
+{
+    va_list ap2;
+    va_copy(ap2, ap);
+    int len = vsnprintf(NULL, 0, format, ap);
+    if (len < 0) {
+        va_end(ap2);
+        return len;
+    }
+    char *text = malloc(len + 1);
+    if (text == NULL) {
+        va_end(ap2);
+        out_of_memory();
+        return -1;
+    }
+    vsnprintf(text, len + 1, format, ap2);
+    va_end(ap2);
+
+    if (msgattrbeg[0] == '\0') {
+        tty_puts(text);
+    } else {
+        for (char *line = text; *line != '\0'; ) {
+            char *nl = strchr(line, '\n');
+            if (nl != NULL)
+                *nl = '\0';
+            if (*line != '\0')
+                tty_printf("%s%s%s", msgattrbeg, line, msgattrend);
+            if (nl == NULL)
+                break;
+            tty_putc('\n');
+            line = nl + 1;
+        }
+    }
+    free(text);
+    return len;
+}
+
+/* print a message, redrawing the input line after it */
+int message_printf(const char *format, ...)
+{
+    status(1);
+    va_list ap;
+    va_start(ap, format);
+    int len = vmessage(format, ap);
+    va_end(ap);
+    return len;
+}
+
+/* print a message where the cursor is */
+int tty_message(const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    int len = vmessage(format, ap);
+    va_end(ap);
+    return len;
+}
 
 /*
  * add escapes (backslashes) to src
@@ -946,7 +1009,8 @@ static void sig_intr_handler(int signum)
 	exit_powwow();
     }
 
-    PRINTF("%s\n#interrupted; press %s again to quit.%s\n", edattrend,
+    status(1);
+    tty_message("%s\n#interrupted; press %s again to quit.%s\n", edattrend,
            tty_intr_key(), tty_clreoln);
     tty_flush(); /* in case we are not in mainlupe */
     confirm = 1;
@@ -1082,18 +1146,18 @@ void errmsg(const char *format, ...)
 
     start_message();
     if (err == 0)
-        tty_printf("#%s\n", msg);
+        tty_message("#%s\n", msg);
     else if (err == EINTR)
-        tty_printf("#%s: interrupted\n", msg);
+        tty_message("#%s: interrupted\n", msg);
     else
-        tty_printf("#%s: %s\n", msg, strerror(err));
+        tty_message("#%s: %s\n", msg, strerror(err));
     tty_flush();
 }
 
 void out_of_memory(void)
 {
     start_message();
-    tty_puts("#out of memory\n");
+    tty_message("#out of memory\n");
     tty_flush();
 }
 
@@ -1125,7 +1189,7 @@ void syserr(const char *msg)
      */
     (void)save_settings();
 #else
-    tty_puts("#settings NOT saved to file.\n");
+    tty_message("#settings NOT saved to file.\n");
 #endif
 
     tty_quit();
@@ -1138,11 +1202,11 @@ static void load_missing_stuff(int n)
 
     if (n < 1) {
         tty_add_walk_binds();
-        tty_puts("#default keypad settings loaded\n");
+        tty_message("#default keypad settings loaded\n");
     }
     if (n < 2) {
         tty_add_initial_binds();
-        tty_puts("#default editing keys settings loaded\n");
+        tty_message("#default editing keys settings loaded\n");
     }
     if (n < 5) {
 	static const char *const str[] = { "compact", "debug", "echo", "info",
@@ -1154,7 +1218,7 @@ static void load_missing_stuff(int n)
 		    str[i], str[i], str[i], str[i]);
 	    parse_alias(buf);
 	}
-	tty_printf("#compatibility aliases loaded:\n\t%s\n",
+	tty_message("#compatibility aliases loaded:\n\t%s\n",
 		 "#compact, #debug, #echo, #info, #keyecho, #speedwalk, #wrap");
     }
     if (n < 6) {
@@ -1163,8 +1227,8 @@ static void load_missing_stuff(int n)
 	sprintf(buf, "#settimer=#setvar timer=$0");
 	parse_alias(buf);
 	limit_mem = 1048576;
-	tty_printf("#compatibility aliases loaded:\n\t%s\n", "#lines, #settimer");
-	tty_puts("#max text/strings length set to 1048576 bytes\n"
+	tty_message("#compatibility aliases loaded:\n\t%s\n", "#lines, #settimer");
+	tty_message("#max text/strings length set to 1048576 bytes\n"
                  "\tuse \"#setvar mem\" to change it\n\n#wait...");
 	tty_flush();
 	sleep(1);
@@ -1429,10 +1493,14 @@ int save_settings(void)
 			     delim_mode == DELIM_CUSTOM ? ptrdata(pp) : "" );
     }
 
+    char attr[ATTR_NAME_MAX];
     if (failed > 0 && !attr_is_none(&input_attr)) {
-        char attr[ATTR_NAME_MAX];
         attr_format(&input_attr, attr, sizeof(attr));
-        failed = fprintf(f, "#hilite %s\n", attr);
+        failed = fprintf(f, "#hilite input %s\n", attr);
+    }
+    if (failed > 0 && !attr_is_none(&message_attr)) {
+        attr_format(&message_attr, attr, sizeof(attr));
+        failed = fprintf(f, "#hilite messages %s\n", attr);
     }
 
 	if (failed > 0)

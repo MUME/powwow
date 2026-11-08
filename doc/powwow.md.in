@@ -868,12 +868,13 @@ is already defined, you cannot change its place in the list.
 ### Input highlighting
 
 ```
-#hilite [<attribute>]
+#hilite [input|messages] [<attribute>]
 ```
 
-This sets the attribute of your entered text to the given attribute.
-Just `#hilite` turns it off. It is saved in the definition file; a
-`#hilite` in `#init` changes it when connecting.
+This sets the attribute of your entered text, or with `messages`, of the
+messages of powwow, such as those starting with `#`, to the given
+attribute. Without an attribute, it turns it off. Both are saved in the
+definition file; a `#hilite` in `#init` changes them when connecting.
 See "Attributes: colors and other highlighting" below for more syntax.
 
 ### Capture output to file

@@ -54,7 +54,7 @@ void show_aliases(void)
     reverse_sortedlist((sortednode **)&sortedaliases);
     for (p = sortedaliases; p; p = p->snext) {
 	escape_specials(buf, p->name);
-	tty_printf("#alias %s%s%s%s=%s\n",
+	tty_message("#alias %s%s%s%s=%s\n",
 			p->active ? "" : "(disabled) ",
 			buf, group_delim, p->group == NULL ? "*" : p->group, p->subst);
     }
@@ -328,7 +328,7 @@ void show_actions(void)
     PRINTF("#%s action%s defined%c\n", actions ? "the following" : "no",
 	       (actions && !actions->next) ? " is" : "s are", actions ? ':' : '.');
     for (p = actions; p; p = p->next)
-	tty_printf("#action %c%c%s%s%s %s=%s\n",
+	tty_message("#action %c%c%s%s%s %s=%s\n",
 		   action_chars[p->type],
 		   p->active ? '+' : '-', p->label,
            group_delim,
@@ -347,7 +347,7 @@ void show_prompts(void)
     PRINTF("#%s prompt%s defined%c\n", prompts ? "the following" : "no",
 	       (prompts && !prompts->next) ? " is" : "s are", prompts ? ':' : '.');
     for (p = prompts; p; p = p->next)
-	tty_printf("#prompt %c%c%s %s=%s\n",
+	tty_message("#prompt %c%c%s %s=%s\n",
 		   action_chars[p->type],
 		   p->active ? '+' : '-', p->label,
 		   p->pattern, p->command);
@@ -699,7 +699,7 @@ void show_marks(void)
 	       (markers && !markers->next) ? " is" : "s are",
 	       markers ? ':' : '.');
     for (p = markers; p; p = p->next)
-	tty_printf("#mark %s%s=%s\n", p->b.mbeg != 0 ? "^" : "",
+	tty_message("#mark %s%s=%s\n", p->b.mbeg != 0 ? "^" : "",
 		   p->b.pattern, attr_name(&p->attr));
 }
 
@@ -811,7 +811,7 @@ void show_substitutions(void)
         pbuf = ptrsubstdef(pbuf, p->b.mbeg, p->b.pattern, p->replacement);
         if (MEM_ERROR)
           break;
-        tty_printf("#substitute %s\n", ptrdata(pbuf));
+        tty_message("#substitute %s\n", ptrdata(pbuf));
     }
     ptrdel(&pbuf);
 }
@@ -1100,7 +1100,7 @@ static char *read_seq(char *name, int *len)
     if ((tmp = get_one_char(0)) >= 0)
 	seq[0] = tmp;
     else {
-	tty_puts("#unable to get key. Giving up.\n");
+	tty_message("#unable to get key. Giving up.\n");
 	return NULL;
     }
 
@@ -1544,14 +1544,14 @@ void show_vars(void)
 	v = sortednamed_vars[type];
 	while (v) {
 	    if (type == 0) {
-		tty_printf("#(@%s = %ld)\n", v->name, v->num);
+		tty_message("#(@%s = %ld)\n", v->name, v->num);
 	    } else {
 		p = ptrescape(p, v->str, 0);
 		if (REAL_ERROR) {
 		    print_error(error);
 		    break;
 		}
-		tty_printf("#($%s = \"%s\")\n", v->name,
+		tty_message("#($%s = \"%s\")\n", v->name,
                            p ? ptrdata(p) : "");
 	    }
 	    v = v->snext;
@@ -1560,13 +1560,13 @@ void show_vars(void)
     }
     for (i = -NUMVAR; !REAL_ERROR && i < NUMPARAM; i++) {
 	if (*VAR[i].num)
-	    tty_printf("#(@%d = %ld)\n", i, *VAR[i].num);
+	    tty_message("#(@%d = %ld)\n", i, *VAR[i].num);
     }
     for (i = -NUMVAR; !REAL_ERROR && i < NUMPARAM; i++) {
 	if (*VAR[i].str && ptrlen(*VAR[i].str)) {
 	    p = ptrescape(p, *VAR[i].str, 0);
 	    if (p && ptrlen(p))
-		tty_printf("#($%d = \"%s\")\n", i, ptrdata(p));
+		tty_message("#($%d = \"%s\")\n", i, ptrdata(p));
 	}
     }
     ptrdel(&p);

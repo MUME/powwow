@@ -883,7 +883,7 @@ static void exec_delays(void)
 	 */
 
 	if (opt_info)
-	    tty_printf("#now [%s]\n", dying->command);
+	    tty_message("#now [%s]\n", dying->command);
 
 	if (*dying->command) {
 
@@ -1330,7 +1330,7 @@ static void process_singleline(char **pbuf, int *psize)
 	    if (line0 < lines - 1)
 		line0++;
 	    if (current_connection != main_connection) /* sub connection */
-		tty_printf("##%s> ", current_connection->id);
+		tty_message("##%s> ", current_connection->id);
 
 	    smart_print(linestart, 1);
 	}
@@ -1498,7 +1498,7 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
 	if ((i = strlen(current_connection->fragment)) > BUFSIZE - TCP_READ_MIN) {
 	    i = 0;
 	    common_clear(promptlen && !opt_compact);
-	    tty_printf("#error: ##%s : line too long, discarded\n", current_connection->id);
+	    tty_message("#error: ##%s : line too long, discarded\n", current_connection->id);
 	} else {
 	    buf += i;
 	    memcpy(buffer, current_connection->fragment, i);
@@ -1559,7 +1559,7 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
 		    if (line_status == 0) {
 			common_clear(!opt_compact);
 		    }
-		    tty_printf("##%s [%s]\n", old_connection->id, buf);
+		    tty_message("##%s [%s]\n", old_connection->id, buf);
 		}
 		parse_user_input(buf, 0);
 		/*
@@ -1589,7 +1589,7 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
 		if (line_status == 0) {
 		    common_clear(!opt_compact);
 		}
-		tty_printf("#warning: ##%s : unterminated [%s]\n", old_connection->id, buf);
+		tty_message("#warning: ##%s : unterminated [%s]\n", old_connection->id, buf);
 	    }
 	}
 	current_connection = old_connection;
