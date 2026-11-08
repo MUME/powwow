@@ -239,6 +239,42 @@ bool attr_parse(const char *text, struct attr *attr)
     return attr_parse_why(text, attr, NULL, 0);
 }
 
+void attr_next_words(const char *text, attr_word_fn fn, void *data)
+{
+    /* what can come next: an effect, a color or "on"; "on"; a color */
+    enum { EFFECTS, AFTER_COLOR, AFTER_ON, DONE } state = EFFECTS;
+    struct color color;
+    for (size_t len = next_token(&text); len > 0;
+         text += len, len = next_token(&text)) {
+        bool on = token_is(text, len, "on", true);
+        if (state == EFFECTS && effect_flag(text, len) != 0) {
+            continue;
+        } else if ((state == EFFECTS || state == AFTER_COLOR) && on) {
+            state = AFTER_ON;
+        } else if (state == EFFECTS && parse_color(text, len, &color)) {
+            state = AFTER_COLOR;
+        } else if (state == AFTER_ON && parse_color(text, len, &color)) {
+            state = DONE;
+        } else {
+            return;             /* invalid: nothing can follow */
+        }
+    }
+
+    if (state == EFFECTS) {
+        for (size_t i = 0; i < N_EFFECTS; ++i)
+            fn(effects[i].name, data);
+    }
+    if (state == EFFECTS || state == AFTER_COLOR)
+        fn("on", data);
+    if (state == EFFECTS || state == AFTER_ON) {
+        for (unsigned i = 0; i < 8; ++i) {
+            fn(color_names[i], data);
+            fn(color_names[i + 8], data);
+        }
+        fn("none", data);
+    }
+}
+
 bool attr_is_none(const struct attr *attr)
 {
     return (attr->flags == 0 && attr->fg.kind == COLOR_NONE
