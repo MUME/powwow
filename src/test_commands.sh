@@ -357,7 +357,7 @@ if [ "$(getconf LONG_BIT)" -ge 64 ]; then
 fi
 
 run 'help prefers an exact match' '#help in' ''
-has '#in [label [(delay in millisec.) [command]]]'
+has '#in [<label> [(<delay>) [<command>]]]'
 lacks 'Normally, powwow prints on screen some messages each time you'
 
 run 'help accepts an abbreviation' '#help speedw' ''
@@ -431,12 +431,12 @@ long=$(sed -n '/#editing functions:/,$p' "$tmp/out" | awk 'length > 79')
 [ -z "$long" ] || fail "lines longer than 79 columns: $long"
 
 run 'help aligns the list of commands' '#help' ''
-has '#addstatic {string|(expr)}      add the string to the static completion list'
+has '#addstatic {<text>|(<expr>)}    add the string to the static completion list'
 long=$(sed -n '/#commands available:/,$p' "$tmp/out" | awk 'length > 79')
 [ -z "$long" ] || fail "lines longer than 79 columns: $long"
 has '#beep                           make your terminal beep (like #print (*7))'
-has '#if (expr) instr1 [; #else instr2]'
-has '                                otherwise execute "instr2"'
+has '#if (<expr>) <command1> [; #else <command2>]'
+has '                                otherwise execute <command2>'
 
 # a background pager must not write over the screen
 POWWOWPAGER='&printf "one\ntwo\n"; echo err >&2; printf partial #'
@@ -454,8 +454,8 @@ run 'help without the pager' '#help -P help
 #help -P'
 POWWOWPAGER=cat
 lacks 'PAGER USED'
-has '#help [-P | --no-pager] [keys | math | command]'
-has '#addstatic {string|(expr)}      add the string to the static completion list'
+has '#help [-P|--no-pager] [keys|math|<command>]'
+has '#addstatic {<text>|(<expr>)}    add the string to the static completion list'
 lacks "Help on 'help'"
 
 run 'help on a command without an entry' '#help nosuchcommand'
@@ -480,14 +480,42 @@ run 'verbose version' '#ver -v'
 grep -q '^Options: ' "$tmp/out" || fail "missing options"
 lacks '#syntax: #ver [-v]'
 
-# every named command must have a help entry
-name='every command has a help entry'
-sed -n 's/^ *C("\([^"][^"]*\)".*/\1/p' "${srcdir:-.}/cmd.c" > "$tmp/commands"
-while read -r command; do
-    if ! grep -Fxq -e "@$command" "$POWWOWHELP/powwow.help"; then
-        echo "FAIL $name: $command"
+# every command must have a help entry with the syntax shown by #help, and
+# the manual must have it too, except for the commands it does not show
+name='every command has the same syntax in the help'
+no_manual=' beep clear connect cpu group host net qui request snoop time zap '
+tr '\n' ' ' < "${srcdir:-.}/cmd.c" | awk '{
+    n = split($0, parts, /C\("/)
+    for (i = 2; i <= n; i++) {
+        p = parts[i]
+        command = "@" substr(p, 1, index(p, "\"") - 1)
+        p = substr(p, index(p, "\"") + 1)
+        p = substr(p, index(p, "\"") + 1)
+        print command "\t" substr(p, 1, index(p, "\\t") - 1)
+    }
+}' > "$tmp/commands"
+while IFS='	' read -r command args; do
+    command=${command#@}                    # "@" keeps an empty name
+    [ "$command" != 17 ] || continue        # an example of #<number>
+    syntax="#$command${args:+ $args}"
+    if ! grep -Fxq -e "@${command:-()}" "$POWWOWHELP/powwow.help"; then
+        echo "FAIL $name: no help entry for #$command"
+        failed=1
+    elif ! grep -Fxq -e "$syntax" "$POWWOWHELP/powwow.help"; then
+        echo "FAIL $name: not in powwow.help: $syntax"
         failed=1
     fi
+    case $command in
+        '') ;;                              # #(<expr>)
+        *)
+            case $no_manual in
+                *" $command "*) continue ;;
+            esac
+            if ! grep -Fxq -e "$syntax" "$POWWOWHELP/powwow.md.in"; then
+                echo "FAIL $name: not in powwow.md.in: $syntax"
+                failed=1
+            fi ;;
+    esac
 done < "$tmp/commands"
 
 exit $failed

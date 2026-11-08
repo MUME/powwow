@@ -1,5 +1,5 @@
 @alias
-#alias [name[=[command]]]
+#alias [<name>[=[<command>]]]
 
 Aliases are abbreviations for longer, frequently used commands.
 As all powwow commands, they are only recognized at the beginning
@@ -23,7 +23,7 @@ value. Examples:
 Aliases are saved automatically if you started powwow with a file name as
 argument. Aliases are not expanded in verbatim mode.
 @action
-#action [[<|=|>|%][+|-]label] [{pattern | (expression)}=[command]]
+#action [[<|=|>|%][+|-]<label>] [{<pattern>|(<expr>)}=[<command>]]
 
 When 'pattern' is found in a line from the remote host, the 'command' is
 automatically executed. If the pattern contains $n, powwow matches one word
@@ -57,7 +57,7 @@ a regexp that starts with '(' has to be surrounded by  ("...")
 For regexp actions, $0 = the line, $1 = the whole match and $2... contain the
 submatches.
 @bind
-#bind [edit|functions|key[=[command]]]
+#bind [edit|functions|<key> [<sequence>][=[<command>]]]
 
 You can bind most function keys and control keys to enter a command for you
 when the key is pressed. You cannot (yet) redefine a key already used for an
@@ -75,7 +75,7 @@ powwow can record the control sequence your terminal sends. Examples:
 
 By default, the vt100 numeric keypad is partially used to walk around
 @key
-#key name
+#key <name>
 
 If 'name' is the name of one of the key defined with #bind, #key executes the
 corresponding command. Example:
@@ -86,7 +86,7 @@ At any time, then, you can either:
 - Execute the command '#key f1'
 and powwow will execute the command 'flee' for you.
 @reset
-#reset {all|list-name|bind key}
+#reset {all|<list-name>|bind [<key>]}
 
 Argument:       Effect:
 all             clear everything (apply all lines below this)
@@ -95,7 +95,7 @@ action          clear all actions
 bind            clear all key bindings and restart with default
                 settings. Note that also editing keys are resetted
                 to default function.
-bind key        reset the key to its default binding, or delete it
+bind <key>      reset the key to its default binding, or delete it
                 if it has none
 at              clear all delayed commands
 in              (same thing)
@@ -103,7 +103,7 @@ mark            clear all markers
 substitute      clear all substitutions
 var             clear all variables
 @mark
-#mark [text[=[attribute]]]
+#mark [<pattern>[=[<attribute>]]]
 
 Highlight text in your output, if your terminal supports it.
 In the text, $ matches a single word and & matches any string, and
@@ -130,7 +130,7 @@ Examples:
 #mark ^You=yellow                 (mark You at the beginning of a line)
 #mark Gandalf=bold 208 on #202020 (orange on a dark gray background)
 @substitute
-#substitute [text[=[new text]]]
+#substitute [<pattern>[=[<text>]]]
 
 This command replaces a text in your output with some other text. It only
 changes what you see: actions and the like still work on the original text.
@@ -145,7 +145,7 @@ Examples:
 #substitute                             (lists all substitutions)
 #substitute ^You=I                      (replace You only at start of a line)
 @module
-#module [module name]
+#module [<module-name>]
 
 This loads a shared library module by name, if supported by your system.  The
 name of the module should be included in the documentation that came with the
@@ -160,7 +160,7 @@ Which gives you the perl command that can be used like:
 The commands added and their syntax varies depending on the module.
 
 @history
-#history [number]
+#history [{<number>|(<expr>)}]
 
 #history alone shows you the last commands in history, up to the number
 of lines in your screen.
@@ -169,14 +169,14 @@ of lines in your screen.
 
 #history commands are not placed in history.
 @hilite
-#hilite [attribute]
+#hilite [<attribute>]
 
 This sets the attribute of your entered text to the given attribute.
 Just #hilite turns it off.
 
 See "#help mark" for the syntax of attributes.
 @host
-#host [hostname port [--tls[=options]|--no-tls] [--utf8|--latin1]]
+#host [<hostname> <port> [--tls[=<options>]|--no-tls] [--utf8|--latin1]]
 
 Sets the default host that powwow shall try to connect to when you use
 #connect.
@@ -193,9 +193,8 @@ Available TLS options are:
   no-verify    do not verify the CA certificate
   host=<host>  assume the CA certificate host name is <host>
 @connect
-#connect [session-id] [initstr] [address port]
-         [--tls[=options]|--no-tls]
-         [--utf8|--latin1]
+#connect [<session-id> [<initstr>] [<address> <port>]]
+         [--tls[=<options>]|--no-tls] [--utf8|--latin1]
 
 Connect a new session.
 
@@ -208,8 +207,7 @@ host and port (if you have no open connection) or a list of open
 connections is shown.
 
 For documentation on the --tls, --no-tls, --utf8 and --latin1 options,
-see
-'#help host'.
+see '#help host'.
 
 Last opened session will be the default one.
 
@@ -283,7 +281,7 @@ Normally, powwow does not print on screen the command lines it
 executes. When `debug' is on, every line executed by powwow is also
 echoed on screen (warning: this prints a lot of lines on your screen)
 @delim
-#delim [normal|program|{custom <chars>}
+#delim [normal|program|{custom <chars>}]
 
 By default, when powwow adds words to the word completion buffer,
 it uses only SPACE (' ') and SEMI-COLON (';') as delimeters. You
@@ -294,7 +292,7 @@ You can also make a customized setting with the "custom" mode (space
 is always used as a delimeter).
 This setting also affects &transpose-words (usually bound as M-t)
 @for
-#for ([init];check;[loop]) command
+#for ([<init>];<check>;[<loop>]) <command>
 
 Directly copied from C language, this command evaluates 'init'
 (if specified), then repeats the following cycle:
@@ -307,9 +305,8 @@ As with #while, #for performs the parameter substitution in 'command'. Example:
 #for (@0=32; @0<=47; @0++) read @0      (read messages 32-47)
 @at
 @in
-#at [label [(time-expression) [command]]]
-or
-#in [label [(delay in millisec.) [command]]]
+#at [<label> [(<time>) [<command>]]]
+#in [<label> [(<delay>) [<command>]]]
 
 If you want to tell powwow to execute the command 'kill wolf'
 2 seconds after you type it, use this command:
@@ -335,7 +332,7 @@ disables it.
 Disables all delayed commands (not delete).
 Useful if you start an infinite loop with a self-reactivating delayed command
 @add
-#add {text|(expression)}
+#add {<text>|(<expr>)}
 
 Add the text or result of expression (calculator is used to evaluate the
 expression) to the word completion list. Example:
@@ -343,7 +340,7 @@ expression) to the word completion list. Example:
 #action >reply ^$1 tells you={#print;#add $1}
                         (from now on, you can use TAB to complete that name)
 @addstatic
-#addstatic {text|(expression)}
+#addstatic {<text>|(<expr>)}
 
 Add the text or result of expression (calculator is used to evaluate the
 expression) to the static word completion list. Example:
@@ -362,7 +359,7 @@ If the 'static-completions' file contains a number of #addstatic
 commands, all those words will always be possible to Tab-complete on.
 
 @option
-#option [+-=]<option> | list
+#option [[+|-|=]<option>|list]...
 
 This command lets you list or change various options of powwow.
 
@@ -374,21 +371,22 @@ This command lets you list or change various options of powwow.
      #option <option>   toggle <option>
 
 @put
-#put {text|(expression)}
+#put {<text>|(<expr>)}
 
 If a text is specified, powwow puts it in history. If an expression is
 specified, powwow uses the inline calculator to evaluate it, and then puts the
 result in history.
 @()
 @ ()
-#(expression) or # (expression)
+#(<expr>)
+# (<expr>)
 
 Evaluate expression with calculator, and trash result. Examples:
 
 #(@7=45)                        (set value of variable @7 to 45)
 #alias set=#($-1 = \$0)         (copy parameter $0 of the alias into $-1)
 @print
-#print [<|!][string|(expression)]
+#print [<|!][<text>|(<expr>)]
 
 If a string is specified, powwow simply prints it on screen. If an expression
 is specified, powwow uses the inline calculator to evaluate it, and then
@@ -420,7 +418,7 @@ to use (the other lines will be ignored), in this way:
 
 #print {<|!}(string-expr;[start];[end])
 @send
-#send [<|!]{text|(string-expr)}
+#send [<|!]{<text>|(<expr>)}
 
 The simplest use of #send is to evaluate an expression and to send
 the result to the MUD. More generally, #send is very similar to #print,
@@ -433,7 +431,7 @@ when they are used. Examples:
 #send !awk ' {print "tell arthur " $0} ' file   (say a file to your friend)
 #send ("say I have been playing for " + %(timer/86400000) + " hours")
 @exe
-#exe [<|!]{text|(expression)}
+#exe [<|!]{<text>|(<expr>)}
 
 Evaluate the expression and get result, then execute result as if typed from
 keyboard. If < or ! is specified, #exe behaves exactly like #print, but
@@ -445,7 +443,7 @@ executes the final text as if typed. Examples:
                                  file is opened as capture)
 #exe <mytext                    (read the file mytext and execute it)
 @emulate
-#emulate [<|!]{text|(expression)}
+#emulate [<|!]{<text>|(<expr>)}
 
 Evaluate the expression and get result, then parse result as if received from
 remote host. If < or ! is specified, #emulate behaves exactly like #print,
@@ -456,7 +454,7 @@ but parses the final text as if received from host. Examples:
 #emulate <mytext                        (read the file mytext and parse it as
                                          if received)
 @var
-#var $number = [<|!]{text|(expression)}
+#var <variable>[=[[<|!]{<text>|(<expr>)}]]
 #var @number = [<|!]{text|(expression)}
 
 Evaluate the expression and get result, then put result in the indicated
@@ -478,7 +476,7 @@ will let you edit the current value of the variable
 #var variable=
 will delete the variable
 @write
-#write [>|!](text;name)
+#write [>|!](<expr>;<filename>)
 
 Evaluate expression and get result, then append result to 'name' file.
 If > is specified, 'name' file is truncated before actually writing result.
@@ -489,7 +487,7 @@ to its standard input. Examples:
 #write ($test; "myfile")        (append contents of $test to the end of myfile)
 #write !("55+12"; "bc -l")      (eval 55+12 using bc program)
 @if
-#if (expression) command1 [#else command2]
+#if (<expr>) <command1> [; #else <command2>]
 
 Evaluate the expression: if result is 'true' execute command1,
 otherwise (if there is an #else) execute command2.
@@ -497,7 +495,7 @@ If expression is false and there is no #else, execute nothing.
 remember that you must use braces {} if command1 or command2
 contain more than one instruction.
 @while
-#while (expression) command
+#while (<expr>) <command>
 
 This construct repeats a command while expression keeps true. As with #alias,
 #action and #for, the $n and @n in command are replaced by their values.
@@ -626,7 +624,7 @@ YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
 PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGES.
 @!
-#! shell-command
+#! <shell-command>
 
 Execute a command using /bin/sh. Powwow waits until your shell finishes,
 but you can put jobs in the background with & as usual. Semicolons,
@@ -636,13 +634,13 @@ escapes and braces need to be escaped if they are to be sent to the shell.
 
 Ring your terminal's bell (like #print (*7)).
 @cancel
-#cancel [number]
+#cancel [<number>]
 
 Without an argument, all editing sessions are cancelled; otherwise, only
 the given session is cancelled. The corresponding editor processes are
 brutally killed.
 @capture
-#capture [[>]filename]
+#capture [[>]<filename>]
 
 Capture all output from the main MUD connection and your typed commands
 to a local file. Type #capture without argument to close the file.
@@ -659,8 +657,8 @@ screen when #option autoclear is off.
 Show the CPU time used by powwow.
 @do
 @17
-#do (expr) command
-#n command
+#do (<expr>) <command>
+#<number> <command>
 
 Repeat a command: #do evaluates the expression and uses the result as
 counter, and #n uses a number, like #5 buy bread.
@@ -672,13 +670,13 @@ counter, and #n uses a number, like #5 buy bread.
 Show your active editing sessions, with a brief description and their
 number.
 @file
-#file [=[definition-file]]
+#file [=[<filename>]]
 
 Set, show or clear the name of the definition file. By default it is the
 one loaded when you start powwow, and powwow saves your settings to it
 before exiting. To disable this autosave, use #file =
 @group
-#group [name] [on|off|list]
+#group [<name>] [on|off|list]
 
 Turn on or off all the actions and aliases of a group, or list them.
 To put an action in a group, write the group name after an '@' when
@@ -687,12 +685,12 @@ defining it:
 #action >+auto-ride@non-pk ZBLAM!={#print;stand;ride}
 #group non-pk off
 @groupdelim
-#groupdelim [delimiter]
+#groupdelim [<delimiter>]
 
 Change the '@' between the label of an action or alias and its group name.
 Without an argument, #groupdelim does nothing.
 @help
-#help [-P | --no-pager] [keys | math | command]
+#help [-P|--no-pager] [keys|math|<command>]
 
 Without an argument, list all commands. '#help keys' shows the editing
 keys, '#help math' the inline calculator, and '#help alias' or in general
@@ -701,7 +699,7 @@ keys, '#help math' the inline calculator, and '#help alias' or in general
 The text is shown with the pager in $POWWOWPAGER or $PAGER, or more(1).
 With -P or --no-pager, it is printed on the screen instead.
 @identify
-#identify [startedit [endedit]]
+#identify [<startedit> [<endedit>]]
 
 Tell the server that powwow supports editing functions (currently only
 MUME). It is best attached to an action triggered by a string in the
@@ -710,7 +708,7 @@ editing session starts/ends.
 
 #action >mume ***  MUME=#identify
 @init
-#init [=[command]]
+#init [=[<command>]]
 
 Set up the command to execute on establishing a connection.
 
@@ -718,26 +716,26 @@ Set up the command to execute on establishing a connection.
 #init ={#identify;#speedwalk}   (sets the command)
 #init =                         (clears it)
 @isprompt
-#isprompt [number | (expression)]
+#isprompt [{<number>|(<expr>)}]
 
 Used inside a #prompt to declare that the beginning of the line is a prompt.
 If positive, the number is the length of the prompt. If negative, -n, the
 prompt is as long as the parameter $n. If 0 or missing, the whole line is a
 prompt. See #prompt and the documentation for details.
 @keyedit
-#keyedit function
+#keyedit <function>
 
 Run one of the line-editing functions, as if its key had been pressed.
 
 #keyedit &prev-line
 @load
-#load [definition-file]
+#load [<filename>]
 
 Set the definition file and load settings from it. Current settings are
 completely erased first. To add the contents of a file to your current
 settings, use #exe <filename instead.
 @map
-#map [-[number] | walksequence]
+#map [-[<number>]|<walk-sequence>]
 
 With no argument, show the map of the directions you travelled.
 
@@ -745,7 +743,7 @@ With no argument, show the map of the directions you travelled.
 #map -          (clear the whole map)
 #map nsssue     (add the list of directions to the map)
 @movie
-#movie [filename]
+#movie [<filename>]
 
 Like #capture, but add timestamps to each line, to allow replay at correct
 speed with powwow-movieplay. powwow-movie2ascii converts a movie to plain
@@ -755,7 +753,7 @@ text. Type #movie without argument to close the file.
 
 Show the amount of data transmitted to and received from the remote host.
 @nice
-#nice [{number | (expression)} [command]]
+#nice [{<number>|(<expr>)} [<command>]]
 
 Set or show the place in the list for new actions and marks. When it is 0
 (the default), powwow puts them at the bottom. With a command after the
@@ -763,14 +761,14 @@ number, the new value is used only for that command.
 
 #nice 4 #mark Grizzly=red on blue       (put the mark in the 4th place)
 @prefix
-#prefix [string]
+#prefix [<string>]
 
 Begin each new line you type with the string. You can edit or delete the
 inserted string as usual. #prefix without arguments removes it.
 
 #prefix tell arthur
 @prompt
-#prompt [[<|=|>|%][+|-]label] [{pattern | (expression)}=[command]]
+#prompt [[<|=|>|%][+|-]<label>] [{<pattern>|(<expr>)}=[<command>]]
 
 Like #action, but for prompts: powwow matches #prompts on the beginning of
 a line, and the command must run #isprompt to recognize it as a prompt.
@@ -786,23 +784,23 @@ Do nothing. It exists so that #qui is not an abbreviation of #quit.
 Exit from powwow. It brutally closes all connections that are still open,
 without renting your characters.
 @quote
-#quote [on | off]
+#quote [on|off]
 
 Toggle verbatim mode, in which no alias expansion takes place and
 semicolons, escapes, braces and ` are sent as typed, unless the line begins
 with a #. Useful to paste a text from an editor.
 @rawprint
-#rawprint {text | (expression)}
+#rawprint {<text>|(<expr>)}
 
 Like #print, but does NOT add a final newline, and can handle ASCII 0
 characters.
 @rawsend
-#rawsend {text | (expression)}
+#rawsend {<text>|(<expr>)}
 
 Like #send, but does NOT add a final newline nor IAC escaping of ASCII 255
 characters, and can handle ASCII 0 characters.
 @rebind
-#rebind name [sequence]
+#rebind <key> [<sequence>]
 
 Change the control sequence of a key binding, but not its name or effect.
 Without a sequence, you are asked to press the key.
@@ -817,7 +815,7 @@ Without a sequence, you are asked to press the key.
 ^A, ^B, etc.), asking you to press each key. #rebindALL does the same for
 really every key binding.
 @record
-#record [filename]
+#record [<filename>]
 
 Record all text typed from the keyboard to a local file. Output from the
 remote host is not recorded. Type #record without argument to close the
@@ -829,18 +827,18 @@ Send identification strings to the server: editor is the same as #identify,
 and prompt asks for the special sequence IAC GA at the end of each prompt,
 which helps to detect it.
 @retrace
-#retrace [number]
+#retrace [<number>]
 
 Walk in the reverse direction of the last number of steps. If number is 0
 or left blank, walk all the way back to where automapping started.
 @save
-#save [definition-file]
+#save [<filename>]
 
 Set the definition file and save settings to it. Powwow also saves them
 automatically before exiting. The definition file is overwritten only if
 writing succeeds.
 @setvar
-#setvar name[={number|(expr)}]
+#setvar <name>[={<number>|(<expr>)}]
 
 Set or show an internal variable. Known variables are:
 
@@ -853,11 +851,11 @@ timer   the number of milliseconds since program start
 #setvar timer=0                 (reset internal timer to 0)
 #setvar timer                   (show timer and let you edit it)
 @snoop
-#snoop session-id
+#snoop <session-id>
 
 Toggle the output display of a session.
 @spawn
-#spawn session-id command
+#spawn <session-id> <command>
 
 Create a new session connected to a shell command instead of a MUD.
 Writing to ##<session-id> sends data to the command's standard input, and
@@ -865,7 +863,7 @@ its standard output is executed as if typed from the keyboard. Each command
 it outputs must end with a newline or a semicolon, and the last one with a
 newline. See #option autoclear and #clear for printing to the screen.
 @speedwalk
-#speedwalk [walksequence]
+#speedwalk [<walk-sequence>]
 
 Execute a speedwalk sequence even if the speedwalk option is disabled.
 @time
@@ -878,6 +876,6 @@ Show the current time and date. Useful if you want to use #at.
 Show the version of powwow; with -v, also show the credits and some
 compile options.
 @zap
-#zap session-id
+#zap <session-id>
 
 Disconnect a session.

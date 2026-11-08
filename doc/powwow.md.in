@@ -260,7 +260,7 @@ Commands can be abbreviated as much as you want.
 ### Alias definition
 
 ```
-#alias [name[=[command]]]
+#alias [<name>[=[<command>]]]
 ```
 
 Aliases are abbreviations for longer, frequently used commands.
@@ -315,7 +315,7 @@ but cannot override any special command.
 ### Automatic command execution triggered on output
 
 ```
-#action [[<|=|>|%][+|-]label] [{pattern | (expression)}=[command]]
+#action [[<|=|>|%][+|-]<label>] [{<pattern>|(<expr>)}=[<command>]]
 ```
 
 When 'pattern' is found in a line from the remote host, the
@@ -461,7 +461,7 @@ And then later to turn them back on, use:
 The `@` between the label and the group name can be changed with
 
 ```
-#groupdelim [delimiter]
+#groupdelim [<delimiter>]
 ```
 
 For example, after `#groupdelim %` the action above would be defined
@@ -472,7 +472,7 @@ as auto-ride%non-pk. Without an argument, `#groupdelim` does nothing.
 There is another special command quite similar to `#action`:
 
 ```
-#prompt [[<|=|>|%][+|-]label] [{pattern | (expression)}=[command]]
+#prompt [[<|=|>|%][+|-]<label>] [{<pattern>|(<expr>)}=[<command>]]
 ```
 
 You will need to use it only if you want to mess with the prompt
@@ -496,7 +496,7 @@ This is the rest of `#commands` recognized by powwow.
 ### Toggle verbatim mode
 
 ```
-#quote [on | off]
+#quote [on|off]
 ```
 
 In verbatim mode, no alias expansion takes place and
@@ -511,7 +511,7 @@ to turn it off.
 ### Show/execute commands in history
 
 ```
-#history [number]
+#history [{<number>|(<expr>)}]
 ```
 
 `#history` alone shows you the last commands in history, up to the number
@@ -531,7 +531,7 @@ Example:
 ### Add a text or expression to word completion list (not to history)
 
 ```
-#add {text | (expression)}
+#add {<text>|(<expr>)}
 ```
 
 `#add` puts the text or result of expression (calculator is used to
@@ -547,7 +547,7 @@ Example:
 ### Add a text or expression to the static word completion list
 
 ```
-#addstatic {text | (expression)}
+#addstatic {<text>|(<expr>)}
 ```
 
 `#addstatic` works like `#add`, but the words are never overwritten as
@@ -562,7 +562,7 @@ from your `#init` command. Example:
 ### Put a text or expression into history (and to word completion list)
 
 ```
-#put {text | (expression)}
+#put {<text>|(<expr>)}
 ```
 
 `#put` puts the text or result of expression (uses calculator) in the
@@ -584,7 +584,7 @@ so that further attempts to flee do not lead you again in danger)
 ### Bind keys to enter commands
 
 ```
-#bind [edit | name [sequence][=[command]]]
+#bind [edit|functions|<key> [<sequence>][=[<command>]]]
 ```
 
 You can bind most function keys and control keys to enter a command
@@ -642,7 +642,7 @@ Remember that ALL keys can be redefined...
 ### Change the keyboard sequence associated to an existing key binding
 
 ```
-#rebind name [sequence]
+#rebind <key> [<sequence>]
 ```
 
 If you just want to change the control sequence of a binding, but not
@@ -673,7 +673,7 @@ Examples:
 ### Execute a key as if pressed on keyboard
 
 ```
-#key name
+#key <name>
 ```
 
 If 'name' is the label of one of the key defined with `#bind`,
@@ -716,7 +716,7 @@ will also be written in the `#record` file.
 ### Execute an editing function as if pressed on keyboard
 
 ```
-#keyedit function
+#keyedit <function>
 ```
 
 If 'function' is the name of one of the reserved commands
@@ -741,7 +741,7 @@ has a few side effects.
 ### Clear aliases, actions or what you specify
 
 ```
-#reset {all | name of a list | bind key}
+#reset {all|<list-name>|bind [<key>]}
 ```
 
 | Argument | Effect |
@@ -750,7 +750,7 @@ has a few side effects.
 | `alias` | clear all aliases |
 | `action` | clear all actions |
 | `bind` | clear all key bindings and restart with default settings. Note that also editing keys are resetted to default function. |
-| `bind key` | reset the key to its default binding, or delete it if it has none |
+| `bind <key>` | reset the key to its default binding, or delete it if it has none |
 | `at` | clear all delayed commands |
 | `in` | (same thing) |
 | `mark` | clear all markers |
@@ -761,7 +761,7 @@ has a few side effects.
 ### Mark certain output
 
 ```
-#mark [pattern[=[attribute]]]
+#mark [<pattern>[=[<attribute>]]]
 ```
 
 This command highlights a part of a line in your output in the way you
@@ -787,7 +787,7 @@ Examples:
 ### Replace text in certain output
 
 ```
-#substitute [pattern[=[text]]]
+#substitute [<pattern>[=[<text>]]]
 ```
 
 This command replaces a part of a line in your output with some other
@@ -816,7 +816,7 @@ Examples:
 ### `#module`
 
 ```
-#module [module name]
+#module [<module-name>]
 ```
 
 This loads a shared library module by name, if supported by your system.  The
@@ -838,7 +838,7 @@ The commands added and their syntax varies depending on the module.
 ### Set/show priority for new actions/marks
 
 ```
-#nice [{number | (expression)} [command]]
+#nice [{<number>|(<expr>)} [<command>]]
 ```
 
 When `#nice` is 0 (default) powwow puts new actions at the bottom of the
@@ -865,7 +865,7 @@ is already defined, you cannot change its place in the list.
 ### Input highlighting
 
 ```
-#hilite [attribute]
+#hilite [<attribute>]
 ```
 
 This sets the attribute of your entered text to the given attribute.
@@ -875,7 +875,7 @@ See "Attributes: colors and other highlighting" below for more syntax.
 ### Capture output to file
 
 ```
-#capture [[>]filename]
+#capture [[>]<filename>]
 ```
 
 This captures all output from the main MUD connection and your typed
@@ -899,7 +899,7 @@ It is possible to capture in the `#capture` file even text that you have
 ### Record typed commands to file
 
 ```
-#record [filename]
+#record [<filename>]
 ```
 
 This records all text typed from keyboard to a local disk file,
@@ -923,7 +923,7 @@ Example:
 ### Capture output to file, with timestamps
 
 ```
-#movie [filename]
+#movie [<filename>]
 ```
 
 This is similar to `#capture`, but adds timestamps to each line
@@ -941,7 +941,7 @@ It is possible to capture in the `#movie` file even text that you have
 ### Execute a shell command
 
 ```
-#! command
+#! <shell-command>
 ```
 
 Executes a command using /bin/sh. Powwow waits until your shell
@@ -962,7 +962,7 @@ with `^Z` as usual.
 ### Put a string in the edit buffer automatically
 
 ```
-#prefix [string]
+#prefix [<string>]
 ```
 
 Each new line you type will automatically begin with the prefix string.
@@ -977,7 +977,7 @@ This is handy when you are talking to someone, for example.
 ### Help
 
 ```
-#help [-P | --no-pager] [keys | math | command]
+#help [-P|--no-pager] [keys|math|<command>]
 ```
 
 Shows a list of powwow's commands.
@@ -1009,7 +1009,7 @@ This repeats the command n times. Example:
 Alternatively, you can use this syntax to repeat a command n times:
 
 ```
-#do (expr) command
+#do (<expr>) <command>
 ```
 
 In this case, powwow evaluates the expression, and uses the result
@@ -1023,7 +1023,7 @@ Example:
 ### Iterate a command while a condition holds
 
 ```
-#while (expression) command
+#while (<expr>) <command>
 ```
 
 This syntax repeats a command while expression (evaluated with
@@ -1046,7 +1046,7 @@ substituted with its value. (We want to increase the variable!)
 ### Iterate a command, C style
 
 ```
-#for ([init];check;[loop]) command
+#for ([<init>];<check>;[<loop>]) <command>
 ```
 
 Directly copied from C language, this command evaluates 'init'
@@ -1072,7 +1072,7 @@ Example:
 ### Branch execution command
 
 ```
-#if (expression) command1 [; #else command2]
+#if (<expr>) <command1> [; #else <command2>]
 ```
 
 Evaluate the expression: if result is 'true' execute command1,
@@ -1090,7 +1090,7 @@ powwow to make confusion when the full `#if-#else` syntax is used.
 ### Automapping control
 
 ```
-#map [-[number] | walksequence]
+#map [-[<number>]|<walk-sequence>]
 ```
 
 With no argument, `#map` shows the map of the directions you
@@ -1109,7 +1109,7 @@ Example:
 ### Retrace steps
 
 ```
-#retrace [number]
+#retrace [<number>]
 ```
 
 This command walks you in the reverse direction of the last
@@ -1119,7 +1119,7 @@ the way back to where automapping started.
 ### Explicitly execute a speedwalk
 
 ```
-#speedwalk [walksequence]
+#speedwalk [<walk-sequence>]
 ```
 
 This command can be used to execute a speedwalk sequence even
@@ -1130,7 +1130,7 @@ want to be able to easily execute a speedwalk.
 ### Connect initialization string
 
 ```
-#init [=[command]]
+#init [=[<command>]]
 ```
 
 This command sets up the initialization string to send to
@@ -1147,7 +1147,7 @@ Example:
 ### Identify as an editing client
 
 ```
-#identify [startedit [endedit]]
+#identify [<startedit> [<endedit>]]
 ```
 
 This command sends an identification string to the server, to
@@ -1207,7 +1207,7 @@ description and their number.
 ### Cancel an editing session
 
 ```
-#cancel [number]
+#cancel [<number>]
 ```
 
 Without an argument, all editing sessions are cancelled;
@@ -1217,7 +1217,7 @@ editor processes are brutally killed.
 ### List/turn various options on/off
 
 ```
-#option [[+|-|=]option-name]
+#option [[+|-|=]<option>|list]...
 ```
 
 Currently available option names are
@@ -1391,7 +1391,7 @@ Or you can open two connections to two different MUDs :)
 ### Spawn an external program
 
 ```
-#spawn session-id command
+#spawn <session-id> <command>
 ```
 
 Creates a new session, connected to a shell command instead of a MUD.
@@ -1436,7 +1436,7 @@ before quitting.
 ### Set definition-file and save settings to it
 
 ```
-#save [definition-file]
+#save [<filename>]
 ```
 
 Useful after you write large chunks of code.
@@ -1450,7 +1450,7 @@ definition file in case of `disk full` or other errors.
 ### Set definition-file and load settings from it
 
 ```
-#load [definition-file]
+#load [<filename>]
 ```
 
 Useful if you want to undo the changes in your settings.
@@ -1464,7 +1464,7 @@ use `#exe <filename` instead of `#load`.
 ### Set/show/clear definition-file name
 
 ```
-#file [=[definition-file]]
+#file [=[<filename>]]
 ```
 
 As default, the definition-file is the one loaded when you start
@@ -1483,13 +1483,13 @@ before exiting. If you want to disable this autosave, use `#file =`
 ### List/delete/define/edit delayed commands
 
 ```
-#at [label [(time-expression) [command]]]
+#at [<label> [(<time>) [<command>]]]
 ```
 
 or
 
 ```
-#in [label [(delay in millisec.) [command]]]
+#in [<label> [(<delay>) [<command>]]]
 ```
 
 If you want to tell powwow to execute the command `kill wolf`
@@ -1569,7 +1569,7 @@ use `#option` followed by words and/or history.
 (does NOT send it to the MUD)
 
 ```
-#print [< | !][text | (expression)]
+#print [<|!][<text>|(<expr>)]
 ```
 
 If a string is specified, powwow simply prints it on screen.
@@ -1665,7 +1665,7 @@ Both these special features are supported ALSO in `#send`, `#exe`,
 ### Send text or result of an expression to MUD
 
 ```
-#send [< | !]{text | (expression)}
+#send [<|!]{<text>|(<expr>)}
 ```
 
 The simplest use of `#send` is to evaluate an expression and to send
@@ -1690,7 +1690,7 @@ Example:
 ### Execute text or result of an expression
 
 ```
-#exe [< | !]{text | (expression)}
+#exe [<|!]{<text>|(<expr>)}
 ```
 
 Evaluate the expression and get result,
@@ -1716,7 +1716,7 @@ Example:
 ### Process a text/expression/file as if received from remote host
 
 ```
-#emulate [< | !]{text | expression}
+#emulate [<|!]{<text>|(<expr>)}
 ```
 
 Evaluate expression and get result, then process result as if received
@@ -1737,7 +1737,7 @@ Example:
 ### Put a text or expression in a variable / delete a variable
 
 ```
-#var variable[=[[< | !]{text | (expression)}]]
+#var <variable>[=[[<|!]{<text>|(<expr>)}]]
 ```
 
 Evaluate expression and get result, then put result
@@ -1776,7 +1776,7 @@ Example:
 ### Write text to a file
 
 ```
-#write [> | !](expression ; file)
+#write [>|!](<expr>;<filename>)
 ```
 
 Evaluate expression and get result, then write result into file.
@@ -1844,7 +1844,7 @@ from within an `#alias`, `#action` or whatever you like.
 ### Set/show internal variables
 
 ```
-#setvar name[={number|(expr)}]
+#setvar <name>[={<number>|(<expr>)}]
 ```
 
 Evaluate the expression and get result, then set the internal
@@ -1894,7 +1894,7 @@ Example:
 ### Send raw data to MUD
 
 ```
-#rawsend {text | (expression)}
+#rawsend {<text>|(<expr>)}
 ```
 
 This is mostly a MUD debugging tool, but it can be useful in some cases.
@@ -1907,7 +1907,7 @@ characters, while plain `#send` can't.
 ### Send raw data to screen
 
 ```
-#rawprint {text | (expression)}
+#rawprint {<text>|(<expr>)}
 ```
 
 Like its cousin `#print`, `#rawprint` evaluates the expression (or
@@ -2615,7 +2615,7 @@ to jit as well. So you (and me) will have to live with it :-(
 Automatic command execution triggered on prompts
 
 ```
-#prompt [[<|=|>|%][+|-]label] [{pattern | (expression)}=[command]]
+#prompt [[<|=|>|%][+|-]<label>] [{<pattern>|(<expr>)}=[<command>]]
 ```
 
 *Warning*:
@@ -2651,13 +2651,7 @@ so that powwow can split it from the rest of the line.
 For this reason, `#isprompt` is invoked with a numerical argument:
 
 ```
-#isprompt <number>
-```
-
-or
-
-```
-#isprompt (expression)
+#isprompt [{<number>|(<expr>)}]
 ```
 
 a)If the number (or the result of the expression) is positive
