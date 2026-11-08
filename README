@@ -21,6 +21,11 @@ Files you should have received:
 
 COMPILING
 
+	powwow is supported on Linux, macOS and FreeBSD.  It needs a C99
+	compiler, GnuTLS (unless configured with --disable-tls), and
+	ncurses (unless configured with --enable-vt100).  PCRE2 and
+	libgrapheme are used if available.
+
 	powwow is built using GNU autoconf scripts, it should detect any
 	system dependancies it needs and set the appropriate flags.  Just
 	run:
@@ -32,9 +37,13 @@ COMPILING
 
 	./autogen.sh
 
-	To build the powwow binary.  It will run from any location, but there
-	are some settings set at compile time that will make more sense if
-	you use the "install" make target to install the binaries and
+	which also uses pkg-config, if installed, to find the libraries
+	outside the default paths, such as in /usr/local on FreeBSD or in
+	/opt/homebrew on macOS.
+
+	The powwow binary will run from any location, but there are some
+	settings set at compile time that will make more sense if you use
+	the "install" make target to install the binaries and
 	documentation together.	 For example, POWWOWDIR will default to the
 	location that "make install" will put the online powwow documentation,
 	making the #help feature work out of the box without modifying any
