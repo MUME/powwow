@@ -36,14 +36,6 @@
 #include "eval.h"
 #include "charset.h"
 
-#ifdef USE_RANDOM
-#  define get_random random
-#  define init_random srandom
-#else
-#  define get_random lrand48
-#  define init_random srand48
-#endif
-
 typedef struct {
   int  type;
   long num;      /* used for numeric types or as index for all variables */
@@ -1030,10 +1022,6 @@ static int exe_op(operator *op)
 
 	break;
       case (int)_random_:
-#ifdef NO_RANDOM
-	error = NOT_SUPPORTED_ERROR;
-	break;
-#endif
       case (int)pre_plus:
       case (int)pre_minus:
       case (int)not:
@@ -1053,19 +1041,17 @@ static int exe_op(operator *op)
 		o1.num=!o1.num;
 	    else if (*op==tilde)
 		o1.num=~o1.num;
-#ifndef NO_RANDOM
 	    else if (*op==_random_) {
 		if (o1.num <= 0) {
 		    error=OUT_RANGE_ERROR;
 		    break;
 		} else {
 		    delta = LONG_MAX - LONG_MAX % o1.num;
-		    while (rnd = get_random(), rnd > delta);
+		    while (rnd = lrand48(), rnd > delta);
 		    /* skip numbers that would alterate distribution */
 		    o1.num = rnd / (delta / o1.num);
 		}
 	    }
-#endif
 	    p=&o1;
 	    ret=1;
 	}

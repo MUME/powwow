@@ -14,14 +14,6 @@
 #include <sys/select.h>
 #include <sys/time.h>
 
-#ifdef USE_RANDOM
-#  define get_random random
-#  define init_random srandom
-#else
-#  define get_random lrand48
-#  define init_random srand48
-#endif
-
 #define uSEC_PER_SEC 1000000L         /* microseconds in a second */
 #define mSEC_PER_SEC 1000L            /* milliseconds in a second */
 #define uSEC_PER_mSEC 1000L           /* microseconds in a millisecond */

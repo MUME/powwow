@@ -93,8 +93,6 @@ AC_PATH_PROG([CLANG_TIDY], [clang-tidy], [clang-tidy],
     [$PATH:/opt/homebrew/opt/llvm/bin:/usr/local/opt/llvm/bin])
 
 # Checks for libraries.
-AC_CHECK_FUNC([lrand48], ,
-    AC_DEFINE(USE_RANDOM, 1, [Define to use random() rather than lrand48().]))
 
 if test "x${enable_vt100}" != "xyes"; then
     AC_SEARCH_LIBS(initscr,[ncurses curses], [], [

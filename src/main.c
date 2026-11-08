@@ -380,9 +380,7 @@ int main(int argc, char **argv)
     ref_time = start_time = movie_last = now;
 
     start_clock = cpu_clock = clock();
-#ifndef NO_RANDOM
-    init_random((int)now.tv_sec);
-#endif
+    srand48(now.tv_sec);
 
     initialize_cmd();
 
