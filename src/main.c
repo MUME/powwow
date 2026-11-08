@@ -1988,8 +1988,11 @@ static void get_user_input(void)
 			putbackcursor();
 		    /* the command may delete p, for example with #load */
 		    function_str funct = p->funct;
-		    if (!edit_mode_command(funct))
+		    undo_before();
+		    bool handled = edit_mode_command(funct);
+		    if (!handled)
 			funct(p->call_data);
+		    undo_after(funct, !handled);
 		    last_edit_cmd = funct;
 		    nchars = 0;
 		}
