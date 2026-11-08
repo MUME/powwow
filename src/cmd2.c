@@ -657,8 +657,8 @@ void parse_action(char *str, int onprompt)
  */
 void show_attr_syntax(void)
 {
-    PRINTF("#an attribute is: [<effect>...] [<color>] [on <color>]\n"
-           "  effects:  bold, dim, italic, underline, blink, inverse, hidden,\n"
+    PRINTF("#an attribute is: [<style>...] [<color>] [on <color>]\n"
+           "  styles:   bold, dim, italic, underline, blink, inverse, hidden,\n"
            "            strike, overline\n"
            "  colors:   black, red, green, yellow, blue, magenta, cyan, white,\n"
            "            bright with a capital (Black, Red, ...), 0 to 255 for the\n"

@@ -1,6 +1,6 @@
 /*
  *  attr.c  --  parse, describe and select text attributes (colors and
- *              effects such as bold)
+ *              styles such as bold)
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,14 +18,14 @@
 
 #include "attr.h"
 
-struct effect {
+struct style {
     const char *name;
     enum attr_flag flag;
     int sgr;                    /* SGR parameter selecting it */
 };
 
 /* in the order attr_format() lists them */
-static const struct effect effects[] = {
+static const struct style styles[] = {
     { .name = "bold",          .flag = ATTR_BOLD,      .sgr = 1 },
     { .name = "blink",         .flag = ATTR_BLINK,     .sgr = 5 },
     { .name = "underline",     .flag = ATTR_UNDERLINE, .sgr = 4 },
@@ -37,10 +37,10 @@ static const struct effect effects[] = {
     { .name = "overline",      .flag = ATTR_OVERLINE,  .sgr = 53 },
 };
 
-#define N_EFFECTS (sizeof(effects) / sizeof(effects[0]))
+#define N_STYLES (sizeof(styles) / sizeof(styles[0]))
 
-static_assert(ATTR_OVERLINE == 1 << (N_EFFECTS - 1),
-              "effects[] must list every enum attr_flag");
+static_assert(ATTR_OVERLINE == 1 << (N_STYLES - 1),
+              "styles[] must list every enum attr_flag");
 
 /* the longest escape sequence and description must fit their buffers */
 static_assert(sizeof("\033[1;5;4;7;2;3;8;9;53;38;2;255;255;255;"
@@ -50,15 +50,15 @@ static_assert(sizeof("bold blink underline inverse dim italic hidden strike"
                      " overline #rrggbb on #rrggbb") <= ATTR_NAME_MAX,
               "ATTR_NAME_MAX is too small");
 
-/* other names accepted for effects */
-static const struct effect effect_aliases[] = {
+/* other names accepted for styles */
+static const struct style style_aliases[] = {
     { .name = "reverse",       .flag = ATTR_INVERSE },
     { .name = "faint",         .flag = ATTR_DIM },
     { .name = "conceal",       .flag = ATTR_HIDDEN },
     { .name = "strikethrough", .flag = ATTR_STRIKE },
 };
 
-#define N_EFFECT_ALIASES (sizeof(effect_aliases) / sizeof(effect_aliases[0]))
+#define N_STYLE_ALIASES (sizeof(style_aliases) / sizeof(style_aliases[0]))
 
 /*
  * lowercase are the ANSI colors, and with a capital first letter their
@@ -132,16 +132,16 @@ static bool parse_color(const char *tok, size_t len, struct color *color)
     return false;
 }
 
-/* return the flag of the effect [tok, tok + len), or 0 */
-static enum attr_flag effect_flag(const char *tok, size_t len)
+/* return the flag of the style [tok, tok + len), or 0 */
+static enum attr_flag style_flag(const char *tok, size_t len)
 {
-    for (size_t i = 0; i < N_EFFECTS; ++i) {
-        if (token_is(tok, len, effects[i].name, true))
-            return effects[i].flag;
+    for (size_t i = 0; i < N_STYLES; ++i) {
+        if (token_is(tok, len, styles[i].name, true))
+            return styles[i].flag;
     }
-    for (size_t i = 0; i < N_EFFECT_ALIASES; ++i) {
-        if (token_is(tok, len, effect_aliases[i].name, true))
-            return effect_aliases[i].flag;
+    for (size_t i = 0; i < N_STYLE_ALIASES; ++i) {
+        if (token_is(tok, len, style_aliases[i].name, true))
+            return style_aliases[i].flag;
     }
     return 0;
 }
@@ -163,17 +163,17 @@ static bool attr_error(char *why, size_t size, const char *format,
 }
 
 /*
- * why the 'len' bytes of 'tok' are not a color, or not an effect either
- * if 'or_effect'
+ * why the 'len' bytes of 'tok' are not a color, or not a style either
+ * if 'or_style'
  */
-static const char *color_error(const char *tok, size_t len, bool or_effect)
+static const char *color_error(const char *tok, size_t len, bool or_style)
 {
     if (strspn(tok, "0123456789") >= len)
         return "%.*s is not a color: numbered colors go from 0 to 255";
     if (tok[0] == '#')
         return "\"%.*s\" is not a color: write #rrggbb in hex";
-    return (or_effect
-            ? "\"%.*s\" is not an effect or a color"
+    return (or_style
+            ? "\"%.*s\" is not a style or a color"
             : "\"%.*s\" is not a color");
 }
 
@@ -183,9 +183,9 @@ bool attr_parse_why(const char *text, struct attr *attr, char *why,
     struct attr a = { 0 };
     size_t len = next_token(&text);
 
-    /* effects */
+    /* styles */
     while (len > 0) {
-        enum attr_flag flag = effect_flag(text, len);
+        enum attr_flag flag = style_flag(text, len);
         if (flag == 0)
             break;
         a.flags |= flag;
@@ -241,17 +241,17 @@ bool attr_parse(const char *text, struct attr *attr)
 
 void attr_next_words(const char *text, attr_word_fn fn, void *data)
 {
-    /* what can come next: an effect, a color or "on"; "on"; a color */
-    enum { EFFECTS, AFTER_COLOR, AFTER_ON, DONE } state = EFFECTS;
+    /* what can come next: a style, a color or "on"; "on"; a color */
+    enum { STYLES, AFTER_COLOR, AFTER_ON, DONE } state = STYLES;
     struct color color;
     for (size_t len = next_token(&text); len > 0;
          text += len, len = next_token(&text)) {
         bool on = token_is(text, len, "on", true);
-        if (state == EFFECTS && effect_flag(text, len) != 0) {
+        if (state == STYLES && style_flag(text, len) != 0) {
             continue;
-        } else if ((state == EFFECTS || state == AFTER_COLOR) && on) {
+        } else if ((state == STYLES || state == AFTER_COLOR) && on) {
             state = AFTER_ON;
-        } else if (state == EFFECTS && parse_color(text, len, &color)) {
+        } else if (state == STYLES && parse_color(text, len, &color)) {
             state = AFTER_COLOR;
         } else if (state == AFTER_ON && parse_color(text, len, &color)) {
             state = DONE;
@@ -260,13 +260,13 @@ void attr_next_words(const char *text, attr_word_fn fn, void *data)
         }
     }
 
-    if (state == EFFECTS) {
-        for (size_t i = 0; i < N_EFFECTS; ++i)
-            fn(effects[i].name, data);
+    if (state == STYLES) {
+        for (size_t i = 0; i < N_STYLES; ++i)
+            fn(styles[i].name, data);
     }
-    if (state == EFFECTS || state == AFTER_COLOR)
+    if (state == STYLES || state == AFTER_COLOR)
         fn("on", data);
-    if (state == EFFECTS || state == AFTER_ON) {
+    if (state == STYLES || state == AFTER_ON) {
         for (unsigned i = 0; i < 8; ++i) {
             fn(color_names[i], data);
             fn(color_names[i + 8], data);
@@ -333,10 +333,10 @@ static void attr_sgr_params(const struct attr *attr, char *buf, size_t size)
     if (size == 0)
         return;
     buf[0] = '\0';
-    for (size_t i = 0; i < N_EFFECTS; ++i) {
-        if (attr->flags & effects[i].flag)
+    for (size_t i = 0; i < N_STYLES; ++i) {
+        if (attr->flags & styles[i].flag)
             append(buf, size, &len, "%s%d", len > 0 ? ";" : "",
-                   effects[i].sgr);
+                   styles[i].sgr);
     }
     append_color_params(buf, size, &len, &attr->fg, 30);
     append_color_params(buf, size, &len, &attr->bg, 40);
@@ -386,10 +386,10 @@ void attr_format(const struct attr *attr, char *buf, size_t size)
         append(buf, size, &len, "none");
         return;
     }
-    for (size_t i = 0; i < N_EFFECTS; ++i) {
-        if (attr->flags & effects[i].flag)
+    for (size_t i = 0; i < N_STYLES; ++i) {
+        if (attr->flags & styles[i].flag)
             append(buf, size, &len, "%s%s", len > 0 ? " " : "",
-                   effects[i].name);
+                   styles[i].name);
     }
     if (attr->fg.kind != COLOR_NONE) {
         if (len > 0)
