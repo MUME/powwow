@@ -107,6 +107,8 @@ const edit_function internal_functions[] = {
     { .name = "&insert-char", .funct = insert_named_char,
       .group = "changing text",
       .help = "insert a character by name or code point" },
+    { .name = "&insert-emoji", .funct = insert_emoji,
+      .group = "changing text", .help = "insert an emoji by its name" },
     { .name = "&insert-string", .funct = insert_string, .group = "changing text",
       .help = "insert the text after the function name" },
     { .name = "&kill-to-eol", .funct = kill_to_eol, .group = "killing and yanking",
@@ -1566,12 +1568,11 @@ static bool isearch_command(function_str funct)
 static struct {
     bool active;
     bool tabbed;                /* Tab completed nothing, list on the next */
+    const char *file;           /* the names, of characters or emoji */
     char name[BUFSIZE / 2];     /* the name, as last taken from the line */
     char saved[BUFSIZE];
     int saved_pos;
 } charin;
-
-static const char charin_prompt[] = "(insert-char) name or hex: ";
 
 /* the names that Tab lists at most */
 enum { CHARIN_LIST_MAX = 20 };
@@ -1604,20 +1605,35 @@ static void charin_end(void)
     input_moveto(charin.saved_pos);
 }
 
-/*
- * read the name or code point of a character, and insert it
- */
-void insert_named_char(char *dummy)
+/* start reading a name in 'file' after 'prompt' */
+static void charin_start(const char *file, const char *prompt)
 {
     if (charin.active)
         return;
     charin.active = true;
     charin.tabbed = false;
+    charin.file = file;
     strcpy(charin.saved, edbuf);
     charin.saved_pos = pos;
-    input_replace(0, edlen, charin_prompt, strlen(charin_prompt));
+    input_replace(0, edlen, prompt, strlen(prompt));
     edstart = edlen;
     undos = &name_undo;
+}
+
+/*
+ * read the name or code point of a character, and insert it
+ */
+void insert_named_char(char *dummy)
+{
+    charin_start(namesfile, "(insert-char) name or hex: ");
+}
+
+/*
+ * read the name of an emoji, and insert it
+ */
+void insert_emoji(char *dummy)
+{
+    charin_start(emojifile, "(insert-emoji) name: ");
 }
 
 /*
@@ -1725,7 +1741,7 @@ static int compare_listed(const void *a, const void *b)
 static void charin_list(void)
 {
     struct charin_listing l = { 0 };
-    charname_find(charin.name, charin_list_add, &l);
+    charname_find(charin.file, charin.name, charin_list_add, &l);
     if (l.count > 0)            /* else names is NULL, which qsort rejects */
         qsort(l.names, l.count, sizeof(*l.names), compare_listed);
 
@@ -1752,7 +1768,7 @@ static void charin_complete(void)
 {
     charin_get_name();
     struct charin_matches m = { 0 };
-    if (charname_find(charin.name, charin_match, &m) <= 0) {
+    if (charname_find(charin.file, charin.name, charin_match, &m) <= 0) {
         tty_putc('\007');
         return;
     }
@@ -1780,24 +1796,31 @@ static void charin_complete(void)
  */
 static void charin_insert(void)
 {
-    uint32_t cp;
+    uint32_t cps[CHARNAME_MAX];
     charin_get_name();
-    if (!charname_lookup(charin.name, strlen(charin.name), &cp)) {
+    int n = charname_lookup(charin.file, charin.name, strlen(charin.name),
+                            cps);
+    if (n == 0) {
         struct charin_matches m = { 0 };
         const char *name = NULL;
-        if (charname_find(charin.name, charin_match, &m) == 1)
+        if (charname_find(charin.file, charin.name, charin_match, &m) == 1)
             name = m.all.first;
         else if (m.abbreviated.count == 1)
             name = m.abbreviated.first;
-        if (name == NULL || !charname_lookup(name, strlen(name), &cp)) {
-            tty_putc('\007');
-            return;
-        }
+        if (name != NULL)
+            n = charname_lookup(charin.file, name, strlen(name), cps);
+    }
+    if (n == 0) {
+        tty_putc('\007');
+        return;
     }
     charin_end();
     undo_record(charin.saved, charin.saved_pos);
-    char buf[UTF8_MAX];
-    input_insert_follow_chars(buf, utf8_put(cp, buf));
+    char buf[CHARNAME_MAX * UTF8_MAX];
+    int len = 0;
+    for (int i = 0; i < n; ++i)
+        len += utf8_put(cps[i], buf + len);
+    input_insert_follow_chars(buf, len);
 }
 
 /* can 'funct' edit the name being read? */

@@ -60,6 +60,7 @@ void reverse_search(char *dummy);
 void forward_search(char *dummy);
 void abort_edit(char *dummy);
 void insert_named_char(char *dummy);
+void insert_emoji(char *dummy);
 bool edit_mode_command(function_str funct);
 void edit_mode_cancel(void);
 void end_of_line(char *dummy);

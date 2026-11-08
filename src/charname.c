@@ -19,28 +19,38 @@
 #include "charname.h"
 
 char namesfile[BUFSIZE];
+char emojifile[BUFSIZE];
 
-/*
- * the character 'c' of a name, for comparing names: case, and spaces,
- * hyphens and underscores do not matter
- */
-static char name_char(char c)
-{
-    if (c == '-' || c == '_')
-        return ' ';
-    return toupper((unsigned char)c);
-}
+/* an entry of a file of names */
+struct name_entry {
+    uint32_t cps[CHARNAME_MAX];
+    int ncps;
+    char name[128];
+    char words[256];            /* its group, and then its name */
+};
 
 /* is 'c' between words of a name? */
 static bool is_name_sep(char c)
 {
-    return c == ' ' || c == '-' || c == '_';
+    return (c == ' ' || c == '-' || c == '_' || c == ':' || c == ','
+            || c == '.');
+}
+
+/*
+ * the character 'c' of a name, for comparing names: case, and the
+ * separators between words, do not matter
+ */
+static char name_char(char c)
+{
+    if (is_name_sep(c))
+        return ' ';
+    return toupper((unsigned char)c);
 }
 
 /*
  * does each word of 'pattern' match the start of a word of 'name', in
  * order, and the first word the start of 'name' if 'anchored'? case, and
- * spaces, hyphens and underscores do not matter
+ * the separators between words, do not matter
  */
 bool charname_words_match(const char *pattern, const char *name,
                           bool anchored)
@@ -152,71 +162,93 @@ static bool parse_code_point(const char *text, size_t len, uint32_t *cp)
     return true;
 }
 
-/*
- * read the next name from 'f' into 'name': return its code point, or -1 at
- * the end of the file
- */
-static long read_name(FILE *f, char *name, size_t size)
+/* copy the field of 'p' up to a tab or the end of the line into 'dst' */
+static const char *copy_field(const char *p, char *dst, size_t size)
 {
-    char line[256];
-    while (fgets(line, sizeof(line), f) != NULL) {
-        char *end;
-        long cp = strtol(line, &end, 16);
-        if (line[0] == '#' || end == line || *end != ' ')
-            continue;
-        size_t len = strcspn(end + 1, "\n");
-        if (len >= size)
-            len = size - 1;
-        memcpy(name, end + 1, len);
-        name[len] = '\0';
-        return cp;
-    }
-    return -1;
+    size_t len = strcspn(p, "\t\n");
+    snprintf(dst, size, "%.*s", (int)len, p);
+    p += len;
+    return *p == '\t' ? p + 1 : p;
 }
 
 /*
- * find the character with the Unicode name or code point in the 'len'
- * bytes of 'name'; return false if there is none, or it cannot be typed
+ * read the next entry from 'f': the code points in hex, a tab, the name,
+ * and maybe a tab and the group; return false at the end of the file
  */
-bool charname_lookup(const char *name, size_t len, uint32_t *cp)
+static bool read_entry(FILE *f, struct name_entry *e)
 {
-    if (parse_code_point(name, len, cp))
-        return is_typable(*cp);
+    char line[512];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        if (line[0] == '#')
+            continue;
+        char *p = line;
+        e->ncps = 0;
+        while (e->ncps < CHARNAME_MAX && isxdigit((unsigned char)*p)) {
+            e->cps[e->ncps++] = strtoul(p, &p, 16);
+            while (*p == ' ')
+                ++p;
+        }
+        if (e->ncps == 0 || *p != '\t')
+            continue;
+        const char *rest = copy_field(p + 1, e->name, sizeof(e->name));
+        char group[128];
+        copy_field(rest, group, sizeof(group));
+        snprintf(e->words, sizeof(e->words), "%s%s%s", group,
+                 group[0] != '\0' ? " " : "", e->name);
+        return true;
+    }
+    return false;
+}
 
-    FILE *f = fopen(namesfile, "r");
+/*
+ * find the character or emoji with the name, or code point, in the 'len'
+ * bytes of 'name' in 'file', and copy its code points into 'cps', of
+ * CHARNAME_MAX; return how many there are, or 0 if there is none, or it
+ * cannot be typed
+ */
+int charname_lookup(const char *file, const char *name, size_t len,
+                    uint32_t *cps)
+{
+    if (parse_code_point(name, len, cps))
+        return is_typable(cps[0]) ? 1 : 0;
+
+    FILE *f = fopen(file, "r");
     if (f == NULL)
-        return false;
-    char entry[128];
-    long found = -1;
-    for (long c; found < 0 && (c = read_name(f, entry, sizeof(entry))) >= 0; ) {
-        if (same_name(name, len, entry))
-            found = c;
+        return 0;
+    struct name_entry e;
+    int found = 0;
+    while (found == 0 && read_entry(f, &e)) {
+        if (same_name(name, len, e.name)) {
+            found = e.ncps;
+            memcpy(cps, e.cps, found * sizeof(*cps));
+        }
     }
     fclose(f);
-    if (found < 0 || !is_typable(found))
-        return false;
-    *cp = found;
-    return true;
+    for (int i = 0; i < found; ++i) {
+        if (!is_typable(cps[i]))
+            return 0;
+    }
+    return found;
 }
 
 /*
- * call 'fn' with each name, in lowercase, that 'pattern' matches as in
- * charname_words_match(), and 'data'; return how many there are, or -1 if
- * the names cannot be read
+ * call 'fn' with each name in 'file' that 'pattern' matches as in
+ * charname_words_match(), where the words of the group of an emoji come
+ * before its name, and 'data'; return how many there are, or -1 if the
+ * names cannot be read
  */
-int charname_find(const char *pattern, charname_fn fn, void *data)
+int charname_find(const char *file, const char *pattern, charname_fn fn,
+                  void *data)
 {
-    FILE *f = fopen(namesfile, "r");
+    FILE *f = fopen(file, "r");
     if (f == NULL)
         return -1;
-    char entry[128];
+    struct name_entry e;
     int count = 0;
-    while (read_name(f, entry, sizeof(entry)) >= 0) {
-        if (!charname_words_match(pattern, entry, false))
+    while (read_entry(f, &e)) {
+        if (!charname_words_match(pattern, e.words, false))
             continue;
-        for (char *p = entry; *p != '\0'; ++p)
-            *p = tolower((unsigned char)*p);
-        fn(entry, data);
+        fn(e.name, data);
         ++count;
     }
     fclose(f);

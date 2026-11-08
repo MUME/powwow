@@ -411,6 +411,15 @@ ${cu}b
 "
     has 'ab'
 
+    cx8e=$(printf '\0308ee')
+    run 'C-x 8 e e inserts an emoji by name' '' \
+        "#print a${cx8e}thumbs up
+${cx8e}flag swe
+${cx8e}food pizza
+b
+"
+    has 'a👍🇸🇪🍕b'
+
     run 'Ret inserts the only character whose name matches' '' \
         "#print a${cx8}lat let yr
 
@@ -479,7 +488,7 @@ old_savefile() {
     run 'save a file to make an old one' "#save $tmp/cfg"
     script='s/^#savefile-version .*/#savefile-version 8/'
     for f in abort reverse-search forward-search kill-to-bol yank yank-pop \
-             capitalize-word to-history insert-char; do
+             capitalize-word to-history insert-char insert-emoji; do
         script="$script
 /=&$f\$/d"
     done
@@ -495,7 +504,7 @@ old_savefile to-history
 echo '#bind M-c ^[c=&upcase-word' >> "$tmp/old"
 run 'new default keys are added to an old save-file' "#load $tmp/old
 #bind edit"
-has '#new default editing keys added: C-g C-r C-s C-u C-x-8-Ret C-y M-y M-q Delete'
+has '#new default editing keys added: C-g C-r C-s C-u C-x-8-Ret C-y M-y M-q Delete C-x-8-e-e C-x-8-e-s'
 has '#key BS renamed to C-h'
 has '#key M-BS renamed to M-C-h'
 has '#key Del renamed to Backspace'
