@@ -741,7 +741,7 @@ has a few side effects.
 ### Clear aliases, actions or what you specify
 
 ```
-#reset {all | name of a list}
+#reset {all | name of a list | bind key}
 ```
 
 | Argument | Effect |
@@ -750,6 +750,7 @@ has a few side effects.
 | `alias` | clear all aliases |
 | `action` | clear all actions |
 | `bind` | clear all key bindings and restart with default settings. Note that also editing keys are resetted to default function. |
+| `bind key` | reset the key to its default binding, or delete it if it has none |
 | `at` | clear all delayed commands |
 | `in` | (same thing) |
 | `mark` | clear all markers |

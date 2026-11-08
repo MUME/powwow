@@ -206,7 +206,8 @@ static cmdstruct default_commands[] =
     C("request",    cmd_request,
       "[editor][prompt][all]\tsend various identification strings"),
     C("reset",      cmd_reset,
-      "<list-name>\tclear the whole defined list and reload default"),
+      "{<list-name>|bind <key>}\tclear the whole defined list and reload\n"
+      "default, or reset one key"),
     C("retrace",    cmd_retrace,
       "[number]\tretrace the last number steps"),
     C("save",       cmd_save,
@@ -1344,6 +1345,12 @@ static void cmd_reset(char *arg)
         PRINTF("#reset: must specify one of:\n");
         tty_puts(" alias, action, bind, in (or at), mark, prompt, substitute, var, all.\n");
 	return;
+    }
+    if (strncmp(arg, "bind ", 5) == 0) {
+        char name[BUFSIZE];
+        split_first_word(name, BUFSIZE, arg + 5);
+        reset_bind(name);
+        return;
     }
     all = !strcmp(arg, "all");
     if (all || !strcmp(arg, "alias")) {

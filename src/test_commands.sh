@@ -383,6 +383,18 @@ run 'an old save-file keeps its own C-w' "#load $tmp/old
 has '#bind C-w ^W=&clear-line'
 lacks '#C-w now deletes back to the previous space; M-q puts the line in history'
 
+run '#reset bind resets one key' '#bind M-c ^[c=&upcase-word
+#reset bind M-c
+#bind KP8 ^[Ox=north
+#reset bind KP8
+#bind foo ^[[A=bar
+#reset bind foo
+#reset bind nosuch'
+has '#default key binding: M-c ^[c=&capitalize-word'
+has '#default key binding: KP8 ^[Ox=n'
+has '#deleting key binding: foo ^[[A=bar'
+has '#no key named "nosuch", and no default for it.'
+
 run '#bind functions lists all editing functions' '#bind functions'
 has '&abort                  stop searching (C-g)'
 has '&clear-line             clear the input line'

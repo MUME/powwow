@@ -86,7 +86,7 @@ At any time, then, you can either:
 - Execute the command '#key f1'
 and powwow will execute the command 'flee' for you.
 @reset
-#reset {all|list-name}
+#reset {all|list-name|bind key}
 
 Argument:       Effect:
 all             clear everything (apply all lines below this)
@@ -95,6 +95,8 @@ action          clear all actions
 bind            clear all key bindings and restart with default
                 settings. Note that also editing keys are resetted
                 to default function.
+bind key        reset the key to its default binding, or delete it
+                if it has none
 at              clear all delayed commands
 in              (same thing)
 mark            clear all markers

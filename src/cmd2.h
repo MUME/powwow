@@ -19,6 +19,7 @@ void parse_substitute(char *str);
 char *seq_name(char *seq, int len);
 void show_binds(char edit);
 void show_edit_functions(void);
+void reset_bind(char *name);
 void parse_bind(char *arg);
 void parse_rebind(char *arg);
 

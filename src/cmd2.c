@@ -1161,6 +1161,41 @@ void show_edit_functions(void)
     }
 }
 
+/*
+ * reset the key 'name' to its default binding, or delete it if it has
+ * none
+ */
+void reset_bind(char *name)
+{
+    char *seq, *command;
+    function_str funct;
+    keynode **kp = lookup_key(name);
+    if (!tty_default_bind(name, &seq, &funct, &command)) {
+        if (*kp == NULL) {
+            PRINTF("#no key named \"%s\", and no default for it.\n", name);
+        } else {
+            show_single_bind("deleting key binding:", *kp);
+            delete_keynode(kp);
+        }
+        return;
+    }
+    if (*kp != NULL)
+        delete_keynode(kp);
+    /* another key with the same sequence would hide this one */
+    int len = strlen(seq);
+    for (kp = &keydefs; *kp != NULL; ) {
+        if ((*kp)->seqlen == len && memcmp((*kp)->sequence, seq, len) == 0) {
+            show_single_bind("deleting key binding:", *kp);
+            delete_keynode(kp);
+        } else {
+            kp = &(*kp)->next;
+        }
+    }
+    add_keynode(name, seq, 0, funct, command);
+    if (*(kp = lookup_key(name)) != NULL)
+        show_single_bind("default key binding:", *kp);
+}
+
 void show_binds(char edit)
 {
     keynode *p;

@@ -18,6 +18,8 @@ void tty_sig_winch_bottomhalf(void);
 void tty_add_walk_binds(void);
 void tty_add_initial_binds(void);
 void tty_add_new_binds(int version);
+bool tty_default_bind(const char *label, char **seq, function_str *funct,
+                      char **command);
 
 /* the save-file version that added the readline-like editing keys */
 enum { READLINE_KEYS_SAVEFILEVER = 9 };

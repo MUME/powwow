@@ -480,6 +480,52 @@ void tty_add_new_binds(int version)
     }
 }
 
+/*
+ * find the default binding of the key 'label': set its sequence, and its
+ * editing function or command; return false if it has none
+ */
+bool tty_default_bind(const char *label, char **seq, function_str *funct,
+                      char **command)
+{
+    *command = NULL;
+    for (size_t i = 0; i < sizeof(default_binds) / sizeof(*default_binds);
+         ++i) {
+        if (strcmp(default_binds[i].label, label) == 0) {
+            *seq = default_binds[i].seq;
+            *funct = default_binds[i].funct;
+            return true;
+        }
+    }
+    const struct {
+        const char *label;
+        char *seq;
+        function_str funct;
+    } cursor_binds[] = {
+        { .label = "Left", .seq = cursor_left, .funct = prev_char },
+        { .label = "Right", .seq = cursor_right, .funct = next_char },
+        { .label = "Up", .seq = cursor_up, .funct = prev_line },
+        { .label = "Down", .seq = cursor_down, .funct = next_line },
+    };
+    for (size_t i = 0; i < sizeof(cursor_binds) / sizeof(*cursor_binds);
+         ++i) {
+        if (strcmp(cursor_binds[i].label, label) == 0
+            && *cursor_binds[i].seq != '\0') {
+            *seq = cursor_binds[i].seq;
+            *funct = cursor_binds[i].funct;
+            return true;
+        }
+    }
+    for (size_t i = 0; i < sizeof(walk_binds) / sizeof(*walk_binds); ++i) {
+        if (strcmp(walk_binds[i].label, label) == 0) {
+            *seq = walk_binds[i].seq;
+            *funct = key_run_command;
+            *command = walk_binds[i].command;
+            return true;
+        }
+    }
+    return false;
+}
+
 #ifndef USE_VT100
 /*
  * extract termcap 'cap' and strcat it to buf.
