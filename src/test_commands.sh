@@ -270,6 +270,13 @@ run 'unbound meta and function keys are ignored' '' \
 "
 has 'abcdef'
 
+run 'a key sequence and C-h lists its bindings' '' \
+    "$(printf '\0308\b')#print x
+"
+has '#key bindings starting with C-x 8:'
+has '#bind C-x-8-Ret ^X8^M=&insert-char'
+has 'x'
+
 run 'consecutive kills are yanked together' '' \
     "#print foo bar${esc}$(printf '\b')${esc}$(printf '\b')x $(printf '\031')
 "

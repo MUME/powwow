@@ -261,7 +261,8 @@ that is running, such as a #while loop, and pressed twice it quits powwow.
 M-<key> means press escape and then <key>, or press meta/alt key at the same
 time as <key>. C-<key> means press control at the same time as <key>.
 When a key, such as C-x, starts a longer key sequence, the keys typed so far
-are shown after the input line if the next key does not follow in a second.
+are shown after the input line if the next key does not follow in a second,
+and C-h after them, as C-x C-h, lists the key bindings that start with them.
 If your terminal has arrow keys, they are set for default to move cursor and to
 step around history.
 @wrap
