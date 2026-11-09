@@ -108,7 +108,8 @@ int process_message(char *buf, int len)
     for (i = 0; i < l && (to - text) < msglen; ++i) {
         if (got_iac) {
             if (*from != (char)IAC)
-                PRINTF("#warning: got IAC in MPI message; treating as IAC IAC\n");
+                wrap_printf("#warning: got IAC in MPI message; treating as "
+                            "IAC IAC");
             else
                 ++from;
             got_iac = 0;
@@ -133,7 +134,8 @@ int process_message(char *buf, int len)
         for (i = 0; i < l; ++i) {
             if (got_iac) {
                 if (*from != (char)IAC)
-                    PRINTF("#warning: got IAC in MPI message; treating as IAC IAC\n");
+                    wrap_printf("#warning: got IAC in MPI message; treating "
+                                "as IAC IAC");
                 else
                     ++from;
                 got_iac = 0;
@@ -185,7 +187,7 @@ void abort_edit_fd(connsess *conn)
 	    continue;
 	}
 
-	PRINTF("#aborted \"%s\" (%u)\n", p->descr, p->key);
+	wrap_printf("#aborted \"%s\" (%u)", p->descr, p->key);
 	p->cancel = 1;
     }
 }
@@ -203,7 +205,7 @@ void cancel_edit(editsess *sp)
 	errmsg("cannot stop the editor");
 	return;
     }
-    PRINTF("#killed \"%s\" (%u)\n", sp->descr, sp->key);
+    wrap_printf("#killed \"%s\" (%u)", sp->descr, sp->key);
     sprintf(keystr, "C%u\n", sp->key);
     sprintf(buf, "%sE%d\n%s", MPI, (int)strlen(keystr), keystr);
     tcp_write(sp->conn, buf);

@@ -385,6 +385,113 @@ int tty_message(const char *format, ...)
     return len;
 }
 
+/* the width of the 'len' bytes of 'text', without escape sequences */
+static int text_width(const char *text, size_t len)
+{
+    int width = 0;
+    size_t i = 0;
+    while (i < len) {
+        if (text[i] == '\033' && i + 1 < len && text[i + 1] == '[') {
+            i += 2;
+            while (i < len && !is_csi_final((unsigned char)text[i]))
+                ++i;
+            ++i;
+            continue;
+        }
+        size_t start = i;
+        while (i < len && text[i] != '\033')
+            ++i;
+        width += utf8_width(text + start, i - start);
+        if (i == start)
+            ++i;                /* a lone escape */
+    }
+    return width;
+}
+
+/*
+ * 'text' wrapped to the width of the terminal before the words that do
+ * not fit, which go on a new line after 'cont'; NULL if out of memory
+ */
+static char *wrap_text(const char *text, const char *cont)
+{
+    size_t cont_len = strlen(cont);
+    size_t size = strlen(text) + 1 + (strlen(text) / 2 + 1) * (cont_len + 1);
+    char *out = malloc(size);
+    if (out == NULL)
+        return NULL;
+    size_t n = 0;
+    int col = 0, line_start = 0;
+    for (const char *p = text; *p != '\0'; ) {
+        if (*p == '\n') {
+            out[n++] = *p++;
+            col = line_start = 0;
+            continue;
+        }
+        /* the spaces before a word, then the word */
+        size_t spaces = strspn(p, " ");
+        const char *word = p + spaces;
+        size_t len = strcspn(word, " \n");
+        int width = text_width(word, len);
+        if (len > 0 && col > line_start
+            && col + (int)spaces + width > cols_1) {
+            out[n++] = '\n';
+            memcpy(out + n, cont, cont_len);
+            n += cont_len;
+            col = line_start = text_width(cont, cont_len);
+        } else {
+            memcpy(out + n, p, spaces);
+            n += spaces;
+            col += (int)spaces;
+        }
+        memcpy(out + n, word, len);
+        n += len;
+        col += width;
+        p = word + len;
+    }
+    out[n] = '\0';
+    return out;
+}
+
+static int vmessage_wrap(const char *cont, const char *format, va_list ap)
+{
+    va_list ap2;
+    va_copy(ap2, ap);
+    int len = vsnprintf(NULL, 0, format, ap);
+    char *text = len >= 0 ? malloc(len + 1) : NULL;
+    if (text != NULL)
+        vsnprintf(text, len + 1, format, ap2);
+    va_end(ap2);
+    char *out = text != NULL ? wrap_text(text, cont) : NULL;
+    free(text);
+    if (out == NULL) {
+        if (len >= 0)
+            out_of_memory();
+        return -1;
+    }
+    len = tty_message("%s\n", out);
+    free(out);
+    return len;
+}
+
+int message_wrap(const char *cont, const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    int len = vmessage_wrap(cont, format, ap);
+    va_end(ap);
+    return len;
+}
+
+int wrap_printf(const char *format, ...)
+{
+    status(1);
+    va_list ap;
+    va_start(ap, format);
+    int len = vmessage_wrap(WRAP_CONT, format, ap);
+    va_end(ap);
+    return len;
+}
+
 /*
  * add escapes (backslashes) to src
  */
@@ -1022,8 +1129,8 @@ static void sig_intr_handler(int signum)
     }
 
     status(1);
-    tty_message("%s\n#interrupted; press %s again to quit.%s\n", edattrend,
-           tty_intr_key(), tty_clreoln);
+    message_wrap(WRAP_CONT, "%s\n#interrupted; press %s again to quit.%s",
+                 edattrend, tty_intr_key(), tty_clreoln);
     tty_flush(); /* in case we are not in mainlupe */
     confirm = 1;
     error = USER_BREAK;
@@ -1158,11 +1265,11 @@ void errmsg(const char *format, ...)
 
     start_message();
     if (err == 0)
-        tty_message("#%s\n", msg);
+        message_wrap(WRAP_CONT, "#%s", msg);
     else if (err == EINTR)
-        tty_message("#%s: interrupted\n", msg);
+        message_wrap(WRAP_CONT, "#%s: interrupted", msg);
     else
-        tty_message("#%s: %s\n", msg, strerror(err));
+        message_wrap(WRAP_CONT, "#%s: %s", msg, strerror(err));
     tty_flush();
 }
 
@@ -1201,7 +1308,7 @@ void syserr(const char *msg)
      */
     (void)save_settings();
 #else
-    tty_message("#settings NOT saved to file.\n");
+    message_wrap(WRAP_CONT, "#settings NOT saved to file.");
 #endif
 
     tty_quit();
@@ -1230,8 +1337,8 @@ static void load_missing_stuff(int n)
 		    str[i], str[i], str[i], str[i]);
 	    parse_alias(buf);
 	}
-	tty_message("#compatibility aliases loaded:\n\t%s\n",
-		 "#compact, #debug, #echo, #info, #keyecho, #speedwalk, #wrap");
+	message_wrap(WRAP_CONT, "#compatibility aliases loaded: #compact, "
+                     "#debug, #echo, #info, #keyecho, #speedwalk, #wrap");
     }
     if (n < 6) {
 	sprintf(buf, "#lines=#setvar lines=$0");
@@ -1239,9 +1346,11 @@ static void load_missing_stuff(int n)
 	sprintf(buf, "#settimer=#setvar timer=$0");
 	parse_alias(buf);
 	limit_mem = 1048576;
-	tty_message("#compatibility aliases loaded:\n\t%s\n", "#lines, #settimer");
-	tty_message("#max text/strings length set to 1048576 bytes\n"
-                 "\tuse \"#setvar mem\" to change it\n\n#wait...");
+	message_wrap(WRAP_CONT,
+                     "#compatibility aliases loaded: #lines, #settimer");
+	message_wrap(WRAP_CONT, "#max text/strings length set to 1048576 "
+                     "bytes; use \"#setvar mem\" to change it");
+	tty_message("#wait...");
 	tty_flush();
 	sleep(1);
 	tty_puts("ok\n");
@@ -1268,13 +1377,14 @@ int read_settings(void)
     ptr *ptrbuf;
 
     if (!*deffile) {
-	PRINTF("#warning: no save-file defined!\n");
+	wrap_printf("#warning: no save-file defined!");
 	return 0;
     }
 
     f = fopen(deffile, "r");
     if (!f) {
-        PRINTF("#error: cannot open file \"%s\": %s\n", deffile, strerror(errno));
+        wrap_printf("#error: cannot open file \"%s\": %s", deffile,
+                    strerror(errno));
 	return 0;
     }
 
@@ -1338,7 +1448,8 @@ int read_settings(void)
 
 	if (!cmd) {
 	    if (feof(f)) {
-		PRINTF("#error: missing newline at end of file \"%s\"\n", deffile);
+		wrap_printf("#error: missing newline at end of file \"%s\"",
+                            deffile);
 		break;
 	    }
 	    /* no newline yet. increase line size and try again */
@@ -1397,7 +1508,7 @@ int read_settings(void)
 	parse_user_input(cmd, 1);
         default_tls = saved_default_tls;
         if (error != 0) {
-            PRINTF("#error: loading save-file failed\n");
+            wrap_printf("#error: loading save-file failed");
             break;
         }
     }
@@ -1405,18 +1516,20 @@ int read_settings(void)
     if (error)
 	failed = -1;
     else if (ferror(f) && !feof(f)) {
-	PRINTF("#error: cannot read file \"%s\": %s\n", deffile, strerror(errno));
+	wrap_printf("#error: cannot read file \"%s\": %s", deffile,
+                    strerror(errno));
         failed = -1;
     } else if (limit_mem_hit) {
-	PRINTF("#error: cannot load save-file: got a line longer than limit\n");
+	wrap_printf("#error: cannot load save-file: got a line longer than "
+                    "limit");
 	failed = -1;
     } else if (savefilever > SAVEFILEVER) {
-	PRINTF("#warning: this powwow version is too old!\n");
+	wrap_printf("#warning: this powwow version is too old!");
     } else if (savefilever < UTF8_SAVEFILEVER) {
-        PRINTF("#definition file converted from ISO-8859-1 to UTF-8\n");
+        wrap_printf("#definition file converted from ISO-8859-1 to UTF-8");
 	load_missing_stuff(savefilever);
     } else if (savefilever < SAVEFILEVER) {
-	PRINTF("\n#warning: config file is from an older version\n");
+	wrap_printf("\n#warning: config file is from an older version");
 	load_missing_stuff(savefilever);
     }
 
@@ -1435,8 +1548,8 @@ static char tmpname[BUFSIZE];
 
 static void fail_msg(void)
 {
-    PRINTF("#error: cannot write to temporary file \"%s\": %s\n",
-           tmpname, strerror(errno));
+    wrap_printf("#error: cannot write to temporary file \"%s\": %s", tmpname,
+                strerror(errno));
 }
 
 /*
@@ -1465,7 +1578,7 @@ int save_settings(void)
     error = 0;
 
     if (!*deffile) {
-	PRINTF("#warning: no save-file defined!\n");
+	wrap_printf("#warning: no save-file defined!");
 	return -1;
     }
 
@@ -1674,8 +1787,8 @@ int save_settings(void)
     else {
 	failed = rename(tmpname, deffile);
 	if (failed == -1) {
-	    PRINTF("#error: cannot move temporary file \"%s\" to \"%s\": %s\n",
-                   tmpname, deffile, strerror(errno));
+	    wrap_printf("#error: cannot move temporary file \"%s\" to "
+                        "\"%s\": %s", tmpname, deffile, strerror(errno));
 	} else
 	    failed = 1;
     }
