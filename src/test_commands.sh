@@ -526,6 +526,9 @@ b
 y$(printf '\002\002')z
 "
     has "zx${zwsp}y"
+    # where the terminal puts the cursor after it does not matter
+    grep -Eq "x${zwsp}$(printf '\033')\\[[0-9]+;[0-9]+H" "$tmp/raw" \
+        || fail 'the cursor is not moved after the zero width space'
 
     run 'Ret inserts the only character whose name matches' '' \
         "#print a${cx8}lat let yr
