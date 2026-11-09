@@ -740,6 +740,19 @@ HP:10> " ] || fail "unexpected text: $(cat "$tmp/text")"
 [ "$(./powwow-movieplay -a < "$tmp/movie")" = "$(cat "$tmp/text")" ] \
     || fail "unexpected text on standard output"
 
+run '#save and the end of #capture, #movie and #record name the file' \
+    "#save $tmp/defs.cfg
+#capture >$tmp/cap
+#capture
+#movie $tmp/mov
+#movie
+#record $tmp/rec
+#record"
+has "#settings saved to \"$tmp/defs.cfg\"."
+has "#end of capture to \"$tmp/cap\"."
+has "#end of movie to \"$tmp/mov\"."
+has "#end of record to \"$tmp/rec\"."
+
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 

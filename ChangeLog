@@ -72,6 +72,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Error messages say what failed and why, such as `#cannot connect
 	  to host:port: Connection refused', instead of naming system calls
 	  and error numbers.
+	* #save, and #capture, #movie and #record when they end, name the
+	  file they wrote, such as `#settings saved to "mud.cfg".'.
 
 	Bug fixes:
 	* Fixed `rand' always returning 0 on 64-bit systems.
