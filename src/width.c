@@ -23,6 +23,14 @@
 #include "charset.h"
 #include "width.h"
 
+/* the characters that join or widen a grapheme cluster */
+enum {
+    UNICODE_ZWJ = 0x200d,               /* ZERO WIDTH JOINER */
+    UNICODE_VS16 = 0xfe0f,              /* VARIATION SELECTOR-16 */
+    UNICODE_REGIONAL_A = 0x1f1e6,       /* REGIONAL INDICATOR SYMBOL */
+    UNICODE_REGIONAL_Z = 0x1f1ff        /* LETTER A to Z, of flags */
+};
+
 int cp_width(uint32_t cp)
 {
     if (cp < 0x20 || cp == 0x7f)
@@ -56,7 +64,7 @@ static bool is_control(uint32_t cp)
 
 static bool is_regional_indicator(uint32_t cp)
 {
-    return cp >= 0x1f1e6 && cp <= 0x1f1ff;
+    return cp >= UNICODE_REGIONAL_A && cp <= UNICODE_REGIONAL_Z;
 }
 
 void cell_start(struct cell_state *c, uint32_t cp)
@@ -85,7 +93,7 @@ bool cell_add(struct cell_state *c, uint32_t cp)
 #else
     /* combining characters, and characters after a ZWJ as in emoji
      * sequences */
-    if (!join && c->prev != 0x200d)
+    if (!join && c->prev != UNICODE_ZWJ)
         return false;
 #endif
     c->prev = cp;
@@ -97,7 +105,7 @@ bool cell_add(struct cell_state *c, uint32_t cp)
      * flags (pairs of regional indicators) take two columns
      */
     if (c->width == 1
-        && (cp == 0xfe0f
+        && (cp == UNICODE_VS16
             || (is_regional_indicator(c->first) && is_regional_indicator(cp))))
         c->width = 2;
     return true;
