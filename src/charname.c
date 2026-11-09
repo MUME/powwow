@@ -156,6 +156,29 @@ bool charname_words_match(const char *pattern, const char *name,
     return match_words(pattern, name, anchored, NULL, 0) >= 0;
 }
 
+/* is 'c' a separator between the words of a name? */
+bool charname_is_sep(char c)
+{
+    return is_name_sep(c);
+}
+
+/*
+ * where the words of 'pattern' start that match 'name' by themselves,
+ * after those that match only the group and subgroup of an emoji
+ */
+size_t charname_name_start(const char *pattern, const char *name)
+{
+    size_t at = 0;
+    while (pattern[at] != '\0'
+           && !charname_words_match(pattern + at, name, false)) {
+        while (pattern[at] != '\0' && !is_name_sep(pattern[at]))
+            ++at;
+        while (is_name_sep(pattern[at]))
+            ++at;
+    }
+    return at;
+}
+
 /* are the 'len' bytes of 'a' and 'b' the same, ignoring case? */
 static bool same_text(const char *a, const char *b, size_t len)
 {

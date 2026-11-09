@@ -25,6 +25,8 @@ bool charname_starts_with(const char *prefix, const char *name);
 bool charname_words_abbreviate(const char *pattern, const char *name);
 bool charname_words_match(const char *pattern, const char *name,
                           bool anchored);
+bool charname_is_sep(char c);
+size_t charname_name_start(const char *pattern, const char *name);
 int charname_find(const char *file, const char *group, const char *subgroup,
                   const char *pattern, charname_fn fn, void *data);
 
