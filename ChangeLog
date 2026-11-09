@@ -48,9 +48,7 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  file names.
 	* C-x 8 Ret (&insert-char) inserts a character by its Unicode name,
 	  such as `em dash', or code point, such as `U+2014', which can be
-	  edited like the input line; Tab completes the name from the
-	  starts of its words, as `gr sm al' for `greek small letter alpha',
-	  and lists the names and their characters when pressed again.
+	  edited like the input line, including Tab completion.
 	* C-x 8 e e and C-x 8 e s (&insert-emoji) insert an emoji by its
 	  name, such as `thumbs up' or `flag: Sweden', like C-x 8 Ret, and
 	  its group and subgroup can be browsed and typed before the name,

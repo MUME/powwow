@@ -2210,12 +2210,13 @@ static void name_set_add(struct name_set *set, const char *name)
 
 /*
  * the names that the name being read matches: all of them, those that
- * start with it, and those that start with its first word; those whose
- * words it abbreviates, one by one; and how many match only with the
- * words of their group
+ * start with it, and those that start with its first word, also aligned
+ * with its words; those whose words it abbreviates, one by one; and how
+ * many match only with the words of their group
  */
 struct charin_matches {
     struct name_set all, prefixed, anchored, abbreviated;
+    struct charname_align all_words, prefixed_words, anchored_words;
     int by_group;
 };
 
@@ -2225,14 +2226,19 @@ static void charin_match(const char *name, const uint32_t *cps, int ncps,
     struct charin_matches *m = data;
     int tier = charin_tier(name);
     name_set_add(&m->all, name);
+    charname_align_add(&m->all_words, charin.name, name);
     if (charname_words_abbreviate(charin.name, name))
         name_set_add(&m->abbreviated, name);
     if (group != NULL)
         ++m->by_group;
-    if (tier == 0)
+    if (tier == 0) {
         name_set_add(&m->prefixed, name);
-    if (tier <= 1)
+        charname_align_add(&m->prefixed_words, charin.name, name);
+    }
+    if (tier <= 1) {
         name_set_add(&m->anchored, name);
+        charname_align_add(&m->anchored_words, charin.name, name);
+    }
 }
 
 /* what the name being read can be completed to, from the names in 'set' */
@@ -2440,34 +2446,68 @@ static void charin_complete(void)
         charin_complete_group();
         return;
     }
-    struct charin_matches m = { 0 };
-    if (charin_find(charin_match, &m) <= 0) {
+    struct charin_matches *m = calloc(1, sizeof(*m));
+    if (m == NULL) {
+        out_of_memory();
+        return;
+    }
+    if (charin_find(charin_match, m) <= 0) {
+        free(m);
         tty_putc('\007');
         return;
     }
-    const char *longer = (m.all.count == 1 || m.anchored.count == 0
-                          ? name_set_completion(&m.all)
-                          : m.prefixed.count > 0
-                          ? name_set_completion(&m.prefixed)
-                          : name_set_completion(&m.anchored));
+    /* the names that start with the name typed, or else with its first
+     * word, are the ones meant, if any */
+    const struct name_set *set = &m->all;
+    const struct charname_align *words = &m->all_words;
+    if (m->all.count > 1 && m->prefixed.count > 0) {
+        set = &m->prefixed;
+        words = &m->prefixed_words;
+    } else if (m->all.count > 1 && m->anchored.count > 0) {
+        set = &m->anchored;
+        words = &m->anchored_words;
+    }
+    /* the words typed as the whole words they stand for, and the cursor
+     * where the names differ, as "latin  letter aa" for "lati letter aa",
+     * between "latin small letter aa" and "latin capital letter aa" */
+    char text[sizeof(charin.name)];
+    size_t cursor;
+    if (set->count > 1 && m->by_group == 0
+        && charname_align_text(words, charin.name, text, sizeof(text),
+                               &cursor)) {
+        int at = edstart + charin.name_at;
+        if (strcmp(text, charin.name) != 0 || at + (int)cursor != pos) {
+            /* more than one still matches: list them on the next Tab,
+             * as readline does */
+            charin_set_name(text);
+            input_moveto(at + (int)cursor);
+            charin.tabbed = true;
+        } else {
+            charin_no_completion();
+        }
+        free(m);
+        return;
+    }
+    const char *longer = name_set_completion(set);
     bool better = (strlen(longer) > strlen(charin.name)
                    && charname_words_match(charin.name, longer, false));
     /* when the words typed match with the group of the emoji, as in
      * "person-fant man mag", the start that all the names have in common
      * is better, even if it is shorter, as "man mage"; not otherwise, as
      * it would drop words typed, as "liga" of "latin liga" */
-    const char *common = name_set_completion(&m.all);
-    if (!better && m.by_group == m.all.count && common[0] != '\0'
+    const char *common = name_set_completion(&m->all);
+    if (!better && m->by_group == m->all.count && common[0] != '\0'
         && !charname_words_match(charin.name, common, false)) {
         longer = common;
         better = true;
     }
     if (better) {
         charin_set_name(longer);
-        charin.tabbed = false;
+        charin.tabbed = set->count > 1;
     } else {
         charin_no_completion();
     }
+    free(m);
 }
 
 /*
