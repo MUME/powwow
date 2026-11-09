@@ -263,15 +263,21 @@ void tty_special_keys(void)
  */
 void tty_sig_winch_bottomhalf(void)
 {
+    /* if ioctl fails or gives silly values, don't change anything */
     struct winsize wsiz;
-        /* if ioctl fails or gives silly values, don't change anything */
-
-    if (ioctl(tty_read_fd, TIOCGWINSZ, &wsiz) == 0
-	&& wsiz.ws_row > 0 && wsiz.ws_col > 0
-	&& (lines != wsiz.ws_row || cols != wsiz.ws_col))
-    {
+    if (ioctl(tty_read_fd, TIOCGWINSZ, &wsiz) != 0 || wsiz.ws_row == 0
+        || wsiz.ws_col == 0)
+        return;
+    /*
+     * a narrower window is drawn as if it were MIN_COLS wide: the input
+     * line needs rows of at least 2 columns, for a wide character, and
+     * without the wrap glitch the last column is not used
+     */
+    enum { MIN_COLS = 3 };
+    int ws_cols = wsiz.ws_col < MIN_COLS ? MIN_COLS : wsiz.ws_col;
+    if (lines != wsiz.ws_row || cols != ws_cols) {
 	lines = wsiz.ws_row;
-	cols_1 = cols = wsiz.ws_col;
+	cols_1 = cols = ws_cols;
 	if (!wrapglitch)
 	    cols_1--;
 
