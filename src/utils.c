@@ -875,6 +875,29 @@ ptr *ptraddsubst_and_marks(ptr *dst, ptr *line)
 }
 
 /*
+ * Graphic rendition (colors etc.) of the text from the MUD:
+ * sgr_stream is in effect after the last text printed for good, and
+ * sgr_prompt where the current prompt starts.  Drawing a prompt, which
+ * may be erased and redrawn later, may change the terminal's rendition;
+ * then sgr_dirty is set, and the rendition is restored before printing
+ * more text.
+ */
+static struct sgr_state sgr_stream, sgr_prompt;
+static bool sgr_dirty;
+
+/*
+ * end a line from the MUD that has escape sequences and is wider than
+ * the screen: reset the rendition, and blank the rest of the row, which
+ * the terminal may have filled with the background of the text when it
+ * wrapped or scrolled
+ */
+static void sgr_reset_to_eol(void)
+{
+    tty_printf("%s%s", tty_modenorm, tty_clreoln);
+    sgr_dirty = true;
+}
+
+/*
  * write string to tty, word wrapping to next line if needed.
  * don't print a final \n
  */
@@ -888,15 +911,9 @@ static void wrap_print(char *s)
     /* l = left, m = current offset */
     int l, m;
     enum { NORM, ESCAPE, BRACKET } state;
-#ifdef USE_ANSIBUG
-    int ansibug = 0;
-#endif
 
     l = printstrlen(s);
-#ifdef USE_ANSIBUG
-    if (l > cols_1 && l < (int)strlen(s))
-        ansibug = 1;
-#endif
+    bool reset = l > cols_1 && l < (int)strlen(s);
 
     while (l >= cols_1 - col0 && *s) {
         p = buf; m = 0; state = NORM;
@@ -964,26 +981,11 @@ static void wrap_print(char *s)
             col0 = 0;
     }
 
-#ifdef USE_ANSIBUG
-    if (ansibug)
-        tty_printf("%s%s%s", follow ? s : "" ,
-                tty_modenorm, tty_clreoln);
-    else
-#endif
-        if (follow)
-            tty_puts(s);
+    if (follow)
+        tty_puts(s);
+    if (reset)
+        sgr_reset_to_eol();
 }
-
-/*
- * Graphic rendition (colors etc.) of the text from the MUD:
- * sgr_stream is in effect after the last text printed for good, and
- * sgr_prompt where the current prompt starts.  Drawing a prompt, which
- * may be erased and redrawn later, may change the terminal's rendition;
- * then sgr_dirty is set, and the rendition is restored before printing
- * more text.
- */
-static struct sgr_state sgr_stream, sgr_prompt;
-static bool sgr_dirty;
 
 /* restore the rendition of the text from the MUD, if needed */
 void sgr_output_sync(void)
@@ -1053,14 +1055,10 @@ void smart_print(char *line, char newline)
 	if (opt_wrap)
 	    wrap_print(buf);
 	else {
-#ifdef USE_ANSIBUG
-	    int l;
-	    l = printstrlen(buf);
+	    tty_puts(buf);
+	    int l = printstrlen(buf);
 	    if (l > cols_1 && l < ptrlen(ptrbuf))
-		tty_printf("%s%s%s", buf, tty_modenorm, tty_clreoln);
-	    else
-#endif
-		tty_printf("%s", buf);
+		sgr_reset_to_eol();
 	}
     } while(0);
 
