@@ -431,6 +431,23 @@ ${cx8}sm face		$(printf '\007')
 "
     has 'aﬆ'
 
+    # Tab: "latin ligature ", "latin  letter aa" with the cursor in the
+    # gap, "latin small l", and "greek letter alpha"
+    run 'Tab completes each word, and goes to where the names differ' '' \
+        "#print a${cx8}lat ligat	st
+${cx8}lati letter aa	s
+${cx8}lat sm l	igature ff
+${cx8}gr alpha	$(printf '\001')${esc}f small
+b
+"
+    has 'aﬆꜳﬀαb'
+
+    run 'Tab lists the names right after completing part of the name' '' \
+        "${cx8}lat lig oe		$(printf '\007')
+"
+    grep -q '^latin capital ligature oe  *Œ$' "$tmp/out" \
+        || fail 'no latin capital ligature oe'
+
     run 'C-_ undoes editing the character name, and inserting it' '' \
         "#print a${cx8}em dash$(printf '\027')${cu}
 ${cu}b
@@ -483,6 +500,12 @@ b
 "
     grep -q '^Flags/ ([0-9]* emoji)$' "$tmp/out" || fail "no list of groups"
     has 'a🧙‍♂️b'
+
+    run 'Tab keeps the separators typed after the last word' '' \
+        "#print a${cx8e}peop/fam/man, 	woman, boy, boy
+b
+"
+    has 'a👨‍👩‍👦‍👦b'
 
     run 'Ret inserts the only character whose name matches' '' \
         "#print a${cx8}lat let yr

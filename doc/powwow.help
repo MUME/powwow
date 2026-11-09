@@ -267,7 +267,9 @@ C-x 8 Ret reads the Unicode name of a character, such as em dash, or its
 code point, such as U+2014, and inserts the character; the name can be
 edited like the input line. Tab completes the name, where each word typed
 can be the start of a word of the name, as gr sm al for greek small letter
-alpha; Tab again lists the names.
+alpha; each word typed becomes the word it stands for in all the names that
+match, and where they differ, the cursor goes there, as after latin in
+latin  letter aa for lati letter aa; Tab again lists the names.
 In text, \N{em dash} and \u{2014} insert a character the same way.
 C-x 8 e e reads the name of an emoji, such as thumbs up or flag: Sweden, the
 same way; the words of its group, such as food or animal, match too. Before
