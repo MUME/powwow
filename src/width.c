@@ -43,12 +43,11 @@ int cp_width(uint32_t cp)
 #endif
 }
 
-#ifndef HAVE_LIBGRAPHEME
-static bool is_combining(uint32_t cp)
+/* a combining character, or one not shown, as a zero width space */
+static bool is_zero_width(uint32_t cp)
 {
     return cp >= 0x300 && cp_width(cp) == 0;
 }
-#endif
 
 static bool is_control(uint32_t cp)
 {
@@ -71,18 +70,27 @@ bool cell_add(struct cell_state *c, uint32_t cp)
 {
     if (is_control(c->prev) || is_control(cp))
         return false;           /* also keep CR LF apart */
+    /*
+     * as terminals draw them, a character not shown, such as a zero
+     * width space, joins the cell before it, or the one after it at the
+     * start of a line, and is not a cell that the cursor stops at
+     */
+    bool join = is_zero_width(cp) || (c->width == 0
+                                      && is_zero_width(c->first));
 #ifdef HAVE_LIBGRAPHEME
     uint_least16_t gstate = c->gstate;
-    if (grapheme_is_character_break(c->prev, cp, &gstate))
+    if (grapheme_is_character_break(c->prev, cp, &gstate) && !join)
         return false;
     c->gstate = gstate;
 #else
     /* combining characters, and characters after a ZWJ as in emoji
      * sequences */
-    if (!is_combining(cp) && c->prev != 0x200d)
+    if (!join && c->prev != 0x200d)
         return false;
 #endif
     c->prev = cp;
+    if (c->width == 0)
+        c->width = cp_width(cp);
     /*
      * like the terminals that draw grapheme clusters as a unit: the
      * width of the first character, but emoji presentation (VS16) and
