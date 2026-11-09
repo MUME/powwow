@@ -6,28 +6,42 @@ It implements (a subset of) the telnet protocol.
 
 Files you should have received:
 
-	README		This text.
-	ChangeLog	User-visible changes in each release.
-	powwow.md	Complete documentation. READ this!
-	configure	A shell script that will create a Makefile
-			suitable for your system
-	src/*.[ch]	Sources.
-	powwow.help	Online help file (in plain ASCII).
-	powwow.6	Man page.
-	Config.demo	A demonstrative definition file for powwow
-	Hacking		Read this if you want to improve/destroy powwow
-			yourself.
-	README.follow	Documentation for the 'follow' mini-program.
+	README		    This text.
+	ChangeLog	    User-visible changes in each release.
+	doc/powwow.md	    Complete documentation. Read this.
+	doc/powwow.help	    Online help file (in plain ASCII).
+	man/powwow.6	    Man page.
+	doc/Config.demo	    A demonstrative definition file for powwow
+	doc/README.follow   Documentation for the 'follow' mini-program.
+	autogen.sh	    A shell script that creates the configure
+			    script, which creates Makefiles suitable for
+			    your system
+	src/*.[ch]	    Sources.
+	doc/Hacking	    Read this if you want to improve powwow
+			    yourself.
 
 COMPILING
 
-	powwow is supported on Linux, macOS and FreeBSD.  It needs a C11
-	compiler, GnuTLS (unless configured with --disable-tls), and
-	ncurses (unless configured with --enable-vt100).  PCRE2,
-	libgrapheme and zlib are used if available; with zlib, the
-	names of the characters and emoji are installed compressed.
+	Powwow is supported on Linux, macOS, FreeBSD, and Windows using
+	WSL2, where it is built as on Linux.  It needs a C11 compiler,
+	GnuTLS (unless configured with --disable-tls), and ncurses
+	(unless configured with --enable-vt100).  PCRE2, libgrapheme and
+	zlib are used if available; with zlib, the names of the
+	characters and emoji are installed compressed.
 
-	powwow is built using GNU autoconf scripts, it should detect any
+	On Debian and Ubuntu, including WSL2, install the packages needed
+	to build powwow, and optionally PCRE2 and zlib, with:
+
+	sudo apt install build-essential autoconf automake pkg-config \
+	    libgnutls28-dev libncurses-dev
+	sudo apt install libpcre2-dev zlib1g-dev
+
+	On FreeBSD, where ncurses and zlib are part of the base system:
+
+	pkg install autoconf automake pkgconf gnutls
+	pkg install pcre2
+
+	Powwow is built using GNU autoconf scripts, it should detect any
 	system dependancies it needs and set the appropriate flags.  Just
 	run:
 
@@ -147,7 +161,7 @@ AUTHORS OF POWWOW
 	author, and Gustav Hållberg contributed a lot of new features.
 	Steve Slaven contributed as the maintainer from 2005.
 
-	powwow is maintained at https://github.com/MUME/powwow
+	Powwow is maintained at https://github.com/MUME/powwow
 
 COPYRIGHT
 
