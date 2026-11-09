@@ -89,15 +89,23 @@ static char name_char(char c)
     return toupper((unsigned char)c);
 }
 
+/* where a word of a pattern matched in a name: the whole word */
+struct word_span {
+    size_t start, end;
+};
+
 /*
- * does each word of 'pattern' match the start of a word of 'name', in
- * order, and the first word the start of 'name' if 'anchored'? case, and
- * the separators between words, do not matter
+ * match each word of 'pattern' with the start of a word of 'name', in
+ * order, the first word with the start of 'name' if 'anchored', and each
+ * with the first word that it can, ignoring case; return how many words
+ * 'pattern' has, or -1 if it does not match, or has more than 'max' words
+ * when 'spans' is not NULL, which then gets the words of 'name' matched
  */
-bool charname_words_match(const char *pattern, const char *name,
-                          bool anchored)
+static int match_words(const char *pattern, const char *name, bool anchored,
+                       struct word_span *spans, int max)
 {
     const char *n = name;
+    int count = 0;
     for (const char *w = pattern; *w != '\0'; ) {
         if (is_name_sep(*w)) {
             ++w;
@@ -108,8 +116,8 @@ bool charname_words_match(const char *pattern, const char *name,
             ++len;
         /* find a word of the name, from 'n' on, that starts with 'w' */
         for (;; ++n) {
-            if (*n == '\0' || (anchored && w == pattern && n > name))
-                return false;
+            if (*n == '\0' || (anchored && count == 0 && n > name))
+                return -1;
             if ((n == name || is_name_sep(n[-1])) && !is_name_sep(*n)) {
                 size_t i = 0;
                 while (i < len && n[i] != '\0'
@@ -120,9 +128,217 @@ bool charname_words_match(const char *pattern, const char *name,
                     break;
             }
         }
+        if (spans != NULL) {
+            if (count == max)
+                return -1;
+            size_t end = n - name;
+            while (name[end] != '\0' && !is_name_sep(name[end]))
+                ++end;
+            spans[count] = (struct word_span){
+                .start = n - name, .end = end
+            };
+        }
+        ++count;
         n += len;
         w += len;
     }
+    return count;
+}
+
+/*
+ * does each word of 'pattern' match the start of a word of 'name', in
+ * order, and the first word the start of 'name' if 'anchored'? case, and
+ * the separators between words, do not matter
+ */
+bool charname_words_match(const char *pattern, const char *name,
+                          bool anchored)
+{
+    return match_words(pattern, name, anchored, NULL, 0) >= 0;
+}
+
+/* are the 'len' bytes of 'a' and 'b' the same, ignoring case? */
+static bool same_text(const char *a, const char *b, size_t len)
+{
+    for (size_t i = 0; i < len; ++i) {
+        if (toupper((unsigned char)a[i]) != toupper((unsigned char)b[i]))
+            return false;
+    }
+    return true;
+}
+
+/* set 'part' to the 'len' bytes of 'text', if it is the first name */
+static void part_set(struct charname_part *part, const char *text,
+                     size_t len)
+{
+    if (len >= sizeof(part->text))
+        len = sizeof(part->text) - 1;
+    memcpy(part->text, text, len);
+    part->text[len] = '\0';
+    part->prefix = part->suffix = len;
+}
+
+/*
+ * merge the gap between two words, of 'len' bytes at 'gap', into 'part':
+ * if they differ, keep the whole words that both start and end with
+ */
+static void gap_merge(struct charname_part *part, const char *gap,
+                      size_t len)
+{
+    size_t plen = strlen(part->text);
+    if (!part->differs && len == plen && same_text(part->text, gap, len))
+        return;
+    part->differs = true;
+    size_t max = len < plen ? len : plen;
+    size_t prefix = 0;
+    for (size_t i = 0; i < part->prefix && i < max
+             && toupper((unsigned char)part->text[i])
+                == toupper((unsigned char)gap[i]); ++i) {
+        if (is_name_sep(part->text[i]))
+            prefix = i + 1;
+    }
+    size_t suffix = 0;
+    for (size_t i = 1; i <= part->suffix && i <= max - prefix
+             && toupper((unsigned char)part->text[plen - i])
+                == toupper((unsigned char)gap[len - i]); ++i) {
+        if (is_name_sep(part->text[plen - i]))
+            suffix = i;
+    }
+    part->prefix = prefix;
+    part->suffix = suffix;
+}
+
+void charname_align_add(struct charname_align *align, const char *pattern,
+                        const char *name)
+{
+    struct word_span spans[CHARNAME_WORDS_MAX];
+    int count = match_words(pattern, name, false, spans, CHARNAME_WORDS_MAX);
+    if (count <= 0 || (align->names > 0 && count != align->count)) {
+        align->failed = true;
+        return;
+    }
+    bool first = align->names++ == 0;
+    align->count = count;
+    for (int i = 0; i <= count; ++i) {
+        /* the gap before the word, or the end after the last one */
+        size_t start = i > 0 ? spans[i - 1].end : 0;
+        size_t end = i < count ? spans[i].start : strlen(name);
+        if (first)
+            part_set(&align->gaps[i], name + start, end - start);
+        else if (i < count)
+            gap_merge(&align->gaps[i], name + start, end - start);
+        else {
+            /* the end: as far as they have it in common */
+            struct charname_part *tail = &align->gaps[count];
+            size_t j = 0;
+            while (j < tail->prefix && name[start + j] != '\0'
+                   && name_char(name[start + j]) == name_char(tail->text[j]))
+                ++j;
+            if (j < tail->prefix || strlen(tail->text) != end - start)
+                tail->differs = true;
+            tail->prefix = j;
+        }
+        if (i == count)
+            break;
+        struct charname_part *word = &align->words[i];
+        size_t len = spans[i].end - spans[i].start;
+        if (first)
+            part_set(word, name + spans[i].start, len);
+        else if (strlen(word->text) != len
+                 || !same_text(word->text, name + spans[i].start, len))
+            word->differs = true;
+    }
+}
+
+/* append the 'len' bytes of 'text' to 'out', of 'size', at '*n' */
+static void append(char *out, size_t size, size_t *n, const char *text,
+                   size_t len)
+{
+    if (*n + len >= size)
+        len = size - 1 - *n;
+    memcpy(out + *n, text, len);
+    *n += len;
+    out[*n] = '\0';
+}
+
+bool charname_align_text(const struct charname_align *align,
+                         const char *pattern, char *out, size_t size,
+                         size_t *cursor)
+{
+    if (align->failed || align->names == 0 || size == 0)
+        return false;
+    /* where the cursor goes: the first gap or word where the names
+     * differ, unless they also differ at the end */
+    int gap_at = -1, word_at = -1;
+    for (int i = 0; !align->gaps[align->count].differs && i < align->count;
+         ++i) {
+        if (i > 0 && align->gaps[i].differs) {
+            gap_at = i;
+            break;
+        }
+        if (align->words[i].differs) {
+            word_at = i;
+            break;
+        }
+    }
+    size_t n = 0;
+    out[0] = '\0';
+    *cursor = SIZE_MAX;
+    const char *w = pattern;
+    for (int i = 0; i <= align->count; ++i) {
+        const struct charname_part *gap = &align->gaps[i];
+        if (i == align->count) {
+            /* the end: as far as the names have it in common, or the
+             * separators typed after the last word, if longer */
+            size_t typed = strlen(w);
+            if (gap->prefix >= typed)
+                append(out, size, &n, gap->text, gap->prefix);
+            else
+                append(out, size, &n, w, typed);
+            break;
+        }
+        const char *suffix = gap->text + strlen(gap->text) - gap->suffix;
+        if (!gap->differs) {
+            append(out, size, &n, gap->text, strlen(gap->text));
+        } else if (i == gap_at) {
+            /* the words that differ go between two separators, where the
+             * cursor goes to type them */
+            if (gap->prefix > 0)
+                append(out, size, &n, gap->text, gap->prefix);
+            else
+                append(out, size, &n, " ", 1);
+            *cursor = n;
+            if (gap->suffix > 0)
+                append(out, size, &n, suffix, gap->suffix);
+            else
+                append(out, size, &n, " ", 1);
+        } else if (i > 0) {
+            /* the words in common, between single separators */
+            if (gap->prefix > 0)
+                append(out, size, &n, gap->text, gap->prefix);
+            if (gap->suffix > 0 && gap->prefix > 0)
+                append(out, size, &n, suffix + 1, gap->suffix - 1);
+            else if (gap->suffix > 0)
+                append(out, size, &n, suffix, gap->suffix);
+            else if (gap->prefix == 0)
+                append(out, size, &n, " ", 1);
+        }
+        /* the word typed, or the whole word that it stands for */
+        while (*w != '\0' && is_name_sep(*w))
+            ++w;
+        size_t len = 0;
+        while (w[len] != '\0' && !is_name_sep(w[len]))
+            ++len;
+        const struct charname_part *word = &align->words[i];
+        if (word->differs)
+            append(out, size, &n, w, len);
+        else
+            append(out, size, &n, word->text, strlen(word->text));
+        if (i == word_at)
+            *cursor = n;
+        w += len;
+    }
+    if (*cursor == SIZE_MAX)
+        *cursor = n;
     return true;
 }
 
