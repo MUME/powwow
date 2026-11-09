@@ -943,9 +943,17 @@ static void input_redraw_from(int from)
             else
                 tty_printf("%s%s", msgattrend, edattrbeg);
         }
+        /*
+         * terminals do not agree on the width of a cluster of several
+         * characters, nor of a character not shown, such as a zero
+         * width space: put the cursor where the next cell goes
+         */
+        bool resync = w == 0 || n > (size_t)utf8_seqlen(*s);
         while (n-- > 0)
             tty_putc(*s++);
         col += w;
+        if (resync && col < cols)
+            tty_gotoxy(col, line);
     }
     if (in_label)
         tty_printf("%s%s", msgattrend, edattrbeg);
