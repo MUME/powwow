@@ -21,11 +21,6 @@ powwow_muc_SOURCES = powwow-muc.c
 powwow_muc_LDADD = @CURSES_LIBS@
 powwow_movieplay_SOURCES = powwow-movieplay.c
 
-install-exec-hook:
-	(cd $(DESTDIR)$(bindir) && \
-	 rm -f powwow-movie2ascii$(EXEEXT) && \
-	 $(LN_S) powwow-movieplay$(EXEEXT) powwow-movie2ascii$(EXEEXT))
-
 noinst_PROGRAMS = follow
 follow_SOURCES = follow.c
 

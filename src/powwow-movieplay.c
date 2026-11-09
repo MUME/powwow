@@ -1,5 +1,5 @@
 /*
- *  powwow-movieplay.c  --  replay powwow movies or convert them into ASCII
+ *  powwow-movieplay.c  --  replay powwow movies or convert them to text
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -8,6 +8,7 @@
  *
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,47 +24,46 @@ static void millisec_sleep(long msec)
     select(0, NULL, NULL, NULL, &t);
 }
 
+/*
+ * replay the movie in the file named by the first argument, or standard
+ * input, on the file named by the second, or standard output, at the
+ * speed it was recorded at, or with -a at once, as text
+ */
 int main(int argc, char *argv[])
 {
-    FILE *infile, *outfile;
+    FILE *infile = stdin, *outfile = stdout;
     char buf[4096];
-    int i, play = 0;
+    int i;
+    bool play = true;
 
-    if (strstr(argv[0], "powwow-movieplay"))
-	play = 1;
-    else if (!strstr(argv[0], "powwow-movie2ascii")) {
-	fprintf(stderr, "Please run this program as \"powwow-movieplay\" or \"powwow-movie2ascii\"\n");
-	return 1;
+    int opt;
+    while ((opt = getopt(argc, argv, "a")) != -1) {
+        if (opt == 'a') {
+            play = false;
+        } else {
+            fprintf(stderr, "Usage: %s [-a] [infile [outfile]]\n", argv[0]);
+            return 1;
+        }
     }
-
-    if (play) {
-	if (argc == 2) {
-	    infile = fopen(argv[1], "rb");
-	    outfile = stdout;
-	    if (infile == NULL) {
-		fprintf(stderr, "Error opening input file \"%s\"\n", argv[1]);
-		return 1;
-	    }
-	} else {
-	    infile = stdin;
-	    outfile = stdout;
-	}
-    } else {
-	if (argc == 3) {
-	    infile = fopen(argv[1], "rb");
-	    outfile = fopen(argv[2], "wb");
-	    if (infile == NULL) {
-		fprintf(stderr, "Error opening input file \"%s\"\n", argv[1]);
-		return 1;
-	    }
-	    if (outfile == NULL) {
-		fprintf(stderr, "Error opening output file \"%s\"\n", argv[2]);
-		return 1;
-	    }
-	} else {
-	    fprintf(stderr, "Usage: %s [infile [outfile]]\n", argv[0]);
-	    return 1;
-	}
+    if (argc - optind > 2) {
+        fprintf(stderr, "Usage: %s [-a] [infile [outfile]]\n", argv[0]);
+        return 1;
+    }
+    if (optind < argc) {
+        infile = fopen(argv[optind], "rb");
+        if (infile == NULL) {
+            fprintf(stderr, "Error opening input file \"%s\"\n",
+                    argv[optind]);
+            return 1;
+        }
+    }
+    if (optind + 1 < argc) {
+        outfile = fopen(argv[optind + 1], "wb");
+        if (outfile == NULL) {
+            fprintf(stderr, "Error opening output file \"%s\"\n",
+                    argv[optind + 1]);
+            return 1;
+        }
     }
 
     while (fgets(buf, 4096, infile) != NULL) {

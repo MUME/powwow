@@ -92,7 +92,6 @@ case "x${ac_prog_cc_stdc}" in
     x ) AC_MSG_ERROR([not found]) ;;
     * ) AC_MSG_WARN([unknown version ${ac_prog_cc_stdc}]) ;;
 esac
-AC_PROG_LN_S
 # clang-tidy, or else the newest with a version, as clang-tidy-15 (Debian,
 # Ubuntu) or clang-tidy19 (FreeBSD), with one line of output
 AC_CACHE_CHECK([for clang-tidy], [ac_cv_path_CLANG_TIDY],
