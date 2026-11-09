@@ -498,11 +498,13 @@ b
     grep -q '^elf (People & Body, person-fantasy)  *🧝$' "$tmp/out" ||
         fail 'no elf (People & Body, person-fantasy)'
 
-    run 'Tab completes words of the group and the name to the name' '' \
+    run 'Tab keeps the words of the group, and completes the name' '' \
         "#print a${cx8e}person-fant man mag	
 
 "
     has 'a🧙‍♂️'
+    grep -q 'person-fant man mage' "$tmp/raw" \
+        || fail 'person-fant man mag is not completed to person-fant man mage'
 
     run 'emoji can be browsed by group and subgroup' '' \
         "${cx8e}		$(printf '\007')

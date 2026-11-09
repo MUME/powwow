@@ -2095,6 +2095,21 @@ static void charin_set_name(const char *name)
                   name, strlen(name));
 }
 
+/*
+ * replace the name in the input line with the first 'keep' bytes of it,
+ * which are kept, and then 'text'; return where 'text' starts
+ */
+static int charin_set_name_after(size_t keep, const char *text)
+{
+    bool space = (keep > 0 && !charname_is_sep(charin.name[keep - 1])
+                  && text[0] != '\0');
+    char name[sizeof(charin.name)];
+    snprintf(name, sizeof(name), "%.*s%s%s", (int)keep, charin.name,
+             space ? " " : "", text);
+    charin_set_name(name);
+    return (int)keep + (space ? 1 : 0);
+}
+
 /* replace all the text in the input line with 'text' */
 static void charin_set_text(const char *text)
 {
@@ -2176,14 +2191,15 @@ void insert_emoji(char *dummy)
 }
 
 /*
- * how well 'name' matches the name being read: 0 if it starts with it, 1
- * if it starts with its first word, or else 2
+ * how well 'name' matches 'pattern', the name being read or its words
+ * after those of the group: 0 if it starts with it, 1 if it starts with
+ * its first word, or else 2
  */
-static int charin_tier(const char *name)
+static int charin_tier(const char *pattern, const char *name)
 {
-    if (charname_starts_with(charin.name, name))
+    if (charname_starts_with(pattern, name))
         return 0;
-    if (charname_words_match(charin.name, name, true))
+    if (charname_words_match(pattern, name, true))
         return 1;
     return 2;
 }
@@ -2211,33 +2227,39 @@ static void name_set_add(struct name_set *set, const char *name)
 /*
  * the names that the name being read matches: all of them, those that
  * start with it, and those that start with its first word, also aligned
- * with its words; those whose words it abbreviates, one by one; and how
- * many match only with the words of their group
+ * with its words; those whose words it abbreviates, one by one; its
+ * words are those from byte 'keep' on, and 'name_start' is where those
+ * start that match all the names by themselves, after the words of the
+ * group of an emoji
  */
 struct charin_matches {
     struct name_set all, prefixed, anchored, abbreviated;
     struct charname_align all_words, prefixed_words, anchored_words;
-    int by_group;
+    size_t keep, name_start;
 };
 
 static void charin_match(const char *name, const uint32_t *cps, int ncps,
                          const char *group, void *data)
 {
     struct charin_matches *m = data;
-    int tier = charin_tier(name);
+    const char *pattern = charin.name + m->keep;
+    int tier = charin_tier(pattern, name);
     name_set_add(&m->all, name);
-    charname_align_add(&m->all_words, charin.name, name);
-    if (charname_words_abbreviate(charin.name, name))
+    charname_align_add(&m->all_words, pattern, name);
+    if (charname_words_abbreviate(pattern, name))
         name_set_add(&m->abbreviated, name);
-    if (group != NULL)
-        ++m->by_group;
+    if (group != NULL) {
+        size_t start = charname_name_start(charin.name, name);
+        if (start > m->name_start)
+            m->name_start = start;
+    }
     if (tier == 0) {
         name_set_add(&m->prefixed, name);
-        charname_align_add(&m->prefixed_words, charin.name, name);
+        charname_align_add(&m->prefixed_words, pattern, name);
     }
     if (tier <= 1) {
         name_set_add(&m->anchored, name);
-        charname_align_add(&m->anchored_words, charin.name, name);
+        charname_align_add(&m->anchored_words, pattern, name);
     }
 }
 
@@ -2279,6 +2301,11 @@ static void charin_list_add(const char *name, const uint32_t *cps, int ncps,
     chars[n] = '\0';
     char *copy = my_strdup(name), *shown_copy = my_strdup(shown);
     char *chars_copy = my_strdup(chars);
+    /* an emoji that matches with its group, by the words of its name */
+    const char *pattern = (group != NULL
+                           ? charin.name + charname_name_start(charin.name,
+                                                               name)
+                           : charin.name);
     if (copy == NULL || shown_copy == NULL || chars_copy == NULL) {
         free(copy);
         free(shown_copy);
@@ -2286,7 +2313,7 @@ static void charin_list_add(const char *name, const uint32_t *cps, int ncps,
         return;
     }
     l->names[l->count++] = (struct listed_name){
-        .tier = charin_tier(name), .name = copy, .shown = shown_copy,
+        .tier = charin_tier(pattern, name), .name = copy, .shown = shown_copy,
         .chars = chars_copy
     };
 }
@@ -2456,6 +2483,13 @@ static void charin_complete(void)
         tty_putc('\007');
         return;
     }
+    /* the words typed that match the group of the emoji stay, and the
+     * words after them are completed with the names */
+    if (m->name_start > 0) {
+        *m = (struct charin_matches){ .keep = m->name_start };
+        charin_find(charin_match, m);
+    }
+    const char *pattern = charin.name + m->keep;
     /* the names that start with the name typed, or else with its first
      * word, are the ones meant, if any */
     const struct name_set *set = &m->all;
@@ -2472,14 +2506,15 @@ static void charin_complete(void)
      * between "latin small letter aa" and "latin capital letter aa" */
     char text[sizeof(charin.name)];
     size_t cursor;
-    if (set->count > 1 && m->by_group == 0
-        && charname_align_text(words, charin.name, text, sizeof(text),
+    if (set->count > 1
+        && charname_align_text(words, pattern, text, sizeof(text),
                                &cursor)) {
-        int at = edstart + charin.name_at;
-        if (strcmp(text, charin.name) != 0 || at + (int)cursor != pos) {
+        int at = edstart + charin.name_at + (int)m->keep;
+        if (strcmp(text, pattern) != 0 || at + (int)cursor != pos) {
             /* more than one still matches: list them on the next Tab,
              * as readline does */
-            charin_set_name(text);
+            at = edstart + charin.name_at + charin_set_name_after(m->keep,
+                                                                 text);
             input_moveto(at + (int)cursor);
             charin.tabbed = true;
         } else {
@@ -2489,20 +2524,9 @@ static void charin_complete(void)
         return;
     }
     const char *longer = name_set_completion(set);
-    bool better = (strlen(longer) > strlen(charin.name)
-                   && charname_words_match(charin.name, longer, false));
-    /* when the words typed match with the group of the emoji, as in
-     * "person-fant man mag", the start that all the names have in common
-     * is better, even if it is shorter, as "man mage"; not otherwise, as
-     * it would drop words typed, as "liga" of "latin liga" */
-    const char *common = name_set_completion(&m->all);
-    if (!better && m->by_group == m->all.count && common[0] != '\0'
-        && !charname_words_match(charin.name, common, false)) {
-        longer = common;
-        better = true;
-    }
-    if (better) {
-        charin_set_name(longer);
+    if (strlen(longer) > strlen(pattern)
+        && charname_words_match(pattern, longer, false)) {
+        charin_set_name_after(m->keep, longer);
         charin.tabbed = set->count > 1;
     } else {
         charin_no_completion();
@@ -2524,10 +2548,14 @@ static void charin_insert(void)
     if (n == 0) {
         struct charin_matches m = { 0 };
         const char *name = NULL;
-        if (charin_find(charin_match, &m) == 1)
+        if (charin_find(charin_match, &m) == 1) {
             name = m.all.first;
-        else if (m.abbreviated.count == 1)
+        } else if (m.abbreviated.count == 1) {
             name = m.abbreviated.first;
+        } else if (m.name_start > 0) {
+            /* the name after the words of the group, as Tab leaves it */
+            name = charin.name + m.name_start;
+        }
         if (name != NULL)
             n = charname_lookup(charin.file, name, strlen(name), cps);
     }
