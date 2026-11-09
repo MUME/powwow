@@ -13,8 +13,8 @@
 struct varnode;
 
 /* shared functions from main.c */
-/* print the version line (level 0), also the other copyright notices (1),
- * and also the compile options (2) */
+/* print the version line (level 0), also the address of the project (1),
+ * and also the authors and the compile options (2) */
 void printver(int level);
 void status(int s);
 void process_remote_input(char *buf, int size);

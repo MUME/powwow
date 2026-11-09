@@ -67,20 +67,6 @@
 #include "width.h"
 #include "charname.h"
 
-#ifdef USE_LOCALE
-  /* UTF-8 */
-  #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fr\303\263r, D\303\241in"
-  #define COPYRIGHT      "\302\251"
-#else
-  #define POWWOW_HACKERS "Yorick, Vivriel, Thuzzle, Ilie, Fror, Dain"
-  #define COPYRIGHT      "Copyright"
-#endif
-
-#define POWWOW_VERSION_LINE                             \
-    "Powwow version " VERSION ", " COPYRIGHT " 2000-2005 by Cosmos"
-#define POWWOW_CREDITS                                  \
-    COPYRIGHT " 2005 by bpk - http://hoopajoo.net\n"    \
-    "(contributions by " POWWOW_HACKERS ")"
 
 #define HELPNAME "powwow.help"
 #define COPYNAME "COPYING"
@@ -600,12 +586,31 @@ under certain conditions; type \"#help copyright\" for details.\n"
  */
 void printver(int level)
 {
-    tty_printf("%s\n", POWWOW_VERSION_LINE);
+    /* the authors are in README; a copyright sign and an en dash if the
+     * terminal can show them */
+    bool utf8 = tty_locale_utf8();
+    tty_printf("Powwow version %s, %s 1998%s2026 by the powwow authors\n",
+               VERSION, utf8 ? "\302\251" : "Copyright",
+               utf8 ? "\342\200\223" : "-");
     if (level < 1)
         return;
-    tty_printf("%s\n", POWWOW_CREDITS);
+    tty_printf("https://github.com/MUME/powwow\n");
     if (level < 2)
         return;
+
+    /* as in README, spelled in ASCII if the terminal cannot show them */
+    tty_printf("%s",
+               (utf8
+                ? "\nAuthors: Massimiliano Ghilardi (Cosmos), "
+                  "Steve Slaven (bpk), Fr\303\263r, D\303\241in\n"
+                  "         and others\n"
+                  "Based on Cancan by Mattias Engdeg\303\245rd (Yorick), "
+                  "Vivriel, Thuzzle and Ilie\n"
+                : "\nAuthors: Massimiliano Ghilardi (Cosmos), "
+                  "Steve Slaven (bpk), Fror, Dain\n"
+                  "         and others\n"
+                  "Based on Cancan by Mattias Engdegard (Yorick), "
+                  "Vivriel, Thuzzle and Ilie\n"));
 
     tty_printf("\nOptions: "
 #ifdef USE_VT100

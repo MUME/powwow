@@ -391,6 +391,10 @@ if [ -n "$utf8" ]; then
 "
     has 'ǅungla Οδος 12Ab!'
 
+    run 'version with a copyright sign and an en dash' '#ver'
+    grep -q ', © 1998–[0-9]* by the powwow authors$' "$tmp/out" \
+        || fail "expected © and an en dash"
+
     cx8=$(printf '\0308\r')
     run 'C-x 8 inserts a character by name or code point' '' \
         "#print a${cx8}em dash
@@ -768,11 +772,15 @@ grep -Evx '[0-5]' "$tmp/numbers" && fail "number out of range"
 [ "$(sort -u "$tmp/numbers" | wc -l)" -gt 1 ] || fail "numbers are all the same"
 
 run 'version' '#ver'
-grep -q '^Powwow version ' "$tmp/out" || fail "missing version"
+grep -q '^Powwow version .*, Copyright 1998-[0-9]* by the powwow authors$' \
+    "$tmp/out" || fail "missing version"
 grep -q '^Options: ' "$tmp/out" && fail "unexpected options"
+grep -q '^Authors: ' "$tmp/out" && fail "unexpected authors"
 
 run 'verbose version' '#ver -v'
 grep -q '^Options: ' "$tmp/out" || fail "missing options"
+has 'Authors: Massimiliano Ghilardi (Cosmos), Steve Slaven (bpk), Fror, Dain'
+has 'https://github.com/MUME/powwow'
 lacks '#syntax: #ver [-v]'
 
 # every command must have a help entry with the syntax shown by #help, and
