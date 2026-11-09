@@ -730,6 +730,16 @@ run 'Tab lists the words down and then across' '' \
 has 'autoclear  debug      history    list       speedwalk'
 has 'autoprint  echo       info       reprint    words'
 
+# powwow-movieplay -a converts a movie to text, without its pauses
+name='powwow-movieplay -a'
+printf 'line hello\nsleep 60000\nprompt HP:10> \n' > "$tmp/movie"
+: > "$tmp/out"
+./powwow-movieplay -a "$tmp/movie" "$tmp/text" || fail "exit status $?"
+[ "$(cat "$tmp/text")" = "hello
+HP:10> " ] || fail "unexpected text: $(cat "$tmp/text")"
+[ "$(./powwow-movieplay -a < "$tmp/movie")" = "$(cat "$tmp/text")" ] \
+    || fail "unexpected text on standard output"
+
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 
