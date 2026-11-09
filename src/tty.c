@@ -523,9 +523,10 @@ void tty_add_initial_binds(void)
 
 /*
  * rename the key 'old' to 'new', if it has the sequence 'seq' and there
- * is no key 'new' yet
+ * is no key 'new' yet, and add it to the list 'renamed', of 'size'
  */
-static void rename_key(char *old, const char *seq, char *new)
+static void rename_key(char *old, const char *seq, char *new,
+                       char *renamed, size_t size)
 {
     keynode *k = *lookup_key(old);
     int len = strlen(seq);
@@ -534,7 +535,9 @@ static void rename_key(char *old, const char *seq, char *new)
         return;
     add_keynode(new, k->sequence, k->seqlen, k->funct, k->call_data);
     delete_keynode(lookup_key(old));
-    tty_message("#key %s renamed to %s\n", old, new);
+    size_t n = strlen(renamed);
+    snprintf(renamed + n, size - n, "%s%s to %s", n > 0 ? ", " : "", old,
+             new);
 }
 
 /*
@@ -546,14 +549,18 @@ static void rename_key(char *old, const char *seq, char *new)
 void tty_add_new_binds(int version)
 {
     if (version < READLINE_KEYS_SAVEFILEVER) {
-        rename_key("BS", "\b", "C-h");
-        rename_key("M-BS", "\033\b", "M-C-h");
-        rename_key("Del", "\177", "Backspace");
-        rename_key("M-Del", "\033\177", "M-Backspace");
+        char renamed[BUFSIZE] = "";
+        rename_key("BS", "\b", "C-h", renamed, sizeof(renamed));
+        rename_key("M-BS", "\033\b", "M-C-h", renamed, sizeof(renamed));
+        rename_key("Del", "\177", "Backspace", renamed, sizeof(renamed));
+        rename_key("M-Del", "\033\177", "M-Backspace", renamed,
+                   sizeof(renamed));
+        if (renamed[0] != '\0')
+            message_wrap(WRAP_CONT, "#keys renamed: %s", renamed);
     }
 
-    char added[BUFSIZE];
-    int n = 0;
+    char added[BUFSIZE] = "";
+    size_t n = 0;
     for (size_t i = 0; i < sizeof(default_binds) / sizeof(*default_binds);
          ++i) {
         if (default_binds[i].since <= version
@@ -562,19 +569,22 @@ void tty_add_new_binds(int version)
             continue;
         add_keynode(default_binds[i].label, default_binds[i].seq, 0,
                     default_binds[i].funct, NULL);
-        n += snprintf(added + n, sizeof(added) - n, " %s",
-                      default_binds[i].label);
+        n += snprintf(added + n, sizeof(added) - n, "%s%s",
+                      n > 0 ? ", " : "", default_binds[i].label);
+        if (n >= sizeof(added))
+            n = sizeof(added) - 1;
     }
     if (n > 0)
-        tty_message("#new default editing keys added:%s\n", added);
+        message_wrap(WRAP_CONT, "#new default editing keys added: %s", added);
 
     keynode *k = *lookup_key("C-w");
     if (version < READLINE_KEYS_SAVEFILEVER && k != NULL
         && k->funct == to_history && k->seqlen == 1 && k->sequence[0] == '\027'
         && k->call_data == NULL) {
         k->funct = del_unix_word_left;
-        tty_message("#C-w now deletes back to the previous space;"
-                 " M-q puts the line in history\n");
+        message_wrap(WRAP_CONT,
+                     "#C-w now deletes back to the previous space; M-q puts "
+                     "the line in history");
     }
 }
 

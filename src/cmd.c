@@ -582,15 +582,15 @@ static void cmd_help(char *arg)
 
     f = fopen(helpfile, "r");
     if (!f) {
-	PRINTF("#cannot open help file \"%s\": %s\n",
-	       helpfile, strerror(errno));
+	wrap_printf("#cannot open help file \"%s\": %s", helpfile,
+                    strerror(errno));
 	return;
     }
 
     /* an exact match comes first: otherwise "in" would find "info" */
     if (!find_help_entry(f, line, BUFSIZE, arg, true)
 	&& !find_help_entry(f, line, BUFSIZE, arg, false)) {
-	PRINTF("#no entry for \"%s\" in the help file.\n", arg);
+	wrap_printf("#no entry for \"%s\" in the help file.", arg);
 	fclose(f);
 	return;
     }
@@ -727,7 +727,7 @@ static void cmd_delim(char *arg)
 
     arg = skipspace(arg);
     if (!*arg) {
-	PRINTF("#delim: \"%s\" (%s)\n", delim_name[delim_mode], DELIM);
+	wrap_printf("#delim: \"%s\" (%s)", delim_name[delim_mode], DELIM);
 	return;
     }
 
@@ -830,9 +830,9 @@ static void cmd_hilite(char *arg)
 
 	if (opt_info) {
 	    /* "on" in the input attribute, and then the message one again */
-	    PRINTF("#input highlighting is now %s%so%s%s%s.\n", msgattrend,
-		   edattrbeg, attr_is_none(&attr) ? "ff" : "n", edattrend,
-		   msgattrbeg);
+	    wrap_printf("#input highlighting is now %s%so%s%s%s.", msgattrend,
+                        edattrbeg, attr_is_none(&attr) ? "ff" : "n", edattrend,
+                        msgattrbeg);
 	}
     }
 }
@@ -998,7 +998,7 @@ static void cmd_in(char *arg)
     if (!*p)  p = lookup_delay(name, 1);
 
     if (!*arg && !*p) {
-	PRINTF("#unknown delay label, cannot show: \"%s\"\n", name);
+	wrap_printf("#unknown delay label, cannot show: \"%s\"", name);
 	return;
     }
     if (!*arg) {
@@ -1033,7 +1033,7 @@ static void cmd_in(char *arg)
 	if (*arg)
 	    new_delaynode(name, arg, millisec);
 	else {
-	    PRINTF("#cannot create delay label without a command.\n");
+	    wrap_printf("#cannot create delay label without a command.");
 	}
     } else if (*p && !millisec) {
 	if (opt_info) {
@@ -1041,7 +1041,7 @@ static void cmd_in(char *arg)
 	}
 	delete_delaynode(p);
     } else {
-	PRINTF("#unknown delay label, cannot delete: \"%s\"\n", name);
+	wrap_printf("#unknown delay label, cannot delete: \"%s\"", name);
     }
 }
 
@@ -1071,7 +1071,7 @@ static void cmd_at(char *arg)
     if (!*p)  p = lookup_delay(name, 1);
 
     if (!*arg && !*p) {
-	PRINTF("#unknown delay label, cannot show: \"%s\"\n", name);
+	wrap_printf("#unknown delay label, cannot show: \"%s\"", name);
 	return;
     }
     if (!*arg) {
@@ -1108,8 +1108,8 @@ static void cmd_at(char *arg)
     if (hour < 0 || hour>23 || minute < 0 || minute>59
 	|| second < 0 || second>59) {
 
-	PRINTF("#at: #error: invalid time \"%s\"\n",
-	       pbuf && buf ? buf : (char *)"");
+	wrap_printf("#at: #error: invalid time \"%s\"",
+                    pbuf && buf ? buf : (char *)"");
 	error=OUT_RANGE_ERROR;
 	ptrdel(&pbuf);
 	return;
@@ -1153,7 +1153,7 @@ static void cmd_at(char *arg)
     else if (*arg != '\0')
 	new_delaynode(name, arg, millisec);
     else {
-	PRINTF("#cannot create delay label without a command.\n");
+	wrap_printf("#cannot create delay label without a command.");
     }
 }
 
@@ -1222,7 +1222,7 @@ static void cmd_key(char *arg)
     if ((q = *lookup_key(arg)))
 	q->funct(q->call_data);
     else {
-	PRINTF("#no such key: \"%s\"\n", arg);
+	wrap_printf("#no such key: \"%s\"", arg);
     }
 }
 
@@ -1238,7 +1238,7 @@ static void cmd_keyedit(char *arg)
     if ((function = lookup_edit_name(arg, &param)))
 	internal_functions[function].funct(param);
     else {
-	PRINTF("#no such editing function: \"%s\"\n", arg);
+	wrap_printf("#no such editing function: \"%s\"", arg);
     }
 }
 
@@ -1371,7 +1371,7 @@ static void reset_usage(const char *arg)
     if (*arg == '\0')
         PRINTF("#reset: must specify one of:\n");
     else
-        PRINTF("#reset: unknown list \"%s\", must specify one of:\n", arg);
+        wrap_printf("#reset: unknown list \"%s\", must specify one of:", arg);
     tty_puts(" action, alias, all, at, bind [<key>], in, mark, prompt,"
              " substitute, var.\n");
 }
@@ -1545,7 +1545,7 @@ static void cmd_emulate(char *arg)
 
 	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
 	if (!fp) {
-	    PRINTF("#emulate: #error opening \"%s\"\n", arg);
+	    wrap_printf("#emulate: #error opening \"%s\"", arg);
 	    print_error(error=SYNTAX_ERROR);
 	    ptrdel(&pbuf);
 	    return;
@@ -1600,7 +1600,7 @@ static void cmd_exe(char *arg)
 
 	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
 	if (!fp) {
-	    PRINTF("#exe: #error opening \"%s\"\n", arg);
+	    wrap_printf("#exe: #error opening \"%s\"", arg);
 	    error = SYNTAX_ERROR;
 	    ptrdel(&pbuf);
 	    return;
@@ -1652,7 +1652,7 @@ static void cmd_print(char *arg)
 	char buf[BUFSIZE];
 	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
 	if (!fp) {
-	    PRINTF("#print: #error opening \"%s\"\n", arg);
+	    wrap_printf("#print: #error opening \"%s\"", arg);
 	    error=SYNTAX_ERROR;
 	    ptrdel(&pbuf);
 	    return;
@@ -1683,7 +1683,7 @@ static void cmd_send(char *arg)
 	char buf[BUFSIZE];
 	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
 	if (!fp) {
-	    PRINTF("#send: #error opening \"%s\"\n", arg);
+	    wrap_printf("#send: #error opening \"%s\"", arg);
 	    error = SYNTAX_ERROR;
 	    ptrdel(&pbuf);
 	    return;
@@ -1793,7 +1793,7 @@ static void cmd_write(char *arg)
 
 	fp = (kind == '!') ? popen(arg, "w") : fopen(arg, kind ? "w" : "a");
 	if (!fp) {
-	    PRINTF("#write: #error opening \"%s\"\n", arg);
+	    wrap_printf("#write: #error opening \"%s\"", arg);
 	    error=SYNTAX_ERROR;
 	    goto write_cleanup2;
 	}
@@ -1868,7 +1868,7 @@ static void cmd_var(char *arg)
 		if (REAL_ERROR)
 		    return;
 		if (opt_info) {
-		    PRINTF("#new variable: \"%s\"\n", arg - 1);
+		    wrap_printf("#new variable: \"%s\"", arg - 1);
 		}
 	    } else {
 		print_error(error=UNDEFINED_VARIABLE_ERROR);
@@ -1982,11 +1982,11 @@ static void cmd_var(char *arg)
 	/* R.I.P. named variables */
 	if (named_var) {
 	    if (is_permanent_variable(named_var)) {
-		PRINTF("#cannot delete variable: \"%s\"\n", arg - 1);
+		wrap_printf("#cannot delete variable: \"%s\"", arg - 1);
 	    } else {
 		delete_varnode(p_named_var, kind);
 		if (opt_info) {
-		    PRINTF("#deleted variable: \"%s\"\n", arg - 1);
+		    wrap_printf("#deleted variable: \"%s\"", arg - 1);
 		}
 	    }
 	} else if ((type = TYPE_TXT_VAR)) {
@@ -2043,7 +2043,7 @@ static void cmd_var(char *arg)
 	char buf2[BUFSIZE];
 	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
 	if (!fp) {
-	    PRINTF("#var: #error opening \"%s\"\n", arg);
+	    wrap_printf("#var: #error opening \"%s\"", arg);
 	    error=SYNTAX_ERROR;
 	    ptrdel(&pbuf);
 	    return;
@@ -2324,10 +2324,10 @@ static void cmd_capture(char *arg)
             fclose(capturefile);
             capturefile = NULL;
             if (opt_info) {
-		PRINTF("#end of capture to \"%s\".\n", name);
+		wrap_printf("#end of capture to \"%s\".", name);
             }
         } else {
-            PRINTF("#capture to what file?\n");
+            wrap_printf("#capture to what file?");
         }
     } else {
         if (capturefile) {
@@ -2340,12 +2340,12 @@ static void cmd_capture(char *arg)
 		    append = 1;
 	    }
             if ((capturefile = fopen(arg, (append) ? "a" : "w")) == NULL) {
-                PRINTF("#error writing file \"%s\"\n", arg);
+                wrap_printf("#error writing file \"%s\"", arg);
             } else {
                 snprintf(name, sizeof(name), "%s", arg);
                 if (opt_info)
-                    PRINTF("#capture to \"%s\" active, \"#capture\" ends.\n",
-                           arg);
+                    wrap_printf("#capture to \"%s\" active, \"#capture\" "
+                                "ends.", arg);
             }
         }
     }
@@ -2363,20 +2363,21 @@ static void cmd_movie(char *arg)
             fclose(moviefile);
             moviefile = NULL;
             if (opt_info) {
-		PRINTF("#end of movie to \"%s\".\n", name);
+		wrap_printf("#end of movie to \"%s\".", name);
             }
         } else {
-            PRINTF("#movie to what file?\n");
+            wrap_printf("#movie to what file?");
         }
     } else {
         if (moviefile) {
             PRINTF("#movie already active.\n");
         } else {
             if ((moviefile = fopen(arg, "w")) == NULL) {
-                PRINTF("#error writing file \"%s\"\n", arg);
+                wrap_printf("#error writing file \"%s\"", arg);
             } else {
 		if (opt_info) {
-		    PRINTF("#movie to \"%s\" active, \"#movie\" ends.\n", arg);
+		    wrap_printf("#movie to \"%s\" active, \"#movie\" ends.",
+                                arg);
 		}
 		snprintf(name, sizeof(name), "%s", arg);
 		update_now();
@@ -2398,22 +2399,22 @@ static void cmd_record(char *arg)
             fclose(recordfile);
             recordfile = NULL;
             if (opt_info) {
-		PRINTF("#end of record to \"%s\".\n", name);
+		wrap_printf("#end of record to \"%s\".", name);
             }
         } else {
-            PRINTF("#record to what file?\n");
+            wrap_printf("#record to what file?");
         }
     } else {
         if (recordfile) {
             PRINTF("#record already active.\n");
         } else {
             if ((recordfile = fopen(arg, "w")) == NULL) {
-                PRINTF("#error writing file \"%s\"\n", arg);
+                wrap_printf("#error writing file \"%s\"", arg);
             } else {
                 snprintf(name, sizeof(name), "%s", arg);
                 if (opt_info)
-                    PRINTF("#record to \"%s\" active, \"#record\" ends.\n",
-                           arg);
+                    wrap_printf("#record to \"%s\" active, \"#record\" ends.",
+                                arg);
             }
         }
     }
@@ -2450,7 +2451,8 @@ static void cmd_cancel(char *arg)
             }
         } else {
             if (edit_sess->next) {
-                PRINTF("#several editing sessions active, use #cancel <number>\n");
+                wrap_printf("#several editing sessions active, use #cancel "
+                            "<number>");
             } else
 		cancel_edit(edit_sess);
         }
@@ -2459,8 +2461,8 @@ static void cmd_cancel(char *arg)
 
 static void cmd_net(char *arg)
 {
-    PRINTF("#received from host: %ld chars, sent to host: %ld chars.\n",
-	       received, sent);
+    wrap_printf("#received from host: %ld chars, sent to host: %ld chars.",
+                received, sent);
 }
 
 
@@ -2516,7 +2518,8 @@ static bool maybe_flag_args(char **argp, struct tls_options *tlsopt,
 static void cmd_connect(char *arg)
 {
 #ifdef TERM
-    PRINTF("#connect: multiple connections not supported in term version.\n");
+    wrap_printf("#connect: multiple connections not supported in term "
+                "version.");
 #else
     if (!*skipspace(arg)) {
 	tcp_show();
@@ -2633,7 +2636,7 @@ static void cmd_zap(char *arg)
 
 static void cmd_qui(char *arg)
 {
-    PRINTF("#you have to write '#quit' - no less, to quit!\n");
+    wrap_printf("#you have to write '#quit' - no less, to quit!");
 }
 
 static void cmd_quit(char *arg)
@@ -2804,15 +2807,15 @@ static void cmd_file(char *arg)
 	set_deffile(++arg);
 	if (opt_info) {
 	    if (*arg) {
-		PRINTF("#save-file set to \"%s\"\n", deffile);
+		wrap_printf("#save-file set to \"%s\"", deffile);
 	    } else {
-		PRINTF("#save-file is now undefined.\n");
+		wrap_printf("#save-file is now undefined.");
 	    }
 	}
     } else if (*deffile) {
 	fmt_next_edit("#file =%s", deffile);
     } else {
-	PRINTF("#save-file not defined.\n");
+	wrap_printf("#save-file not defined.");
     }
 }
 
@@ -2823,15 +2826,15 @@ static void cmd_save(char *arg)
     if (*arg) {
 	set_deffile(arg);
 	if (opt_info) {
-	    PRINTF("#save-file set to \"%s\"\n", deffile);
+	    wrap_printf("#save-file set to \"%s\"", deffile);
 	}
     } else if (!*deffile) {
-	PRINTF("#save-file not defined.\n");
+	wrap_printf("#save-file not defined.");
 	return;
     }
 
     if (*deffile && save_settings() > 0 && opt_info) {
-	PRINTF("#settings saved to \"%s\".\n", deffile);
+	wrap_printf("#settings saved to \"%s\".", deffile);
     }
 }
 
@@ -2844,11 +2847,11 @@ static void cmd_load(char *arg)
     if (*arg) {
 	set_deffile(arg);
 	if (opt_info) {
-	    PRINTF("#save-file set to \"%s\"\n", deffile);
+	    wrap_printf("#save-file set to \"%s\"", deffile);
 	}
     }
     else if (!*deffile) {
-	PRINTF("#save-file not defined.\n");
+	wrap_printf("#save-file not defined.");
 	return;
     }
 
@@ -2857,7 +2860,7 @@ static void cmd_load(char *arg)
     if (res > 0) {
 	/* success */
 	if (opt_info) {
-	    PRINTF("#settings loaded from file.\n");
+	    wrap_printf("#settings loaded from file.");
 	}
     } else if (res < 0) {
 	/* critical error */

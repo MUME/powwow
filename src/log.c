@@ -194,7 +194,7 @@ static void log_writeline(const char *line, int len, int kind, long msecs,
     int dst;
 
     if (++len >= datasize) {
-	PRINTF("#line too long, discarded from movie/capture buffer\n");
+	wrap_printf("#line too long, discarded from movie/capture buffer");
 	return;
     }
     while (LOGFULL || DATALEFT < len)
@@ -341,7 +341,7 @@ void reprint_writeline(const char *line)
 	return;
 
     if (len >= reprintsize) {
-	PRINTF("#line too long, discarded from prompt reprint buffer\n");
+	wrap_printf("#line too long, discarded from prompt reprint buffer");
 	return;
     }
     while (REPFULL || REPRINTLEFT < len)
