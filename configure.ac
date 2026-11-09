@@ -71,6 +71,13 @@ AC_ARG_WITH([libgrapheme],
     [],
     [with_libgrapheme=check])
 
+AC_ARG_WITH([zlib],
+    AS_HELP_STRING([--without-zlib],
+        [do not use zlib, to read the names of the characters and emoji
+         installed compressed; default: use it if available]),
+    [],
+    [with_zlib=check])
+
 AS_IF([ test "${enable_tls}" != no ],
     [ AC_DEFINE(USE_TLS, 1, [Define to enable TLS using GnuTLS.]) ])
 
@@ -151,6 +158,18 @@ AS_IF([test "x${with_libgrapheme}" != xno], [
             AC_MSG_ERROR([cannot find libgrapheme])
          with_libgrapheme=no]) ])
 
+AS_IF([test "x${with_zlib}" != xno], [
+    have_zlib=no
+    AC_CHECK_HEADER(zlib.h,
+        [AC_SEARCH_LIBS(gzopen, z, [have_zlib=yes])])
+    AS_IF([test "x${have_zlib}" = xyes],
+        [with_zlib=yes
+         AC_DEFINE([HAVE_ZLIB], 1,
+            [Define to 1 to read the files of names compressed by gzip.])],
+        [test "x${with_zlib}" = xcheck || AC_MSG_ERROR([cannot find zlib])
+         with_zlib=no]) ])
+AM_CONDITIONAL([HAVE_ZLIB], [test "x${with_zlib}" = xyes])
+
 # Checks for header files.
 AC_CHECK_HEADER([locale.h],
     [ AC_CHECK_FUNC([putwc],
@@ -229,6 +248,7 @@ enable-vt100:       ${enable_vt100}
 enable-regex:       ${enable_regex} (${enable_regex_using})
 enable-tls:         ${enable_tls}
 with-libgrapheme:   ${with_libgrapheme}
+with-zlib:          ${with_zlib}
 enable-sort:        ${enable_sort}
 enable-shell:       ${enable_shell}
 enable-ansi-bug:    ${enable_ansi_bug}

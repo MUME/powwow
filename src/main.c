@@ -289,6 +289,23 @@ static void show_help(const char *prog)
 }
 
 /*
+ * set 'path', of BUFSIZE, to the file 'name' of the names of characters
+ * or emoji, next to the help file; if it is not there, to the same name
+ * ending in .gz, compressed by gzip, as installed if powwow has zlib
+ */
+static void names_file_path(char *path, const char *name)
+{
+    strcpy(path, helpfile);
+    char *slash = strrchr(path, '/');
+    strcpy(slash != NULL ? slash + 1 : path, name);
+#ifdef HAVE_ZLIB
+    size_t len = strlen(path);
+    if (access(path, R_OK) != 0 && len + sizeof(".gz") <= BUFSIZE)
+        strcpy(path + len, ".gz");
+#endif
+}
+
+/*
  * does powwow run from its build directory, as the 'argv0' it was run as
  * says? then it uses the documentation in its source tree
  */
@@ -433,13 +450,8 @@ int main(int argc, char **argv)
     if (access(helpfile, R_OK) == -1 && !access(helpname, R_OK))
 	strcpy(helpfile, helpname);
 
-    /* the names of the characters and emoji are next to the help file */
-    strcpy(namesfile, helpfile);
-    char *slash = strrchr(namesfile, '/');
-    strcpy(slash != NULL ? slash + 1 : namesfile, NAMESNAME);
-    strcpy(emojifile, helpfile);
-    slash = strrchr(emojifile, '/');
-    strcpy(slash != NULL ? slash + 1 : emojifile, EMOJINAME);
+    names_file_path(namesfile, NAMESNAME);
+    names_file_path(emojifile, EMOJINAME);
 
     if (powwow_dir[0])
 	strcpy(copyfile, powwow_dir);
@@ -618,6 +630,9 @@ void printver(int level)
 #endif
 #ifdef HAVE_LIBDL
 	       ", modules"
+#endif
+#ifdef HAVE_ZLIB
+	       ", zlib"
 #endif
 	       "\n");
 }

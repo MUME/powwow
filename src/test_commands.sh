@@ -442,6 +442,24 @@ b
 "
     has 'a👍🇸🇪🍕b'
 
+    # as installed with zlib
+    if grep -q 'define HAVE_ZLIB 1' ../config.h 2>/dev/null; then
+        mkdir "$tmp/gz"
+        cp "$POWWOWHELP/powwow.help" "$tmp/gz"
+        for f in unicode-names.txt emoji-names.txt; do
+            gzip -c "$POWWOWHELP/$f" > "$tmp/gz/$f.gz"
+        done
+        help=$POWWOWHELP
+        POWWOWHELP=$tmp/gz
+        run 'the names can be read compressed by gzip' '' \
+            "#print a${cx8}em dash
+${cx8e}thumbs up
+b
+"
+        POWWOWHELP=$help
+        has 'a—👍b'
+    fi
+
     run 'Tab lists the group of the emoji that match with it' '' \
         "${cx8e}fant		$(printf '\007')
 "

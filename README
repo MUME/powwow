@@ -23,8 +23,9 @@ COMPILING
 
 	powwow is supported on Linux, macOS and FreeBSD.  It needs a C11
 	compiler, GnuTLS (unless configured with --disable-tls), and
-	ncurses (unless configured with --enable-vt100).  PCRE2 and
-	libgrapheme are used if available.
+	ncurses (unless configured with --enable-vt100).  PCRE2,
+	libgrapheme and zlib are used if available; with zlib, the
+	names of the characters and emoji are installed compressed.
 
 	powwow is built using GNU autoconf scripts, it should detect any
 	system dependancies it needs and set the appropriate flags.  Just
