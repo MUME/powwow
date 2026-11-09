@@ -784,7 +784,7 @@ With no argument, show the map of the directions you travelled.
 #movie [<filename>]
 
 Like #capture, but add timestamps to each line, to allow replay at correct
-speed with powwow-movieplay. powwow-movie2ascii converts a movie to plain
+speed with powwow-movieplay. powwow-movieplay -a converts a movie to plain
 text. Type #movie without argument to close the file.
 @net
 #net

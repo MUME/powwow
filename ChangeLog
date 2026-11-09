@@ -1,5 +1,7 @@
 Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Removed the #color command.
+	* Removed powwow-movie2ascii: `powwow-movieplay -a' converts a
+	  movie to text.
 	* #mark and #hilite attributes accept the styles dim, italic,
 	  hidden, strike and overline, the 256-color palette (0-255)
 	  and RGB colors (#rrggbb).
