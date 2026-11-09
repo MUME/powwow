@@ -2314,6 +2314,7 @@ static void cmd_while(char *arg)
 
 static void cmd_capture(char *arg)
 {
+    static char name[BUFSIZE];  /* of the file, for the end */
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
 
@@ -2323,7 +2324,7 @@ static void cmd_capture(char *arg)
             fclose(capturefile);
             capturefile = NULL;
             if (opt_info) {
-		PRINTF("#end of capture to file.\n");
+		PRINTF("#end of capture to \"%s\".\n", name);
             }
         } else {
             PRINTF("#capture to what file?\n");
@@ -2340,8 +2341,11 @@ static void cmd_capture(char *arg)
 	    }
             if ((capturefile = fopen(arg, (append) ? "a" : "w")) == NULL) {
                 PRINTF("#error writing file \"%s\"\n", arg);
-            } else if (opt_info) {
-                PRINTF("#capture to \"%s\" active, \"#capture\" ends.\n", arg);
+            } else {
+                snprintf(name, sizeof(name), "%s", arg);
+                if (opt_info)
+                    PRINTF("#capture to \"%s\" active, \"#capture\" ends.\n",
+                           arg);
             }
         }
     }
@@ -2349,6 +2353,7 @@ static void cmd_capture(char *arg)
 
 static void cmd_movie(char *arg)
 {
+    static char name[BUFSIZE];  /* of the file, for the end */
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
 
@@ -2358,7 +2363,7 @@ static void cmd_movie(char *arg)
             fclose(moviefile);
             moviefile = NULL;
             if (opt_info) {
-		PRINTF("#end of movie to file.\n");
+		PRINTF("#end of movie to \"%s\".\n", name);
             }
         } else {
             PRINTF("#movie to what file?\n");
@@ -2373,6 +2378,7 @@ static void cmd_movie(char *arg)
 		if (opt_info) {
 		    PRINTF("#movie to \"%s\" active, \"#movie\" ends.\n", arg);
 		}
+		snprintf(name, sizeof(name), "%s", arg);
 		update_now();
 		movie_last = now;
 		log_clearsleep();
@@ -2383,6 +2389,7 @@ static void cmd_movie(char *arg)
 
 static void cmd_record(char *arg)
 {
+    static char name[BUFSIZE];  /* of the file, for the end */
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
 
@@ -2391,7 +2398,7 @@ static void cmd_record(char *arg)
             fclose(recordfile);
             recordfile = NULL;
             if (opt_info) {
-		PRINTF("#end of record to file.\n");
+		PRINTF("#end of record to \"%s\".\n", name);
             }
         } else {
             PRINTF("#record to what file?\n");
@@ -2402,8 +2409,11 @@ static void cmd_record(char *arg)
         } else {
             if ((recordfile = fopen(arg, "w")) == NULL) {
                 PRINTF("#error writing file \"%s\"\n", arg);
-            } else if (opt_info) {
-                PRINTF("#record to \"%s\" active, \"#record\" ends.\n", arg);
+            } else {
+                snprintf(name, sizeof(name), "%s", arg);
+                if (opt_info)
+                    PRINTF("#record to \"%s\" active, \"#record\" ends.\n",
+                           arg);
             }
         }
     }
@@ -2821,7 +2831,7 @@ static void cmd_save(char *arg)
     }
 
     if (*deffile && save_settings() > 0 && opt_info) {
-	PRINTF("#settings saved to file.\n");
+	PRINTF("#settings saved to \"%s\".\n", deffile);
     }
 }
 
