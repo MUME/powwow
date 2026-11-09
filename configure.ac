@@ -38,15 +38,6 @@ AC_ARG_ENABLE([shell],
 AS_IF([ test "${enable_shell}" != no ],
     [ AC_DEFINE(USE_SHELL, 1, [Define to enable the "#!" command.]) ])
 
-AC_ARG_ENABLE([ansi-bug],
-    AS_HELP_STRING([--enable-ansi-bug],
-        [enables fixes for "#mark" ansi bugs on some terminals]),
-    [],
-    [enable_ansi_bug=no])
-AS_IF([ test "${enable_ansi_bug}" != no ],
-    [ AC_DEFINE(USE_ANSIBUG, 1,
-          [Enable fix for "#mark" ANSI bugs on some terminals.]) ])
-
 # _XOPEN_SOURCE hides extensions such as SIGWINCH; make these systems
 # show them
 is_darwin=
@@ -250,7 +241,6 @@ with-libgrapheme:   ${with_libgrapheme}
 with-zlib:          ${with_zlib}
 enable-sort:        ${enable_sort}
 enable-shell:       ${enable_shell}
-enable-ansi-bug:    ${enable_ansi_bug}
 
 Host:               ${host}
 Compiler:           ${CC}

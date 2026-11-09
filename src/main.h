@@ -74,7 +74,7 @@ extern int pos;			/* cursor position in edbuf */
 extern int edstart;		/* start of the editable text in edbuf */
 extern int edlabel;		/* length of a label at the start of edbuf */
 extern char edattrbeg[], edattrend[];
-extern int edattrbg;
+extern bool edattrbg;
 
 extern volatile int sig_pending, sig_winch_got, sig_chld_got;
 

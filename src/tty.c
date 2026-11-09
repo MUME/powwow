@@ -287,11 +287,9 @@ void tty_sig_winch_bottomhalf(void)
 
 	tty_gotoxy(0, line0);
 	/* so we know where the cursor is */
-#ifdef USE_ANSIBUG
 	if (edattrbg)
 	    tty_printf("%s%s", edattrend, tty_clreoscr);
 	else
-#endif
 	    tty_puts(tty_clreoscr);
 
 	olines = lines;
@@ -872,11 +870,9 @@ void input_moveto(int new_pos)
  */
 static void input_newline(int *line)
 {
-#ifdef USE_ANSIBUG
     if (edattrbg)
 	tty_printf("%s\n%s", edattrend, edattrbeg);
     else
-#endif
 	tty_putc('\n');
     if (++*line > lines - 1) {
 	*line = lines - 1;

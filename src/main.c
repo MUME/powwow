@@ -206,7 +206,7 @@ char flashback = 0;	  /* cursor is on excursion and should be put back */
 int excursion;		  /* where the excursion is */
 char edattrbeg[ATTR_SGR_MAX];   /* starting input line attributes */
 char edattrend[ATTR_SGR_MAX];   /* ending input line attributes */
-int  edattrbg;		  /* input line attributes do change bg color */
+bool edattrbg;		  /* input line attributes do change bg color */
 
 /* signals handling */
 volatile int sig_pending, sig_winch_got, sig_chld_got;
@@ -1941,10 +1941,8 @@ static void get_user_input(void)
 	    edbuf[edlen++] = *c;
 	else {
 	    edbuf[edlen] = '\0';
-#ifdef USE_ANSIBUG
 	    if (edattrbg)
 		tty_puts(edattrend);
-#endif
 	    tcp_write(current_connection, edbuf);
 	    edlen = 0;
 	    typed[nchars = 0] = 0;
