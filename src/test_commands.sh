@@ -520,6 +520,13 @@ b
 "
     has 'a👨‍👩‍👦‍👦b'
 
+    zwsp=$(printf '\342\200\213')
+    run 'the cursor moves over a zero width space with the character before' \
+        '' "#print x${cx8}zero width space
+y$(printf '\002\002')z
+"
+    has "zx${zwsp}y"
+
     run 'Ret inserts the only character whose name matches' '' \
         "#print a${cx8}lat let yr
 
