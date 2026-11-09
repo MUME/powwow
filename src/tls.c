@@ -251,7 +251,7 @@ bool parse_tls_flag(struct tls_options *dst, const char **argp,
 
 #else  /* ! USE_TLS */
 
-    PRINTF("%s is not supported in this version of powwow.\n", f_tls);
+    wrap_printf("%s is not supported in this version of powwow.", f_tls);
     return true;
 
 #endif /* ! USE_TLS */

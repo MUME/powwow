@@ -68,6 +68,9 @@
 #include "charname.h"
 
 
+/* the start of the lines that continue the version and the authors */
+#define VER_CONT "    "
+
 #define HELPNAME "powwow.help"
 #define COPYNAME "COPYING"
 #define NAMESNAME "unicode-names.txt"
@@ -495,11 +498,11 @@ int main(int argc, char **argv)
     printver(1);
 
     if (nargs == 0) {
-	tty_printf(
-"\nPowwow comes with ABSOLUTELY NO WARRANTY; for details type \"#help warranty\".\n\
-This is free software, and you are welcome to redistribute it\n\
-under certain conditions; type \"#help copyright\" for details.\n"
-		   );
+	message_wrap(VER_CONT, "\nPowwow comes with ABSOLUTELY NO WARRANTY; "
+                     "for details type \"#help warranty\".\nThis is free "
+                     "software, and you are welcome to redistribute it "
+                     "under certain conditions; type \"#help copyright\" "
+                     "for details.");
     }
 
     if (nargs == 0 || nargs == 2) {
@@ -589,30 +592,28 @@ void printver(int level)
     /* the authors are in README; a copyright sign and an en dash if the
      * terminal can show them */
     bool utf8 = tty_locale_utf8();
-    tty_printf("Powwow version %s, %s 1998%s2026 by the powwow authors\n",
-               VERSION, utf8 ? "\302\251" : "Copyright",
-               utf8 ? "\342\200\223" : "-");
+    message_wrap(VER_CONT, "Powwow version %s, %s 1998%s2026 by the powwow "
+                 "authors", VERSION, utf8 ? "\302\251" : "Copyright",
+                 utf8 ? "\342\200\223" : "-");
     if (level < 1)
         return;
-    tty_printf("https://github.com/MUME/powwow\n");
+    message_wrap(VER_CONT, "https://github.com/MUME/powwow");
     if (level < 2)
         return;
 
     /* as in README, spelled in ASCII if the terminal cannot show them */
-    tty_printf("%s",
-               (utf8
-                ? "\nAuthors: Massimiliano Ghilardi (Cosmos), "
-                  "Steve Slaven (bpk), Fr\303\263r, D\303\241in\n"
-                  "         and others\n"
-                  "Based on Cancan by Mattias Engdeg\303\245rd (Yorick), "
-                  "Vivriel, Thuzzle and Ilie\n"
-                : "\nAuthors: Massimiliano Ghilardi (Cosmos), "
-                  "Steve Slaven (bpk), Fror, Dain\n"
-                  "         and others\n"
-                  "Based on Cancan by Mattias Engdegard (Yorick), "
-                  "Vivriel, Thuzzle and Ilie\n"));
+    message_wrap(VER_CONT, "%s",
+                 (utf8
+                  ? "\nAuthors: Massimiliano Ghilardi (Cosmos), "
+                    "Steve Slaven (bpk), Fr\303\263r, D\303\241in and "
+                    "others\nBased on Cancan by Mattias Engdeg\303\245rd "
+                    "(Yorick), Vivriel, Thuzzle and Ilie"
+                  : "\nAuthors: Massimiliano Ghilardi (Cosmos), "
+                    "Steve Slaven (bpk), Fror, Dain and others\n"
+                    "Based on Cancan by Mattias Engdegard (Yorick), "
+                    "Vivriel, Thuzzle and Ilie"));
 
-    tty_printf("\nOptions: "
+    message_wrap(VER_CONT, "\nOptions: "
 #ifdef USE_VT100
 	       "vt100-only"
 #else
@@ -639,7 +640,7 @@ void printver(int level)
 #ifdef HAVE_ZLIB
 	       ", zlib"
 #endif
-	       "\n");
+	       );
 }
 
 #ifdef MOTDFILE
@@ -1520,7 +1521,8 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
 	if ((i = strlen(current_connection->fragment)) > BUFSIZE - TCP_READ_MIN) {
 	    i = 0;
 	    common_clear(promptlen && !opt_compact);
-	    tty_message("#error: ##%s : line too long, discarded\n", current_connection->id);
+	    message_wrap(WRAP_CONT, "#error: ##%s : line too long, discarded",
+                         current_connection->id);
 	} else {
 	    buf += i;
 	    memcpy(buffer, current_connection->fragment, i);
@@ -1611,7 +1613,8 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
 		if (line_status == 0) {
 		    common_clear(!opt_compact);
 		}
-		tty_message("#warning: ##%s : unterminated [%s]\n", old_connection->id, buf);
+		message_wrap(WRAP_CONT, "#warning: ##%s : unterminated [%s]",
+                             old_connection->id, buf);
 	    }
 	}
 	current_connection = old_connection;
@@ -1722,8 +1725,8 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 		if (c == '$')
 		    mword = 1;
 	    } else {
-		PRINTF("#error: bad action pattern \"%s\"\n#missing digit after \"%s\"\n",
-		       realpat, pat);
+		wrap_printf("#error: bad action pattern \"%s\"\n#missing "
+                            "digit after \"%s\"", realpat, pat);
 		ptrdel(&buf);
 		return 0;
 	    }
@@ -2277,14 +2280,14 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
             current_connection = tcp_find_connection(buf);
 	    if (current_connection == NULL) {
 		error = OUT_RANGE_ERROR;
-		PRINTF("#no connection named \"%s\"\n", buf);
+		wrap_printf("#no connection named \"%s\"", buf);
 		break;
 	    }
 	    arg = skipspace(line);
 	    if (!*arg) {
 		if (current_connection->flags & SPAWN) {
 		    error = OUT_RANGE_ERROR;
-		    PRINTF("#only MUD connections can be default ones!\n");
+		    wrap_printf("#only MUD connections can be default ones!");
 		} else {
 		    /* set it as main connection */
 		    tcp_set_main(current_connection);
@@ -2405,7 +2408,7 @@ static void parse_commands(char *command, char *arg)
 		}
 	    }
 
-	PRINTF("#unknown powwow command \"%s\"\n", command);
+	wrap_printf("#unknown powwow command \"%s\"", command);
     }
 }
 

@@ -151,8 +151,8 @@ static void charset_reply_subopt(connsess *conn, byte type,
     case CHARSET_ACCEPTED: {
         int cs = charset_lookup(str, len);
         if (cs < 0)
-            PRINTF("#warning: server accepted unknown charset \"%.*s\"\n",
-                   (int)len, str);
+            wrap_printf("#warning: server accepted unknown charset \"%.*s\"",
+                        (int)len, str);
         else
             tcp_set_charset(conn, cs, "negotiated");
         break;
@@ -160,7 +160,7 @@ static void charset_reply_subopt(connsess *conn, byte type,
     case CHARSET_REJECTED:
         break;
     default:
-        PRINTF("#warning: unexpected CHARSET TTABLE message\n");
+        wrap_printf("#warning: unexpected CHARSET TTABLE message");
         break;
     }
 }
@@ -341,7 +341,8 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
             continue;
         }
         if (newtcp_fd >= FD_SETSIZE) {
-            tty_message("#connect: #error: too many open connections\n");
+            message_wrap(WRAP_CONT,
+                         "#connect: #error: too many open connections");
             close(newtcp_fd);
             freeaddrinfo(addrs);
             sigprocmask(SIG_SETMASK, &old_mask, NULL);
@@ -367,11 +368,12 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
 #else /* TERM */
 
     if ((newtcp_fd = connect_server(0)) < 0) {
-	tty_message("\n#powwow: unable to connect to term server\n");
+	message_wrap(WRAP_CONT, "\n#powwow: unable to connect to term server");
 	return -1;
     } else {
 	if (newtcp_fd >= FD_SETSIZE) {
-	    tty_message("#connect: #error: too many open connections\n");
+	    message_wrap(WRAP_CONT,
+                         "#connect: #error: too many open connections");
 	    close(newtcp_fd);
 	    return -1;
 	}
@@ -433,7 +435,8 @@ int tcp_unIAC(char *buffer, int len)
 	    if (len > 1 && buffer[1] == (char)(byte)IAC)
 		buffer++, len--;
 	    else if (warnIACs) {
-	        PRINTF("#warning: received IAC inside MPI message, treating as IAC IAC.\n");
+	        wrap_printf("#warning: received IAC inside MPI message, "
+                            "treating as IAC IAC.");
 		warnIACs = 0;
 	    }
 	}
@@ -549,7 +552,8 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 		/* check for MUME MPI messages: */
 		if (p - linestart == MPILEN && !memcmp(linestart, MPI, MPILEN)) {
 		    if (!(conn->flags & IDEDITOR)) {
-			PRINTF("#warning: MPI message received without #request editor!\n");
+			wrap_printf("#warning: MPI message received without "
+                                    "#request editor!");
 		    } else if (state == ALTNORMAL) {
 			/* no MPI messages after \n\r */
 			PRINTF("#warning: MPI attack?\n");
@@ -735,7 +739,8 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 	    } else {
 		/* problem! I haven't the foggiest idea of what to do here.
 		 * I'll just ignore it and hope it goes away. */
-		PRINTF("#telnet: got IAC <%d> instead of IAC SE!\n", (int)*s);
+		wrap_printf("#telnet: got IAC <%d> instead of IAC SE!",
+                            (int)*s);
 		state = old_state;
 	    }
 	    break;
@@ -835,8 +840,8 @@ static connsess *output_connection; /* to which socket buffer should be sent*/
 
 static void warn_no_output(void)
 {
-    PRINTF("#no open connections. Use '#connect main <address> <port>' to"
-           " open a connection.\n");
+    wrap_printf("#no open connections. Use '#connect main <address> <port>' "
+                "to open a connection.");
 }
 
 /*
@@ -1076,7 +1081,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
 	return;
     }
     if (tcp_find_connection(id) != NULL) {
-	PRINTF("#connection \"%s\" already open.\n", id);
+	wrap_printf("#connection \"%s\" already open.", id);
 	return;
     }
 
@@ -1087,7 +1092,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
 	    break;
     }
     if (i == MAX_CONNECTS) {
-	PRINTF("#internal error, connection table full :(\n");
+	wrap_printf("#internal error, connection table full :(");
 	return;
     }
 
@@ -1137,7 +1142,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
     tcp_set_fdmode(newtcp_fd);
 
     if (opt_info && tcp_count) {
-	PRINTF("#default connection is now \"%s\"\n", id);
+	wrap_printf("#default connection is now \"%s\"", id);
     }
     current_connection = &CONN_INDEX(i);
     tcp_set_main(current_connection);
@@ -1167,7 +1172,7 @@ void tcp_close(const char *id)
     if (id != NULL) {           /* #zap cmd */
         conn = tcp_find_connection(id);
 	if (conn == NULL) {
-	    tty_message("#no such connection: \"%s\"\n", id);
+	    message_wrap(WRAP_CONT, "#no such connection: \"%s\"", id);
 	    return;
 	}
     }
@@ -1176,13 +1181,14 @@ void tcp_close(const char *id)
 
     abort_edit_fd(conn);
 
-    tty_message("#connection on \"%s\" closed.\n", conn->id);
+    message_wrap(WRAP_CONT, "#connection on \"%s\" closed.", conn->id);
 
     if (conn == main_connection) { /* main connection closed */
 	if (tcp_count == 1) { /* was last connection */
 	    if (opt_exit)
 		exit_powwow();
-	    tty_message("#no connections left. Type #quit to quit.\n");
+	    message_wrap(WRAP_CONT,
+                         "#no connections left. Type #quit to quit.");
             current_connection = main_connection = NULL;
 	} else {
 	    /* must find another connection and promote it to main */
@@ -1190,7 +1196,8 @@ void tcp_close(const char *id)
 		if (!CONN_INDEX(i).id || &CONN_INDEX(i) == conn
 		    || (CONN_INDEX(i).flags & SPAWN))
 		    continue;
-		tty_message("#default connection is now \"%s\"\n", CONN_INDEX(i).id);
+		message_wrap(WRAP_CONT, "#default connection is now \"%s\"",
+                             CONN_INDEX(i).id);
 		main_connection = &CONN_INDEX(i);
 		break;
 	    }
@@ -1258,7 +1265,7 @@ void tcp_spawn(const char *id, char *cmd)
     int i, childpid, sockets[2];
 
     if (tcp_find_connection(id) != NULL) {
-	PRINTF("#connection \"%s\" already open.\n", id);
+	wrap_printf("#connection \"%s\" already open.", id);
 	return;
     }
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0) {
@@ -1266,7 +1273,7 @@ void tcp_spawn(const char *id, char *cmd)
 	return;
     }
     if (sockets[0] >= FD_SETSIZE) {
-	tty_message("#spawn: #error: too many open connections\n");
+	message_wrap(WRAP_CONT, "#spawn: #error: too many open connections");
 	close(sockets[0]);
 	close(sockets[1]);
 	return;
@@ -1302,7 +1309,7 @@ void tcp_spawn(const char *id, char *cmd)
 	if (!CONN_INDEX(i).id)
 	    break;
     if (i == MAX_CONNECTS) {
-	PRINTF("#internal error, connection table full :(\n");
+	wrap_printf("#internal error, connection table full :(");
 	close(sockets[0]);
 	return;
     }
@@ -1338,7 +1345,7 @@ void tcp_spawn(const char *id, char *cmd)
 	conn_max_index = i+1;
 
     if (opt_info) {
-	PRINTF("#successfully spawned \"%s\" with pid %d\n", id, childpid);
+	wrap_printf("#successfully spawned \"%s\" with pid %d", id, childpid);
     }
 
     /*

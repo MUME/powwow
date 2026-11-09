@@ -96,12 +96,23 @@ run() {
 
 # the output must have a line that is exactly $1
 has() {
-    grep -Fxq -e "$1" "$tmp/out" || fail "missing line: $1"
+    joined | grep -Fxq -e "$1" || fail "missing line: $1"
 }
 
 # the output must not have a line that is exactly $1
 lacks() {
-    grep -Fxq -e "$1" "$tmp/out" && fail "unexpected line: $1"
+    joined | grep -Fxq -e "$1" && fail "unexpected line: $1"
+}
+
+# the output, and again with the lines of wrapped messages joined, which
+# continue on lines that start with "#    ", or "    " for #ver
+joined() {
+    cat "$tmp/out"
+    awk 'NR > 1 && /^#    / { line = line " " substr($0, 6); next }
+         NR > 1 && /^    [^ ]/ { line = line " " substr($0, 5); next }
+         NR > 1 { print line }
+         { line = $0 }
+         END { if (NR > 0) print line }' "$tmp/out"
 }
 
 run 'substitute define, list and delete' '#substitute foo=bar
@@ -591,10 +602,9 @@ old_savefile to-history
 echo '#bind M-c ^[c=&upcase-word' >> "$tmp/old"
 run 'new default keys are added to an old save-file' "#load $tmp/old
 #bind edit"
-has '#new default editing keys added: C-g C-r C-s C-u C-x-8-Ret C-y M-y M-q Delete C-x-8-e-e C-x-8-e-s'
-has '#key BS renamed to C-h'
-has '#key M-BS renamed to M-C-h'
-has '#key Del renamed to Backspace'
+has '#keys renamed: BS to C-h, M-BS to M-C-h, Del to Backspace'
+has '#new default editing keys added: C-g, C-r, C-s, C-u, C-x-8-Ret, C-y, M-y, M-q,'
+has '#    Delete, C-x-8-e-e, C-x-8-e-s'
 has '#bind C-h ^H=&del-char-left'
 has '#bind Delete ^[[3~=&del-char-right'
 has '#C-w now deletes back to the previous space; M-q puts the line in history'
@@ -780,6 +790,11 @@ has "#end of capture to \"$tmp/cap\"."
 has "#end of movie to \"$tmp/mov\"."
 has "#end of record to \"$tmp/rec\"."
 
+long=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+run 'messages wrap before the words that do not fit' "#alias $long"
+has '#unknown alias, cannot show:'
+has "#    \"$long\""
+
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 
@@ -802,7 +817,7 @@ grep -q '^Authors: ' "$tmp/out" && fail "unexpected authors"
 
 run 'verbose version' '#ver -v'
 grep -q '^Options: ' "$tmp/out" || fail "missing options"
-has 'Authors: Massimiliano Ghilardi (Cosmos), Steve Slaven (bpk), Fror, Dain'
+has 'Authors: Massimiliano Ghilardi (Cosmos), Steve Slaven (bpk), Fror, Dain and others'
 has 'https://github.com/MUME/powwow'
 lacks '#syntax: #ver [-v]'
 

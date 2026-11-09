@@ -39,6 +39,18 @@ char *strip_end(char *s);
 extern struct attr input_attr, message_attr;
 extern char msgattrbeg[], msgattrend[];
 
+/*
+ * like tty_message(), but wrapped to the width of the terminal: before
+ * the words that do not fit, which go on a new line after 'cont'; and
+ * with a newline at the end
+ */
+int message_wrap(const char *cont, const char *format, ...)
+    PRINTF_FUNCTION(2, 3);
+/* the start of the lines that continue a message */
+#define WRAP_CONT "#    "
+/* like PRINTF, but wrapped as message_wrap() with WRAP_CONT */
+int wrap_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);
+
 ptr  *ptrescape(ptr *dst, ptr *src, int append);
 ptr  *ptrmescape(ptr *dst, char *src, int srclen, int append);
 

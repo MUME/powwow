@@ -78,12 +78,12 @@ static int check_alias(char *name)
 	return 1;
     }
     if (*p == '{') {
-	PRINTF("#illegal beginning '{' in alias name: \"%s\"\n", name);
+	wrap_printf("#illegal beginning '{' in alias name: \"%s\"", name);
 	error = INVALID_NAME_ERROR;
 	return 1;
     }
     if (strchr(name, ' ')) {
-	PRINTF("#illegal spaces in alias name: \"%s\"\n", name);
+	wrap_printf("#illegal spaces in alias name: \"%s\"", name);
 	error = INVALID_NAME_ERROR;
 	return 1;
     }
@@ -119,14 +119,15 @@ static int check_alias(char *name)
     }
 
     if (!ok) {
-	PRINTF("#illegal non-escaped ';' in alias name: \"%s\"\n", name);
+	wrap_printf("#illegal non-escaped ';' in alias name: \"%s\"", name);
 	error = INVALID_NAME_ERROR;
 	return 1;
     }
 
     if (quotes || paren || braces) {
-	PRINTF("#warning: unbalanced%s%s%s in alias name \"%s\" may cause problems\n",
-	       quotes ? " \"\"" : "", paren ? " ()" : "", braces ? " {}" : "", name);
+	wrap_printf("#warning: unbalanced%s%s%s in alias name \"%s\" may "
+                    "cause problems", quotes ? " \"\"" : "",
+                    paren ? " ()" : "", braces ? " {}" : "", name);
     }
 
     return 0;
@@ -168,7 +169,7 @@ void parse_alias(char *str)
                 }
                 delete_aliasnode(np);
             } else {
-                PRINTF("#unknown alias, cannot delete: \"%s\"\n", left);
+                wrap_printf("#unknown alias, cannot delete: \"%s\"", left);
             }
         } else {
             /* add/redefine alias */
@@ -215,7 +216,7 @@ void parse_alias(char *str)
                           (*np)->group == NULL ? "*" : (*np)->group,
                           (*np)->subst);
         } else {
-            PRINTF("#unknown alias, cannot show: \"%s\"\n", left);
+            wrap_printf("#unknown alias, cannot show: \"%s\"", left);
         }
     }
 }
@@ -434,8 +435,8 @@ void parse_action(char *str, int onprompt)
 	/* '<' : remove action */
         if (assign == '<') {
             if (!np || !*np) {
-                PRINTF("#no %s, cannot delete label: \"%s\"\n",
-		       ONPROMPT, label);
+                wrap_printf("#no %s, cannot delete label: \"%s\"", ONPROMPT,
+                            label);
             }
             else {
 		if (onprompt)
@@ -497,7 +498,8 @@ void parse_action(char *str, int onprompt)
 	    }
 
 	    if (!*pattern) {
-		PRINTF("#error: pattern of #%ss must be non-empty.\n", ONPROMPT);
+		wrap_printf("#error: pattern of #%ss must be non-empty.",
+                            ONPROMPT);
 		return;
 	    }
 
@@ -590,7 +592,8 @@ void parse_action(char *str, int onprompt)
                               (*np)->pattern,
                               (*np)->command);
             } else {
-                PRINTF("#no %s, cannot list label: \"%s\"\n", ONPROMPT, label);
+                wrap_printf("#no %s, cannot list label: \"%s\"", ONPROMPT,
+                            label);
             }
 
 	    /* '+', '-': turn action on/off */
@@ -598,14 +601,13 @@ void parse_action(char *str, int onprompt)
             if (np && *np) {
                 (*np)->active = (sign == '+');
                 if (opt_info) {
-                    PRINTF("#%s %c%s %s is now o%s.\n", ONPROMPT,
-			   action_chars[(*np)->type],
-			   label,
-			   (*np)->pattern, (sign == '+') ? "n" : "ff");
+                    wrap_printf("#%s %c%s %s is now o%s.", ONPROMPT,
+                                action_chars[(*np)->type], label,
+                                (*np)->pattern, (sign == '+') ? "n" : "ff");
                 }
             } else {
-                PRINTF("#no %s, cannot turn o%s label: \"%s\"\n", ONPROMPT,
-		       (sign == '+') ? "n" : "ff", label);
+                wrap_printf("#no %s, cannot turn o%s label: \"%s\"", ONPROMPT,
+                            (sign == '+') ? "n" : "ff", label);
             }
         }
 
@@ -633,8 +635,8 @@ void parse_action(char *str, int onprompt)
             } else if (np && *np)
 		delete_action(np);
             else {
-                PRINTF("#no action, cannot delete pattern: \"%s\"\n",
-		       pattern);
+                wrap_printf("#no action, cannot delete pattern: \"%s\"",
+                            pattern);
                 return;
             }
         } else {
@@ -644,7 +646,7 @@ void parse_action(char *str, int onprompt)
                               (*np)->pattern,
                               (*np)->command);
             } else {
-                PRINTF("#no action, cannot show pattern: \"%s\"\n", str);
+                wrap_printf("#no action, cannot show pattern: \"%s\"", str);
             }
         }
     }
@@ -733,7 +735,7 @@ void parse_mark(char *str)
                           pbuf ? ptrdata(pbuf) : "", name);
 	    ptrdel(&pbuf);
         } else {
-            PRINTF("#unknown marker, cannot show: \"%s\"\n", str);
+            wrap_printf("#unknown marker, cannot show: \"%s\"", str);
         }
 
     } else {
@@ -752,7 +754,8 @@ void parse_mark(char *str)
 		wild = 1;
 		if (ISMARKWILDCARD(*(p2 + 1))) {
 		    error=SYNTAX_ERROR;
-		    PRINTF("#error: two wildcards (& or $) may not be next to eachother\n");
+		    wrap_printf("#error: two wildcards (& or $) may not be "
+                                "next to eachother");
 		    return;
 		}
 	    }
@@ -774,8 +777,8 @@ void parse_mark(char *str)
 		}
 		delete_marknode(np);
 	    } else {
-		PRINTF("#unknown marker, cannot delete: \"%s%s\"\n",
-		       mbeg ? "^" : "", pattern);
+		wrap_printf("#unknown marker, cannot delete: \"%s%s\"",
+                            mbeg ? "^" : "", pattern);
 	    }
         else {
             if (*np) {
@@ -852,7 +855,7 @@ void parse_substitute(char *str)
         unescape(str);
         substnode *n = *lookup_subst(str, mbeg);
         if (n == NULL) {
-            PRINTF("#unknown substitution, cannot show: \"%s\"\n", str);
+            wrap_printf("#unknown substitution, cannot show: \"%s\"", str);
             return;
         }
         ptr *pbuf = ptrsubstdef(NULL, n->b.mbeg, n->b.pattern, n->replacement);
@@ -880,7 +883,8 @@ void parse_substitute(char *str)
         wild = 1;
         if (ISMARKWILDCARD(q[1])) {
             error = SYNTAX_ERROR;
-            PRINTF("#error: two wildcards (& or $) may not be next to eachother\n");
+            wrap_printf("#error: two wildcards (& or $) may not be next to "
+                        "eachother");
             return;
         }
     }
@@ -890,8 +894,8 @@ void parse_substitute(char *str)
     unescape(p);
     if (*p == '\0') {
         if (n == NULL) {
-            PRINTF("#unknown substitution, cannot delete: \"%s%s\"\n",
-                   mbeg != 0 ? "^" : "", pattern);
+            wrap_printf("#unknown substitution, cannot delete: \"%s%s\"",
+                        mbeg != 0 ? "^" : "", pattern);
             return;
         }
         subst_info("deleting", n->b.mbeg, n->b.pattern, n->replacement);
@@ -1192,7 +1196,7 @@ void reset_bind(char *name)
     keynode **kp = lookup_key(name);
     if (d == NULL) {
         if (*kp == NULL) {
-            PRINTF("#no key named \"%s\", and no default for it.\n", name);
+            wrap_printf("#no key named \"%s\", and no default for it.", name);
         } else {
             show_single_bind("deleting key binding:", *kp);
             delete_keynode(kp);
@@ -1359,7 +1363,7 @@ void parse_bind(char *arg)
 		    show_single_bind("deleting key binding:", np);
 		delete_keynode(npp);
             } else {
-                PRINTF("#no such key: \"%s\"\n", name);
+                wrap_printf("#no such key: \"%s\"", name);
             }
         }
     } else {
@@ -1378,7 +1382,7 @@ void parse_bind(char *arg)
                               np->call_data ? np->call_data : "");
 	    }
 	} else {
-            PRINTF("#no such key: \"%s\"\n", name);
+            wrap_printf("#no such key: \"%s\"", name);
         }
     }
 }
@@ -1403,7 +1407,7 @@ void parse_rebind(char *arg)
 
     kp = lookup_key(arg);
     if (!kp || !*kp) {
-	PRINTF("#no such key: \"%s\"\n", arg);
+	wrap_printf("#no such key: \"%s\"", arg);
 	return;
     }
 
