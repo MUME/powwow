@@ -478,6 +478,10 @@ void message_edit(char *text, int msglen, char view, char builtin)
 
 	signal_start();		/* reset SIGINT and SIGCHLD handlers */
 	tty_start();
+	/* the terminal echoed the keys typed after the editor restored
+	 * it and before tty_start(), such as ^P: erase them */
+	tty_putc('\r');
+	tty_puts(tty_clreoln);
 
 	if (s->conn != NULL) {
 	    tty_gotoxy(0, lines - 1);
