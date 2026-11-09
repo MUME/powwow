@@ -706,6 +706,12 @@ grep -aq 'input highlighting is now <ESC>\[4;93;46mon' "$tmp/out" \
     || fail "expected underline Yellow on cyan"
 has 'black  blink  blue   bold'
 
+run 'Tab lists the words down and then across' '' \
+    "#option 		$(printf '\025')
+"
+has 'autoclear  debug      history    list       speedwalk'
+has 'autoprint  echo       info       reprint    words'
+
 run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 

@@ -1083,39 +1083,38 @@ static const cmdstruct *find_command(const char *name, int len)
 
 /*
  * list the words of 'l' that start with the 'len' bytes of 'word' above the
- * input line, in columns, without their first 'skip' bytes, such as the
- * directory of file names
+ * input line, in columns, down and then across, without their first 'skip'
+ * bytes, such as the directory of file names; 'l' is sorted, so those words
+ * follow each other
  */
 static void word_list_show(const struct word_list *l, const char *word,
                            int len, int skip)
 {
-    int width = 0;
-    for (int i = 0; i < l->count; ++i) {
-        int w = (int)strlen(l->words[i]) - skip;
-        if (strncmp(l->words[i], word, len) == 0 && w > width)
+    int first = 0;
+    while (first < l->count && strncmp(l->words[first], word, len) != 0)
+        ++first;
+    int count = 0, width = 0;
+    while (first + count < l->count
+           && strncmp(l->words[first + count], word, len) == 0) {
+        int w = (int)strlen(l->words[first + count]) - skip;
+        if (w > width)
             width = w;
+        ++count;
     }
     int columns = cols / (width + 2);
     if (columns < 1)
         columns = 1;
+    int rows = (count + columns - 1) / columns;
     clear_input_line(0);
     tty_putc('\n');
-    char line[BUFSIZE];
-    int n = 0, column = 0;
-    for (int i = 0; i < l->count; ++i) {
-        if (strncmp(l->words[i], word, len) != 0)
-            continue;
-        n += snprintf(line + n, sizeof(line) - n, "%-*s", width + 2,
-                      l->words[i] + skip);
-        if (++column == columns) {
-            while (n > 0 && line[n - 1] == ' ')
-                --n;
-            line[n] = '\0';
-            tty_message("%s\n", line);
-            n = column = 0;
-        }
-    }
-    if (column > 0) {
+    for (int row = 0; row < rows; ++row) {
+        char line[BUFSIZE];
+        int n = 0;
+        for (int i = row; i < count && n < (int)sizeof(line); i += rows)
+            n += snprintf(line + n, sizeof(line) - n, "%-*s", width + 2,
+                          l->words[first + i] + skip);
+        if (n >= (int)sizeof(line))
+            n = (int)sizeof(line) - 1;
         while (n > 0 && line[n - 1] == ' ')
             --n;
         line[n] = '\0';
