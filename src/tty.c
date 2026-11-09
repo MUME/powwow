@@ -172,6 +172,18 @@ static void disable_special_keys(struct termios *ttyb)
  * Set the terminal to character-at-a-time-without-echo mode, and save the
  * original state in ttybsave
  */
+/* does the terminal take UTF-8, as the locale says? */
+bool tty_locale_utf8(void)
+{
+#ifdef USE_LOCALE
+    const char *codeset = nl_langinfo(CODESET);
+    return (strcasecmp(codeset, "UTF-8") == 0
+            || strcasecmp(codeset, "UTF8") == 0);
+#else
+    return false;
+#endif
+}
+
 void tty_start(void)
 {
     tcgetattr(tty_read_fd, &ttybsave);
@@ -194,9 +206,7 @@ void tty_start(void)
     tty_flush();
 
 #ifdef USE_LOCALE
-    const char *codeset = nl_langinfo(CODESET);
-    tty_write_state.utf8 = (strcasecmp(codeset, "UTF-8") == 0
-                            || strcasecmp(codeset, "UTF8") == 0);
+    tty_write_state.utf8 = tty_locale_utf8();
     if (wcrtomb(NULL, L'\0', &tty_write_state.mbstate) == (size_t)-1) {
         perror("wcrtomb()");
         abort();
