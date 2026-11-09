@@ -14,12 +14,52 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_ZLIB
+#  include <zlib.h>
+#endif
 
 #include "defines.h"
 #include "charname.h"
 
 char namesfile[BUFSIZE];
 char emojifile[BUFSIZE];
+
+/*
+ * a file of names, read through zlib if powwow has it, as the files may
+ * be installed compressed by gzip; zlib reads uncompressed files too
+ */
+#ifdef HAVE_ZLIB
+typedef gzFile names_file;
+#else
+typedef FILE *names_file;
+#endif
+
+static names_file names_open(const char *file)
+{
+#ifdef HAVE_ZLIB
+    return gzopen(file, "r");
+#else
+    return fopen(file, "r");
+#endif
+}
+
+static char *names_gets(char *line, int size, names_file f)
+{
+#ifdef HAVE_ZLIB
+    return gzgets(f, line, size);
+#else
+    return fgets(line, size, f);
+#endif
+}
+
+static void names_close(names_file f)
+{
+#ifdef HAVE_ZLIB
+    gzclose(f);
+#else
+    fclose(f);
+#endif
+}
 
 /* an entry of a file of names */
 struct name_entry {
@@ -178,10 +218,10 @@ static const char *copy_field(const char *p, char *dst, size_t size)
  * and for an emoji, a tab, its group, a tab, and its subgroup; return
  * false at the end of the file
  */
-static bool read_entry(FILE *f, struct name_entry *e)
+static bool read_entry(names_file f, struct name_entry *e)
 {
     char line[512];
-    while (fgets(line, sizeof(line), f) != NULL) {
+    while (names_gets(line, sizeof(line), f) != NULL) {
         if (line[0] == '#')
             continue;
         char *p = line;
@@ -219,7 +259,7 @@ int charname_lookup(const char *file, const char *name, size_t len,
     if (parse_code_point(name, len, cps))
         return is_typable(cps[0]) ? 1 : 0;
 
-    FILE *f = fopen(file, "r");
+    names_file f = names_open(file);
     if (f == NULL)
         return 0;
     struct name_entry e;
@@ -230,7 +270,7 @@ int charname_lookup(const char *file, const char *name, size_t len,
             memcpy(cps, e.cps, found * sizeof(*cps));
         }
     }
-    fclose(f);
+    names_close(f);
     for (int i = 0; i < found; ++i) {
         if (!is_typable(cps[i]))
             return 0;
@@ -250,7 +290,7 @@ int charname_lookup(const char *file, const char *name, size_t len,
 int charname_find(const char *file, const char *group, const char *subgroup,
                   const char *pattern, charname_fn fn, void *data)
 {
-    FILE *f = fopen(file, "r");
+    names_file f = names_open(file);
     if (f == NULL)
         return -1;
     struct name_entry e;
@@ -265,7 +305,7 @@ int charname_find(const char *file, const char *group, const char *subgroup,
         fn(e.name, e.cps, e.ncps, by_name ? NULL : e.groups, data);
         ++count;
     }
-    fclose(f);
+    names_close(f);
     return count;
 }
 
@@ -275,7 +315,7 @@ int charname_find(const char *file, const char *group, const char *subgroup,
  */
 void charname_groups(const char *file, charname_group_fn fn, void *data)
 {
-    FILE *f = fopen(file, "r");
+    names_file f = names_open(file);
     if (f == NULL)
         return;
     struct name_entry e;
@@ -295,5 +335,5 @@ void charname_groups(const char *file, charname_group_fn fn, void *data)
     }
     if (count > 0)
         fn(group, subgroup, count, data);
-    fclose(f);
+    names_close(f);
 }
