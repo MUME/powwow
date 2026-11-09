@@ -4,13 +4,13 @@ Documentation for version @PACKAGE_VERSION@
 
 ## Introduction
 
-powwow is a client program, which replaces telnet for the lazy
+Powwow is a client program, which replaces telnet for the lazy
 mudder who wants some (only some?) extra features.
 It is primarily designed for DikuMUDs, but nothing prevents its use
-for other types of muds.  powwow is based on another client, cancan,
+for other types of muds.  Powwow is based on another client, cancan,
 and cancan was originally inspired by tintin (yet another client)
 by Peter Unold (`pjunold@daimi.aau.dk`), but is entirely re-written.
-powwow also implements the MUME remote editing protocol, which
+Powwow also implements the MUME remote editing protocol, which
 enables you to edit texts on the mud using your own favourite
 editor, several texts at once if you have a windowing terminal.
 
@@ -392,7 +392,7 @@ you define an action that uses an Extended POSIX regexp to match
 instead of the standard matcher.
 
 Regexps match characters, not bytes: for example, . matches the
-euro sign. powwow uses PCRE2 for regexps when it is available (see
+euro sign. Powwow uses PCRE2 for regexps when it is available (see
 `configure --enable-regex`); if it was built with the regexp
 functions of the C library instead, regexps match characters only
 when powwow runs in a UTF-8 locale.
@@ -710,7 +710,7 @@ and you execute
   #key Up
 ```
 
-powwow will do what you expect: step to the previous line in history.
+Powwow will do what you expect: step to the previous line in history.
 
 *Warning*: powwow does not distinguish at all between a real key pressed
 on the keyboard and one faked with `#key`, so commands executed with `#key`
@@ -2373,7 +2373,7 @@ Cauldron ;remove all;drop all;kill dragon starts following you.
 
 (for example it may be an emote, many MUDs allow it)
 
-powwow will realize that the line matches with the action you defined
+Powwow will realize that the line matches with the action you defined
 (remember that `&n` can match text of every length, even if containing
 spaces or ; ) and will execute this:
 
