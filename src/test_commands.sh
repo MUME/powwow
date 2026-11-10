@@ -733,7 +733,7 @@ long=$(sed -n '/#commands available:/,$p' "$tmp/out" | awk 'length > 79')
 [ -z "$long" ] || fail "lines longer than 79 columns: $long"
 has '#beep                           make your terminal beep (like #print (*7))'
 has '#if (<expr>) <command1> [; #else <command2>]'
-has '                                otherwise execute <command2>'
+has '                                execute <command2>'
 
 # a background pager must not write over the screen
 POWWOWPAGER='&printf "one\ntwo\n"; echo err >&2; printf partial #'
