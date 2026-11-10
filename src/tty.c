@@ -1224,7 +1224,7 @@ again:
         memmove(s, s + 1, *n);
         goto again;
     }
-    if (r == 0 && n > 0 && s[0] == 0) {
+    if (r == 0 && *n > 0 && s[0] == '\0') {
         *pwc = L'\0';
         r = 1;
     }
