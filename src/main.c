@@ -1715,9 +1715,9 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 	    /* &x matches a string */
 	    /* $x matches a single word */
 	    tmp = pat + 1;
-	    if (isdigit(*tmp)) {
+            if (isdigit((unsigned char)*tmp)) {
 		int p = 0;
-                while (isdigit(*tmp) && p < PARAM_COUNT) {
+                while (isdigit((unsigned char)*tmp) && p < PARAM_COUNT) {
 		    p *= 10;
 		    p += *tmp++ - '0';
 		}
@@ -2392,7 +2392,7 @@ static void parse_commands(char *command, char *arg)
 
     /* assume output will be enough to make input line = last screen line */
     /* line0 = lines - 1; */
-    if (isdigit(*command) && (i = atoi(command))) {
+    if (isdigit((unsigned char)*command) && (i = atoi(command))) {
 	if (i >= 0) {
 	    while (i--)
 		(void)parse_instruction(arg, true, false, true);
@@ -2458,9 +2458,9 @@ static int subst_param(ptr **buf, char *src)
 	if (*src == '$' || *src == '@') {
 	    kind = *src == '$' ? 1 : 0;
 	    tmp = src + 1;
-	    if (isdigit(*tmp)) {
+            if (isdigit((unsigned char)*tmp)) {
 		i = atoi(tmp);
-		while (isdigit(*tmp))
+                while (isdigit((unsigned char)*tmp))
 		    tmp++;
 
                 if (i < PARAM_COUNT) {
@@ -2547,22 +2547,22 @@ static int jit_subst_vars(ptr **buf, char *src)
 	    tmp = src + 1;
 	    if (*tmp == '{') {
 		tmp = skipspace(tmp+1);
-		if (isdigit(*tmp) || *tmp == '-') {
+                if (isdigit((unsigned char)*tmp) || *tmp == '-') {
 		    /* numbered variable */
 		    i = atoi(tmp);
                     if (i >= -GLOBAL_VAR_COUNT && i < PARAM_COUNT) {
 			if (*tmp == '-')
 			    tmp++;
-			while (isdigit(*tmp))
+                        while (isdigit((unsigned char)*tmp))
 			    tmp++;
                         num = num_var(i);
                         text = text_var(i);
 			done = 1;
 		    }
-		} else if (isalpha(*tmp) || *tmp == '_') {
+                } else if (isalpha((unsigned char)*tmp) || *tmp == '_') {
 		    /* named variable */
 		    name = tmp++;
-		    while (isalnum(*tmp) || *tmp == '_')
+                    while (isalnum((unsigned char)*tmp) || *tmp == '_')
 			tmp++;
 		    c = *tmp;
 		    *tmp = '\0';
