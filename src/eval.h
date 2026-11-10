@@ -51,7 +51,7 @@ void print_error(int err_num);
 extern const char *const error_msg[];
 extern int error;
 
-#define REAL_ERROR (error && error != USER_BREAK)
+#define REAL_ERROR (error != 0 && error != USER_BREAK)
 #define MEM_ERROR  (error == NO_MEM_ERROR || error == MEM_LIMIT_ERROR)
 
 #endif /* _EVAL_H_ */

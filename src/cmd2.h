@@ -5,7 +5,7 @@ void parse_alias(char *str);
 
 void show_actions(void);
 void show_prompts(void);
-void parse_action(char *str, int onprompt);
+void parse_action(char *str, bool onprompt);
 
 void show_attr_syntax(void);
 void attr_string(const struct attr *attr, char *begin, char *end);
@@ -17,14 +17,15 @@ void show_substitutions(void);
 void parse_substitute(char *str);
 
 char *seq_name(char *seq, int len);
-void show_binds(char edit);
+void show_binds(bool edit);
 void show_edit_functions(void);
 void reset_bind(char *name);
 void show_binds_starting(const char *prefix, int len, const char *names);
 void parse_bind(char *arg);
 void parse_rebind(char *arg);
 
-char *redirect(char *arg, ptr **pbuf, char *kind, char *name, int also_num, long *start, long *end);
+char *redirect(char *arg, ptr **pbuf, char *kind, char *name, bool also_num,
+               long *start, long *end);
 
 void show_vars(void);
 void show_delaynode(delaynode *p, int in_or_at);
