@@ -1244,6 +1244,8 @@ static int exe_op(operator *op)
 			   ? '$' : '@', ptrdata(o1.txt));
 		}
 	    }
+            check_delete(&o1);
+            o1.num = named_var->index;
 	    o1.type= delta ? TYPE_TXT_VAR : TYPE_NUM_VAR;
 	    p=&o1;
 	    ret=1;
