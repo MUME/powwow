@@ -135,8 +135,8 @@ static cmdstruct default_commands[] =
     C("groupdelim", cmd_groupdelim,
       "[<delimiter>]\tchange delimiter for action/alias groups"),
     C("hilite",     cmd_hilite,
-      "[input|messages] [<attribute>]\thighlight your input line or\n"
-      "powwow's messages"),
+      "[input|messages] [<attribute>]\thighlight your input line or"
+      " powwow's messages"),
     C("history",    cmd_history,
       "[{<number>|(<expr>)}]\tlist/execute commands in history"),
     C("host",       cmd_host,
@@ -146,8 +146,8 @@ static cmdstruct default_commands[] =
       "[<startedit> [<endedit>]]\tsend MUME client identification"),
     C("if",         cmd_if,
       "(<expr>) <command1> [; #else <command2>]\t"
-      "if <expr> is true execute <command1>,\n"
-      "otherwise execute <command2>"),
+      "if <expr> is true execute <command1>,"
+      " otherwise execute <command2>"),
     C("in",         cmd_in,
       "[<label> [(<delay>) [<command>]]]\tdelete/list/define delayed labels"),
     C("init",       cmd_init,
@@ -213,8 +213,8 @@ static cmdstruct default_commands[] =
       "[editor][prompt][all]\tsend various identification strings"),
     C("reset",      cmd_reset,
       "{all|<list-name>|bind [<key>]}\tclear the whole defined list"
-      " and reload\n"
-      "default, or reset one key"),
+      " and reload"
+      " default, or reset one key"),
     C("retrace",    cmd_retrace,
       "[<number>]\tretrace the last number steps"),
     C("save",       cmd_save,
@@ -431,7 +431,8 @@ enum { HELP_COLUMN = 32 };
 /*
  * write the line(s) for 'c' in the list of commands to 'dst', and
  * return the end of what was written. A tab in the help text separates
- * the arguments from the description, which is aligned at HELP_COLUMN.
+ * the arguments from the description, which starts at HELP_COLUMN and is
+ * wrapped there to wrap_width(); a newline in it starts a new line.
  */
 static char *format_command_help(char *dst, const cmdstruct *c)
 {
@@ -451,17 +452,32 @@ static char *format_command_help(char *dst, const cmdstruct *c)
         *dst++ = '\n';
         col = 0;
     }
-    for (const char *p = tab + 1; ; ++p) {
+    size_t width = wrap_width();
+    for (const char *p = tab + 1; *p != '\0'; ) {
+        if (*p == '\n') {
+            *dst++ = *p++;
+            col = 0;
+            continue;
+        }
+        /* the spaces before a word, then the word */
+        size_t spaces = strspn(p, " ");
+        const char *word = p + spaces;
+        size_t len = strcspn(word, " \n");
+        if (col > HELP_COLUMN && col + spaces + len > width) {
+            *dst++ = '\n';
+            col = 0;
+        } else if (col >= HELP_COLUMN) {
+            memcpy(dst, p, spaces);
+            dst += spaces;
+            col += spaces;
+        }
         for (; col < HELP_COLUMN; ++col)
             *dst++ = ' ';
-        if (*p == '\0')
-            break;
-        *dst++ = *p;
-        col = (*p == '\n' ? 0 : col + 1);
+        memcpy(dst, word, len);
+        dst += len;
+        col += len;
+        p = word + len;
     }
-    /* drop the padding after the last line */
-    while (dst[-1] == ' ')
-        --dst;
     *dst++ = '\n';
     *dst = '\0';
     return dst;
@@ -498,8 +514,12 @@ static void cmd_help(char *arg)
         int size = 25;
         for (cmdstruct *c = commands; c != NULL; c = c->next) {
             size += strlen(c->name) + strlen(c->help) + 5;
-            for (const char *p = c->help; p != NULL; p = strchr(p + 1, '\n'))
-                size += HELP_COLUMN + 1;
+            /* a line can start at each space or newline */
+            for (const char *p = c->help; *p != '\0'; ++p) {
+                if (*p == ' ' || *p == '\n')
+                    size += HELP_COLUMN + 1;
+            }
+            size += HELP_COLUMN + 1;
         }
 
         char *text = malloc(size);
@@ -2681,7 +2701,7 @@ static const struct {
 int print_all_options(FILE *file)
 {
     const char *prefix = "#option";
-    int width = (file != NULL ? 80 : cols) - 16;
+    int width = (file != NULL ? WRAP_COLUMNS : wrap_width() + 1) - 16;
     int len = 0;
     for (int i = 0; options[i].name != NULL; ++i) {
         int res;
