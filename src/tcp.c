@@ -1292,8 +1292,8 @@ void tcp_spawn(const char *id, char *cmd)
 	dup2(sockets[1], 2);
 	close(sockets[0]);
 	close(sockets[1]);
-	execl("/bin/sh", "sh", "-c", cmd, NULL);
-	syserr("cannot run /bin/sh");
+        execl("/bin/sh", "sh", "-c", cmd, (char *)NULL);
+        exec_failed("/bin/sh");
 	break;
       case -1:
 	close(sockets[0]);

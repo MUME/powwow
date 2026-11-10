@@ -84,6 +84,7 @@ void sig_bottomhalf(void);
 void errmsg(const char *format, ...) PRINTF_FUNCTION(1, 2);
 void out_of_memory(void);
 noreturn void syserr(const char *msg);
+noreturn void exec_failed(const char *what);
 int  read_settings(void);
 int  save_settings(void);
 void movie_write(char *str, int newline);
