@@ -137,6 +137,9 @@ committed, understand it, and take responsibility for it as its author.
   value is not used.
 - **Casts:** do not add unnecessary casts, such as of a `void *` assigned to
   another pointer: `char *s = malloc(n);`.
+  Do not cast a value to `(void)` to discard it, such as the result of a
+  function call; only a macro whose expansion is not meant to be used as a
+  value may cast it to `(void)`.
 
 ## Truth values
 
