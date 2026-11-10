@@ -1299,17 +1299,7 @@ void syserr(const char *msg)
 	    fprintf(stderr, "#fatal error: %s: %s\n", msg, strerror(err));
     }
 
-#ifdef SAVE_ON_SYSERR
-    /* Try to do an emergency save. This can wreak havoc
-     * if called from the wrong place, like
-     * read_settings() or save_settings(),
-     * thus is executed only if you add -DSAVE_ON_SYSERR
-     * to CF flags in make_it
-     */
-    (void)save_settings();
-#else
     message_wrap(WRAP_CONT, "#settings NOT saved to file.");
-#endif
 
     tty_quit();
     exit(1);
