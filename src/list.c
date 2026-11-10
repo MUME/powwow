@@ -172,7 +172,7 @@ void add_aliasnode(char *name, char *subst)
     new->active = true;
     new->name = my_strdup(name);
     new->subst = my_strdup(subst);
-    if ((name && !new->name) || (subst && !new->subst)) {
+    if (new->name == NULL || (subst != NULL && new->subst == NULL)) {
 	out_of_memory();
 	if (new->name)
 	    free(new->name);
@@ -441,10 +441,10 @@ varnode *add_varnode(char *name, int type)
 	return NULL;
     }
     new->name = my_strdup(name);
-    if (name && !new->name) {
-	out_of_memory();
-	free(new);
-	return NULL;
+    if (new->name == NULL) {
+        out_of_memory();
+        free(new);
+        return NULL;
     }
     new->num = 0;
     new->str = (ptr *)0;
