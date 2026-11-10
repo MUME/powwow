@@ -12,7 +12,6 @@ int ascii_sort(defnode *node1, defnode *node2);
 int time_sort(defnode *node1, defnode *node2);
 int rev_time_sort(defnode *node1, defnode *node2);
 
-int hash(const char *name, int optlen);
 
 void add_node(defnode *newnode, defnode **base, function_sort sort);
 
