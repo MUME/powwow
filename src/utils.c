@@ -603,7 +603,7 @@ static int match_mark_or_subst(basenode *bp, char *src)
     int mbeg = bp->mbeg, mword = 0, p;
 
     /* shortcut for #marks without wildcards */
-    if (bp->wild == 0) {
+    if (!bp->wild) {
 	if (mbeg != 0 && strncmp(src, pat, strlen(pat)) != 0)
 	    return 0;
 	if ((nsrc = strstr(src, pat))) {
@@ -727,7 +727,7 @@ static ptr *ptrmaddmarks(ptr *dst, char *line, int len)
 	    if (mp->b.start != NULL && mp->b.start >= line)
 		matched = 1;
 	    else {
-		matched = ((mp->b.mbeg == 0 || start != 0)
+		matched = ((!mp->b.mbeg || start != 0)
 			   && match_mark_or_subst(&mp->b, line) != 0);
 		if (matched == 0)
 		    mp->b.start = lineend;
@@ -787,7 +787,7 @@ static ptr *ptrmaddsubst(ptr *dst, char *line, int len)
         for (substnode *sp = substitutions; sp != NULL; sp = sp->next) {
             bool matched = sp->b.start != NULL && sp->b.start >= line;
             if (!matched) {
-                matched = ((sp->b.mbeg == 0 || start)
+                matched = ((!sp->b.mbeg || start)
                            && match_mark_or_subst(&sp->b, line) != 0);
                 if (!matched)
                   sp->b.start = lineend;
@@ -846,9 +846,9 @@ ptr *ptrmaddsubst_and_marks(ptr *dst, char *line, int len)
 /*
  * write a substitution in dst as the argument of #substitute that defines it
  */
-ptr *ptrsubstdef(ptr *dst, char mbeg, char *pattern, char *replacement)
+ptr *ptrsubstdef(ptr *dst, bool mbeg, char *pattern, char *replacement)
 {
-    if (mbeg != 0)
+    if (mbeg)
       dst = ptrmcpy(dst, "^", 1);
     else if (*pattern == '^') /* so it does not read back as an anchor */
       dst = ptrmcpy(dst, "\\", 1);
@@ -1670,7 +1670,7 @@ int save_settings(void)
     for (mp = markers; mp && failed > 0; mp = mp->next) {
 	pp = ptrmescape(pp, mp->b.pattern, strlen(mp->b.pattern), 0);
 	if (MEM_ERROR) { failed = -1; break; }
-	failed = fprintf(f, "#mark %s%s=%s\n", mp->b.mbeg != 0 ? "^" : "",
+	failed = fprintf(f, "#mark %s%s=%s\n", mp->b.mbeg ? "^" : "",
 			     ptrdata(pp), attr_name(&mp->attr));
     }
 

@@ -19,12 +19,12 @@ void add_node(defnode *newnode, defnode **base, function_sort sort);
 void reverse_sortedlist(sortednode **base);
 
 void add_aliasnode(char *name, char *subst);
-void add_actionnode(char *pattern, char *command, char *label, int active, int type, void *vregexp);
-void add_promptnode(char *pattern, char *command, char *label, int active, int type, void *vregexp);
-void add_marknode(char *pattern, const struct attr *attr, char mbeg, char wild);
+void add_actionnode(char *pattern, char *command, char *label, bool active, int type, void *vregexp);
+void add_promptnode(char *pattern, char *command, char *label, bool active, int type, void *vregexp);
+void add_marknode(char *pattern, const struct attr *attr, bool mbeg, bool wild);
 void add_keynode(const char *name, const char *sequence, int seqlen,
                  function_str funct, const char *call_data);
-void add_substnode(char *pattern, char *replacement, char mbeg, char wild);
+void add_substnode(char *pattern, char *replacement, bool mbeg, bool wild);
 delaynode *add_delaynode(char *name, char *command, vtime *when, int is_dead);
 varnode *add_varnode(char *name, int type);
 
@@ -32,8 +32,8 @@ aliasnode  **lookup_alias(char *name);
 actionnode **lookup_action(char *label);
 actionnode **lookup_prompt(char *label);
 actionnode **lookup_action_pattern(char *pattern);
-marknode   **lookup_marker(char *pattern, char mbeg);
-substnode  **lookup_subst(char *pattern, char mbeg);
+marknode   **lookup_marker(char *pattern, bool mbeg);
+substnode  **lookup_subst(char *pattern, bool mbeg);
 keynode    **lookup_key(char *name);
 delaynode  **lookup_delay(char *name, int is_dead);
 varnode    **lookup_varnode(char *name, int type);

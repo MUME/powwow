@@ -169,7 +169,7 @@ void add_aliasnode(char *name, char *subst)
     }
 
     new->group = NULL;
-    new->active = 1;
+    new->active = true;
     new->name = my_strdup(name);
     new->subst = my_strdup(subst);
     if ((name && !new->name) || (subst && !new->subst)) {
@@ -188,7 +188,7 @@ void add_aliasnode(char *name, char *subst)
 /*
  * add a node to the marker list
  */
-void add_marknode(char *pattern, const struct attr *attr, char mbeg, char wild)
+void add_marknode(char *pattern, const struct attr *attr, bool mbeg, bool wild)
 {
     marknode **p, *new = (marknode*)malloc(sizeof(marknode));
     int i;
@@ -221,7 +221,7 @@ void add_marknode(char *pattern, const struct attr *attr, char mbeg, char wild)
 /*
  * add a node to the substitution list
  */
-void add_substnode(char *pattern, char *replacement, char mbeg, char wild)
+void add_substnode(char *pattern, char *replacement, bool mbeg, bool wild)
 {
     substnode *new = malloc(sizeof(*new));
     if (new == NULL) {
@@ -251,7 +251,7 @@ void add_substnode(char *pattern, char *replacement, char mbeg, char wild)
 /*
  * add a node to the action list
  */
-void add_actionnode(char *pattern, char *command, char *label, int active, int type, void *vregexp)
+void add_actionnode(char *pattern, char *command, char *label, bool active, int type, void *vregexp)
 {
     actionnode **p, *new = (actionnode*)malloc(sizeof(actionnode));
     int i;
@@ -293,7 +293,7 @@ void add_actionnode(char *pattern, char *command, char *label, int active, int t
 /*
  * add a node to the prompt list
  */
-void add_promptnode(char *pattern, char *command, char *label, int active, int type, void *vregexp)
+void add_promptnode(char *pattern, char *command, char *label, bool active, int type, void *vregexp)
 {
     promptnode **p, *new = (promptnode*)malloc(sizeof(promptnode));
     int i;
@@ -513,7 +513,7 @@ actionnode **lookup_prompt(char *label)
  * look up a marker node by pattern:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-marknode **lookup_marker(char *pattern, char mbeg)
+marknode **lookup_marker(char *pattern, bool mbeg)
 {
     marknode **p = &markers;
     while (*p && (mbeg != (*p)->b.mbeg || strcmp(pattern, (*p)->b.pattern)))
@@ -525,7 +525,7 @@ marknode **lookup_marker(char *pattern, char mbeg)
  * look up a substitution node by pattern:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-substnode **lookup_subst(char *pattern, char mbeg)
+substnode **lookup_subst(char *pattern, bool mbeg)
 {
     substnode **p = &substitutions;
     while (*p != NULL
