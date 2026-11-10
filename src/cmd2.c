@@ -1634,10 +1634,7 @@ void change_delaynode(delaynode **p, char *command, long millisec)
             strcpy(m->command, command);
         }
     }
-    if (millisec < 0)
-        add_node((defnode *)m, (defnode **)&dead_delays, rev_time_sort);
-    else
-        add_node((defnode *)m, (defnode **)&delays, time_sort);
+    insert_delaynode(m, millisec < 0);
     if (opt_info) {
         PRINTF("#changed ");
         show_delaynode(m, 0);

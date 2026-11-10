@@ -163,6 +163,14 @@ order=$(sed -n -e 's/^#alias \([abc]\)@\*=.*/\1/p' \
                -e 's/^#(\$\(z[ab]\) = .*/\1/p' "$tmp/out" | tr -d '\n')
 [ "$order" = abczazb ] || fail "listed in the order $order"
 
+run 'delays are listed in the order of their time' '#in a (50000) #print ("a")
+#in b (10000) #print ("b")
+#in c (30000) #print ("c")
+#in'
+order=$(sed -n 's/^#at ([0-9:]*) #in ([0-9]*) "\([abc]\)".*/\1/p' \
+            "$tmp/out" | tr -d '\n')
+[ "$order" = bca ] || fail "listed in the order $order"
+
 run 'substitute define, list and delete' '#substitute foo=bar
 #substitute
 #print ("a foo b foo")
