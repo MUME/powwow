@@ -695,6 +695,19 @@ has '#($w = "w")'
 lacks '#(@a = 1)'
 lacks '#($x = "x")'
 
+run '@(name) and $(name) are the named variables' \
+    '#($0 = "zero", $foo = "FOO", @foobar = 5, $1 = "foo")
+#print ("1 "+$("foo"))
+#print (@("foo"+"bar"))
+#($("foo") = "bar")
+#print ("2 "+$foo+$0)
+#($$1 += "!")
+#print ("3 "+$foo)'
+has '1 FOO'
+has '5'
+has '2 barzero'
+has '3 bar!'
+
 run 'an expression assigns to a variable that it reads' \
     '#(@foo = 5)
 #(@foo = @foo + 1)
