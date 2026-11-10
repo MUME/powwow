@@ -56,7 +56,7 @@ ptr  *ptrmescape(ptr *dst, char *src, int srclen, int append);
 
 ptr  *ptraddsubst_and_marks(ptr *dst, ptr *line);
 ptr  *ptrmaddsubst_and_marks(ptr *dst, char *line, int len);
-ptr  *ptrsubstdef(ptr *dst, char mbeg, char *pattern, char *replacement);
+ptr  *ptrsubstdef(ptr *dst, bool mbeg, char *pattern, char *replacement);
 
 void put_marks(char *dst, char *line);
 void smart_print(char *line, char newline);
