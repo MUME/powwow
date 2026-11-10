@@ -630,7 +630,7 @@ void delete_delaynode(delaynode **base)
 void delete_varnode(varnode **base, int type)
 {
     varnode *p = *base;
-    int idx = p->index, i, n;
+    int idx = p->index, i;
 
     *base = p->next;
     varnode **sorted = &sortednamed_vars[type];
@@ -652,27 +652,28 @@ void delete_varnode(varnode **base, int type)
     if (idx == i)
 	return;
 
-    /* now I must fill the hole in var[idx].*** */
-
-    for (n = 0; n < MAX_HASH; n++)
-	for (p = named_vars[type][n]; p; p = p->next)
-	if (p->index == i) {
-	    n = MAX_HASH;
-	    break;
-	}
-
-    if (!p) {               /* should NEVER happen */
-	print_error(error=UNDEFINED_VARIABLE_ERROR);
-	return;
+    /* the variable with the last index takes the index of the deleted one */
+    varnode *moved = NULL;
+    for (int n = 0; n < MAX_HASH && moved == NULL; ++n) {
+        for (varnode *v = named_vars[type][n]; v != NULL; v = v->next) {
+            if (v->index == i) {
+                moved = v;
+                break;
+            }
+        }
+    }
+    if (moved == NULL) {        /* should NEVER happen */
+        error = UNDEFINED_VARIABLE_ERROR;
+        print_error(error);
+        return;
     }
 
-    p->index = idx;
-
-    if (type) {
-	VAR[idx].str = &p->str;
-	VAR[ i ].str = NULL;
+    moved->index = idx;
+    if (type != 0) {
+        VAR[idx].str = &moved->str;
+        VAR[i].str = NULL;
     } else {
-	VAR[idx].num = &p->num;
-	VAR[ i ].num = NULL;
+        VAR[idx].num = &moved->num;
+        VAR[i].num = NULL;
     }
 }
