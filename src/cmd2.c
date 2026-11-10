@@ -187,6 +187,8 @@ void parse_alias(char *str)
              * don't take the lookup penalty though if not changing groups */
             if (group != NULL) {
                 np = lookup_alias(left);
+                if (*np == NULL)
+                    return;     /* out of memory when adding it */
                 if ((*np)->group != NULL)
                     free((*np)->group);
 
@@ -571,6 +573,8 @@ void parse_action(char *str, bool onprompt)
                     np = (onprompt
                           ? lookup_prompt(label)
                           : lookup_action(label));
+                    if (np == NULL || *np == NULL)
+                        return; /* out of memory when adding it */
                     if ((*np)->group != NULL)
                         free((*np)->group);
 
