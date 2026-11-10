@@ -160,9 +160,21 @@ struct named_vars named_vars[VAR_KINDS];
 int max_named_vars = 100;	   /* max number of named vars (grows as needed) */
 
 static param_stack paramstk;	   /* stack of local unnamed vars */
-static unnamedvar global_var[NUMVAR]; /* global unnamed vars */
+static unnamedvar global_var[GLOBAL_VAR_COUNT]; /* global unnamed vars */
 
 vars *var;			   /* vector of all vars */
+
+long *num_var(int n)
+{
+    assert(-GLOBAL_VAR_COUNT <= n && n < PARAM_COUNT + max_named_vars);
+    return VAR[n].num;
+}
+
+ptr **text_var(int n)
+{
+    assert(-GLOBAL_VAR_COUNT <= n && n < PARAM_COUNT + max_named_vars);
+    return VAR[n].str;
+}
 
 varnode *prompt;		   /* $prompt is always set */
 ptr *marked_prompt;		   /* $prompt with marks added */
@@ -453,12 +465,12 @@ int main(int argc, char **argv)
 
     /* initialize variables */
     if ((var = (vars *)malloc(sizeof(vars)*(NUMTOT+max_named_vars)))) {
-        for (int n = 0; n < NUMVAR; ++n) {
+        for (int n = 0; n < GLOBAL_VAR_COUNT; ++n) {
             var[n].num = &global_var[n].num;
             var[n].str = &global_var[n].str;
         }
         /* the parameters outside of any call */
-        for (int n = 0; n < NUMPARAM; ++n) {
+        for (int n = 0; n < PARAM_COUNT; ++n) {
             VAR[n].num = &paramstk.p[0][n].num;
             VAR[n].str = &paramstk.p[0][n].str;
         }
@@ -1653,17 +1665,17 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
  */
 static int match_regexp_action(void *regexp, char *line, int *match_s, int *match_e)
 {
-    regmatch_t reg_match[NUMPARAM - 1];
+    regmatch_t reg_match[PARAM_COUNT - 1];
 
-    if (!regexec((regex_t *)regexp, line, NUMPARAM - 1, reg_match, 0)) {
+    if (!regexec((regex_t *)regexp, line, PARAM_COUNT - 1, reg_match, 0)) {
 	int n;
 
 	match_s[0] = 0;
 	match_e[0] = strlen(line);
-	for (n = 1; n < NUMPARAM; n++)
+        for (n = 1; n < PARAM_COUNT; ++n)
 	    match_s[n] = match_e[n] = 0;
-	for (n = 0; n <= (int)((regex_t *)regexp)->re_nsub &&
-	     n < NUMPARAM - 1; n++) {
+        for (n = 0; (n <= (int)((regex_t *)regexp)->re_nsub
+                     && n < PARAM_COUNT - 1); ++n) {
 	    if (reg_match[n].rm_so == -1) continue;
 	    match_s[n+1] = reg_match[n].rm_so;
 	    match_e[n+1] = reg_match[n].rm_eo;
@@ -1696,7 +1708,7 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 
     {
         int p;
-        for (p = 0; p < NUMPARAM; p++)
+        for (p = 0; p < PARAM_COUNT; ++p)
             match_s[p] = match_e[p] = 0;
     }
 
@@ -1714,11 +1726,11 @@ static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
 	    tmp = pat + 1;
 	    if (isdigit(*tmp)) {
 		int p = 0;
-		while (isdigit(*tmp) && p < NUMPARAM) {
+                while (isdigit(*tmp) && p < PARAM_COUNT) {
 		    p *= 10;
 		    p += *tmp++ - '0';
 		}
-		if (p <= 0 || p >= NUMPARAM) {
+                if (p <= 0 || p >= PARAM_COUNT) {
 		    ptrdel(&buf);
 		    return 0;
 		}
@@ -1819,7 +1831,7 @@ static int search_action_or_prompt(char *line, char clearline, char onprompt)
      */
     triggernode *p;
     int ret = 0;
-    int match_s[NUMPARAM], match_e[NUMPARAM];
+    int match_s[PARAM_COUNT], match_e[PARAM_COUNT];
 
     for (p = onprompt ? prompts : actions; p; p = p->next) {
 #ifdef USE_REGEXP
@@ -2035,8 +2047,8 @@ static void get_user_input(void)
 
 /*
  * split str into words separated by DELIM, and place in
- * VAR[1].str ... VAR[9].str -
- * the whole str is put in VAR[0].str
+ * text_var(1) ... text_var(9) -
+ * the whole str is put in text_var(0)
  */
 static char *split_words(char *str)
 {
@@ -2044,10 +2056,10 @@ static char *split_words(char *str)
     char *end;
     ptr **prm;
 
-    *VAR[0].str = ptrmcpy(*VAR[0].str, str, strlen(str));
-    for (i = 1; i < NUMPARAM; i++) {
-	*VAR[i].num = 0;
-	prm = VAR[i].str;
+    *text_var(0) = ptrmcpy(*text_var(0), str, strlen(str));
+    for (i = 1; i < PARAM_COUNT; ++i) {
+        *num_var(i) = 0;
+        prm = text_var(i);
 	/* skip multiple span of DELIM */
 	while (*str && IS_DELIM(*str))
 	    str++;
@@ -2071,12 +2083,12 @@ static void free_allparams(void)
     paramstk.curr = 0;    /* reset stack to empty */
 
     for (i=1; i<MAX_STACK; i++) {
-	for (j=0; j<NUMPARAM; j++) {
+        for (j=0; j<PARAM_COUNT; j++) {
 	    ptrdel(&paramstk.p[i][j].str);
 	    paramstk.p[i][j].str = (ptr *)0;
 	}
     }
-    for (j=0; j<NUMPARAM; j++) {
+    for (j=0; j<PARAM_COUNT; j++) {
 	VAR[j].num = &paramstk.p[0][j].num;
 	VAR[j].str = &paramstk.p[0][j].str;
     }
@@ -2093,7 +2105,7 @@ void push_params(void)
 	free_allparams();
 	return;
     }
-    for (i=0; i<NUMPARAM; i++) {
+    for (i=0; i<PARAM_COUNT; i++) {
 	        *(VAR[i].num = &paramstk.p[paramstk.curr][i].num) = 0;
 	ptrzero(*(VAR[i].str = &paramstk.p[paramstk.curr][i].str));
     }
@@ -2110,7 +2122,7 @@ void pop_params(void)
 	free_allparams();
 	return;
     }
-    for (i=0; i<NUMPARAM; i++) {
+    for (i=0; i<PARAM_COUNT; i++) {
 	ptrdel(VAR[i].str); *VAR[i].str = (ptr *)0;
 	VAR[i].num = &paramstk.p[paramstk.curr][i].num;
 	VAR[i].str = &paramstk.p[paramstk.curr][i].str;
@@ -2121,17 +2133,17 @@ static void set_params(char *line, int *match_s, int *match_e)
 {
     int i;
 
-    for (i=0; i<NUMPARAM; i++) {
-	*VAR[i].num = 0;
+    for (i = 0; i < PARAM_COUNT; ++i) {
+        *num_var(i) = 0;
 	if (match_e[i] > match_s[i]) {
-	    *VAR[i].str = ptrmcpy(*VAR[i].str, line + match_s[i],
+            *text_var(i) = ptrmcpy(*text_var(i), line + match_s[i],
 				  match_e[i] - match_s[i]);
 	    if (MEM_ERROR) {
 		print_error(error);
 		return;
 	    }
 	} else
-	    ptrzero(*VAR[i].str);
+            ptrzero(*text_var(i));
     }
 }
 
@@ -2458,7 +2470,7 @@ static int subst_param(ptr **buf, char *src)
 		while (isdigit(*tmp))
 		    tmp++;
 
-		if (i < NUMPARAM) {
+                if (i < PARAM_COUNT) {
 		    int max = 0, n;
 		    char *data = NULL, buf2[LONGLEN];
 
@@ -2467,10 +2479,13 @@ static int subst_param(ptr **buf, char *src)
 
 		    /* now the actual substitution */
 		    if (kind) {
-			if (*VAR[i].str && (data = ptrdata(*VAR[i].str)))
-			    max = ptrlen(*VAR[i].str);
+                        if (*text_var(i) != NULL) {
+                            data = ptrdata(*text_var(i));
+                            max = ptrlen(*text_var(i));
+                        }
 		    } else {
-			sprintf(data = buf2, "%ld", *VAR[i].num);
+                        data = buf2;
+                        sprintf(data, "%ld", *num_var(i));
 			max = strlen(buf2);
 		    }
 		    if (data && max) {
@@ -2540,7 +2555,7 @@ static int jit_subst_vars(ptr **buf, char *src)
 		if (isdigit(*tmp) || *tmp == '-') {
 		    /* numbered variable */
 		    i = atoi(tmp);
-		    if (i >= -NUMVAR && i < NUMPARAM) {
+                    if (i >= -GLOBAL_VAR_COUNT && i < PARAM_COUNT) {
 			if (*tmp == '-')
 			    tmp++;
 			while (isdigit(*tmp))
@@ -2570,10 +2585,13 @@ static int jit_subst_vars(ptr **buf, char *src)
 
 		    /* now the actual substitution */
                     if (kind == VAR_TEXT) {
-			if (*VAR[i].str && (data = ptrdata(*VAR[i].str)))
-			    max = ptrlen(*VAR[i].str);
+                        if (*text_var(i) != NULL) {
+                            data = ptrdata(*text_var(i));
+                            max = ptrlen(*text_var(i));
+                        }
 		    } else {
-			sprintf(data = buf2, "%ld", *VAR[i].num);
+                        data = buf2;
+                        sprintf(data, "%ld", *num_var(i));
 			max = strlen(buf2);
 		    }
 		    if (data && max) {

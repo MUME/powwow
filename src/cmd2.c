@@ -1571,13 +1571,13 @@ void show_vars(void)
             }
         }
     }
-    for (int i = -NUMVAR; !REAL_ERROR && i < NUMPARAM; ++i) {
-        if (*VAR[i].num != 0)
-            tty_message("#(@%d = %ld)\n", i, *VAR[i].num);
+    for (int i = -GLOBAL_VAR_COUNT; !REAL_ERROR && i < PARAM_COUNT; ++i) {
+        if (*num_var(i) != 0)
+            tty_message("#(@%d = %ld)\n", i, *num_var(i));
     }
-    for (int i = -NUMVAR; !REAL_ERROR && i < NUMPARAM; ++i) {
-        if (*VAR[i].str != NULL && ptrlen(*VAR[i].str) != 0) {
-            p = ptrescape(p, *VAR[i].str, 0);
+    for (int i = -GLOBAL_VAR_COUNT; !REAL_ERROR && i < PARAM_COUNT; ++i) {
+        if (*text_var(i) != NULL && ptrlen(*text_var(i)) != 0) {
+            p = ptrescape(p, *text_var(i), 0);
             if (p != NULL && ptrlen(p) != 0)
                 tty_message("#($%d = \"%s\")\n", i, ptrdata(p));
         }
