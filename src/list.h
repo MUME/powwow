@@ -9,14 +9,12 @@ long diff_vtime(vtime *t1, vtime *t2);
 
 int rev_sort(defnode *node1, defnode *node2);
 int ascii_sort(defnode *node1, defnode *node2);
-int rev_ascii_sort(defnode *node1, defnode *node2);
 int time_sort(defnode *node1, defnode *node2);
 int rev_time_sort(defnode *node1, defnode *node2);
 
 int hash(const char *name, int optlen);
 
 void add_node(defnode *newnode, defnode **base, function_sort sort);
-void reverse_sortedlist(sortednode **base);
 
 void add_aliasnode(char *name, char *subst);
 void add_actionnode(char *pattern, char *command, char *label, bool active, int type, void *vregexp);

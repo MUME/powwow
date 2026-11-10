@@ -73,12 +73,6 @@ int ascii_sort(defnode *node1, defnode *node2)
     return strcmp(node1->sortfield, node2->sortfield);
 }
 
-int rev_ascii_sort(defnode *node1, defnode *node2)
-{
-    return strcmp(node2->sortfield, node1->sortfield);
-}
-
-
 /*
  * comparison between times of execution of nodes
  * (return -1 if node1->when < node2->when)
@@ -124,39 +118,6 @@ void add_node(defnode *newnode, defnode **base, function_sort sort)
     *base = newnode;
 }
 
-static void add_sortednode(sortednode *newnode, sortednode **base, function_sort sort)
-{
-    while((*base) && (!sort || (*sort)((defnode *)newnode, (defnode *)*base) > 0))
-	base = &(*base)->snext;
-    newnode->snext = *base;
-    *base = newnode;
-}
-
-void reverse_sortedlist(sortednode **base)
-{
-    sortednode *node = *base, *list = NULL, *tmp;
-    while (node) {
-	tmp = node->snext;
-	node->snext = list;
-	list = node;
-	node = tmp;
-    }
-    *base = list;
-}
-
-static sortednode **selflookup_sortednode(sortednode *self, sortednode **base)
-{
-    sortednode **p = base;
-    while (*p && *p != self)
-	p = &(*p)->snext;
-    if (!*p) {
-	wrap_printf("#internal error, selflookup_sortednode(\"%s\") failed!",
-                    self->sortfield);
-	error = INTERNAL_ERROR;
-    }
-    return p;
-}
-
 /*
  * add a node to the alias list
  */
@@ -182,7 +143,12 @@ void add_aliasnode(char *name, char *subst)
 	return;
     }
     add_node((defnode*)new, (defnode**)&aliases[hash(name,-1)], rev_sort);
-    add_sortednode((sortednode*)new, (sortednode**)&sortedaliases, rev_ascii_sort);
+    /* the list of the aliases in ASCII order */
+    aliasnode **sorted = &sortedaliases;
+    while (*sorted != NULL && strcmp((*sorted)->name, new->name) < 0)
+        sorted = &(*sorted)->snext;
+    new->snext = *sorted;
+    *sorted = new;
 }
 
 /*
@@ -458,7 +424,12 @@ varnode *add_varnode(char *name, int type)
     num_named_vars[type]++;
 
     add_node((defnode*)new, (defnode**)&named_vars[type][hash(name,-1)], rev_sort);
-    add_sortednode((sortednode*)new, (sortednode**)&sortednamed_vars[type], rev_ascii_sort);
+    /* the list of the variables in ASCII order */
+    varnode **sorted = &sortednamed_vars[type];
+    while (*sorted != NULL && strcmp((*sorted)->name, new->name) < 0)
+        sorted = &(*sorted)->snext;
+    new->snext = *sorted;
+    *sorted = new;
     return new;
 }
 
@@ -578,11 +549,16 @@ void delete_aliasnode(aliasnode **base)
 {
     aliasnode *p = *base;
     *base = p->next;
-    if (*(base = (aliasnode**)selflookup_sortednode
-	  ((sortednode*)p, (sortednode**)&sortedaliases)))
-	*base = p->snext;
-    else
-	return;
+    aliasnode **sorted = &sortedaliases;
+    while (*sorted != NULL && *sorted != p)
+        sorted = &(*sorted)->snext;
+    if (*sorted == NULL) {
+        wrap_printf("#internal error, alias \"%s\" is not in the sorted list",
+                    p->name);
+        error = INTERNAL_ERROR;
+        return;
+    }
+    *sorted = p->snext;
     if (p->name) free(p->name);
     if (p->subst) free(p->subst);
     free(p->group);
@@ -686,11 +662,16 @@ void delete_varnode(varnode **base, int type)
     int idx = p->index, i, n;
 
     *base = p->next;
-    if (*(base = (varnode**)selflookup_sortednode
-	  ((sortednode*)p, (sortednode**)&sortednamed_vars[type])))
-	*base = p->snext;
-    else
-	return;
+    varnode **sorted = &sortednamed_vars[type];
+    while (*sorted != NULL && *sorted != p)
+        sorted = &(*sorted)->snext;
+    if (*sorted == NULL) {
+        wrap_printf("#internal error, variable \"%s\" is not in the sorted"
+                    " list", p->name);
+        error = INTERNAL_ERROR;
+        return;
+    }
+    *sorted = p->snext;
     if (p->name) free(p->name);
     if (type != 0 && p->str != NULL) ptrdel(&p->str);
     free((void*)p);

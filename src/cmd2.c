@@ -50,7 +50,6 @@ void show_aliases(void)
             ? " is"
             : "es are"),
            sortedaliases != NULL ? ':' : '.');
-    reverse_sortedlist((sortednode **)&sortedaliases);
     for (aliasnode *p = sortedaliases; p != NULL; p = p->snext) {
         char buf[BUFSIZE];
         escape_specials(buf, p->name);
@@ -59,7 +58,6 @@ void show_aliases(void)
                     buf, group_delim, p->group == NULL ? "*" : p->group,
                     p->subst);
     }
-    reverse_sortedlist((sortednode **)&sortedaliases);
 }
 
 /*
@@ -1558,7 +1556,6 @@ void show_vars(void)
     PRINTF("#the following variables are defined:\n");
 
     for (int type = 0; !REAL_ERROR && type < 2; ++type) {
-        reverse_sortedlist((sortednode **)&sortednamed_vars[type]);
         for (varnode *v = sortednamed_vars[type]; v != NULL; v = v->snext) {
             if (type == 0) {
                 tty_message("#(@%s = %ld)\n", v->name, v->num);
@@ -1572,7 +1569,6 @@ void show_vars(void)
                             p != NULL ? ptrdata(p) : "");
             }
         }
-        reverse_sortedlist((sortednode **)&sortednamed_vars[type]);
     }
     for (int i = -NUMVAR; !REAL_ERROR && i < NUMPARAM; ++i) {
         if (*VAR[i].num != 0)
