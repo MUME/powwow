@@ -90,7 +90,6 @@ static_assert(MAX_CONNECTS <= UCHAR_MAX, "MAX_CONNECTS must fit in a byte");
 /* the global numbered variables @-50..@-1 and $-50..$-1;
  * update doc/powwow.md.in if changed */
 #define GLOBAL_VAR_COUNT 50
-#define NUMTOT          (GLOBAL_VAR_COUNT+PARAM_COUNT)
 #define MAX_SUBOPT	256	/* max length of suboption string */
 #define MAX_ARGS	16	/* max number of arguments to editor */
 #define FLASHDELAY	500	/* time of parentheses flash in millisecs */
@@ -226,7 +225,6 @@ typedef struct varnode {        /* for named variables */
     struct varnode *next;
     char *name;
     struct varnode *snext;
-    int index;
     long num;
     ptr  *str;
 } varnode;
@@ -237,23 +235,12 @@ enum var_kind { VAR_NUM, VAR_TEXT, VAR_KINDS };     /* @name, $name */
 struct named_vars {
     varnode *buckets[MAX_HASH];
     varnode *sorted;            /* in ASCII order */
-    int count;
 };
 
 typedef struct {                /* for unnamed vars */
     long num;
     ptr  *str;
 } unnamedvar;
-
-typedef struct {		/* stack of local vars */
-    unnamedvar p[MAX_STACK][PARAM_COUNT];
-    int curr;
-} param_stack;
-
-typedef struct {		/* pointers to all variables */
-    long *num;
-    ptr  **str;
-} vars;
 
 /* editing session control */
 typedef struct editsess {
