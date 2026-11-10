@@ -560,7 +560,9 @@ static int exe_op(operator *op)
 	      case op_times_eq:    *l  *= o2.num; break;
 	      case op_div_eq:      *l  /= o2.num; break;
 	      case op_ampersand_eq:
-		if ((*l %= o2.num) < 0) *l += o2.num; break;
+                if ((*l %= o2.num) < 0)
+                    *l += o2.num;
+                break;
 	      default:
 	          break;
 	    }
@@ -679,7 +681,9 @@ static int exe_op(operator *op)
 	      case op_times:       o1.num *= o2.num; break;
 	      case op_division:    o1.num /= o2.num; break;
 	      case op_ampersand:
-		if ((o1.num %= o2.num) < 0) o1.num += o2.num; break;
+                if ((o1.num %= o2.num) < 0)
+                    o1.num += o2.num;
+                break;
 	      default:
 	          break;
 	    }

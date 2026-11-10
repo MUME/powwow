@@ -63,8 +63,8 @@ static void check_to_utf8(const char *what, enum charset cs,
 
 #define ENCODE(what, cs, in, expect) do {                               \
         char out[256];                                                  \
-        size_t n = charset_encode(cs, in, sizeof(in) - 1, out);        \
-        check_bytes(what, out, n, expect, sizeof(expect) - 1);         \
+        size_t outlen = charset_encode(cs, in, sizeof(in) - 1, out);    \
+        check_bytes(what, out, outlen, expect, sizeof(expect) - 1);     \
     } while (0)
 
 static void check_int(const char *what, long got, long expect)

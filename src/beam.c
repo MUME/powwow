@@ -214,18 +214,19 @@ void cancel_edit(editsess *sp)
 
 static ssize_t read_file(int fd, void *buf, size_t count)
 {
+    char *p = buf;
     size_t result = 0;
     while (count > 0) {
         int r;
         do {
-            r = read(fd, buf, count);
+            r = read(fd, p, count);
         } while (r < 0 && errno == EINTR);
         if (r < 0)
             return -1;
         if (r == 0)
             break;
         result += r;
-        buf += r;
+        p += r;
         count -= r;
     }
     return result;

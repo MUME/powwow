@@ -28,20 +28,20 @@ static int failures;
  * the calls are not evaluated
  */
 #define IS_CONST(expr) _Generic((expr), const char *: true, default: false)
-static const char const_str[] = "a";
-static char str[] = "a";
-static_assert(IS_CONST(memchrs(const_str, 1, "a", 1))
-              && !IS_CONST(memchrs(str, 1, "a", 1)), "memchrs");
-static_assert(IS_CONST(memrchrs(const_str, 1, "a", 1))
-              && !IS_CONST(memrchrs(str, 1, "a", 1)), "memrchrs");
-static_assert(IS_CONST(memfind(const_str, 1, "a", 1))
-              && !IS_CONST(memfind(str, 1, "a", 1)), "memfind");
-static_assert(IS_CONST(skipspace(const_str))
-              && !IS_CONST(skipspace(str)), "skipspace");
-static_assert(IS_CONST(first_valid(const_str, 'a'))
-              && !IS_CONST(first_valid(str, 'a')), "first_valid");
-static_assert(IS_CONST(first_regular(const_str, 'a'))
-              && !IS_CONST(first_regular(str, 'a')), "first_regular");
+#define CONST_STR ((const char *)NULL)
+#define STR ((char *)NULL)
+static_assert(IS_CONST(memchrs(CONST_STR, 1, "a", 1))
+              && !IS_CONST(memchrs(STR, 1, "a", 1)), "memchrs");
+static_assert(IS_CONST(memrchrs(CONST_STR, 1, "a", 1))
+              && !IS_CONST(memrchrs(STR, 1, "a", 1)), "memrchrs");
+static_assert(IS_CONST(memfind(CONST_STR, 1, "a", 1))
+              && !IS_CONST(memfind(STR, 1, "a", 1)), "memfind");
+static_assert(IS_CONST(skipspace(CONST_STR))
+              && !IS_CONST(skipspace(STR)), "skipspace");
+static_assert(IS_CONST(first_valid(CONST_STR, 'a'))
+              && !IS_CONST(first_valid(STR, 'a')), "first_valid");
+static_assert(IS_CONST(first_regular(CONST_STR, 'a'))
+              && !IS_CONST(first_regular(STR, 'a')), "first_regular");
 
 static void check(const char *what, bool ok)
 {

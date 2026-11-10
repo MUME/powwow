@@ -785,7 +785,9 @@ void tcp_write_escape_iac(connsess *conn, const void *data, size_t len)
 
     for (;;) {
         const char *iac = memchr(data, IAC, len);
-        size_t l = iac ? (iac - (const char *)data) + 1 : len;
+        size_t l = len;
+        if (iac != NULL)
+            l = iac - (const char *)data + 1;
         internal_tcp_raw_write(conn, data, l);
         if (iac == NULL)
             return;

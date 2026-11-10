@@ -30,7 +30,7 @@ void sgr_output(const char *s, size_t len);
 void sgr_prompt_start(void);
 const char *sgr_prompt_base(void);
 void sgr_prompt_draw(void);
-void sgr_prompt_commit(const char *prompt, size_t len);
+void sgr_prompt_commit(const char *text, size_t len);
 
 void ptrunescape(ptr *p);
 int  memunescape(char *p, int lenp, bool raw);
