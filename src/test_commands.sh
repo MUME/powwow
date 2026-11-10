@@ -171,6 +171,13 @@ order=$(sed -n 's/^#at ([0-9:]*) #in ([0-9]*) "\([abc]\)".*/\1/p' \
             "$tmp/out" | tr -d '\n')
 [ "$order" = bca ] || fail "listed in the order $order"
 
+run 'an instruction for an unknown connection' '##nosuch hello
+{#print ("in a block")
+#print ("alive")'
+has '#no connection named "nosuch"'
+has '#error: missing right parenthesis.'
+has 'alive'
+
 run 'substitute define, list and delete' '#substitute foo=bar
 #substitute
 #print ("a foo b foo")
