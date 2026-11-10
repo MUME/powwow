@@ -21,11 +21,12 @@ void process_remote_input(char *buf, int size);
 void push_params(void);
 void pop_params(void);
 void prompt_set_iac(char *p);
-char *parse_instruction(char *line, char silent, char subs, char jit_subs);
+char *parse_instruction(char *line, bool silent, bool subs,
+                        bool jit_subs);
 char *get_next_instr(char *p);
-void parse_user_input(char *line, char silent);
+void parse_user_input(char *line, bool silent);
 void set_deffile(char *arg);
-int  is_permanent_variable(struct varnode *v);
+bool is_permanent_variable(struct varnode *v);
 
 
 /* shared vars from main.c */
@@ -112,20 +113,20 @@ extern char flashback;
 extern int excursion;
 extern bool verbatim;
 
-extern char opt_exit;
-extern char opt_history;
-extern char opt_words;
-extern char opt_compact;
-extern char opt_debug;
-extern char opt_wrap;
-extern char opt_echo;
-extern char opt_info;
-extern char opt_keyecho;
-extern char opt_speedwalk;
-extern char opt_autoprint;
-extern char opt_reprint;
-extern char opt_sendsize;
-extern char opt_autoclear;
+extern bool opt_exit;
+extern bool opt_history;
+extern bool opt_words;
+extern bool opt_compact;
+extern bool opt_debug;
+extern bool opt_wrap;
+extern bool opt_echo;
+extern bool opt_info;
+extern bool opt_keyecho;
+extern bool opt_speedwalk;
+extern bool opt_autoprint;
+extern bool opt_reprint;
+extern bool opt_sendsize;
+extern bool opt_autoclear;
 
 extern function_str last_edit_cmd;
 

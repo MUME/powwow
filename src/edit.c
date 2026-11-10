@@ -1471,7 +1471,7 @@ void enter_line(char *dummy)
     if (!*edbuf || (verbatim && *edbuf != '#'))
 	tcp_write(current_connection, edbuf);
     else
-	parse_user_input(edbuf, 1);
+	parse_user_input(edbuf, true);
     history_done = 0;
 
     /* don't put identical lines in history, nor empty ones */
@@ -2802,7 +2802,7 @@ void key_run_command(char *cmd)
 
     log_record_line(edbuf);
 
-    parse_instruction(cmd, 1, 0, 1);
+    parse_instruction(cmd, true, false, true);
     history_done = 0;
 }
 

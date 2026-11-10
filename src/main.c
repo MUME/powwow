@@ -115,20 +115,20 @@ int  line_status = 0;	/* input line status: 0 = ready -> nothing to do;
 
 int limit_mem = 0;	/* if !=0, max len of a string or text */
 
-char opt_echo = 1;	/* 1 if text sent to MUD must be echoed */
-char opt_keyecho = 1;	/* 1 if binds must be echoed */
-char opt_info = 1;	/* 0 if internal messages are suppressed */
-char opt_exit = 0;	/* 1 to autoquit when closing last conn. */
-char opt_history;	/* 1 if to save also history */
-char opt_words = 0;	/* 1 if to save also word completion list */
-char opt_compact = 0;	/* 1 if to clear prompt between remote messages */
-char opt_debug = 0;	/* 1 if to echo every line before executing it */
-char opt_speedwalk = 0;	/* 1 = speedwalk on */
-char opt_wrap = 0;	/* 1 = word wrap active */
-char opt_autoprint = 0;	/* 1 = automatically #print lines matched by actions */
-char opt_reprint = 0;	/* 1 = reprint sent commands when we get a prompt */
-char opt_sendsize = 0;	/* 1 = send term size upon connect */
-char opt_autoclear = 1;	/* 1 = clear input line before executing commands
+bool opt_echo = true;	/* true if text sent to MUD must be echoed */
+bool opt_keyecho = true;	/* true if binds must be echoed */
+bool opt_info = true;	/* false if internal messages are suppressed */
+bool opt_exit = false;	/* true to autoquit when closing last conn. */
+bool opt_history = false;	/* true if to save also history */
+bool opt_words = false;	/* true if to save also word completion list */
+bool opt_compact = false;	/* true if to clear prompt between remote messages */
+bool opt_debug = false;	/* true if to echo every line before executing it */
+bool opt_speedwalk = false;	/* true: speedwalk on */
+bool opt_wrap = false;	/* true: word wrap active */
+bool opt_autoprint = false;	/* true: automatically #print lines matched by actions */
+bool opt_reprint = false;	/* true: reprint sent commands when we get a prompt */
+bool opt_sendsize = false;	/* true: send term size upon connect */
+bool opt_autoclear = true;	/* true: clear input line before executing commands
 			 * from spawned programs.
 			 * if 0, spawned progs must #clear before printing
 			 */
@@ -572,7 +572,7 @@ int main(int argc, char **argv)
                  hostinfo.port, &hostinfo.tlsopt, hostinfo.utf8);
 
     if (read_file && !*hostinfo.name && *initstr) {
-	parse_instruction(initstr, 0, 0, 1);
+	parse_instruction(initstr, false, false, true);
 	history_done = 0;
     }
 
@@ -916,7 +916,7 @@ static void exec_delays(void)
 	    if (MEM_ERROR)
 		out_of_memory();
 	    else {
-		parse_instruction(ptrdata(buf), 0, 0, 1);
+		parse_instruction(ptrdata(buf), false, false, true);
 		history_done = 0;
 	    }
 	}
@@ -1585,7 +1585,7 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
 		    }
 		    tty_message("##%s [%s]\n", old_connection->id, buf);
 		}
-		parse_user_input(buf, 0);
+		parse_user_input(buf, false);
 		/*
 		 * strtok() may have been used in parse_user_input()...
 		 * cannot rely it refers on what we may have set above.
@@ -1840,7 +1840,7 @@ static int search_action_or_prompt(char *line, char clearline, char onprompt)
 	    }
 	    if (clearline)
 		clear_input_line(1);
-	    parse_instruction(p->command, 0, 1, 1);
+	    parse_instruction(p->command, false, true, true);
 	    history_done = 0;
 	    if (error!=DYN_STACK_UND_ERROR && error!=DYN_STACK_OV_ERROR)
 		pop_params();
@@ -2171,7 +2171,7 @@ char *get_next_instr(char *p)
     return p;
 }
 
-static void send_line(char *line, char silent)
+static void send_line(char *line, bool silent)
 {
     if (!silent && opt_echo) { PRINTF("[%s]\n", line); }
     tcp_write(current_connection, line);
@@ -2188,7 +2188,8 @@ static void swap_ptrs(ptr **a, ptr **b)
  * Parse and exec the first instruction in 'line', and return pointer to the
  * second instruction in 'line' (if any).
  */
-char *parse_instruction(char *line, char silent, char subs, char jit_subs)
+char *parse_instruction(char *line, bool silent, bool subs,
+			bool jit_subs)
 {
     aliasnode *np;
     char *buf, *arg, *end, *ret;
@@ -2307,7 +2308,6 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
 	    } else
 		print_error(error=MISSING_PAREN_ERROR);
 	} else {
-	    int oneword;
 	    /* initial spaces are NOT skipped this time */
 
 	    pbuf = ptrsetlen(pbuf, len = strlen(line));
@@ -2318,8 +2318,7 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
 	    /* buf contains the first word, arg points to arguments */
 
 	    /* now pbuf is used too */
-	    if (!*arg) oneword = 1;
-	    else oneword = 0;
+            bool oneword = (*arg == '\0');
 
 	    if ((np = *lookup_alias(buf))&&np->active) {
 		push_params();
@@ -2327,7 +2326,7 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
 
 		split_words(arg);  /* split argument into words
 				    and place them in $0 ... $9 */
-		parse_instruction(np->subst, 0, 1, 1);
+		parse_instruction(np->subst, false, true, true);
 
 		if (error!=DYN_STACK_UND_ERROR && error!=DYN_STACK_OV_ERROR)
 		    pop_params();
@@ -2343,7 +2342,7 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
 		} else
 		    parse_commands(buf + 1, arg);
 		/* ok, buf contains skipspace(first word) */
-	    } else if (!oneword || !map_walk(buf, silent, 0)) {
+            } else if (!oneword || !map_walk(buf, silent, false)) {
 		/* it is ok, map_walk accepts only one word */
 
 		if (!subs && !jit_subs)
@@ -2364,10 +2363,10 @@ char *parse_instruction(char *line, char silent, char subs, char jit_subs)
  * in cmd_line.
  * silent = 1 if the line should not be echoed, 0 otherwise.
  */
-void parse_user_input(char *line, char silent)
+void parse_user_input(char *line, bool silent)
 {
     do {
-	line = parse_instruction(line, silent, 0, 0);
+	line = parse_instruction(line, silent, false, false);
     } while (!error && line && *line);
 }
 
@@ -2386,7 +2385,7 @@ static void parse_commands(char *command, char *arg)
     if (isdigit(*command) && (i = atoi(command))) {
 	if (i >= 0) {
 	    while (i--)
-		(void)parse_instruction(arg, 1, 0, 1);
+		(void)parse_instruction(arg, true, false, true);
 	} else {
 	    PRINTF("#bogus repeat count\n");
 	}
@@ -2653,7 +2652,7 @@ void set_deffile(char *arg)
 /*
  * return true if var is one of the permanent variables
  */
-int is_permanent_variable(varnode *v)
+bool is_permanent_variable(varnode *v)
 {
     return (v == prompt || v == last_line);
 }
