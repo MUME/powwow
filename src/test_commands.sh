@@ -670,6 +670,14 @@ has 'in x|x||7'
 has 'o a b|a|b|3'
 has 'hit hit foo|4'
 
+run 'the parameters outside of any call are kept' \
+    '#($1 = "top", @1 = 5)
+#alias noop=#print ("noop")
+noop
+#for (@(2) = 0; @(2) < 1; @(2)++) #print ("for")
+#print ("after "+$(1)+%(@(1)))'
+has 'after top5'
+
 run 'deleting a named variable keeps the others' \
     '#(@a = 1, @b = 2, @c = 3, $x = "x", $y = "y", $z = "z")
 #var @a=

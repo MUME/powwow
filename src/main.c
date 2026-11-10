@@ -162,7 +162,7 @@ int max_named_vars = 100;	   /* max number of named vars (grows as needed) */
 int num_named_vars[2];		   /* number of named variables actually used */
 
 static param_stack paramstk;	   /* stack of local unnamed vars */
-static unnamedvar global_var[NUMTOT]; /* global unnamed vars */
+static unnamedvar global_var[NUMVAR]; /* global unnamed vars */
 
 vars *var;			   /* vector of all vars */
 
@@ -402,7 +402,6 @@ int main(int argc, char **argv)
     }
 
     char *p;
-    int i;
     bool read_file = false;     /* run initstr ? */
 
     /* initializations */
@@ -456,10 +455,15 @@ int main(int argc, char **argv)
 
     /* initialize variables */
     if ((var = (vars *)malloc(sizeof(vars)*(NUMTOT+max_named_vars)))) {
-	for (i=0; i<NUMTOT; i++) {
-	    var[i].num = &global_var[i].num;
-	    var[i].str = &global_var[i].str;
-	}
+        for (int n = 0; n < NUMVAR; ++n) {
+            var[n].num = &global_var[n].num;
+            var[n].str = &global_var[n].str;
+        }
+        /* the parameters outside of any call */
+        for (int n = 0; n < NUMPARAM; ++n) {
+            VAR[n].num = &paramstk.p[0][n].num;
+            VAR[n].str = &paramstk.p[0][n].str;
+        }
     } else
 	syserr("out of memory");
 
