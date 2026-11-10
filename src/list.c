@@ -61,37 +61,6 @@ long diff_vtime(vtime *t1, vtime *t2)
 	(t1->tv_usec - t2->tv_usec) / uSEC_PER_mSEC;
 }
 
-int rev_sort(defnode *node1, defnode *node2)
-{
-    return -1;
-}
-
-/*
- * standard ASCII comparison between nodes
- */
-int ascii_sort(defnode *node1, defnode *node2)
-{
-    return strcmp(node1->sortfield, node2->sortfield);
-}
-
-/*
- * comparison between times of execution of nodes
- * (return -1 if node1->when < node2->when)
- */
-int time_sort(defnode *node1, defnode *node2)
-{
-    return cmp_vtime(&((delaynode *)node1)->when, &((delaynode *)node2)->when);
-}
-
-/*
- * reverse comparison between times of execution of nodes
- * (return -1 if node1->when > node2->when)
- */
-int rev_time_sort(defnode *node1, defnode *node2)
-{
-    return cmp_vtime(&((delaynode *)node2)->when, &((delaynode *)node1)->when);
-}
-
 /* the 32-bit FNV-1a hash of 'name' */
 static uint32_t hash(const char *name)
 {
@@ -115,14 +84,19 @@ static uint32_t hash_bucket(const char *name)
 }
 
 /*
- * generic list node adding routine
+ * insert 'node' into the delays, which are in the order of their time, or
+ * if 'dead', into the dead delays, which are in reverse order
  */
-void add_node(defnode *newnode, defnode **base, function_sort sort)
+void insert_delaynode(delaynode *node, bool dead)
 {
-    while((*base) && (!sort || (*sort)(newnode, *base) > 0))
-	base = &(*base)->next;
-    newnode->next = *base;
-    *base = newnode;
+    delaynode **base = dead ? &dead_delays : &delays;
+    while (*base != NULL
+           && (dead
+               ? cmp_vtime(&(*base)->when, &node->when) > 0
+               : cmp_vtime(&node->when, &(*base)->when) > 0))
+        base = &(*base)->next;
+    node->next = *base;
+    *base = node;
 }
 
 /*
@@ -149,7 +123,9 @@ void add_aliasnode(char *name, char *subst)
 	free(new);
 	return;
     }
-    add_node((defnode*)new, (defnode**)&aliases[hash_bucket(name)], rev_sort);
+    aliasnode **bucket = &aliases[hash_bucket(name)];
+    new->next = *bucket;
+    *bucket = new;
     /* the list of the aliases in ASCII order */
     aliasnode **sorted = &sortedaliases;
     while (*sorted != NULL && strcmp((*sorted)->name, new->name) < 0)
@@ -318,7 +294,12 @@ void add_keynode(const char *name, const char *sequence, int seqlen,
 	free(new);
 	return;
     }
-    add_node((defnode*)new, (defnode**)&keydefs, ascii_sort);
+    /* in ASCII order of their names */
+    keynode **base = &keydefs;
+    while (*base != NULL && strcmp(new->name, (*base)->name) > 0)
+        base = &(*base)->next;
+    new->next = *base;
+    *base = new;
 }
 
 /*
@@ -346,10 +327,7 @@ delaynode *add_delaynode(char *name, char *command, vtime *when, int is_dead)
 
     new->when.tv_sec = when->tv_sec;
     new->when.tv_usec = when->tv_usec;
-    if (is_dead)
-	add_node((defnode*)new, (defnode**)&dead_delays, rev_time_sort);
-    else
-	add_node((defnode*)new, (defnode**)&delays, time_sort);
+    insert_delaynode(new, is_dead != 0);
 
     return new;
 }
@@ -414,8 +392,9 @@ varnode *add_varnode(char *name, int type)
 	VAR[m].num = &new->num;
     num_named_vars[type]++;
 
-    add_node((defnode*)new, (defnode**)&named_vars[type][hash_bucket(name)],
-             rev_sort);
+    varnode **bucket = &named_vars[type][hash_bucket(name)];
+    new->next = *bucket;
+    *bucket = new;
     /* the list of the variables in ASCII order */
     varnode **sorted = &sortednamed_vars[type];
     while (*sorted != NULL && strcmp((*sorted)->name, new->name) < 0)
