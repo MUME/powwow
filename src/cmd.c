@@ -1100,7 +1100,7 @@ static void cmd_at(char *arg)
     if (pbuf != NULL) {
         /* convert time-string into hour, minute, second */
         buf = skipspace(ptrdata(pbuf));
-        if (*buf == '\0' || !isdigit(*buf)) {
+        if (*buf == '\0' || !isdigit((unsigned char)*buf)) {
             PRINTF("#at: ");
             error = NO_NUM_VALUE_ERROR;
             print_error(error);
@@ -1282,9 +1282,9 @@ static void cmd_nice(char *arg)
         PRINTF("#nice: %d\n", a_nice);
         return;
     }
-    if (isdigit(*arg)) {
+    if (isdigit((unsigned char)*arg)) {
         a_nice = 0;
-        while (isdigit(*arg)) {
+        while (isdigit((unsigned char)*arg)) {
             a_nice *= 10;
             a_nice += *arg++ - '0';
         }
@@ -1347,7 +1347,8 @@ static void cmd_rebindall(char *arg)
         char *seq = kp->sequence;
         if (kp->seqlen == 1 && seq[0] < ' ')
             ;
-        else if (kp->seqlen == 2 && seq[0] == '\033' && isalnum(seq[1]))
+        else if (kp->seqlen == 2 && seq[0] == '\033'
+                 && isalnum((unsigned char)seq[1]))
             ;
         else {
             parse_rebind(kp->name);
@@ -1846,10 +1847,10 @@ static void cmd_var(char *arg)
     ptr *pbuf = NULL;
     int idx = 0;
     ++arg;
-    if (isalpha(*arg) || *arg == '_') {
+    if (isalpha((unsigned char)*arg) || *arg == '_') {
         /* found a named variable */
         char *tmp = arg;
-        while (*tmp != '\0' && (isalnum(*tmp) || *tmp == '_'))
+        while (*tmp != '\0' && (isalnum((unsigned char)*tmp) || *tmp == '_'))
             ++tmp;
         if (*tmp != '\0') {
             error = INVALID_NAME_ERROR;
@@ -1898,7 +1899,7 @@ static void cmd_var(char *arg)
                 return;
             }
             char err_det;
-            if (isdigit(*buf) || *buf == '-' || *buf == '+') {
+            if (isdigit((unsigned char)*buf) || *buf == '-' || *buf == '+') {
                 if (sscanf(buf, "%d%c", &idx, &err_det) == 1) {
                     if (idx < -GLOBAL_VAR_COUNT || idx >= PARAM_COUNT) {
                         error = OUT_RANGE_ERROR;
@@ -1912,13 +1913,14 @@ static void cmd_var(char *arg)
                     return;
                 }
             } else {
-                if (!isalpha(*buf) && *buf != '_') {
+                if (!isalpha((unsigned char)*buf) && *buf != '_') {
                     error = INVALID_NAME_ERROR;
                     print_error(error);
                     return;
                 }
                 tmp = buf + 1;
-                while (*tmp != '\0' && (isalnum(*tmp) || *tmp == '_'))
+                while (*tmp != '\0'
+                       && (isalnum((unsigned char)*tmp) || *tmp == '_'))
                     ++tmp;
                 if (*tmp != '\0') {
                     error = INVALID_NAME_ERROR;

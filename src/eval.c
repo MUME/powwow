@@ -330,7 +330,8 @@ static int check_operator(char side, operator *op, int mindepth)
 	*op = side==BINARY ? op_null : side==LEFT ? op_pre_null : op_post_null;
 	return 1;
     }
-    else if ((c=='$' || c=='@') && (d=line[1]) && (isalpha(d) || d=='_'))
+    else if ((c == '$' || c == '@') && (d = line[1]) != '\0'
+             && (isalpha((unsigned char)d) || d == '_'))
 	return 0;           /* Danger! found named variable */
 
     else if (side==LEFT && c=='(') {
@@ -382,9 +383,9 @@ static int check_object(object *obj)
     long i=0, base = 10;
     char c, *end, digit;
 
-    if (c=*line, c == '#' || isdigit(c)) {
-	while (c == '#' || isalnum(c)) {
-	    digit = !!isdigit(c);
+    if (c=*line, c == '#' || isdigit((unsigned char)c)) {
+        while (c == '#' || isalnum((unsigned char)c)) {
+            digit = !!isdigit((unsigned char)c);
 	    if (c == '#') {
 		base = i;
 		i = 0;
@@ -422,7 +423,8 @@ static int check_object(object *obj)
 	    }
 	}
     }
-    else if ((c=='$' || c=='@') && (c=line[1]) && (isalpha(c) || c=='_')) {
+    else if ((c == '$' || c == '@') && (c = line[1]) != '\0'
+             && (isalpha((unsigned char)c) || c == '_')) {
 	varnode *named_var;                       /* Found named variable */
 
         enum var_kind kind;
@@ -435,7 +437,9 @@ static int check_object(object *obj)
 	    obj->type = TYPE_TXT_VAR;
 	}
 	end = line + 1;
-	while ((c=*end) && (isalpha(c) || c=='_' || isdigit(c)))
+        while ((c = *end) != '\0'
+               && (isalpha((unsigned char)c) || c == '_'
+                   || isdigit((unsigned char)c)))
 	    end++;
 	c = *end; *end = '\0';
         named_var = *lookup_varnode(line, kind);
@@ -1253,9 +1257,9 @@ static int exe_op(operator *op)
 	    }
 
 	    if (o1.txt && (tmp=ptrdata(o1.txt)) &&
-		((c=*tmp) == '_' || isalpha(c))) {
+                ((c=*tmp) == '_' || isalpha((unsigned char)c))) {
 		tmp++;
-		while ((c=*tmp) == '_' || isalnum(c))
+                while ((c=*tmp) == '_' || isalnum((unsigned char)c))
 		    tmp++;
 	    }
 	    if (!o1.txt || *tmp) {

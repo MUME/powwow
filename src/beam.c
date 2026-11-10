@@ -83,7 +83,7 @@ int process_message(char *buf, int len)
     status(1);
 
     msglen = atoi(buf + 1);
-    for (i = 1; i < len && isdigit(buf[i]); i++)
+    for (i = 1; i < len && isdigit((unsigned char)buf[i]); i++)
       ;
 
     if (i < len && buf[i] == '\r') i++;

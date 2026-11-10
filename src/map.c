@@ -171,7 +171,7 @@ bool map_walk(char *word, bool silent, bool maponly)
 	    tty_putc('[');
 	}
 
-        if (isdigit(*word)) {
+        if (isdigit((unsigned char)*word)) {
             n = strtol(word, &word, 10);
 	    if (!silent)
 		tty_printf("%d", n);
