@@ -148,23 +148,9 @@ typedef struct timeval vtime;   /* needs #include <sys/tyme.h> */
 
 #include "ptr.h"
 
-
-
-
-/* generic linked list node (never actually created) */
-typedef struct defnode {
-    struct defnode *next;
-    char *sortfield;
-} defnode;
-
 /*
- * twin linked list node: used to build pair of parallel lists,
- * one sorted and one not, with the same nodes
- */
-/*
- * linked list nodes: keep "next" first, then the string to sort by, as
- * add_node() handles them as a defnode; the aliases and variables are
- * also in a list in ASCII order of their names, linked through `snext'
+ * linked list nodes; the aliases and variables are also in a list in
+ * ASCII order of their names, linked through `snext'
  */
 typedef struct aliasnode {
     struct aliasnode *next;
@@ -215,8 +201,6 @@ typedef struct triggernode {
  */
 typedef triggernode actionnode;
 typedef triggernode promptnode;
-
-typedef int  (*function_sort)(defnode *node1, defnode *node2);
 
 typedef struct keynode {
     struct keynode *next;

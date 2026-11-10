@@ -898,7 +898,7 @@ static void exec_delays(void)
 	dying = delays;           /* remove delayed command from active list */
 	delays = dying->next;     /* and put it in the dead one  */
 
-	add_node((defnode *)dying, (defnode **)&dead_delays, rev_time_sort);
+        insert_delaynode(dying, true);
 
 	/* must be moved before executing delay->command
 	 * and command must be copied in a buffer

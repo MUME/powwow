@@ -7,13 +7,9 @@ int cmp_vtime(vtime *t1, vtime *t2);
 void add_vtime(vtime *t1, vtime *t2);
 long diff_vtime(vtime *t1, vtime *t2);
 
-int rev_sort(defnode *node1, defnode *node2);
-int ascii_sort(defnode *node1, defnode *node2);
-int time_sort(defnode *node1, defnode *node2);
-int rev_time_sort(defnode *node1, defnode *node2);
 
 
-void add_node(defnode *newnode, defnode **base, function_sort sort);
+void insert_delaynode(delaynode *node, bool dead);
 
 void add_aliasnode(char *name, char *subst);
 void add_actionnode(char *pattern, char *command, char *label, bool active, int type, void *vregexp);
