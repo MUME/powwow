@@ -450,7 +450,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	sprintf(command_str, "%s %s", editor, s->file);
         setenv("TITLE", title, 1);
         execl("/bin/sh", "/bin/sh", "-c", command_str, (char *)NULL);
-	syserr("cannot run the editor");
+        exec_failed("the editor");
 	break;
       case -1:
 	errmsg("cannot start the editor");
