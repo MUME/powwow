@@ -81,8 +81,9 @@ static_assert(MAX_CONNECTS <= UCHAR_MAX, "MAX_CONNECTS must fit in a byte");
 				 * update doc/powwow.md.in if changed */
 #define MAX_HIST	2048	/* number of history lines kept;
 				 * update doc/powwow.md.in if changed */
-#define LOG_MAX_HASH	7
-#define MAX_HASH	(1<<LOG_MAX_HASH) /* max hash value, must be a power of 2 */
+/* the lists in the hash tables of aliases and variables, and their bits */
+#define HASH_BITS 7
+#define MAX_HASH (1 << HASH_BITS)
 #define NUMPARAM	10	/* number of local unnamed params allowed
 				 * (hardcoded, don't change);
 				 * update doc/powwow.md.in if changed */
