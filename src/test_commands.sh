@@ -137,6 +137,16 @@ run 'prompt with a group' '#prompt >q@c bar=#print ("prompt")
 lacks 'action'
 has 'alive'
 
+if grep -q 'define USE_REGEXP 1' ../config.h 2>/dev/null; then
+    run 'anonymous action with the pattern of a regexp action' \
+        '#action %re ^foo=#print ("one")
+#action ^foo=#print ("two")
+#emulate foo
+#print ("alive")'
+    has 'two'
+    has 'alive'
+fi
+
 run 'substitute define, list and delete' '#substitute foo=bar
 #substitute
 #print ("a foo b foo")
