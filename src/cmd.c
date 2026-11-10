@@ -52,7 +52,7 @@
 /*           local function declarations            */
 #define F(name) cmd_ ## name(char *arg)
 
-static void F(help), F(shell), F(action), F(add),
+static void F(help), F(action), F(add),
   F(addstatic), F(alias), F(at), F(beep), F(bind),
   F(cancel), F(capture), F(clear), F(connect), F(cpu),
   F(do), F(delim), F(edit), F(emulate), F(exe),
@@ -67,7 +67,13 @@ static void F(help), F(shell), F(action), F(add),
   F(record), F(request), F(reset), F(retrace),
   F(save), F(send), F(setvar), F(snoop), F(spawn), F(stop),
   F(substitute), F(time), F(var), F(ver), F(while), F(write),
-  F(eval), F(zap), F(module), F(group), F(speedwalk), F(groupdelim);
+  F(eval), F(zap), F(group), F(speedwalk), F(groupdelim);
+#ifdef USE_SHELL
+static void F(shell);
+#endif
+#ifdef HAVE_LIBDL
+static void F(module);
+#endif
 
 #undef F
 
