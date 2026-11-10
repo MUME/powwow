@@ -1150,7 +1150,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
 	tcp_write_tty_size();
 
     if (initstring) {
-	parse_instruction(initstring, 0, 0, 1);
+	parse_instruction(initstring, false, false, true);
 	history_done = 0;
     }
 }

@@ -1695,7 +1695,7 @@ void exe_history(int count)
 	i += MAX_HIST;
     if (hist[i]) {
 	strcpy(buf, hist[i]);
-	parse_user_input(buf, 0);
+	parse_user_input(buf, false);
     }
 }
 

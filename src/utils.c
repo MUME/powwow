@@ -1396,7 +1396,8 @@ int read_settings(void)
     left = ptrmax(ptrbuf);
     len = 0;
 
-    opt_info = a_nice = 0;
+    opt_info = false;
+    a_nice = 0;
 
     for (n = 0; n < MAX_HASH; n++) {
 	while (aliases[n])
@@ -1503,7 +1504,7 @@ int read_settings(void)
         bool saved_default_tls = default_tls;
         if (savefilever < UTF8_SAVEFILEVER)
             default_tls = false;
-	parse_user_input(cmd, 1);
+	parse_user_input(cmd, true);
         default_tls = saved_default_tls;
         if (error != 0) {
             wrap_printf("#error: loading save-file failed");
