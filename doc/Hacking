@@ -1,57 +1,13 @@
 Some notices for you who would like to hack the source in order to
 improve powwow, fix bugs or just have fun:
 
-* Try not to run large chunks of existing code through your C
-  beautifier if the indentation style doesn't please you. This will
-  only greatly confuse the original author (if he can't recognize and
-  maintain his own code, who can?). If you write any new functions,
-  ok, use your own style as long as it's clear and consistent.
-
-* Document your changes! Describe them in the commit message, and update the
-  doc files (doc/powwow.md.in, doc/powwow.help, man/powwow.6.in and README)
-  when they are affected.
+* Follow AGENTS.md in the top directory. Despite its name, it is for all
+  contributors: it gives the coding conventions, and how to test, document
+  and commit a change.
 
 * Run "make -C doc update-unicode" to download the latest Unicode data and
   make doc/unicode-names.txt and doc/emoji-names.txt again, the names that
   C-x 8 Ret, C-x 8 e e and \N{...} look up. It runs doc/update-unicode.sh,
   which checks the new files before it replaces the old ones. Commit them.
 
-* Run "make -j8 tidy" to check the sources with clang-tidy, or
-  "make -C src foo.tidy" to check only foo.c. The checks are listed in
-  .clang-tidy. Warnings do not make the target fail. Before making a function
-  static because of misc-use-internal-linkage, make sure no plugin needs it.
-
-Report from cancan's "Hacking":
-
-*******************************************************************************
-  Remember, that although I (Yorick) am the original author, I don't dictate
-  the code; it is explicitly in the public domain. I am merely trying to keep
-  some kind of order; if versions are permitted to diverge, they are very
-  painful to merge later. Also, different version branches are very confusing,
-  and makes it hard to define the "latest and best" version. Please try to
-  synchronize your hacks into one  - the latest - version!
-*******************************************************************************
-
-Well, Yorick refused to merge Powwow and Cancan, so now they both exist
-indipendently... Now I (Cosmos) say exactly the same thing Yorick said
-('do not let version diverge'), but I fear this will happen again :(
-Only difference is that powwow is now GPL-ed and not Public Domain.
-I hope this will help a little.
-
-* Rather than just distributing your hacked version, please send your changes
-  as a pull request to https://github.com/MUME/powwow, so that they can go into
-  the following release. You lose nothing doing so, since even if your changes
-  are refused you can still distribute your version if you absolutely want :)
-
-  Even if you decide to distribute such a modified version, please
-  make it clear that it is not the original version, use a version number
-  which can't be confused with an original version, and put your name
-  in the version.
-
-* I've tried to make the code obey the following rules for modularity:
-	- All exported things from one .c file is declared in its .h file.
-	- Conversely, symbols are imported by #including .h files,
-	  not by local extern declarations.
-	- Everything that can be static should be (this is not quite true yet)
-
-  Please obey these rules (or improve them).
+* Please send your changes as pull requests to https://github.com/MUME/powwow.
