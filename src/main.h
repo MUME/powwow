@@ -27,10 +27,7 @@ char *get_next_instr(char *p);
 void parse_user_input(char *line, bool silent);
 void set_deffile(char *arg);
 bool is_permanent_variable(struct varnode *v);
-/*
- * the variable @n or $n, for n from -GLOBAL_VAR_COUNT to PARAM_COUNT - 1,
- * or the named variable with the index n, from PARAM_COUNT
- */
+/* the variable @n or $n, for n from -GLOBAL_VAR_COUNT to PARAM_COUNT - 1 */
 long *num_var(int n);
 ptr **text_var(int n);
 
@@ -103,9 +100,6 @@ extern keynode *keydefs;
 extern delaynode *delays;
 extern delaynode *dead_delays;
 extern struct named_vars named_vars[VAR_KINDS];
-extern int max_named_vars;
-extern vars *var;
-#define VAR (var+GLOBAL_VAR_COUNT)
 
 extern vtime now, start_time, ref_time;
 extern int now_updated;
