@@ -1439,10 +1439,9 @@ int read_settings(void)
 	}
     }
 
-    for (n = 0; n < NUMVAR; n++) {
-	*var[n].num = 0;
-	ptrdel(var[n].str);
-	*var[n].str = NULL;
+    for (n = -GLOBAL_VAR_COUNT; n < 0; ++n) {
+        *num_var(n) = 0;
+        ptrdel(text_var(n));
     }
 
     while (left > 0 && fgets(buf+len, left+1, f)) {
@@ -1696,21 +1695,25 @@ int save_settings(void)
     }
     /* save value of global variables */
 
-    for (flag = 0, i=0; i<NUMVAR && failed > 0; i++) {
-        if (var[i].num && *var[i].num) {    /* first check was missing!!! */
-	    failed = fprintf(f, "%s@%d = %ld", flag ? ", " : "#(",
-			     i-NUMVAR, *var[i].num);
+    flag = 0;
+    for (int n = -GLOBAL_VAR_COUNT; n < 0 && failed > 0; ++n) {
+        if (*num_var(n) != 0) {
+            failed = fprintf(f, "%s@%d = %ld", flag != 0 ? ", " : "#(",
+                             n, *num_var(n));
             flag = 1;
         }
     }
     if (failed > 0 && flag) failed = fprintf(f, ")\n");
 
-    for (i=0; i<NUMVAR && failed > 0; i++) {
-        if (var[i].str && *var[i].str && ptrlen(*var[i].str)) {
-	    pp = ptrescape(pp, *var[i].str, 0);
-	    if (MEM_ERROR) { failed = -1; break; }
-	    failed = fprintf(f, "#($%d = \"%s\")\n", i-NUMVAR, ptrdata(pp));
-	}
+    for (int n = -GLOBAL_VAR_COUNT; n < 0 && failed > 0; ++n) {
+        if (*text_var(n) != NULL && ptrlen(*text_var(n)) != 0) {
+            pp = ptrescape(pp, *text_var(n), 0);
+            if (MEM_ERROR) {
+                failed = -1;
+                break;
+            }
+            failed = fprintf(f, "#($%d = \"%s\")\n", n, ptrdata(pp));
+        }
     }
 
     if (failed > 0) {

@@ -2443,8 +2443,8 @@ The same limit (4095 chars) applies for the input line.
 (the number can be changed by modifying the symbol BUFSIZE)
 
 Unnamed ('numbered') variables must have indexes from -50 to 9.
-(the 50 can be changed modifying the symbol NUMVAR, the 9 cannot
-be increased due to hardcoded limits)
+(the 50 can be changed modifying the symbol GLOBAL_VAR_COUNT, the 9
+cannot be increased due to hardcoded limits)
 
 Inline calculator can hold up to 100 suspended operations, due to
 parentheses and/or inverted priority of operators.

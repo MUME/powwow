@@ -381,7 +381,7 @@ varnode *add_varnode(const char *name, enum var_kind kind)
     }
     new->num = 0;
     new->str = (ptr *)0;
-    new->index = m = NUMPARAM + named_vars[kind].count;
+    new->index = m = PARAM_COUNT + named_vars[kind].count;
 
     if (kind == VAR_TEXT)
         VAR[m].str = &new->str;
@@ -645,7 +645,7 @@ void delete_varnode(varnode **base, enum var_kind kind)
         ptrdel(&p->str);
     free((void*)p);
 
-    i = NUMPARAM + --named_vars[kind].count;
+    i = PARAM_COUNT + --named_vars[kind].count;
 
     if (idx == i)
 	return;

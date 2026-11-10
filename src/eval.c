@@ -498,12 +498,12 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o2.type==TYPE_NUM_VAR) {
-	    o2.num = *VAR[o2.num].num;
+            o2.num = *num_var(o2.num);
 	    o2.type = TYPE_NUM;
 	}
 
 	if (o1.type==TYPE_NUM_VAR && o2.type==TYPE_NUM) {
-	    *VAR[o1.num].num = o2.num;
+            *num_var(o1.num) = o2.num;
 	    p=&o2;
 	    ret=1;
 	}
@@ -511,12 +511,12 @@ static int exe_op(operator *op)
 		 (o2.type==TYPE_TXT || o2.type==TYPE_TXT_VAR)) {
 
 	    if (o2.type==TYPE_TXT_VAR) {
-		o2.txt = ptrdup(*VAR[o2.num].str);
+                o2.txt = ptrdup(*text_var(o2.num));
 		if (REAL_ERROR) break;
 		o2.type=TYPE_TXT;
 	    }
 
-	    *VAR[o1.num].str = ptrcpy(*VAR[o1.num].str, o2.txt);
+            *text_var(o1.num) = ptrcpy(*text_var(o1.num), o2.txt);
 	    if (REAL_ERROR) break;
 	    p=&o2;
 	    ret=1;
@@ -541,12 +541,12 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o2.type==TYPE_NUM_VAR) {
-	    o2.num = *VAR[o2.num].num;
+            o2.num = *num_var(o2.num);
 	    o2.type = TYPE_NUM;
 	}
 
 	if (o1.type==TYPE_NUM_VAR && o2.type==TYPE_NUM) {
-	    l=VAR[o1.num].num;
+            l=num_var(o1.num);
 
 	    switch (*op) {
 	      case op_or_or_eq:    if ( o2.num) *l = 1;   else *l = !!*l; break;
@@ -578,12 +578,12 @@ static int exe_op(operator *op)
 	    if (o2.type==TYPE_TXT)
 		src=o2.txt;
 	    else
-		src=*VAR[o2.num].str;
+                src=*text_var(o2.num);
 
-	    *VAR[o1.num].str = ptrcat(*VAR[o1.num].str, src);
+            *text_var(o1.num) = ptrcat(*text_var(o1.num), src);
 	    check_delete(&o2);
 
-	    dst = ptrdup(*VAR[o1.num].str);
+            dst = ptrdup(*text_var(o1.num));
 	    if (REAL_ERROR) break;
 
 	    o1.type=TYPE_TXT;
@@ -595,26 +595,28 @@ static int exe_op(operator *op)
 		 (o2.type==TYPE_NUM || o2.type==TYPE_NUM_VAR)) {
 
 	    if (o2.type==TYPE_NUM_VAR) {
-		o2.num = *VAR[o2.num].num;
+                o2.num = *num_var(o2.num);
 		o2.type = TYPE_NUM;
 	    }
 
 	    if (o2.num < 0)
 		error = OUT_RANGE_ERROR;
 	    else if (o2.num == 0)
-		ptrzero(*VAR[o1.num].str);
+                ptrzero(*text_var(o1.num));
 	    else if (o2.num == 1)
 		;
-	    else if (*VAR[o1.num].str && (delta = ptrlen(*VAR[o1.num].str))) {
+            else if (*text_var(o1.num) != NULL
+                     && (delta = ptrlen(*text_var(o1.num))) != 0) {
 		long n;
-		*VAR[o1.num].str = ptrsetlen(*VAR[o1.num].str, delta*o2.num);
-		tmp = ptrdata(*VAR[o1.num].str);
+                *text_var(o1.num) = ptrsetlen(*text_var(o1.num),
+                                              delta * o2.num);
+                tmp = ptrdata(*text_var(o1.num));
 		for (n = 1; !error && n<o2.num; n++)
 		    memcpy(tmp+n*delta, tmp, delta);
 	    }
 
 	    check_delete(&o2);
-	    dst = ptrdup(*VAR[o1.num].str);
+            dst = ptrdup(*text_var(o1.num));
 	    if (REAL_ERROR) break;
 
 	    o1.type=TYPE_TXT;
@@ -648,11 +650,11 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o1.type==TYPE_NUM_VAR) {
-	    o1.num = *VAR[o1.num].num;
+            o1.num = *num_var(o1.num);
 	    o1.type = TYPE_NUM;
 	}
 	if (o2.type==TYPE_NUM_VAR) {
-	    o2.num = *VAR[o2.num].num;
+            o2.num = *num_var(o2.num);
 	    o2.type = TYPE_NUM;
 	}
 
@@ -697,7 +699,7 @@ static int exe_op(operator *op)
 		 (o2.type==TYPE_TXT || o2.type==TYPE_TXT_VAR)) {
 
 	    if (o1.type==TYPE_TXT_VAR) {
-		o1.txt = ptrdup(*VAR[o1.num].str);
+                o1.txt = ptrdup(*text_var(o1.num));
         o1.type = TYPE_TXT; /* not a var anymore */
 		if (REAL_ERROR) break;
 	    }
@@ -705,7 +707,7 @@ static int exe_op(operator *op)
 	    if (o2.type==TYPE_TXT)
 		src=o2.txt;
 	    else
-		src=*VAR[o2.num].str;
+                src=*text_var(o2.num);
 
 	    if (*op == op_plus) {
 		dst = ptrcat(dst, src);
@@ -741,7 +743,7 @@ static int exe_op(operator *op)
 		 && o2.type==TYPE_NUM) {
 
 	    if (o2.num > 0 && o1.type==TYPE_TXT_VAR) {
-		o1.txt = ptrdup(*VAR[o1.num].str);
+                o1.txt = ptrdup(*text_var(o1.num));
 		if (REAL_ERROR) break;
 	    }
 	    dst = o1.txt;
@@ -784,7 +786,7 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o2.type==TYPE_NUM_VAR) {
-	    o2.num = *VAR[o2.num].num;
+            o2.num = *num_var(o2.num);
 	    o2.type = TYPE_NUM;
 	}
 
@@ -801,7 +803,7 @@ static int exe_op(operator *op)
 	if (o1.type==TYPE_TXT_VAR) {
 	    o1.type=TYPE_TXT;
 	    o1.txt=dst=NULL;
-	    src=start=*VAR[o1.num].str;
+            src=start=*text_var(o1.num);
 	}
 	else {
 	    /* Potentially dangerous: src and dst are overlapping */
@@ -956,7 +958,7 @@ static int exe_op(operator *op)
 	if (o1.type==TYPE_TXT)
 	    src=o1.txt;
 	else if (o1.type==TYPE_TXT_VAR)
-	    src=*VAR[o1.num].str;
+            src=*text_var(o1.num);
 	else {
 	    error=SYNTAX_ERROR;
 	    break;
@@ -1007,14 +1009,14 @@ static int exe_op(operator *op)
 	if (o1.type==TYPE_TXT)
 	    src = o1.txt;
 	else if (o1.type==TYPE_TXT_VAR)
-	    src = *VAR[o1.num].str;
+            src = *text_var(o1.num);
 	else
 	    error = SYNTAX_ERROR;
 
 	if (o2.type==TYPE_TXT)
 	    dst = o2.txt;
 	else if (o2.type==TYPE_TXT_VAR)
-	    dst = *VAR[o2.num].str;
+            dst = *text_var(o2.num);
 	else
 	    error = SYNTAX_ERROR;
 
@@ -1066,7 +1068,7 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o1.type==TYPE_NUM_VAR) {
-	    o1.num = *VAR[o1.num].num;
+            o1.num = *num_var(o1.num);
 	    o1.type = TYPE_NUM;
 	}
 	if (o1.type==TYPE_NUM) {
@@ -1094,7 +1096,7 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o1.type==TYPE_TXT_VAR) {
-	    o1.txt = ptrdup(*VAR[o1.num].str);
+            o1.txt = ptrdup(*text_var(o1.num));
 	    if (REAL_ERROR) break;
 	    o1.type = TYPE_TXT;
 	}
@@ -1123,9 +1125,9 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o1.type==TYPE_NUM_VAR)
-	    o1.num = *VAR[o1.num].num;
+            o1.num = *num_var(o1.num);
 	else if (o1.type==TYPE_TXT_VAR)
-	    o1.txt = *VAR[o1.num].str;
+            o1.txt = *text_var(o1.num);
 
 	if (o1.type==TYPE_NUM || o1.type==TYPE_NUM_VAR) {
 	    o1.txt = NULL;
@@ -1174,7 +1176,7 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o1.type==TYPE_NUM_VAR) {
-	    l=VAR[o1.num].num;
+            l=num_var(o1.num);
 	    o1.type=TYPE_NUM;
 
 	    if (*op==op_pre_plus_plus)
@@ -1201,11 +1203,11 @@ static int exe_op(operator *op)
 
 	if (o1.type==TYPE_NUM_VAR) {
 	    o1.type=TYPE_NUM;
-	    o1.num=*VAR[o1.num].num;
+            o1.num=*num_var(o1.num);
 	}
 
 	if (o1.type==TYPE_NUM) {
-	    if (o1.num<-NUMVAR || o1.num>=NUMPARAM) {
+            if (o1.num < -GLOBAL_VAR_COUNT || o1.num >= PARAM_COUNT) {
 		error=OUT_RANGE_ERROR;
 		break;
 	    }
@@ -1217,7 +1219,7 @@ static int exe_op(operator *op)
 	    char c;
 
 	    if (o1.type==TYPE_TXT_VAR)
-		o1.txt = *VAR[o1.num].str;
+                o1.txt = *text_var(o1.num);
 	    else if (o1.type!=TYPE_TXT) {
 		error=SYNTAX_ERROR;
 		break;
@@ -1398,7 +1400,7 @@ int eval_any(long *lres, ptr **pres, char **what)
     } else if (printmode!=PRINT_NOTHING || opt_debug) {
 	if (res.type==TYPE_NUM || res.type==TYPE_NUM_VAR) {
 
-	    val = res.type==TYPE_NUM ? res.num : *VAR[res.num].num;
+            val = res.type==TYPE_NUM ? res.num : *num_var(res.num);
 
 	    if (printmode==PRINT_AS_PTR) {
 		*pres = ptrsetlen(*pres, LONGLEN);
@@ -1417,7 +1419,7 @@ int eval_any(long *lres, ptr **pres, char **what)
 		}
 	    }
 	} else {
-	    txt = res.type==TYPE_TXT ? res.txt : *VAR[res.num].str;
+            txt = res.type==TYPE_TXT ? res.txt : *text_var(res.num);
 	    if (printmode==PRINT_AS_PTR) {
 		if (txt && *ptrdata(txt)) {
 		    if (res.type == TYPE_TXT)

@@ -1210,8 +1210,8 @@ static void cmd_isprompt(char *arg)
         if (i == 0)
             isprompt_len = -1;
         else if (i < 0) {
-            if (i > -NUMPARAM && *VAR[-i].str != NULL) {
-                isprompt_len = ptrlen(*VAR[-i].str);
+            if (i > -PARAM_COUNT && *text_var(-i) != NULL) {
+                isprompt_len = ptrlen(*text_var(-i));
                 ptrtrunc(prompt->str, isprompt_len);
             }
         } else {
@@ -1453,10 +1453,9 @@ static void cmd_reset(char *arg)
             }
         }
 
-        for (int n = 0; n < NUMVAR; ++n) {
-            *var[n].num = 0;
-            ptrdel(var[n].str);
-            *var[n].str = NULL;
+        for (int n = -GLOBAL_VAR_COUNT; n < 0; ++n) {
+            *num_var(n) = 0;
+            ptrdel(text_var(n));
         }
         if (!all)
             return;
@@ -1631,7 +1630,7 @@ static void cmd_print(char *arg)
     clear_input_line(opt_compact);
 
     if (*arg == '\0') {
-        smart_print(*VAR[0].str != NULL ? ptrdata(*VAR[0].str) : "", 1);
+        smart_print(*text_var(0) != NULL ? ptrdata(*text_var(0)) : "", 1);
         return;
     }
 
@@ -1903,7 +1902,7 @@ static void cmd_var(char *arg)
             char err_det;
             if (isdigit(*buf) || *buf == '-' || *buf == '+') {
                 if (sscanf(buf, "%d%c", &idx, &err_det) == 1) {
-                    if (idx < -NUMVAR || idx >= NUMPARAM) {
+                    if (idx < -GLOBAL_VAR_COUNT || idx >= PARAM_COUNT) {
                         error = OUT_RANGE_ERROR;
                         print_error(error);
                         ptrdel(&pbuf);
@@ -1964,7 +1963,7 @@ static void cmd_var(char *arg)
                 return;
             }
             idx = (int)buf2;
-            if (idx < -NUMVAR || idx >= NUMPARAM) {
+            if (idx < -GLOBAL_VAR_COUNT || idx >= PARAM_COUNT) {
                 error = OUT_RANGE_ERROR;
                 print_error(error);
                 return;
@@ -1974,8 +1973,8 @@ static void cmd_var(char *arg)
     }
 
 
-    if (kind == VAR_TEXT && right && *VAR[idx].str == NULL) {
-        *VAR[idx].str = ptrnew(PARAMLEN);
+    if (kind == VAR_TEXT && right && *text_var(idx) == NULL) {
+        *text_var(idx) = ptrnew(PARAMLEN);
         if (MEM_ERROR) {
             print_error(error);
             ptrdel(&pbuf);
@@ -1996,22 +1995,22 @@ static void cmd_var(char *arg)
             }
         } else if (kind == VAR_TEXT) {
         /* R.I.P. unnamed variables */
-            if (*VAR[idx].str != NULL) {
+            if (*text_var(idx) != NULL) {
                 if (idx < 0) {
-                    ptrdel(VAR[idx].str);
-                    *VAR[idx].str = NULL;
+                    ptrdel(text_var(idx));
+                    *text_var(idx) = NULL;
                 } else
-                    ptrzero(*VAR[idx].str);
+                    ptrzero(*text_var(idx));
             }
         } else
-            *VAR[idx].num = 0;
+            *num_var(idx) = 0;
         ptrdel(&pbuf);
         return;
     } else if (!right) {
         /* no right-hand expression, just show */
         if (named_var != NULL) {
             if (kind == VAR_TEXT) {
-                pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
+                pbuf = ptrescape(pbuf, *text_var(idx), 0);
                 if (REAL_ERROR) {
                     print_error(error);
                     ptrdel(&pbuf);
@@ -2023,16 +2022,16 @@ static void cmd_var(char *arg)
             } else {
                 fmt_next_edit("#(@%s = %ld)",
                               named_var->name,
-                              *VAR[idx].num);
+                              *num_var(idx));
             }
         } else {
             if (kind == VAR_TEXT) {
-                pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
+                pbuf = ptrescape(pbuf, *text_var(idx), 0);
                 fmt_next_edit("#($%d = \"%s\")", idx,
                               pbuf != NULL ? ptrdata(pbuf) : "");
             } else {
                 fmt_next_edit("#(@%d = %ld)", idx,
-                              *VAR[idx].num);
+                              *num_var(idx));
             }
         }
         ptrdel(&pbuf);
@@ -2086,10 +2085,10 @@ static void cmd_var(char *arg)
                 error = NO_NUM_VALUE_ERROR;
                 print_error(error);
             }
-            *VAR[idx].num = num;
+            *num_var(idx) = num;
         }
     } else {
-        *VAR[idx].str = ptrmcpy(*VAR[idx].str, arg, strlen(arg));
+        *text_var(idx) = ptrmcpy(*text_var(idx), arg, strlen(arg));
         if (MEM_ERROR)
             print_error(error);
     }

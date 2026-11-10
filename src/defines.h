@@ -84,12 +84,13 @@ static_assert(MAX_CONNECTS <= UCHAR_MAX, "MAX_CONNECTS must fit in a byte");
 /* the lists in the hash tables of aliases and variables, and their bits */
 #define HASH_BITS 7
 #define MAX_HASH (1 << HASH_BITS)
-#define NUMPARAM	10	/* number of local unnamed params allowed
-				 * (hardcoded, don't change);
-				 * update doc/powwow.md.in if changed */
-#define NUMVAR		50	/* number of global unnamed variables;
-				 * update doc/powwow.md.in if changed */
-#define NUMTOT		(NUMVAR+NUMPARAM)
+/* the parameters @0..@9 and $0..$9 of a call (hardcoded, don't change);
+ * update doc/powwow.md.in if changed */
+#define PARAM_COUNT 10
+/* the global numbered variables @-50..@-1 and $-50..$-1;
+ * update doc/powwow.md.in if changed */
+#define GLOBAL_VAR_COUNT 50
+#define NUMTOT          (GLOBAL_VAR_COUNT+PARAM_COUNT)
 #define MAX_SUBOPT	256	/* max length of suboption string */
 #define MAX_ARGS	16	/* max number of arguments to editor */
 #define FLASHDELAY	500	/* time of parentheses flash in millisecs */
@@ -245,7 +246,7 @@ typedef struct {                /* for unnamed vars */
 } unnamedvar;
 
 typedef struct {		/* stack of local vars */
-    unnamedvar p[MAX_STACK][NUMPARAM];
+    unnamedvar p[MAX_STACK][PARAM_COUNT];
     int curr;
 } param_stack;
 
