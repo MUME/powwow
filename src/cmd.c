@@ -244,132 +244,132 @@ static cmdstruct default_commands[] =
 };
 
 static char *_cmd_sort_name( cmdstruct *cmd ) {
-	if( cmd -> sortname == NULL )
-		return( cmd -> name );
-	else
-		return( cmd -> sortname );
+        if( cmd -> sortname == NULL )
+                return( cmd -> name );
+        else
+                return( cmd -> sortname );
 }
 
 /* Adds a cmd to commands (inserts the ptr in the list, DO NOT FREE IT) */
 void cmd_add_command( cmdstruct *cmd ) {
-	/* do insert/sort */
-	cmdstruct *c = commands;
+        /* do insert/sort */
+        cmdstruct *c = commands;
 
-	/*
-	 * make sure it doesn't override another commmand
-	 * this is important not just because it'd be irritating,
-	 * but if a module defined the command in the global static
-	 * space, it would create an infinite loop because the -> next
-	 * ptr would point at itself
-	 *
-	 * doing it up front because based on the sortname, we may never see
-	 * the dup item if we do it at sort time
-	 */
-	for( c = commands; c != NULL; c = c -> next ) {
-		if( strcmp( cmd -> name, c -> name ) == 0 ) {
-			PRINTF( "#error %s is already defined\n", c -> name );
-			return;
-		}
-	}
+        /*
+         * make sure it doesn't override another commmand
+         * this is important not just because it'd be irritating,
+         * but if a module defined the command in the global static
+         * space, it would create an infinite loop because the -> next
+         * ptr would point at itself
+         *
+         * doing it up front because based on the sortname, we may never see
+         * the dup item if we do it at sort time
+         */
+        for( c = commands; c != NULL; c = c -> next ) {
+                if( strcmp( cmd -> name, c -> name ) == 0 ) {
+                        PRINTF( "#error %s is already defined\n", c -> name );
+                        return;
+                }
+        }
 
 
-	/* catch insertion to head of list */
-	if( commands == NULL ) {
-		/* no commands yet */
-		commands = cmd;
-		cmd -> next = NULL;
-		return;
-	}
+        /* catch insertion to head of list */
+        if( commands == NULL ) {
+                /* no commands yet */
+                commands = cmd;
+                cmd -> next = NULL;
+                return;
+        }
 
-	if( strcmp( _cmd_sort_name( commands ), _cmd_sort_name( cmd ) ) > 0 ) {
-		/* this is lower in sort than every item, so
-		 * make it the head of the list */
-		cmd -> next = commands;
-		commands = cmd;
-		return;
-	}
+        if( strcmp( _cmd_sort_name( commands ), _cmd_sort_name( cmd ) ) > 0 ) {
+                /* this is lower in sort than every item, so
+                 * make it the head of the list */
+                cmd -> next = commands;
+                commands = cmd;
+                return;
+        }
 
-	for( c = commands; c != NULL; c = c -> next ) {
-		if( strcmp( _cmd_sort_name( cmd ), _cmd_sort_name( c ) ) >= 0 ) {
-			/* Need second check to handle empty string case */
-			if( c -> next == NULL || strcmp( _cmd_sort_name( cmd ), _cmd_sort_name( c -> next ) ) <= 0 ) {
-				/*PRINTF( "Inserting %s after %s\n", cmd -> name, c -> name ); */
+        for( c = commands; c != NULL; c = c -> next ) {
+                if( strcmp( _cmd_sort_name( cmd ), _cmd_sort_name( c ) ) >= 0 ) {
+                        /* Need second check to handle empty string case */
+                        if( c -> next == NULL || strcmp( _cmd_sort_name( cmd ), _cmd_sort_name( c -> next ) ) <= 0 ) {
+                                /*PRINTF( "Inserting %s after %s\n", cmd -> name, c -> name ); */
 
-				/* insert after this one, it is greater than this
-				 * entry but less than the next */
-				cmd -> next = c -> next;
-				c -> next = cmd;
-				return;
-			}
-		}
-	}
+                                /* insert after this one, it is greater than this
+                                 * entry but less than the next */
+                                cmd -> next = c -> next;
+                                c -> next = cmd;
+                                return;
+                        }
+                }
+        }
 
-	PRINTF( "ERROR INSERTING COMMAND\n" );
+        PRINTF( "ERROR INSERTING COMMAND\n" );
 }
 
 /* Init the command listing, called from main */
 void initialize_cmd(void) {
-	int i;
+        int i;
 
-	/* Now add the default command list */
-	for( i = 0; default_commands[ i ].name; i++ )
-		cmd_add_command( &default_commands[ i ] );
+        /* Now add the default command list */
+        for( i = 0; default_commands[ i ].name; i++ )
+                cmd_add_command( &default_commands[ i ] );
 }
 
 #ifdef HAVE_LIBDL
 static void cmd_module(char *arg) {
-	char libname[1024];
-	void *lib;
-	void (*func)();
+        char libname[1024];
+        void *lib;
+        void (*func)();
 
-	int pindex;
-	struct stat junk;
-	char *prefixes[] = {
-		PLUGIN_DIR,
-		".",
-		"/lib/powwow",
-		"/usr/lib/powwow",
-		"/usr/local/lib/powwow",
-		"$HOME/.powwow/lib" /* this doesn't work, but is here to remind me :p */
-	};
+        int pindex;
+        struct stat junk;
+        char *prefixes[] = {
+                PLUGIN_DIR,
+                ".",
+                "/lib/powwow",
+                "/usr/lib/powwow",
+                "/usr/local/lib/powwow",
+                "$HOME/.powwow/lib" /* this doesn't work, but is here to remind me :p */
+        };
 
-	arg = skipspace(arg);
+        arg = skipspace(arg);
 
-	/* I changed it to work this way so that you can have libs in multiple places and
-	 * also eventually to allow it to use .dll instead of .so under the cygwin environment */
-	for( pindex = 0; pindex < 5; pindex++ ) {
-		memset( libname, 0, sizeof libname );
+        /* I changed it to work this way so that you can have libs in multiple places and
+         * also eventually to allow it to use .dll instead of .so under the cygwin environment */
+        for( pindex = 0; pindex < 5; pindex++ ) {
+                memset( libname, 0, sizeof libname );
 
         /* don't look for name without .so, it breaks if you have a file
          * with the same name in the current dir and making it .so for sure
          * will skip these files since they are probably not libs to load
-		snprintf( libname, 1024, "%s/%s", prefixes[ pindex ], arg );
-		if( stat( libname, &junk ) == 0 ) {
-			break;
-		}
+                snprintf( libname, 1024, "%s/%s", prefixes[ pindex ], arg );
+                if( stat( libname, &junk ) == 0 ) {
+                        break;
+                }
         */
 
-		snprintf( libname, 1024, "%s/%s.so", prefixes[ pindex ], arg );
-		if( stat( libname, &junk ) == 0 ) {
-			break;
-		}
-	}
+                snprintf( libname, 1024, "%s/%s.so", prefixes[ pindex ], arg );
+                if( stat( libname, &junk ) == 0 ) {
+                        break;
+                }
+        }
 
-	/* open lib */
-	lib = dlopen( libname, RTLD_GLOBAL | RTLD_LAZY );
-	if( ! lib ) {
-		PRINTF( "#module error: %s\n", dlerror() );
-		return;
-	}else{
-		PRINTF( "#module loaded %s\n", libname );
-	}
+        /* open lib */
+        lib = dlopen( libname, RTLD_GLOBAL | RTLD_LAZY );
+        if( ! lib ) {
+                PRINTF( "#module error: %s\n", dlerror() );
+                return;
+        }else{
+                PRINTF( "#module loaded %s\n", libname );
+        }
 
-	func = dlsym( lib, "powwow_init" );
-	if( func ) {
-		(*func)();
-	}else{
-		PRINTF( "#module error: %s\n", dlerror() );
-	}
+        func = dlsym( lib, "powwow_init" );
+        if( func ) {
+                (*func)();
+        }else{
+                PRINTF( "#module error: %s\n", dlerror() );
+        }
 }
 #endif
 
@@ -382,37 +382,37 @@ static void cmd_group(char *arg) {
     arg = skipspace(arg);
 
     if( *arg ) {
-    	arg = first_regular( group = arg, ' ');
-	*arg = '\0';
-	arg = skipspace( arg + 1 );
+        arg = first_regular( group = arg, ' ');
+        *arg = '\0';
+        arg = skipspace( arg + 1 );
 
-	if( strcmp( arg, "on" ) == 0 ) {
-		active = 1;
-	}else if( strcmp( arg, "off" ) == 0 ) {
-		active = 0;
-	}else if( strcmp( arg, "list" ) == 0 ) {
-		PRINTF( "#not implemented\n" );
-		return;
-	}else{
-		PRINTF( "#unknown group command, use off/on/list\n" );
-		return;
-	}
+        if( strcmp( arg, "on" ) == 0 ) {
+                active = 1;
+        }else if( strcmp( arg, "off" ) == 0 ) {
+                active = 0;
+        }else if( strcmp( arg, "list" ) == 0 ) {
+                PRINTF( "#not implemented\n" );
+                return;
+        }else{
+                PRINTF( "#unknown group command, use off/on/list\n" );
+                return;
+        }
 
-	/* Now loop over all aliases/actions by groupname and toggle */
-	for( p = sortedaliases; p; p = p -> snext ) {
-		if( p -> group && strcmp( p -> group, group ) == 0 ) {
-			p -> active = active;
-		}
-	}
+        /* Now loop over all aliases/actions by groupname and toggle */
+        for( p = sortedaliases; p; p = p -> snext ) {
+                if( p -> group && strcmp( p -> group, group ) == 0 ) {
+                        p -> active = active;
+                }
+        }
 
-	/* Same for actions */
-	for( a = actions; a; a = a -> next ) {
-		if( a -> group && strcmp( a -> group, group ) == 0 ) {
-			a -> active = active;
-		}
-	}
+        /* Same for actions */
+        for( a = actions; a; a = a -> next ) {
+                if( a -> group && strcmp( a -> group, group ) == 0 ) {
+                        a -> active = active;
+                }
+        }
     }else{
-	PRINTF( "#group name required\n" );
+        PRINTF( "#group name required\n" );
     }
 }
 
@@ -428,15 +428,15 @@ static void cmd_groupdelim(char *arg) {
  * 'exact' false, 'arg' can be an abbreviation of the name of the entry
  */
 static bool find_help_entry(FILE *f, char *line, int size, const char *arg,
-			    bool exact)
+                            bool exact)
 {
     const size_t len = strlen(arg);
 
     rewind(f);
     while (utf8_fgets(line, size, f) != NULL) {
-	if (line[0] == '@' && strncmp(line + 1, arg, len) == 0
-	    && (!exact || line[len + 1] == '\n' || line[len + 1] == '\0'))
-	    return true;
+        if (line[0] == '@' && strncmp(line + 1, arg, len) == 0
+            && (!exact || line[len + 1] == '\n' || line[len + 1] == '\0'))
+            return true;
     }
     return false;
 }
@@ -454,30 +454,30 @@ static char *format_command_help(char *dst, const cmdstruct *c)
     const char *tab = strchr(c->help, '\t');
 
     if (tab == NULL) {
-	sprintf(dst, "#%s %s\n", c->name, c->help);
-	return dst + strlen(dst);
+        sprintf(dst, "#%s %s\n", c->name, c->help);
+        return dst + strlen(dst);
     }
 
     int args_len = (int)(tab - c->help);
     sprintf(dst, "#%s%s%.*s", c->name, args_len > 0 ? " " : "",
-	    args_len, c->help);
+            args_len, c->help);
     size_t col = strlen(dst);
     dst += col;
     if (col >= HELP_COLUMN) {
-	*dst++ = '\n';
-	col = 0;
+        *dst++ = '\n';
+        col = 0;
     }
     for (const char *p = tab + 1; ; ++p) {
-	for (; col < HELP_COLUMN; ++col)
-	    *dst++ = ' ';
-	if (*p == '\0')
-	    break;
-	*dst++ = *p;
-	col = (*p == '\n' ? 0 : col + 1);
+        for (; col < HELP_COLUMN; ++col)
+            *dst++ = ' ';
+        if (*p == '\0')
+            break;
+        *dst++ = *p;
+        col = (*p == '\n' ? 0 : col + 1);
     }
     /* drop the padding after the last line */
     while (dst[-1] == ' ')
-	--dst;
+        --dst;
     *dst++ = '\n';
     *dst = '\0';
     return dst;
@@ -490,8 +490,8 @@ static char *format_command_help(char *dst, const cmdstruct *c)
 static void show_help_text(char *text, bool use_pager)
 {
     if (use_pager) {
-	message_edit(text, strlen(text), 1, 1);
-	return;
+        message_edit(text, strlen(text), 1, 1);
+        return;
     }
     const char *body = strchr(text, '\n');
     PRINTF("%s", body != NULL ? body + 1 : text);
@@ -512,93 +512,93 @@ static void cmd_help(char *arg)
     size_t flag_len = strcspn(arg, " \t");
     if ((flag_len == 2 && strncmp(arg, "-P", 2) == 0)
         || (flag_len == 10 && strncmp(arg, "--no-pager", 10) == 0)) {
-	use_pager = false;
-	arg = skipspace(arg + flag_len);
+        use_pager = false;
+        arg = skipspace(arg + flag_len);
     }
     strip_end(arg);
     if (*arg == '#') arg++;
     if (!*arg) {
-	size = 25;
-	for( c = commands; c != NULL; c = c -> next ) {
-	    size += strlen(c -> name) + strlen(c -> help) + 5;
-	    for (const char *p = c->help; p != NULL; p = strchr(p + 1, '\n'))
-		size += HELP_COLUMN + 1;
-	}
+        size = 25;
+        for( c = commands; c != NULL; c = c -> next ) {
+            size += strlen(c -> name) + strlen(c -> help) + 5;
+            for (const char *p = c->help; p != NULL; p = strchr(p + 1, '\n'))
+                size += HELP_COLUMN + 1;
+        }
 
-	text = tmp = (char *)malloc(size);
-	if (!text) {
-	    out_of_memory();
-	    return;
-	}
+        text = tmp = (char *)malloc(size);
+        if (!text) {
+            out_of_memory();
+            return;
+        }
 
-	/* do not use sprintf() return value, almost every OS returns a different thing. */
+        /* do not use sprintf() return value, almost every OS returns a different thing. */
         sprintf(tmp, "#help\n#commands available:\n");
-	tmp += strlen(tmp);
+        tmp += strlen(tmp);
 
-	for( c = commands; c != NULL; c = c -> next )
-	    tmp = format_command_help(tmp, c);
+        for( c = commands; c != NULL; c = c -> next )
+            tmp = format_command_help(tmp, c);
 
-	show_help_text(text, use_pager);
-	return;
+        show_help_text(text, use_pager);
+        return;
     }
 
     if (!strncmp(arg, "copyright", strlen(arg))) {
-	int fd, left, got = 0;
-	struct stat stbuf;
+        int fd, left, got = 0;
+        struct stat stbuf;
 
-	if (stat(copyfile, &stbuf) < 0) {
-	    errmsg("cannot read %s", copyfile);
-	    return;
-	}
+        if (stat(copyfile, &stbuf) < 0) {
+            errmsg("cannot read %s", copyfile);
+            return;
+        }
 
-	if (!(text = (char *)malloc(left = stbuf.st_size))) {
-	    out_of_memory();
-	    return;
-	}
-	if ((fd = open(copyfile, O_RDONLY)) < 0) {
-	    errmsg("cannot open %s", copyfile);
-	    free(text);
-	    return;
-	}
-	while (left > 0) {
-	    while ((i = read(fd, text + got, left)) < 0 && errno == EINTR)
-	      ;
-	    if (i < 0 && errno == EINTR) {
-		errmsg("cannot read %s", copyfile);
-		free(text);
-		close(fd);
-		return;
-	    }
-	    if (i == 0)
-		break;
-	    left -= i, got += i;
-	}
-	close(fd);
-	show_help_text(text, use_pager);
-	return;
+        if (!(text = (char *)malloc(left = stbuf.st_size))) {
+            out_of_memory();
+            return;
+        }
+        if ((fd = open(copyfile, O_RDONLY)) < 0) {
+            errmsg("cannot open %s", copyfile);
+            free(text);
+            return;
+        }
+        while (left > 0) {
+            while ((i = read(fd, text + got, left)) < 0 && errno == EINTR)
+              ;
+            if (i < 0 && errno == EINTR) {
+                errmsg("cannot read %s", copyfile);
+                free(text);
+                close(fd);
+                return;
+            }
+            if (i == 0)
+                break;
+            left -= i, got += i;
+        }
+        close(fd);
+        show_help_text(text, use_pager);
+        return;
     }
 
     /* !copyright */
 
     f = fopen(helpfile, "r");
     if (!f) {
-	wrap_printf("#cannot open help file \"%s\": %s", helpfile,
+        wrap_printf("#cannot open help file \"%s\": %s", helpfile,
                     strerror(errno));
-	return;
+        return;
     }
 
     /* an exact match comes first: otherwise "in" would find "info" */
     if (!find_help_entry(f, line, BUFSIZE, arg, true)
-	&& !find_help_entry(f, line, BUFSIZE, arg, false)) {
-	wrap_printf("#no entry for \"%s\" in the help file.", arg);
-	fclose(f);
-	return;
+        && !find_help_entry(f, line, BUFSIZE, arg, false)) {
+        wrap_printf("#no entry for \"%s\" in the help file.", arg);
+        fclose(f);
+        return;
     }
 
     if (!(text = malloc(size = BUFSIZE + 32))) {
-	out_of_memory();
-	fclose(f);
-	return;
+        out_of_memory();
+        fclose(f);
+        return;
     }
 
     /* the first line becomes $TITLE */
@@ -610,22 +610,22 @@ static void cmd_help(char *arg)
     while (utf8_fgets(line, BUFSIZE, f) && line[0] == '@') ;
 
     do {
-	if ((len = strlen(line)) >= size - i) {
-	    /* Not enough space in current buffer */
+        if ((len = strlen(line)) >= size - i) {
+            /* Not enough space in current buffer */
 
-	    if (!(tmp = (char *)malloc(size += BUFSIZE))) {
-		out_of_memory();
-		free(text);
-		fclose(f);
-		return;
-	    } else {
-		memcpy(tmp, text, i);
-		free(text);
-		text = tmp;
-	    }
-	}
-	memcpy(text + i, line, len);
-	i += len;
+            if (!(tmp = (char *)malloc(size += BUFSIZE))) {
+                out_of_memory();
+                free(text);
+                fclose(f);
+                return;
+            } else {
+                memcpy(tmp, text, i);
+                free(text);
+                text = tmp;
+            }
+        }
+        memcpy(text + i, line, len);
+        i += len;
     } while (utf8_fgets(line, BUFSIZE, f) && line[0] != '@');
 
     fclose(f);
@@ -636,12 +636,12 @@ static void cmd_help(char *arg)
 static void cmd_clear(char *arg)
 {
     if (line_status == 0) {
-	clear_input_line(opt_compact);
-	if (!opt_compact) {
-	    tty_putc('\n');
-	    col0 = 0;
-	}
-	status(1);
+        clear_input_line(opt_compact);
+        if (!opt_compact) {
+            tty_putc('\n');
+            col0 = 0;
+        }
+        status(1);
     }
 }
 
@@ -650,7 +650,7 @@ static void cmd_shell(char *arg)
 {
     if (!*arg) {
         if (opt_info) {
-	    PRINTF("#that's easy.\n");
+            PRINTF("#that's easy.\n");
         }
     } else {
         tty_quit();
@@ -674,27 +674,27 @@ static void cmd_alias(char *arg)
 {
     arg = skipspace(arg);
     if (!*arg)
-	show_aliases();
+        show_aliases();
     else
-	parse_alias(arg);
+        parse_alias(arg);
 }
 
 static void cmd_action(char *arg)
 {
     arg = skipspace(arg);
     if (!*arg)
-	show_actions();
+        show_actions();
     else
-	parse_action(arg, 0);
+        parse_action(arg, 0);
 }
 
 static void cmd_prompt(char *arg)
 {
     arg = skipspace(arg);
     if (!*arg)
-	show_prompts();
+        show_prompts();
     else
-	parse_action(arg, 1);
+        parse_action(arg, 1);
 }
 
 static void cmd_beep(char *arg)
@@ -711,13 +711,13 @@ static void cmd_bind(char *arg)
     if (strchr(arg, '=') == NULL)
         strip_end(arg);         /* not in the command bound */
     if (!*arg)
-	show_binds(0);
+        show_binds(0);
     else if (!strcmp(arg, "edit"))
-	show_binds(1);
+        show_binds(1);
     else if (strcmp(arg, "functions") == 0)
         show_edit_functions();
     else
-	parse_bind(arg);
+        parse_bind(arg);
 }
 
 static void cmd_delim(char *arg)
@@ -727,30 +727,30 @@ static void cmd_delim(char *arg)
 
     arg = skipspace(arg);
     if (!*arg) {
-	wrap_printf("#delim: \"%s\" (%s)", delim_name[delim_mode], DELIM);
-	return;
+        wrap_printf("#delim: \"%s\" (%s)", delim_name[delim_mode], DELIM);
+        return;
     }
 
     arg = split_first_word(buf, BUFSIZE, arg);
     n = 0;
     while (n < DELIM_MODES && strncmp(delim_name[n], buf, strlen(buf)) != 0)
-	n++;
+        n++;
 
     if (n >= DELIM_MODES) {
-	PRINTF("#delim [normal|program|{custom <chars>}\n");
-	return;
+        PRINTF("#delim [normal|program|{custom <chars>}\n");
+        return;
     }
 
     if (n == DELIM_CUSTOM) {
-	if (!strchr(arg, ' ')) {
-	    my_strncpy(buf+1, arg, BUFSIZE-2);
-	    *buf = ' ';				/* force ' ' in the delims */
-	    arg = buf;
-	}
-	unescape(arg);
-	set_custom_delimeters(arg);
+        if (!strchr(arg, ' ')) {
+            my_strncpy(buf+1, arg, BUFSIZE-2);
+            *buf = ' ';                         /* force ' ' in the delims */
+            arg = buf;
+        }
+        unescape(arg);
+        set_custom_delimeters(arg);
     } else
-	delim_mode = n;
+        delim_mode = n;
 }
 
 static void cmd_do(char *arg)
@@ -760,9 +760,9 @@ static void cmd_do(char *arg)
 
     arg = skipspace(arg);
     if (*arg != '(') {
-	PRINTF("#do: ");
-	print_error(error=MISMATCH_PAREN_ERROR);
-	return;
+        PRINTF("#do: ");
+        print_error(error=MISMATCH_PAREN_ERROR);
+        return;
     }
     arg++;
 
@@ -770,26 +770,26 @@ static void cmd_do(char *arg)
     if (REAL_ERROR) return;
 
     if (type != TYPE_NUM) {
-	PRINTF("#do: ");
-	print_error(error=NO_NUM_VALUE_ERROR);
-	return;
+        PRINTF("#do: ");
+        print_error(error=NO_NUM_VALUE_ERROR);
+        return;
     }
 
     if (*arg == ')') {          /* skip the ')' */
-	if (*++arg == ' ')
-	    arg++;
+        if (*++arg == ' ')
+            arg++;
     }
     else {
-	PRINTF("#do: ");
-	print_error(error=MISSING_PAREN_ERROR);
-	return;
+        PRINTF("#do: ");
+        print_error(error=MISSING_PAREN_ERROR);
+        return;
     }
 
     if (result >= 0)
-	while (!error && result--)
-	    (void)parse_instruction(arg, true, false, true);
+        while (!error && result--)
+            (void)parse_instruction(arg, true, false, true);
     else {
-	PRINTF("#do: bogus repeat count \"%ld\"\n", result);
+        PRINTF("#do: bogus repeat count \"%ld\"\n", result);
     }
 }
 
@@ -816,24 +816,24 @@ static void cmd_hilite(char *arg)
         }
     } else if (messages) {
         message_attr = attr;
-	attr_string(&attr, msgattrbeg, msgattrend);
-	if (opt_info) {
-	    PRINTF("#message highlighting is now %s.\n",
-		   attr_is_none(&attr) ? "off" : "on");
-	}
+        attr_string(&attr, msgattrbeg, msgattrend);
+        if (opt_info) {
+            PRINTF("#message highlighting is now %s.\n",
+                   attr_is_none(&attr) ? "off" : "on");
+        }
     } else {
         input_attr = attr;
-	attr_string(&attr, edattrbeg, edattrend);
+        attr_string(&attr, edattrbeg, edattrend);
 
-	edattrbg = ((attr.flags & (ATTR_INVERSE | ATTR_BLINK)) != 0
-		    || attr.bg.kind != COLOR_NONE);
+        edattrbg = ((attr.flags & (ATTR_INVERSE | ATTR_BLINK)) != 0
+                    || attr.bg.kind != COLOR_NONE);
 
-	if (opt_info) {
-	    /* "on" in the input attribute, and then the message one again */
-	    wrap_printf("#input highlighting is now %s%so%s%s%s.", msgattrend,
+        if (opt_info) {
+            /* "on" in the input attribute, and then the message one again */
+            wrap_printf("#input highlighting is now %s%so%s%s%s.", msgattrend,
                         edattrbeg, attr_is_none(&attr) ? "ff" : "n", edattrend,
                         msgattrbeg);
-	}
+        }
     }
 }
 
@@ -845,29 +845,29 @@ static void cmd_history(char *arg)
     arg = skipspace(arg);
 
     if (history_done >= MAX_HIST) {
-	print_error(error=HISTORY_RECURSION_ERROR);
-	return;
+        print_error(error=HISTORY_RECURSION_ERROR);
+        return;
     }
     history_done++;
 
     if (*arg == '(') {
-	arg++;
-	num = evall(&buf, &arg);
-	if (!REAL_ERROR && num != TYPE_NUM)
-	    error=NO_NUM_VALUE_ERROR;
-	if (REAL_ERROR) {
-	    PRINTF("#history: ");
-	    print_error(error=NO_NUM_VALUE_ERROR);
-	    return;
-	}
-	num = (int)buf;
+        arg++;
+        num = evall(&buf, &arg);
+        if (!REAL_ERROR && num != TYPE_NUM)
+            error=NO_NUM_VALUE_ERROR;
+        if (REAL_ERROR) {
+            PRINTF("#history: ");
+            print_error(error=NO_NUM_VALUE_ERROR);
+            return;
+        }
+        num = (int)buf;
     } else
-	num = atoi(arg);
+        num = atoi(arg);
 
     if (num > 0)
-	exe_history(num);
+        exe_history(num);
     else
-	show_history(-num);
+        show_history(-num);
 }
 
 /*
@@ -890,11 +890,11 @@ static void cmd_host(char *arg)
     arg = skipspace(arg);
     if (*arg) {
         char hostname[BUFSIZE];
-	arg = split_first_word(hostname, BUFSIZE, arg);
-	if (*arg) {
+        arg = split_first_word(hostname, BUFSIZE, arg);
+        if (*arg) {
             char buf[BUFSIZE];
             arg = split_first_word(buf, BUFSIZE, arg);
-	    int port = atoi(buf);
+            int port = atoi(buf);
             struct tls_options tlsopt = { .use_tls = default_tls };
             bool utf8 = default_utf8;
             while (*(arg = skipspace(arg))) {
@@ -912,18 +912,18 @@ static void cmd_host(char *arg)
                 tlsopt = t;
             }
 
-	    my_strncpy(hostinfo.name, hostname, BUFSIZE - 1);
+            my_strncpy(hostinfo.name, hostname, BUFSIZE - 1);
             hostinfo.port = port;
             hostinfo.tlsopt = tlsopt;
             hostinfo.utf8 = utf8;
 
-	    if (opt_info)
-		PRINTF("#host set to: %s %d%s%s\n", hostinfo.name, hostinfo.port,
+            if (opt_info)
+                PRINTF("#host set to: %s %d%s%s\n", hostinfo.name, hostinfo.port,
                        tlsopt_str(&hostinfo.tlsopt), charset_flag_str(utf8));
             return;
-	}
+        }
     } else if (*hostinfo.name) {
-	fmt_next_edit("#host %s %d%s%s",
+        fmt_next_edit("#host %s %d%s%s",
                       hostinfo.name, hostinfo.port,
                       tlsopt_str(&hostinfo.tlsopt),
                       charset_flag_str(hostinfo.utf8));
@@ -942,20 +942,20 @@ static void cmd_request(char *arg)
     int all, len;
 
     if (current_connection == NULL) {
-	PRINTF("#not connected to a MUD!\n");
-	return;
+        PRINTF("#not connected to a MUD!\n");
+        return;
     }
     while (*(arg = skipspace(arg))) {
-	arg = split_first_word(buf, 256, arg);
-	if (*buf) {
-	    all = !strcmp(buf, "all");
-	    len = strlen(buf);
-	    if ((all || !strncmp(buf, "editor", len))) {
-		mpi_identify(current_connection);
-		if (opt_info) {
-		    PRINTF("#request editor\n");
-		}
-	    }
+        arg = split_first_word(buf, 256, arg);
+        if (*buf) {
+            all = !strcmp(buf, "all");
+            len = strlen(buf);
+            if ((all || !strncmp(buf, "editor", len))) {
+                mpi_identify(current_connection);
+                if (opt_info) {
+                    PRINTF("#request editor\n");
+                }
+            }
         }
     }
 
@@ -984,13 +984,13 @@ static void cmd_in(char *arg)
 
     arg = skipspace(arg);
     if (!*arg) {
-	show_delays();
-	return;
+        show_delays();
+        return;
     }
 
     arg = first_regular(name = arg, ' ');
     if (*arg)
-	*arg++ = 0;
+        *arg++ = 0;
 
     unescape(name);
 
@@ -998,50 +998,50 @@ static void cmd_in(char *arg)
     if (!*p)  p = lookup_delay(name, 1);
 
     if (!*arg && !*p) {
-	wrap_printf("#unknown delay label, cannot show: \"%s\"", name);
-	return;
+        wrap_printf("#unknown delay label, cannot show: \"%s\"", name);
+        return;
     }
     if (!*arg) {
-	show_delaynode(*p, 1);
-	return;
+        show_delaynode(*p, 1);
+        return;
     }
     if (*arg != '(') {
-	PRINTF("#in: ");
-	print_error(error=MISMATCH_PAREN_ERROR);
-	return;
+        PRINTF("#in: ");
+        print_error(error=MISMATCH_PAREN_ERROR);
+        return;
     }
     arg++;    /* skip the '(' */
 
     type = evall(&buf, &arg);
     if (!REAL_ERROR) {
-	if (type!=TYPE_NUM)
-	    error=NO_NUM_VALUE_ERROR;
-	else if (*arg != ')')
-	    error=MISSING_PAREN_ERROR;
+        if (type!=TYPE_NUM)
+            error=NO_NUM_VALUE_ERROR;
+        else if (*arg != ')')
+            error=MISSING_PAREN_ERROR;
     }
     if (REAL_ERROR) {
-	PRINTF("#in: ");
-	print_error(error);
-	return;
+        PRINTF("#in: ");
+        print_error(error);
+        return;
     }
 
     arg = skipspace(arg+1);
     millisec = buf;
     if (*p && millisec)
-	change_delaynode(p, arg, millisec);
+        change_delaynode(p, arg, millisec);
     else if (!*p && millisec) {
-	if (*arg)
-	    new_delaynode(name, arg, millisec);
-	else {
-	    wrap_printf("#cannot create delay label without a command.");
-	}
+        if (*arg)
+            new_delaynode(name, arg, millisec);
+        else {
+            wrap_printf("#cannot create delay label without a command.");
+        }
     } else if (*p && !millisec) {
-	if (opt_info) {
-	    PRINTF("#deleting delay label: %s %s\n", name, (*p)->command);
-	}
-	delete_delaynode(p);
+        if (opt_info) {
+            PRINTF("#deleting delay label: %s %s\n", name, (*p)->command);
+        }
+        delete_delaynode(p);
     } else {
-	wrap_printf("#unknown delay label, cannot delete: \"%s\"", name);
+        wrap_printf("#unknown delay label, cannot delete: \"%s\"", name);
     }
 }
 
@@ -1057,13 +1057,13 @@ static void cmd_at(char *arg)
 
     arg = skipspace(arg);
     if (!*arg) {
-	show_delays();
-	return;
+        show_delays();
+        return;
     }
 
     arg = first_regular(name = arg, ' ');
     if (*arg)
-	*arg++ = 0;
+        *arg++ = 0;
 
     unescape(name);
 
@@ -1071,59 +1071,59 @@ static void cmd_at(char *arg)
     if (!*p)  p = lookup_delay(name, 1);
 
     if (!*arg && !*p) {
-	wrap_printf("#unknown delay label, cannot show: \"%s\"", name);
-	return;
+        wrap_printf("#unknown delay label, cannot show: \"%s\"", name);
+        return;
     }
     if (!*arg) {
-	show_delaynode(*p, 2);
-	return;
+        show_delaynode(*p, 2);
+        return;
     }
     if (*arg != '(') {
-	PRINTF("#in: ");
-	print_error(error=MISMATCH_PAREN_ERROR);
-	return;
+        PRINTF("#in: ");
+        print_error(error=MISMATCH_PAREN_ERROR);
+        return;
     }
     arg++;    /* skip the '(' */
 
     (void)evalp(&pbuf, &arg);
     if (REAL_ERROR) {
-	print_error(error);
-	ptrdel(&pbuf);
-	return;
+        print_error(error);
+        ptrdel(&pbuf);
+        return;
     }
     if (pbuf) {
-	/* convert time-string into hour, minute, second */
-	buf = skipspace(ptrdata(pbuf));
-	if (!*buf || !isdigit(*buf)) {
-	    PRINTF("#at: ");
-	    print_error(error=NO_NUM_VALUE_ERROR);
-	    ptrdel(&pbuf);
-	    return;
-	}
-	num = atoi(buf);
-	second = num % 100;
-	minute = (num /= 100) % 100;
-	hour   = num / 100;
+        /* convert time-string into hour, minute, second */
+        buf = skipspace(ptrdata(pbuf));
+        if (!*buf || !isdigit(*buf)) {
+            PRINTF("#at: ");
+            print_error(error=NO_NUM_VALUE_ERROR);
+            ptrdel(&pbuf);
+            return;
+        }
+        num = atoi(buf);
+        second = num % 100;
+        minute = (num /= 100) % 100;
+        hour   = num / 100;
     }
     if (hour < 0 || hour>23 || minute < 0 || minute>59
-	|| second < 0 || second>59) {
+        || second < 0 || second>59) {
 
-	wrap_printf("#at: #error: invalid time \"%s\"",
+        wrap_printf("#at: #error: invalid time \"%s\"",
                     pbuf && buf ? buf : (char *)"");
-	error=OUT_RANGE_ERROR;
-	ptrdel(&pbuf);
-	return;
+        error=OUT_RANGE_ERROR;
+        ptrdel(&pbuf);
+        return;
     }
     ptrdel(&pbuf);
 
     if (*arg == ')') {        /* skip the ')' */
-	if (*++arg == ' ')
-	    arg++;
+        if (*++arg == ' ')
+            arg++;
     }
     else {
-	PRINTF("#at: ");
-	print_error(error=MISSING_PAREN_ERROR);
-	return;
+        PRINTF("#at: ");
+        print_error(error=MISSING_PAREN_ERROR);
+        return;
     }
 
     arg = skipspace(arg);
@@ -1132,28 +1132,28 @@ static void cmd_at(char *arg)
     /* put current year, month, day in calendar struct */
 
     if (hour < twhen->tm_hour ||
-	(hour == twhen->tm_hour &&
-	 (minute < twhen->tm_min ||
-	  (minute == twhen->tm_min &&
-	   second <= twhen->tm_sec)))) {
-	dayflag = 1;
+        (hour == twhen->tm_hour &&
+         (minute < twhen->tm_min ||
+          (minute == twhen->tm_min &&
+           second <= twhen->tm_sec)))) {
+        dayflag = 1;
         /* it is NOT possible to define an #at refering to the past */
     }
 
     /* if you use a time smaller than the current, it refers to tomorrow */
 
     millisec = (hour - twhen->tm_hour) * 3600 + (minute - twhen->tm_min) * 60 +
-	second - twhen->tm_sec + (dayflag ? 24*60*60 : 0);
+        second - twhen->tm_sec + (dayflag ? 24*60*60 : 0);
     millisec *= mSEC_PER_SEC; /* Comparing time with current calendar,
-			       we finally got the delay */
+                               we finally got the delay */
     millisec -= now.tv_usec / uSEC_PER_mSEC;
 
     if (*p)
-	change_delaynode(p, arg, millisec);
+        change_delaynode(p, arg, millisec);
     else if (*arg != '\0')
-	new_delaynode(name, arg, millisec);
+        new_delaynode(name, arg, millisec);
     else {
-	wrap_printf("#cannot create delay label without a command.");
+        wrap_printf("#cannot create delay label without a command.");
     }
 }
 
@@ -1162,52 +1162,52 @@ static void cmd_init(char *arg)
     arg = skipspace(arg);
 
     if (*arg == '=') {
-	if (*++arg) {
-	    my_strncpy(initstr, arg, BUFSIZE-1);
-	    if (opt_info) {
-		PRINTF("#init: %s\n", initstr);
-	    }
-	} else {
-	    *initstr = '\0';
-	    if (opt_info) {
-		PRINTF("#init cleared.\n");
-	    }
-	}
+        if (*++arg) {
+            my_strncpy(initstr, arg, BUFSIZE-1);
+            if (opt_info) {
+                PRINTF("#init: %s\n", initstr);
+            }
+        } else {
+            *initstr = '\0';
+            if (opt_info) {
+                PRINTF("#init cleared.\n");
+            }
+        }
     } else
-	fmt_next_edit("#init =%s", initstr);
+        fmt_next_edit("#init =%s", initstr);
 }
 
 static void cmd_isprompt(char *arg)
 {
     if (current_connection == main_connection) {
-	int i;
-	long l;
-	arg = skipspace(arg);
-	if (*arg == '(') {
-	    arg++;
-	    i = evall(&l, &arg);
-	    if (!REAL_ERROR) {
-		if (i!=TYPE_NUM)
-		  error=NO_NUM_VALUE_ERROR;
-		else if (*arg != ')')
-		  error=MISSING_PAREN_ERROR;
-	    }
-	    if (REAL_ERROR) {
-		PRINTF("#isprompt: ");
-		print_error(error);
-		return;
-	    }
-	    i = (int)l;
-	} else
-	    i = atoi(arg);
+        int i;
+        long l;
+        arg = skipspace(arg);
+        if (*arg == '(') {
+            arg++;
+            i = evall(&l, &arg);
+            if (!REAL_ERROR) {
+                if (i!=TYPE_NUM)
+                  error=NO_NUM_VALUE_ERROR;
+                else if (*arg != ')')
+                  error=MISSING_PAREN_ERROR;
+            }
+            if (REAL_ERROR) {
+                PRINTF("#isprompt: ");
+                print_error(error);
+                return;
+            }
+            i = (int)l;
+        } else
+            i = atoi(arg);
 
-	if (i == 0)
-	    isprompt_len = -1;
-	else if (i < 0) {
-	    if (i > -NUMPARAM && *VAR[-i].str)
-		ptrtrunc(prompt->str, isprompt_len = ptrlen(*VAR[-i].str));
-	} else
-	    ptrtrunc(prompt->str, isprompt_len = i);
+        if (i == 0)
+            isprompt_len = -1;
+        else if (i < 0) {
+            if (i > -NUMPARAM && *VAR[-i].str)
+                ptrtrunc(prompt->str, isprompt_len = ptrlen(*VAR[-i].str));
+        } else
+            ptrtrunc(prompt->str, isprompt_len = i);
     }
 }
 
@@ -1217,12 +1217,12 @@ static void cmd_key(char *arg)
 
     arg = strip_end(skipspace(arg));
     if (!*arg)
-	return;
+        return;
 
     if ((q = *lookup_key(arg)))
-	q->funct(q->call_data);
+        q->funct(q->call_data);
     else {
-	wrap_printf("#no such key: \"%s\"", arg);
+        wrap_printf("#no such key: \"%s\"", arg);
     }
 }
 
@@ -1233,12 +1233,12 @@ static void cmd_keyedit(char *arg)
 
     arg = skipspace(arg);
     if (!*arg)
-	return;
+        return;
 
     if ((function = lookup_edit_name(arg, &param)))
-	internal_functions[function].funct(param);
+        internal_functions[function].funct(param);
     else {
-	wrap_printf("#no such editing function: \"%s\"", arg);
+        wrap_printf("#no such editing function: \"%s\"", arg);
     }
 }
 
@@ -1246,11 +1246,11 @@ static void cmd_map(char *arg)
 {
     arg = skipspace(arg);
     if (!*arg)  /* show map */
-	map_show();
+        map_show();
     else if (*arg == '-')  /* retrace steps without walking */
-	map_retrace(atoi(arg + 1), 0);
+        map_retrace(atoi(arg + 1), 0);
     else
-	map_walk(arg, true, true);
+        map_walk(arg, true, true);
 }
 
 static void cmd_retrace(char *arg)
@@ -1261,9 +1261,9 @@ static void cmd_retrace(char *arg)
 static void cmd_mark(char *arg)
 {
     if (!*arg)
-	show_marks();
+        show_marks();
     else
-	parse_mark(arg);
+        parse_mark(arg);
 }
 
 static void cmd_nice(char *arg)
@@ -1271,38 +1271,38 @@ static void cmd_nice(char *arg)
     int nnice = a_nice;
     arg = skipspace(arg);
     if (!*arg) {
-	PRINTF("#nice: %d\n", a_nice);
-	return;
+        PRINTF("#nice: %d\n", a_nice);
+        return;
     }
     if (isdigit(*arg)) {
-	a_nice = 0;
-	while (isdigit(*arg)) {
-	    a_nice *= 10;
-	    a_nice += *arg++ - '0';
-	}
+        a_nice = 0;
+        while (isdigit(*arg)) {
+            a_nice *= 10;
+            a_nice += *arg++ - '0';
+        }
     }
     else if (*arg++=='(') {
-	long buf;
-	int type;
+        long buf;
+        int type;
 
-	type = evall(&buf, &arg);
-	if (!REAL_ERROR && type!=TYPE_NUM)
-	    error=NO_NUM_VALUE_ERROR;
-	else if (!REAL_ERROR && *arg++ != ')')
-	    error=MISSING_PAREN_ERROR;
-	if (REAL_ERROR) {
-	    PRINTF("#nice: ");
-	    print_error(error);
-	    return;
-	}
-	a_nice = (int)buf;
-	if (a_nice<0)
-	    a_nice = 0;
+        type = evall(&buf, &arg);
+        if (!REAL_ERROR && type!=TYPE_NUM)
+            error=NO_NUM_VALUE_ERROR;
+        else if (!REAL_ERROR && *arg++ != ')')
+            error=MISSING_PAREN_ERROR;
+        if (REAL_ERROR) {
+            PRINTF("#nice: ");
+            print_error(error);
+            return;
+        }
+        a_nice = (int)buf;
+        if (a_nice<0)
+            a_nice = 0;
     }
     arg = skipspace(arg);
     if (*arg) {
-	parse_instruction(arg, false, false, true);
-	a_nice = nnice;
+        parse_instruction(arg, false, false, true);
+        a_nice = nnice;
     }
 }
 
@@ -1310,7 +1310,7 @@ static void cmd_prefix(char *arg)
 {
     strcpy(prefixstr, arg);
     if (opt_info) {
-	PRINTF("#prefix %s.\n", *arg ? "set" : "cleared");
+        PRINTF("#prefix %s.\n", *arg ? "set" : "cleared");
     }
 }
 
@@ -1318,11 +1318,11 @@ static void cmd_quote(char *arg)
 {
     arg = skipspace(arg);
     if (!*arg)
-	verbatim = !verbatim;
+        verbatim = !verbatim;
     else if (!strcmp(arg, "on"))
-	verbatim = true;
+        verbatim = true;
     else if (!strcmp(arg, "off"))
-	verbatim = false;
+        verbatim = false;
     if (opt_info) {
         PRINTF("#%s mode.\n", verbatim ? "verbatim" : "normal");
     }
@@ -1342,16 +1342,16 @@ static void cmd_rebindall(char *arg)
     char *seq;
 
     for (kp = keydefs; kp; kp = kp->next) {
-	seq = kp->sequence;
-	if (kp->seqlen == 1 && seq[0] < ' ')
-	    ;
-	else if (kp->seqlen == 2 && seq[0] == '\033' && isalnum(seq[1]))
-	    ;
-	else {
-	    parse_rebind(kp->name);
-	    if (error)
-		break;
-	}
+        seq = kp->sequence;
+        if (kp->seqlen == 1 && seq[0] < ' ')
+            ;
+        else if (kp->seqlen == 2 && seq[0] == '\033' && isalnum(seq[1]))
+            ;
+        else {
+            parse_rebind(kp->name);
+            if (error)
+                break;
+        }
     }
 }
 
@@ -1360,9 +1360,9 @@ static void cmd_rebindALL(char *arg)
     keynode *kp;
 
     for (kp = keydefs; kp; kp = kp->next) {
-	parse_rebind(kp->name);
-	if (error)
-	    break;
+        parse_rebind(kp->name);
+        if (error)
+            break;
     }
 }
 
@@ -1384,7 +1384,7 @@ static void cmd_reset(char *arg)
         arg[len - 1] = '\0';
     if (!*arg) {
         reset_usage(arg);
-	return;
+        return;
     }
     if (strncmp(arg, "bind ", 5) == 0) {
         char name[BUFSIZE];
@@ -1395,46 +1395,46 @@ static void cmd_reset(char *arg)
     all = !strcmp(arg, "all");
     if (all || !strcmp(arg, "alias")) {
         int n;
-	for (n = 0; n < MAX_HASH; n++) {
-	    while (aliases[n])
-		delete_aliasnode(&aliases[n]);
-	}
-	if (!all)
-	    return;
+        for (n = 0; n < MAX_HASH; n++) {
+            while (aliases[n])
+                delete_aliasnode(&aliases[n]);
+        }
+        if (!all)
+            return;
     }
     if (all || !strcmp(arg, "action")) {
         while (actions)
-	    delete_actionnode(&actions);
-	if (!all)
-	    return;
+            delete_actionnode(&actions);
+        if (!all)
+            return;
     }
     if (all || !strcmp(arg, "bind")) {
         while (keydefs)
-	    delete_keynode(&keydefs);
-	tty_add_initial_binds();
-	tty_add_walk_binds();
-	if (!all)
-	    return;
+            delete_keynode(&keydefs);
+        tty_add_initial_binds();
+        tty_add_walk_binds();
+        if (!all)
+            return;
     }
     if (all || !strcmp(arg, "in") || !strcmp(arg, "at")) {
         while (delays)
-	    delete_delaynode(&delays);
+            delete_delaynode(&delays);
         while (dead_delays)
-	    delete_delaynode(&dead_delays);
-	if (!all)
-	    return;
+            delete_delaynode(&dead_delays);
+        if (!all)
+            return;
     }
     if (all || !strcmp(arg, "mark")) {
         while (markers)
-	    delete_marknode(&markers);
-	if (!all)
-	    return;
+            delete_marknode(&markers);
+        if (!all)
+            return;
     }
     if (all || !strcmp(arg, "prompt")) {
         while (prompts)
-	    delete_promptnode(&prompts);
-	if (!all)
-	    return;
+            delete_promptnode(&prompts);
+        if (!all)
+            return;
     }
     if (all != 0 || strcmp(arg, "substitute") == 0) {
         while (substitutions != NULL)
@@ -1444,27 +1444,27 @@ static void cmd_reset(char *arg)
     }
     if (all || !strcmp(arg, "var")) {
         int n;
-	varnode **first;
+        varnode **first;
 
-	for (n = 0; n < MAX_HASH; n++) {
-	    while (named_vars[0][n])
-		delete_varnode(&named_vars[0][n], 0);
-	    first = &named_vars[1][n];
-	    while (*first) {
-		if (is_permanent_variable(*first))
-		    first = &(*first)->next;
-		else
-		    delete_varnode(first, 1);
-	    }
-	}
+        for (n = 0; n < MAX_HASH; n++) {
+            while (named_vars[0][n])
+                delete_varnode(&named_vars[0][n], 0);
+            first = &named_vars[1][n];
+            while (*first) {
+                if (is_permanent_variable(*first))
+                    first = &(*first)->next;
+                else
+                    delete_varnode(first, 1);
+            }
+        }
 
-	for (n = 0; n < NUMVAR; n++) {
-	    *var[n].num = 0;
-	    ptrdel(var[n].str);
-	    *var[n].str = NULL;
-	}
-	if (!all)
-	    return;
+        for (n = 0; n < NUMVAR; n++) {
+            *var[n].num = 0;
+            ptrdel(var[n].str);
+            *var[n].str = NULL;
+        }
+        if (!all)
+            return;
     }
     if (!all)
         reset_usage(arg);
@@ -1473,9 +1473,9 @@ static void cmd_reset(char *arg)
 static void cmd_snoop(char *arg)
 {
     if (!*arg) {
-	PRINTF("#snoop: which connection?\n");
+        PRINTF("#snoop: which connection?\n");
     } else
-	tcp_togglesnoop(arg);
+        tcp_togglesnoop(arg);
 }
 
 static void cmd_stop(char *arg)
@@ -1483,18 +1483,18 @@ static void cmd_stop(char *arg)
     delaynode *dying;
 
     if (delays)
-	update_now();
+        update_now();
 
     while (delays) {
-	dying = delays;
-	delays = dying->next;
-	dying->when.tv_sec = now.tv_sec;
-	dying->when.tv_usec = now.tv_usec;
-	dying->next = dead_delays;
-	dead_delays = dying;
+        dying = delays;
+        delays = dying->next;
+        dying->when.tv_sec = now.tv_sec;
+        dying->when.tv_usec = now.tv_usec;
+        dying->next = dead_delays;
+        dead_delays = dying;
     }
     if (opt_info) {
-	PRINTF("#all delayed labels are now disabled.\n");
+        PRINTF("#all delayed labels are now disabled.\n");
     }
 }
 
@@ -1538,30 +1538,30 @@ static void cmd_emulate(char *arg)
 
     arg = redirect(arg, &pbuf, &kind, "emulate", 0, &start, &end);
     if (REAL_ERROR || !arg)
-	return;
+        return;
 
     if (kind) {
-	char buf[BUFSIZE];
+        char buf[BUFSIZE];
 
-	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
-	if (!fp) {
-	    wrap_printf("#emulate: #error opening \"%s\"", arg);
-	    print_error(error=SYNTAX_ERROR);
-	    ptrdel(&pbuf);
-	    return;
-	}
-	status(-1); /* we're pretending we got something from the MUD */
-	while (!error && (!start || i<=end) && utf8_fgets(buf, BUFSIZE, fp))
-	    if (!start || i++>=start)
-		process_remote_input(buf, strlen(buf));
+        fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        if (!fp) {
+            wrap_printf("#emulate: #error opening \"%s\"", arg);
+            print_error(error=SYNTAX_ERROR);
+            ptrdel(&pbuf);
+            return;
+        }
+        status(-1); /* we're pretending we got something from the MUD */
+        while (!error && (!start || i<=end) && utf8_fgets(buf, BUFSIZE, fp))
+            if (!start || i++>=start)
+                process_remote_input(buf, strlen(buf));
 
-	if (kind == '!') pclose(fp); else fclose(fp);
+        if (kind == '!') pclose(fp); else fclose(fp);
     } else {
-	status(-1); /* idem */
-	/* WARNING: no guarantee there is space! */
-	arg[len = strlen(arg)] = '\n';
-	arg[++len] = '\0';
-	process_remote_input(arg, len);
+        status(-1); /* idem */
+        /* WARNING: no guarantee there is space! */
+        arg[len = strlen(arg)] = '\n';
+        arg[++len] = '\0';
+        process_remote_input(arg, len);
     }
     ptrdel(&pbuf);
 }
@@ -1570,16 +1570,16 @@ static void cmd_eval(char *arg)
 {
     arg = skipspace(arg);
     if (*arg=='(') {
-	arg++;
-	(void)evaln(&arg);
-	if (*arg != ')') {
-	    PRINTF("#(): ");
-	    print_error(error=MISSING_PAREN_ERROR);
-	}
+        arg++;
+        (void)evaln(&arg);
+        if (*arg != ')') {
+            PRINTF("#(): ");
+            print_error(error=MISSING_PAREN_ERROR);
+        }
     }
     else {
-	PRINTF("#(): ");
-	print_error(error=MISMATCH_PAREN_ERROR);
+        PRINTF("#(): ");
+        print_error(error=MISMATCH_PAREN_ERROR);
     }
 }
 
@@ -1593,40 +1593,40 @@ static void cmd_exe(char *arg)
 
     arg = redirect(arg, &pbuf, &kind, "exe", 0, &start, &end);
     if (REAL_ERROR || !arg)
-	return;
+        return;
 
     if (kind) {
-	char buf[BUFSIZE];
+        char buf[BUFSIZE];
 
-	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
-	if (!fp) {
-	    wrap_printf("#exe: #error opening \"%s\"", arg);
-	    error = SYNTAX_ERROR;
-	    ptrdel(&pbuf);
-	    return;
-	}
-	offset = 0;
-	/* We may go in to a loop if a single function is more than 4k, but if that's
-	 * the case then maybe you should break it down a little bit :p */
-	while (!error && (!start || i<=end) && utf8_fgets(buf + offset, BUFSIZE - offset, fp))
-	    /* If it ends with \\\n then it's a line continuation, so clear
-	     * the \\\n and do another fgets */
-	    if (buf[offset + strlen(buf + offset) - 2] == '\\') {
-		/* Clear \n prefixed with a literal backslash '\\' */
-		if ((clear = strstr(buf + offset, "\\\n")))
-		    *clear = '\0';
-		offset += strlen(buf + offset);
-	    } else {
-	        if (!start || i++ >= start) {
-		    buf[strlen(buf)-1] = '\0';
-		    parse_user_input(buf, false);
-		    offset = 0;
-		}
-	    }
+        fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        if (!fp) {
+            wrap_printf("#exe: #error opening \"%s\"", arg);
+            error = SYNTAX_ERROR;
+            ptrdel(&pbuf);
+            return;
+        }
+        offset = 0;
+        /* We may go in to a loop if a single function is more than 4k, but if that's
+         * the case then maybe you should break it down a little bit :p */
+        while (!error && (!start || i<=end) && utf8_fgets(buf + offset, BUFSIZE - offset, fp))
+            /* If it ends with \\\n then it's a line continuation, so clear
+             * the \\\n and do another fgets */
+            if (buf[offset + strlen(buf + offset) - 2] == '\\') {
+                /* Clear \n prefixed with a literal backslash '\\' */
+                if ((clear = strstr(buf + offset, "\\\n")))
+                    *clear = '\0';
+                offset += strlen(buf + offset);
+            } else {
+                if (!start || i++ >= start) {
+                    buf[strlen(buf)-1] = '\0';
+                    parse_user_input(buf, false);
+                    offset = 0;
+                }
+            }
 
-	if (kind == '!') pclose(fp); else fclose(fp);
+        if (kind == '!') pclose(fp); else fclose(fp);
     } else
-	parse_user_input(arg, false);
+        parse_user_input(arg, false);
     ptrdel(&pbuf);
 }
 
@@ -1640,31 +1640,31 @@ static void cmd_print(char *arg)
     clear_input_line(opt_compact);
 
     if (!*arg) {
-	smart_print(*VAR[0].str ? ptrdata(*VAR[0].str) : (char *)"", 1);
-	return;
+        smart_print(*VAR[0].str ? ptrdata(*VAR[0].str) : (char *)"", 1);
+        return;
     }
 
     arg = redirect(arg, &pbuf, &kind, "print", 1, &start, &end);
     if (REAL_ERROR || !arg)
-	return;
+        return;
 
     if (kind) {
-	char buf[BUFSIZE];
-	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
-	if (!fp) {
-	    wrap_printf("#print: #error opening \"%s\"", arg);
-	    error=SYNTAX_ERROR;
-	    ptrdel(&pbuf);
-	    return;
-	}
-	while (!error && (!start || i <= end) && utf8_fgets(buf, BUFSIZE, fp))
-	    if (!start || i++>=start)
-		tty_puts(buf);
-	tty_putc('\n');
+        char buf[BUFSIZE];
+        fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        if (!fp) {
+            wrap_printf("#print: #error opening \"%s\"", arg);
+            error=SYNTAX_ERROR;
+            ptrdel(&pbuf);
+            return;
+        }
+        while (!error && (!start || i <= end) && utf8_fgets(buf, BUFSIZE, fp))
+            if (!start || i++>=start)
+                tty_puts(buf);
+        tty_putc('\n');
 
-	if (kind == '!') pclose(fp); else fclose(fp);
+        if (kind == '!') pclose(fp); else fclose(fp);
     } else
-	smart_print(arg, 1);
+        smart_print(arg, 1);
     ptrdel(&pbuf);
 }
 
@@ -1677,34 +1677,34 @@ static void cmd_send(char *arg)
 
     arg = redirect(arg, &pbuf, &kind, "send", 0, &start, &end);
     if (REAL_ERROR ||!arg)
-	return;
+        return;
 
     if (kind) {
-	char buf[BUFSIZE];
-	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
-	if (!fp) {
-	    wrap_printf("#send: #error opening \"%s\"", arg);
-	    error = SYNTAX_ERROR;
-	    ptrdel(&pbuf);
-	    return;
-	}
-	while (!error && (!start || i<=end) && utf8_fgets(buf, BUFSIZE, fp)) {
-	    if ((newline = strchr(buf, '\n')))
-		*newline = '\0';
+        char buf[BUFSIZE];
+        fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        if (!fp) {
+            wrap_printf("#send: #error opening \"%s\"", arg);
+            error = SYNTAX_ERROR;
+            ptrdel(&pbuf);
+            return;
+        }
+        while (!error && (!start || i<=end) && utf8_fgets(buf, BUFSIZE, fp)) {
+            if ((newline = strchr(buf, '\n')))
+                *newline = '\0';
 
-	    if (!start || i++>=start) {
-		if (opt_echo) {
-		    PRINTF("[%s]\n", buf);
-		}
-		tcp_write(current_connection, buf);
-	    }
-	}
-	if (kind == '!') pclose(fp); else fclose(fp);
+            if (!start || i++>=start) {
+                if (opt_echo) {
+                    PRINTF("[%s]\n", buf);
+                }
+                tcp_write(current_connection, buf);
+            }
+        }
+        if (kind == '!') pclose(fp); else fclose(fp);
     } else {
-	if (opt_echo) {
-	    PRINTF("[%s]\n", arg);
-	}
-	tcp_write(current_connection, arg);
+        if (opt_echo) {
+            PRINTF("[%s]\n", arg);
+        }
+        tcp_write(current_connection, arg);
     }
     ptrdel(&pbuf);
 }
@@ -1714,20 +1714,20 @@ static void cmd_rawsend(char *arg)
     char *tmp = skipspace(arg);
 
     if (*tmp=='(') {
-	ptr *pbuf = (ptr *)0;
-	arg = tmp + 1;
-	raw_escapes = true;
-	(void)evalp(&pbuf, &arg);
-	raw_escapes = false;
-	if (REAL_ERROR) {
-	    print_error(error);
-	    ptrdel(&pbuf);
-	} else if (pbuf)
-	    tcp_raw_write(current_connection, ptrdata(pbuf), ptrlen(pbuf));
+        ptr *pbuf = (ptr *)0;
+        arg = tmp + 1;
+        raw_escapes = true;
+        (void)evalp(&pbuf, &arg);
+        raw_escapes = false;
+        if (REAL_ERROR) {
+            print_error(error);
+            ptrdel(&pbuf);
+        } else if (pbuf)
+            tcp_raw_write(current_connection, ptrdata(pbuf), ptrlen(pbuf));
     } else {
-	int len;
-	if ((len = memunescape(arg, strlen(arg), true)))
-	    tcp_raw_write(current_connection, arg, len);
+        int len;
+        if ((len = memunescape(arg, strlen(arg), true)))
+            tcp_raw_write(current_connection, arg, len);
     }
 }
 
@@ -1736,20 +1736,20 @@ static void cmd_rawprint(char *arg)
     char *tmp = skipspace(arg);
 
     if (*tmp=='(') {
-	ptr *pbuf = (ptr *)0;
-	arg = tmp + 1;
-	raw_escapes = true;
-	(void)evalp(&pbuf, &arg);
-	raw_escapes = false;
-	if (REAL_ERROR) {
-	    print_error(error);
-	    ptrdel(&pbuf);
-	} else if (pbuf)
-	    tty_raw_write(ptrdata(pbuf), ptrlen(pbuf));
+        ptr *pbuf = (ptr *)0;
+        arg = tmp + 1;
+        raw_escapes = true;
+        (void)evalp(&pbuf, &arg);
+        raw_escapes = false;
+        if (REAL_ERROR) {
+            print_error(error);
+            ptrdel(&pbuf);
+        } else if (pbuf)
+            tty_raw_write(ptrdata(pbuf), ptrlen(pbuf));
     } else {
-	int len;
-	if ((len = memunescape(arg, strlen(arg), true)))
-	    tty_raw_write(arg, len);
+        int len;
+        if ((len = memunescape(arg, strlen(arg), true)))
+            tty_raw_write(arg, len);
     }
 }
 
@@ -1762,52 +1762,52 @@ static void cmd_write(char *arg)
 
     kind = *tmp;
     if (kind == '!' || kind == '>')
-	arg = ++tmp;
+        arg = ++tmp;
     else
-	kind = 0;
+        kind = 0;
 
     if (*tmp=='(') {
-	arg = tmp + 1;
-	(void)evalp(&p1, &arg);
-	if (REAL_ERROR)
-	    goto write_cleanup;
+        arg = tmp + 1;
+        (void)evalp(&p1, &arg);
+        if (REAL_ERROR)
+            goto write_cleanup;
 
-	if (*arg == CMDSEP) {
-	    arg++;
-	    (void)evalp(&p2, &arg);
-	    if (!REAL_ERROR && !p2)
-		error = NO_STRING_ERROR;
-	    if (REAL_ERROR)
-		goto write_cleanup;
-	} else {
-	    PRINTF("#write: ");
-	    error=SYNTAX_ERROR;
-	    goto write_cleanup;
-	}
-	if (*arg != ')') {
-	    PRINTF("#write: ");
-	    error=MISSING_PAREN_ERROR;
-	    goto write_cleanup;
-	}
-	arg = ptrdata(p2);
+        if (*arg == CMDSEP) {
+            arg++;
+            (void)evalp(&p2, &arg);
+            if (!REAL_ERROR && !p2)
+                error = NO_STRING_ERROR;
+            if (REAL_ERROR)
+                goto write_cleanup;
+        } else {
+            PRINTF("#write: ");
+            error=SYNTAX_ERROR;
+            goto write_cleanup;
+        }
+        if (*arg != ')') {
+            PRINTF("#write: ");
+            error=MISSING_PAREN_ERROR;
+            goto write_cleanup;
+        }
+        arg = ptrdata(p2);
 
-	fp = (kind == '!') ? popen(arg, "w") : fopen(arg, kind ? "w" : "a");
-	if (!fp) {
-	    wrap_printf("#write: #error opening \"%s\"", arg);
-	    error=SYNTAX_ERROR;
-	    goto write_cleanup2;
-	}
-	fprintf(fp, "%s\n", p1 ? ptrdata(p1) : (char *)"");
-	fflush(fp);
-	if (kind == '!') pclose(fp); else fclose(fp);
+        fp = (kind == '!') ? popen(arg, "w") : fopen(arg, kind ? "w" : "a");
+        if (!fp) {
+            wrap_printf("#write: #error opening \"%s\"", arg);
+            error=SYNTAX_ERROR;
+            goto write_cleanup2;
+        }
+        fprintf(fp, "%s\n", p1 ? ptrdata(p1) : (char *)"");
+        fflush(fp);
+        if (kind == '!') pclose(fp); else fclose(fp);
     } else {
-	PRINTF("#write: ");
-	error=MISMATCH_PAREN_ERROR;
+        PRINTF("#write: ");
+        error=MISMATCH_PAREN_ERROR;
     }
 
 write_cleanup:
     if (REAL_ERROR)
-	print_error(error);
+        print_error(error);
 write_cleanup2:
     ptrdel(&p1);
     ptrdel(&p2);
@@ -1826,263 +1826,263 @@ static void cmd_var(char *arg)
     expr = first_regular(arg, '=');
 
     if (*expr) {
-	*expr++ = '\0';     /* skip the = */
-	if (!*expr)
-	    deleting = 1;
-	else {
-	    right = 1;
-	    if (*expr == ' ')
-		expr++;
-	}
+        *expr++ = '\0';     /* skip the = */
+        if (!*expr)
+            deleting = 1;
+        else {
+            right = 1;
+            if (*expr == ' ')
+                expr++;
+        }
     }
 
     if (*arg == '$')
-	type = TYPE_TXT_VAR;
+        type = TYPE_TXT_VAR;
     else if (*arg == '@')
-	type = TYPE_NUM_VAR;
+        type = TYPE_NUM_VAR;
     else if (*arg) {
-	print_error(error=INVALID_NAME_ERROR);
-	return;
+        print_error(error=INVALID_NAME_ERROR);
+        return;
     } else {
-	show_vars();
-	return;
+        show_vars();
+        return;
     }
 
     kind = *++arg;
     if (isalpha(kind) || kind == '_') {
-	/* found a named variable */
-	tmp = arg;
-	while (*tmp && (isalnum(*tmp) || *tmp == '_'))
-	    tmp++;
-	if (*tmp) {
-	    print_error(error=INVALID_NAME_ERROR);
-	    return;
-	}
-	kind = type==TYPE_TXT_VAR ? 1 : 0;
-	p_named_var = lookup_varnode(arg, kind);
-	if (!*p_named_var) {
-	    /* it doesn't (yet) exist */
-	    if (!deleting) {
-		/* so create it */
-		named_var = add_varnode(arg, kind);
-		if (REAL_ERROR)
-		    return;
-		if (opt_info) {
-		    wrap_printf("#new variable: \"%s\"", arg - 1);
-		}
-	    } else {
-		print_error(error=UNDEFINED_VARIABLE_ERROR);
-		return;
-	    }
-	} else
-	    /* it exists, hold on */
-	    named_var = *p_named_var;
+        /* found a named variable */
+        tmp = arg;
+        while (*tmp && (isalnum(*tmp) || *tmp == '_'))
+            tmp++;
+        if (*tmp) {
+            print_error(error=INVALID_NAME_ERROR);
+            return;
+        }
+        kind = type==TYPE_TXT_VAR ? 1 : 0;
+        p_named_var = lookup_varnode(arg, kind);
+        if (!*p_named_var) {
+            /* it doesn't (yet) exist */
+            if (!deleting) {
+                /* so create it */
+                named_var = add_varnode(arg, kind);
+                if (REAL_ERROR)
+                    return;
+                if (opt_info) {
+                    wrap_printf("#new variable: \"%s\"", arg - 1);
+                }
+            } else {
+                print_error(error=UNDEFINED_VARIABLE_ERROR);
+                return;
+            }
+        } else
+            /* it exists, hold on */
+            named_var = *p_named_var;
 
-	idx = named_var->index;
+        idx = named_var->index;
     } else {
-	/* not a named variable, may be
-	 * an unnamed variable or an expression */
-	kind = type==TYPE_TXT_VAR ? 1 : 0;
-	tmp = skipspace(arg);
-	if (*tmp == '(') {
-	    /* an expression */
-	    arg = tmp+1;
-	    idx = evalp(&pbuf, &arg);
-	    if (!REAL_ERROR && idx != TYPE_TXT)
-		error=NO_STRING_ERROR;
-	    if (REAL_ERROR) {
-		PRINTF("#var: ");
-		print_error(error);
-		ptrdel(&pbuf);
-		return;
-	    }
-	    if (pbuf)
-		buf = ptrdata(pbuf);
-	    else {
-		print_error(error=INVALID_NAME_ERROR);
-		return;
-	    }
-	    char err_det;
-	    if (isdigit(*buf) || *buf=='-' || *buf=='+') {
-		if (sscanf(buf, "%d%c", &idx, &err_det)==1) {
-		    if (idx < -NUMVAR || idx >= NUMPARAM) {
-			print_error(error=OUT_RANGE_ERROR);
-			ptrdel(&pbuf);
-			return;
-		    }
-		} else {
-		    print_error(error=INVALID_NAME_ERROR);
-		    return;
-		}
-	    } else {
-		if (!isalpha(*buf) && *buf!='_') {
-		    print_error(error=INVALID_NAME_ERROR);
-		    return;
-		}
-		tmp = buf + 1;
-	        while (*tmp && (isalnum(*tmp) || *tmp=='_'))
-		    tmp++;
-		if (*tmp) {
-		    print_error(error=INVALID_NAME_ERROR);
-		    return;
-		}
-		if (!(named_var = *(p_named_var = lookup_varnode(buf, kind)))) {
-		    if (!deleting) {
-			named_var = add_varnode(buf, kind);
-			if (REAL_ERROR) {
-			    print_error(error);
-			    ptrdel(&pbuf);
-			    return;
-			}
-			if (opt_info) {
-			    PRINTF("#new variable: %c%s\n", kind
-				       ? '$' : '@', buf);
-			}
-		    } else {
-			print_error(error=UNDEFINED_VARIABLE_ERROR);
-			ptrdel(&pbuf);
-			return;
-		    }
-		}
-		idx = named_var->index;
-	    }
-	} else {
-	    /* an unnamed var */
-	    long buf2;
+        /* not a named variable, may be
+         * an unnamed variable or an expression */
+        kind = type==TYPE_TXT_VAR ? 1 : 0;
+        tmp = skipspace(arg);
+        if (*tmp == '(') {
+            /* an expression */
+            arg = tmp+1;
+            idx = evalp(&pbuf, &arg);
+            if (!REAL_ERROR && idx != TYPE_TXT)
+                error=NO_STRING_ERROR;
+            if (REAL_ERROR) {
+                PRINTF("#var: ");
+                print_error(error);
+                ptrdel(&pbuf);
+                return;
+            }
+            if (pbuf)
+                buf = ptrdata(pbuf);
+            else {
+                print_error(error=INVALID_NAME_ERROR);
+                return;
+            }
+            char err_det;
+            if (isdigit(*buf) || *buf=='-' || *buf=='+') {
+                if (sscanf(buf, "%d%c", &idx, &err_det)==1) {
+                    if (idx < -NUMVAR || idx >= NUMPARAM) {
+                        print_error(error=OUT_RANGE_ERROR);
+                        ptrdel(&pbuf);
+                        return;
+                    }
+                } else {
+                    print_error(error=INVALID_NAME_ERROR);
+                    return;
+                }
+            } else {
+                if (!isalpha(*buf) && *buf!='_') {
+                    print_error(error=INVALID_NAME_ERROR);
+                    return;
+                }
+                tmp = buf + 1;
+                while (*tmp && (isalnum(*tmp) || *tmp=='_'))
+                    tmp++;
+                if (*tmp) {
+                    print_error(error=INVALID_NAME_ERROR);
+                    return;
+                }
+                if (!(named_var = *(p_named_var = lookup_varnode(buf, kind)))) {
+                    if (!deleting) {
+                        named_var = add_varnode(buf, kind);
+                        if (REAL_ERROR) {
+                            print_error(error);
+                            ptrdel(&pbuf);
+                            return;
+                        }
+                        if (opt_info) {
+                            PRINTF("#new variable: %c%s\n", kind
+                                       ? '$' : '@', buf);
+                        }
+                    } else {
+                        print_error(error=UNDEFINED_VARIABLE_ERROR);
+                        ptrdel(&pbuf);
+                        return;
+                    }
+                }
+                idx = named_var->index;
+            }
+        } else {
+            /* an unnamed var */
+            long buf2;
 
-	    idx = evall(&buf2, &arg);
-	    if (!REAL_ERROR && idx != TYPE_NUM)
-		error=NO_STRING_ERROR;
-	    if (REAL_ERROR) {
-		PRINTF("#var: ");
-		print_error(error);
-		return;
-	    }
-	    idx = (int)buf2;
-	    if (idx < -NUMVAR || idx >= NUMPARAM) {
-		print_error(error=OUT_RANGE_ERROR);
-		return;
-	    }
-	    /* ok, it's an unnamed var */
-	}
+            idx = evall(&buf2, &arg);
+            if (!REAL_ERROR && idx != TYPE_NUM)
+                error=NO_STRING_ERROR;
+            if (REAL_ERROR) {
+                PRINTF("#var: ");
+                print_error(error);
+                return;
+            }
+            idx = (int)buf2;
+            if (idx < -NUMVAR || idx >= NUMPARAM) {
+                print_error(error=OUT_RANGE_ERROR);
+                return;
+            }
+            /* ok, it's an unnamed var */
+        }
     }
 
 
     if (type == TYPE_TXT_VAR && right && !*VAR[idx].str) {
-	/* create it */
-	*VAR[idx].str = ptrnew(PARAMLEN);
-	if (MEM_ERROR) {
-	    print_error(error);
-	    ptrdel(&pbuf);
-	    return;
-	}
+        /* create it */
+        *VAR[idx].str = ptrnew(PARAMLEN);
+        if (MEM_ERROR) {
+            print_error(error);
+            ptrdel(&pbuf);
+            return;
+        }
     }
 
     if (deleting) {
-	/* R.I.P. named variables */
-	if (named_var) {
-	    if (is_permanent_variable(named_var)) {
-		wrap_printf("#cannot delete variable: \"%s\"", arg - 1);
-	    } else {
-		delete_varnode(p_named_var, kind);
-		if (opt_info) {
-		    wrap_printf("#deleted variable: \"%s\"", arg - 1);
-		}
-	    }
-	} else if (type == TYPE_TXT_VAR) {
-	/* R.I.P. unnamed variables */
-	    if (*VAR[idx].str) {
-		if (idx < 0) {
-		    ptrdel(VAR[idx].str);
-		    *VAR[idx].str = 0;
-		} else
-		    ptrzero(*VAR[idx].str);
-	    }
-	} else
-	    *VAR[idx].num = 0;
-	ptrdel(&pbuf);
-	return;
+        /* R.I.P. named variables */
+        if (named_var) {
+            if (is_permanent_variable(named_var)) {
+                wrap_printf("#cannot delete variable: \"%s\"", arg - 1);
+            } else {
+                delete_varnode(p_named_var, kind);
+                if (opt_info) {
+                    wrap_printf("#deleted variable: \"%s\"", arg - 1);
+                }
+            }
+        } else if (type == TYPE_TXT_VAR) {
+        /* R.I.P. unnamed variables */
+            if (*VAR[idx].str) {
+                if (idx < 0) {
+                    ptrdel(VAR[idx].str);
+                    *VAR[idx].str = 0;
+                } else
+                    ptrzero(*VAR[idx].str);
+            }
+        } else
+            *VAR[idx].num = 0;
+        ptrdel(&pbuf);
+        return;
     } else if (!right) {
-	/* no right-hand expression, just show */
-	if (named_var) {
-	    if (type == TYPE_TXT_VAR) {
-		pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
-		if (REAL_ERROR) {
-		    print_error(error);
-		    ptrdel(&pbuf);
-		    return;
-		}
-		fmt_next_edit("#($%s = \"%s\")",
+        /* no right-hand expression, just show */
+        if (named_var) {
+            if (type == TYPE_TXT_VAR) {
+                pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
+                if (REAL_ERROR) {
+                    print_error(error);
+                    ptrdel(&pbuf);
+                    return;
+                }
+                fmt_next_edit("#($%s = \"%s\")",
                               named_var->name,
                               pbuf ? ptrdata(pbuf) : (char *)"");
-	    } else {
-		fmt_next_edit("#(@%s = %ld)",
+            } else {
+                fmt_next_edit("#(@%s = %ld)",
                               named_var->name,
                               *VAR[idx].num);
-	    }
-	} else {
-	    if (type == TYPE_TXT_VAR) {
-		pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
-		fmt_next_edit("#($%d = \"%s\")", idx,
+            }
+        } else {
+            if (type == TYPE_TXT_VAR) {
+                pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
+                fmt_next_edit("#($%d = \"%s\")", idx,
                               pbuf ? ptrdata(pbuf) : (char *)"");
-	    } else {
-		fmt_next_edit("#(@%d = %ld)", idx,
+            } else {
+                fmt_next_edit("#(@%d = %ld)", idx,
                               *VAR[idx].num);
-	    }
-	}
-	ptrdel(&pbuf);
-	return;
+            }
+        }
+        ptrdel(&pbuf);
+        return;
     }
 
     /* only case left: assign a value to a variable */
     arg = redirect(expr, &pbuf, &kind, "var", 1, &start, &end);
     if (REAL_ERROR || !arg)
-	return;
+        return;
 
     if (kind) {
-	char buf2[BUFSIZE];
-	fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
-	if (!fp) {
-	    wrap_printf("#var: #error opening \"%s\"", arg);
-	    error=SYNTAX_ERROR;
-	    ptrdel(&pbuf);
-	    return;
-	}
-	len = 0;
-	i = 1;
-	while (!error && (!start || i<=end) && utf8_fgets(buf2+len, BUFSIZE-len, fp))
-	    if (!start || i++>=start)
-		len += strlen(buf2 + len);
+        char buf2[BUFSIZE];
+        fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        if (!fp) {
+            wrap_printf("#var: #error opening \"%s\"", arg);
+            error=SYNTAX_ERROR;
+            ptrdel(&pbuf);
+            return;
+        }
+        len = 0;
+        i = 1;
+        while (!error && (!start || i<=end) && utf8_fgets(buf2+len, BUFSIZE-len, fp))
+            if (!start || i++>=start)
+                len += strlen(buf2 + len);
 
-	if (kind == '!') pclose(fp); else fclose(fp);
-	if (len>PARAMLEN)
-	    len = PARAMLEN;
-	buf2[len] = '\0';
-	arg = buf2;
+        if (kind == '!') pclose(fp); else fclose(fp);
+        if (len>PARAMLEN)
+            len = PARAMLEN;
+        buf2[len] = '\0';
+        arg = buf2;
     }
 
     if (type == TYPE_NUM_VAR) {
-	arg = skipspace(arg);
+        arg = skipspace(arg);
 
-	char *num_end;
-	errno = 0;
-	long num = strtol(arg, &num_end, 10);
+        char *num_end;
+        errno = 0;
+        long num = strtol(arg, &num_end, 10);
 
-	if (errno == ERANGE) {
-	    PRINTF("#var: ");
-	    print_error(error=OUT_RANGE_ERROR);
-	} else {
-	    if (num_end == arg) {
-		PRINTF("#var: ");
-		print_error(error=NO_NUM_VALUE_ERROR);
-	    }
-	    *VAR[idx].num = num;
-	}
+        if (errno == ERANGE) {
+            PRINTF("#var: ");
+            print_error(error=OUT_RANGE_ERROR);
+        } else {
+            if (num_end == arg) {
+                PRINTF("#var: ");
+                print_error(error=NO_NUM_VALUE_ERROR);
+            }
+            *VAR[idx].num = num;
+        }
     }
     else {
-	*VAR[idx].str = ptrmcpy(*VAR[idx].str, arg, strlen(arg));
-	if (MEM_ERROR)
-	    print_error(error);
+        *VAR[idx].str = ptrmcpy(*VAR[idx].str, arg, strlen(arg));
+        if (MEM_ERROR)
+            print_error(error);
     }
     ptrdel(&pbuf);
 }
@@ -2096,75 +2096,75 @@ static void cmd_setvar(char *arg)
     name = arg = skipspace(arg);
     arg = first_regular(arg, '=');
     if (*arg) {
-	*arg++ = '\0';
-	if (*arg) {
-	    func = 1; /* set */
-	    if (*arg == '(') {
-		arg++;
-		i = evall(&buf, &arg);
-		if (!REAL_ERROR && i != TYPE_NUM)
-		    error=NO_NUM_VALUE_ERROR;
-		else if (!REAL_ERROR && *arg != ')')
-		    error=MISSING_PAREN_ERROR;
-	    } else
-		buf = strtol(arg, NULL, 0);
-	} else
-	    buf = 0;
+        *arg++ = '\0';
+        if (*arg) {
+            func = 1; /* set */
+            if (*arg == '(') {
+                arg++;
+                i = evall(&buf, &arg);
+                if (!REAL_ERROR && i != TYPE_NUM)
+                    error=NO_NUM_VALUE_ERROR;
+                else if (!REAL_ERROR && *arg != ')')
+                    error=MISSING_PAREN_ERROR;
+            } else
+                buf = strtol(arg, NULL, 0);
+        } else
+            buf = 0;
 
-	if (REAL_ERROR) {
-	    PRINTF("#setvar: ");
-	    print_error(error);
-	    return;
-	}
+        if (REAL_ERROR) {
+            PRINTF("#setvar: ");
+            print_error(error);
+            return;
+        }
     }
 
     i = strlen(name);
     if (i && !strncmp(name, "timer", i)) {
-	vtime t;
-	update_now();
-	if (func == 0)
-	    fmt_next_edit("#setvar timer=%ld",
+        vtime t;
+        update_now();
+        if (func == 0)
+            fmt_next_edit("#setvar timer=%ld",
                           diff_vtime(&now, &ref_time));
-	else {
-	    t.tv_usec = ((-buf) % mSEC_PER_SEC) * uSEC_PER_mSEC;
-	    t.tv_sec  =  (-buf) / mSEC_PER_SEC;
-	    ref_time.tv_usec = now.tv_usec;
-	    ref_time.tv_sec  = now.tv_sec;
-	    add_vtime(&ref_time, &t);
-	}
+        else {
+            t.tv_usec = ((-buf) % mSEC_PER_SEC) * uSEC_PER_mSEC;
+            t.tv_sec  =  (-buf) / mSEC_PER_SEC;
+            ref_time.tv_usec = now.tv_usec;
+            ref_time.tv_sec  = now.tv_sec;
+            add_vtime(&ref_time, &t);
+        }
     }
     else if (i && !strncmp(name, "lines", i)) {
-	if (func == 0)
-	    fmt_next_edit("#setvar lines=%d", lines);
-	else {
-	    if (buf > 0)
-		lines = (int)buf;
-	    if (opt_info) {
-		PRINTF("#setvar: lines=%d\n", lines);
-	    }
-	}
+        if (func == 0)
+            fmt_next_edit("#setvar lines=%d", lines);
+        else {
+            if (buf > 0)
+                lines = (int)buf;
+            if (opt_info) {
+                PRINTF("#setvar: lines=%d\n", lines);
+            }
+        }
     }
     else if (i && !strncmp(name, "mem", i)) {
-	if (func == 0)
-	    fmt_next_edit("#setvar mem=%d", limit_mem);
-	else {
-	    if (buf == 0 || buf >= PARAMLEN)
-		limit_mem = buf <= INT_MAX ? (int)buf : INT_MAX;
-	    if (opt_info) {
-		PRINTF("#setvar: mem=%d%s\n", limit_mem,
-		       limit_mem ? "" : " (unlimited)");
-	    }
-	}
+        if (func == 0)
+            fmt_next_edit("#setvar mem=%d", limit_mem);
+        else {
+            if (buf == 0 || buf >= PARAMLEN)
+                limit_mem = buf <= INT_MAX ? (int)buf : INT_MAX;
+            if (opt_info) {
+                PRINTF("#setvar: mem=%d%s\n", limit_mem,
+                       limit_mem ? "" : " (unlimited)");
+            }
+        }
     }
     else if (i && !strncmp(name, "buffer", i)) {
-	if (func == 0)
-	    fmt_next_edit("#setvar buffer=%d", log_getsize());
-	else
-	    log_resize(buf);
+        if (func == 0)
+            fmt_next_edit("#setvar buffer=%d", log_getsize());
+        else
+            log_resize(buf);
     } else {
-	update_now();
-	PRINTF("#setvar buffer=%d\n#setvar lines=%d\n#setvar mem=%d\n#setvar timer=%ld\n",
-	       log_getsize(), lines, limit_mem, diff_vtime(&now, &ref_time));
+        update_now();
+        PRINTF("#setvar buffer=%d\n#setvar lines=%d\n#setvar mem=%d\n#setvar timer=%ld\n",
+               log_getsize(), lines, limit_mem, diff_vtime(&now, &ref_time));
     }
 }
 
@@ -2175,35 +2175,35 @@ static void cmd_if(char *arg)
 
     arg = skipspace(arg);
     if (*arg!='(') {
-	PRINTF("#if: ");
-	print_error(error=MISMATCH_PAREN_ERROR);
-	return;
+        PRINTF("#if: ");
+        print_error(error=MISMATCH_PAREN_ERROR);
+        return;
     }
     arg++;  /* skip the '(' */
 
     type = evall(&buf, &arg);
     if (!REAL_ERROR) {
-	if (type!=TYPE_NUM)
-	    error=NO_NUM_VALUE_ERROR;
-	if (*arg != ')')
-	    error=MISSING_PAREN_ERROR;
-	else {              /* skip the ')' */
-	    if (*++arg == ' ')
-		arg++;
-	}
+        if (type!=TYPE_NUM)
+            error=NO_NUM_VALUE_ERROR;
+        if (*arg != ')')
+            error=MISSING_PAREN_ERROR;
+        else {              /* skip the ')' */
+            if (*++arg == ' ')
+                arg++;
+        }
     }
     if (REAL_ERROR) {
-	PRINTF("#if: ");
-	print_error(error);
-	return;
+        PRINTF("#if: ");
+        print_error(error);
+        return;
     }
 
     if (buf)
-	(void)parse_instruction(arg, false, false, true);
+        (void)parse_instruction(arg, false, false, true);
     else {
-	arg = get_next_instr(arg);
-	if (!strncmp(arg = skipspace(arg), "#else ", 6))
-	    (void)parse_instruction(arg + 6, false, false, true);
+        arg = get_next_instr(arg);
+        if (!strncmp(arg = skipspace(arg), "#else ", 6))
+            (void)parse_instruction(arg + 6, false, false, true);
     }
 }
 
@@ -2215,60 +2215,60 @@ static void cmd_for(char *arg)
 
     arg = skipspace(arg);
     if (*arg != '(') {
-	PRINTF("#for: ");
-	print_error(error=MISMATCH_PAREN_ERROR);
-	return;
+        PRINTF("#for: ");
+        print_error(error=MISMATCH_PAREN_ERROR);
+        return;
     }
     push_params();
     if (REAL_ERROR)
-	return;
+        return;
 
     arg = skipspace(arg + 1);    /* skip the '(' */
     if (*arg != CMDSEP)
-	(void)evaln(&arg);       /* execute <init> */
+        (void)evaln(&arg);       /* execute <init> */
 
     check = arg + 1;
 
     if (REAL_ERROR)
-	;
+        ;
     else if (*arg != CMDSEP) {
-	PRINTF("#for: ");
-	print_error(error=MISSING_SEPARATOR_ERROR);
+        PRINTF("#for: ");
+        print_error(error=MISSING_SEPARATOR_ERROR);
     }
     else while (!error && loop
-		&& (increm=check, (type = evall(&buf, &increm)) == TYPE_NUM
-		    && !error && *increm == CMDSEP && buf)) {
+                && (increm=check, (type = evall(&buf, &increm)) == TYPE_NUM
+                    && !error && *increm == CMDSEP && buf)) {
 
-	tmp = first_regular(increm + 1, ')');
-	if (*tmp)
-	    (void)parse_instruction(tmp + 1, true, true, true);
-	else {
-	    PRINTF("#for: ");
-	    print_error(error=MISSING_PAREN_ERROR);
-	}
+        tmp = first_regular(increm + 1, ')');
+        if (*tmp)
+            (void)parse_instruction(tmp + 1, true, true, true);
+        else {
+            PRINTF("#for: ");
+            print_error(error=MISSING_PAREN_ERROR);
+        }
 
-	if (!error) {
-	    tmp = increm + 1;
-	    if (*tmp != ')')
-		(void)evaln(&tmp);
-	}
+        if (!error) {
+            tmp = increm + 1;
+            if (*tmp != ')')
+                (void)evaln(&tmp);
+        }
 
-	loop--;
+        loop--;
     }
     if (REAL_ERROR)
-	;
+        ;
     else if (increm && *increm != CMDSEP)
-	error=MISSING_SEPARATOR_ERROR;
+        error=MISSING_SEPARATOR_ERROR;
     else if (!loop)
-	error=MAX_LOOP_ERROR;
+        error=MAX_LOOP_ERROR;
     else if (type != TYPE_NUM)
-	error=NO_NUM_VALUE_ERROR;
+        error=NO_NUM_VALUE_ERROR;
     if (REAL_ERROR) {
-	PRINTF("#for: ");
-	print_error(error);
+        PRINTF("#for: ");
+        print_error(error);
     }
     if (error!=DYN_STACK_UND_ERROR && error!=DYN_STACK_OV_ERROR)
-	pop_params();
+        pop_params();
 }
 
 static void cmd_while(char *arg)
@@ -2279,37 +2279,37 @@ static void cmd_while(char *arg)
 
     arg = skipspace(arg);
     if (*arg != '(') {
-	PRINTF("#while: ");
-	print_error(error=MISMATCH_PAREN_ERROR);
-	return;
+        PRINTF("#while: ");
+        print_error(error=MISMATCH_PAREN_ERROR);
+        return;
     }
     push_params();
 
     check = ++arg;   /* skip the '(' */
     while (!error && loop
-	   && (arg=check, (type = evall(&buf, &arg)) == TYPE_NUM &&
-	       !error && *arg == ')' && buf)) {
+           && (arg=check, (type = evall(&buf, &arg)) == TYPE_NUM &&
+               !error && *arg == ')' && buf)) {
 
-	if (*(tmp = arg + 1) == ' ')          /* skip the ')' */
-	    tmp++;
-	if (*tmp)
-	    (void)parse_instruction(tmp, true, true, true);
-	loop--;
+        if (*(tmp = arg + 1) == ' ')          /* skip the ')' */
+            tmp++;
+        if (*tmp)
+            (void)parse_instruction(tmp, true, true, true);
+        loop--;
     }
     if (REAL_ERROR)
-	;
+        ;
     else if (*arg != ')')
-	error=MISSING_PAREN_ERROR;
+        error=MISSING_PAREN_ERROR;
     else if (!loop)
-	error=MAX_LOOP_ERROR;
+        error=MAX_LOOP_ERROR;
     else if (type != TYPE_NUM)
-	error=NO_NUM_VALUE_ERROR;
+        error=NO_NUM_VALUE_ERROR;
     if (REAL_ERROR) {
-	PRINTF("#while: ");
-	print_error(error);
+        PRINTF("#while: ");
+        print_error(error);
     }
     if (error!=DYN_STACK_UND_ERROR && error!=DYN_STACK_OV_ERROR)
-	pop_params();
+        pop_params();
 }
 
 static void cmd_capture(char *arg)
@@ -2320,11 +2320,11 @@ static void cmd_capture(char *arg)
 
     if (!*arg) {
         if (capturefile) {
-	    log_flush();
+            log_flush();
             fclose(capturefile);
             capturefile = NULL;
             if (opt_info) {
-		wrap_printf("#end of capture to \"%s\".", name);
+                wrap_printf("#end of capture to \"%s\".", name);
             }
         } else {
             wrap_printf("#capture to what file?");
@@ -2333,12 +2333,12 @@ static void cmd_capture(char *arg)
         if (capturefile) {
             PRINTF("#capture already active.\n");
         } else {
-	    short append = 0;
-	    /* Append to log file, if the name starts with '>' */
-	    if (*arg == '>') {
-		    arg++;
-		    append = 1;
-	    }
+            short append = 0;
+            /* Append to log file, if the name starts with '>' */
+            if (*arg == '>') {
+                    arg++;
+                    append = 1;
+            }
             if ((capturefile = fopen(arg, (append) ? "a" : "w")) == NULL) {
                 wrap_printf("#error writing file \"%s\"", arg);
             } else {
@@ -2359,11 +2359,11 @@ static void cmd_movie(char *arg)
 
     if (!*arg) {
         if (moviefile) {
-	    log_flush();
+            log_flush();
             fclose(moviefile);
             moviefile = NULL;
             if (opt_info) {
-		wrap_printf("#end of movie to \"%s\".", name);
+                wrap_printf("#end of movie to \"%s\".", name);
             }
         } else {
             wrap_printf("#movie to what file?");
@@ -2375,14 +2375,14 @@ static void cmd_movie(char *arg)
             if ((moviefile = fopen(arg, "w")) == NULL) {
                 wrap_printf("#error writing file \"%s\"", arg);
             } else {
-		if (opt_info) {
-		    wrap_printf("#movie to \"%s\" active, \"#movie\" ends.",
+                if (opt_info) {
+                    wrap_printf("#movie to \"%s\" active, \"#movie\" ends.",
                                 arg);
-		}
-		snprintf(name, sizeof(name), "%s", arg);
-		update_now();
-		movie_last = now;
-		log_clearsleep();
+                }
+                snprintf(name, sizeof(name), "%s", arg);
+                update_now();
+                movie_last = now;
+                log_clearsleep();
             }
         }
     }
@@ -2399,7 +2399,7 @@ static void cmd_record(char *arg)
             fclose(recordfile);
             recordfile = NULL;
             if (opt_info) {
-		wrap_printf("#end of record to \"%s\".", name);
+                wrap_printf("#end of record to \"%s\".", name);
             }
         } else {
             wrap_printf("#record to what file?");
@@ -2426,10 +2426,10 @@ static void cmd_edit(char *arg)
 
     if (edit_sess) {
         for (sp = edit_sess; sp; sp = sp->next) {
-	    PRINTF("# %s (%u)\n", sp->descr, sp->key);
-	}
+            PRINTF("# %s (%u)\n", sp->descr, sp->key);
+        }
     } else {
-	PRINTF("#no active editors.\n");
+        PRINTF("#no active editors.\n");
     }
 }
 
@@ -2442,10 +2442,10 @@ static void cmd_cancel(char *arg)
     } else {
         if (*arg) {
             for (sp = edit_sess; sp; sp = sp->next)
-		if (strtoul(arg, NULL, 10) == sp->key) {
-		    cancel_edit(sp);
-		    break;
-		}
+                if (strtoul(arg, NULL, 10) == sp->key) {
+                    cancel_edit(sp);
+                    break;
+                }
             if (!sp) {
                 PRINTF("#unknown editing session %d\n", atoi(arg));
             }
@@ -2454,7 +2454,7 @@ static void cmd_cancel(char *arg)
                 wrap_printf("#several editing sessions active, use #cancel "
                             "<number>");
             } else
-		cancel_edit(edit_sess);
+                cancel_edit(edit_sess);
         }
     }
 }
@@ -2478,7 +2478,7 @@ static void cmd_cpu(char *arg)
     f = (float)((cpu_clock = clock()) - start_clock) / (float)CLOCKS_PER_SEC;
     l = (float)(diff_vtime(&now, &start_time)) / (float)mSEC_PER_SEC;
     PRINTF("#CPU time used: %.3f sec. (%.2f%%)\n", f,
-	       (l > 0 && l > f) ? f * 100.0 / l : 100.0);
+               (l > 0 && l > f) ? f * 100.0 / l : 100.0);
 }
 
 /*
@@ -2522,8 +2522,8 @@ static void cmd_connect(char *arg)
                 "version.");
 #else
     if (!*skipspace(arg)) {
-	tcp_show();
-	return;
+        tcp_show();
+        return;
     }
 
     struct tls_options tlsopt = { .use_tls = false };
@@ -2557,28 +2557,28 @@ static void cmd_connect(char *arg)
     }
 
     if (argc <= 2) {
-	if (*hostinfo.name)
-	    tcp_open(s1, s2, hostinfo.name, hostinfo.port,
+        if (*hostinfo.name)
+            tcp_open(s1, s2, hostinfo.name, hostinfo.port,
                      tls >= 0 ? &tlsopt : &hostinfo.tlsopt,
                      utf8 >= 0 ? utf8 : hostinfo.utf8);
-	else {
-	    PRINTF("#connect: no host defined!\n#syntax: #connect"
+        else {
+            PRINTF("#connect: no host defined!\n#syntax: #connect"
                    " <session-id> [<initstr>] <address> <port>"
                    " [--tls[=<options>]|" NO_TLS_FLAG "]"
                    " [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
-	}
+        }
     } else if (argc == 3) {
         if (tls < 0)
             tlsopt.use_tls = default_tls;
         if (utf8 < 0)
             utf8 = default_utf8;
-	if (!*hostinfo.name) {
-	    my_strncpy(hostinfo.name, s2, BUFSIZE-1);
-	    hostinfo.port = atoi(s3);
+        if (!*hostinfo.name) {
+            my_strncpy(hostinfo.name, s2, BUFSIZE-1);
+            hostinfo.port = atoi(s3);
             hostinfo.tlsopt = tlsopt;
             hostinfo.utf8 = utf8;
-	}
-	tcp_open(s1, NULL, s2, atoi(s3), &tlsopt, utf8);
+        }
+        tcp_open(s1, NULL, s2, atoi(s3), &tlsopt, utf8);
     } else {
         char *s5 = strtok(NULL, " ");
         if (!maybe_flag_args(&s5, &tlsopt, &tls, &utf8))
@@ -2588,13 +2588,13 @@ static void cmd_connect(char *arg)
         if (utf8 < 0)
             utf8 = default_utf8;
 
-	if (!*hostinfo.name) {
-	    my_strncpy(hostinfo.name, s3, BUFSIZE-1);
-	    hostinfo.port = atoi(s4);
+        if (!*hostinfo.name) {
+            my_strncpy(hostinfo.name, s3, BUFSIZE-1);
+            hostinfo.port = atoi(s4);
             hostinfo.tlsopt = tlsopt;
             hostinfo.utf8 = utf8;
-	}
-	tcp_open(s1, s2, s3, atoi(s4), &tlsopt, utf8);
+        }
+        tcp_open(s1, s2, s3, atoi(s4), &tlsopt, utf8);
     }
 #endif /* TERM */
 }
@@ -2604,11 +2604,11 @@ static void cmd_spawn(char *arg)
 {
     char s[BUFSIZE];
     if (*(arg = skipspace(arg))) {
-	arg = split_first_word(s, BUFSIZE, arg);
-	if (*arg && *s) {
-	    tcp_spawn(s, arg);
-	    return;
-	}
+        arg = split_first_word(s, BUFSIZE, arg);
+        if (*arg && *s) {
+            tcp_spawn(s, arg);
+            return;
+        }
     }
     PRINTF("#syntax: #spawn <session-id> <command>\n");
 }
@@ -2629,9 +2629,9 @@ static void cmd_speedwalk(char *arg)
 static void cmd_zap(char *arg)
 {
     if (!*arg) {
-	PRINTF("#zap: no connection name.\n");
+        PRINTF("#zap: no connection name.\n");
     } else
-	tcp_close(arg);
+        tcp_close(arg);
 }
 
 static void cmd_qui(char *arg)
@@ -2642,9 +2642,9 @@ static void cmd_qui(char *arg)
 static void cmd_quit(char *arg)
 {
     if (*arg) { /* no skipspace() here! */
-	PRINTF("#quit: spurious argument?\n");
+        PRINTF("#quit: spurious argument?\n");
     } else
-	exit_powwow();
+        exit_powwow();
 }
 
 static const struct {
@@ -2804,18 +2804,18 @@ static void cmd_file(char *arg)
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
     if (*arg == '=') {
-	set_deffile(++arg);
-	if (opt_info) {
-	    if (*arg) {
-		wrap_printf("#save-file set to \"%s\"", deffile);
-	    } else {
-		wrap_printf("#save-file is now undefined.");
-	    }
-	}
+        set_deffile(++arg);
+        if (opt_info) {
+            if (*arg) {
+                wrap_printf("#save-file set to \"%s\"", deffile);
+            } else {
+                wrap_printf("#save-file is now undefined.");
+            }
+        }
     } else if (*deffile) {
-	fmt_next_edit("#file =%s", deffile);
+        fmt_next_edit("#file =%s", deffile);
     } else {
-	wrap_printf("#save-file not defined.");
+        wrap_printf("#save-file not defined.");
     }
 }
 
@@ -2824,17 +2824,17 @@ static void cmd_save(char *arg)
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
     if (*arg) {
-	set_deffile(arg);
-	if (opt_info) {
-	    wrap_printf("#save-file set to \"%s\"", deffile);
-	}
+        set_deffile(arg);
+        if (opt_info) {
+            wrap_printf("#save-file set to \"%s\"", deffile);
+        }
     } else if (!*deffile) {
-	wrap_printf("#save-file not defined.");
-	return;
+        wrap_printf("#save-file not defined.");
+        return;
     }
 
     if (*deffile && save_settings() > 0 && opt_info) {
-	wrap_printf("#settings saved to \"%s\".", deffile);
+        wrap_printf("#settings saved to \"%s\".", deffile);
     }
 }
 
@@ -2845,31 +2845,31 @@ static void cmd_load(char *arg)
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
     if (*arg) {
-	set_deffile(arg);
-	if (opt_info) {
-	    wrap_printf("#save-file set to \"%s\"", deffile);
-	}
+        set_deffile(arg);
+        if (opt_info) {
+            wrap_printf("#save-file set to \"%s\"", deffile);
+        }
     }
     else if (!*deffile) {
-	wrap_printf("#save-file not defined.");
-	return;
+        wrap_printf("#save-file not defined.");
+        return;
     }
 
     res = read_settings();
 
     if (res > 0) {
-	/* success */
-	if (opt_info) {
-	    wrap_printf("#settings loaded from file.");
-	}
+        /* success */
+        if (opt_info) {
+            wrap_printf("#settings loaded from file.");
+        }
     } else if (res < 0) {
-	/* critical error */
-	while (keydefs)
-	    delete_keynode(&keydefs);
-	tty_add_initial_binds();
-	tty_add_walk_binds();
-	limit_mem = 1048576;
-	PRINTF("#emergency loaded default settings.\n");
+        /* critical error */
+        while (keydefs)
+            delete_keynode(&keydefs);
+        tty_add_initial_binds();
+        tty_add_walk_binds();
+        limit_mem = 1048576;
+        PRINTF("#emergency loaded default settings.\n");
     }
 }
 
@@ -2878,25 +2878,25 @@ static char *trivial_eval(ptr **pbuf, char *arg, char *name)
     char *tmp = skipspace(arg);
 
     if (!pbuf)
-	return NULL;
+        return NULL;
 
     if (*tmp=='(') {
-	arg = tmp + 1;
-	(void)evalp(pbuf, &arg);
-	if (!REAL_ERROR && *arg != ')')
-	    error=MISSING_PAREN_ERROR;
-	if (REAL_ERROR) {
-	    PRINTF("#%s: ", name);
-	    print_error(error);
-	    return NULL;
-	}
-	if (*pbuf)
-	    arg = ptrdata(*pbuf);
-	else
-	    arg = "";
+        arg = tmp + 1;
+        (void)evalp(pbuf, &arg);
+        if (!REAL_ERROR && *arg != ')')
+            error=MISSING_PAREN_ERROR;
+        if (REAL_ERROR) {
+            PRINTF("#%s: ", name);
+            print_error(error);
+            return NULL;
+        }
+        if (*pbuf)
+            arg = ptrdata(*pbuf);
+        else
+            arg = "";
     }
     else
-	unescape(arg);
+        unescape(arg);
 
     return arg;
 }
@@ -2908,11 +2908,11 @@ static void do_cmd_add(char *arg, int is_static)
 
     arg = trivial_eval(&pbuf, arg, "add");
     if (!REAL_ERROR)
-	while (*arg) {
-	    arg = split_first_word(buf, BUFSIZE, arg);
-	    if (strlen(buf) >= MIN_WORDLEN)
-		(is_static ? put_static_word : put_word)(buf);
-	}
+        while (*arg) {
+            arg = split_first_word(buf, BUFSIZE, arg);
+            if (strlen(buf) >= MIN_WORDLEN)
+                (is_static ? put_static_word : put_word)(buf);
+        }
     ptrdel(&pbuf);
 }
 
@@ -2931,7 +2931,7 @@ static void cmd_put(char *arg)
     ptr *pbuf = (ptr *)0;
     arg = trivial_eval(&pbuf, arg, "put");
     if (!REAL_ERROR && *arg)
-	put_history(arg);
+        put_history(arg);
     ptrdel(&pbuf);
 }
 
