@@ -409,20 +409,22 @@ static int check_object(object *obj)
     else if ((c=='$' || c=='@') && (c=line[1]) && (isalpha(c) || c=='_')) {
 	varnode *named_var;                       /* Found named variable */
 
+        enum var_kind kind;
 	if (*(line++) == '@') {
-	    i = 0;
+            kind = VAR_NUM;
 	    obj->type = TYPE_NUM_VAR;
 	}
 	else {
-	    i = 1;
+            kind = VAR_TEXT;
 	    obj->type = TYPE_TXT_VAR;
 	}
 	end = line + 1;
 	while ((c=*end) && (isalpha(c) || c=='_' || isdigit(c)))
 	    end++;
 	c = *end; *end = '\0';
-	if (!(named_var = *lookup_varnode(line, i))) {
-	    named_var = add_varnode(line, i);
+        named_var = *lookup_varnode(line, kind);
+        if (named_var == NULL) {
+            named_var = add_varnode(line, kind);
 	    if (REAL_ERROR)
 		return 0;
 	    if (opt_info) {
@@ -1195,10 +1197,7 @@ static int exe_op(operator *op)
 	if (pop_obj(&o1));
 	else if (REAL_ERROR) break;
 
-	if (*op == op_dollar)
-	    delta = 1;
-	else
-	    delta = 0;
+        enum var_kind kind = *op == op_dollar ? VAR_TEXT : VAR_NUM;
 
 	if (o1.type==TYPE_NUM_VAR) {
 	    o1.type=TYPE_NUM;
@@ -1210,7 +1209,7 @@ static int exe_op(operator *op)
 		error=OUT_RANGE_ERROR;
 		break;
 	    }
-	    o1.type= delta ? TYPE_TXT_VAR : TYPE_NUM_VAR;
+            o1.type = kind == VAR_TEXT ? TYPE_TXT_VAR : TYPE_NUM_VAR;
 	    p=&o1;
 	    ret=1;
 	} else {
@@ -1235,18 +1234,19 @@ static int exe_op(operator *op)
 		break;
 	    }
 
-	    if (!(named_var = *lookup_varnode(ptrdata(o1.txt), delta))) {
-		named_var = add_varnode(ptrdata(o1.txt), delta);
+            named_var = *lookup_varnode(ptrdata(o1.txt), kind);
+            if (named_var == NULL) {
+                named_var = add_varnode(ptrdata(o1.txt), kind);
 		if (REAL_ERROR)
 		    break;
 		if (opt_info) {
-		    PRINTF("#new variable: %c%s\n", delta
-			   ? '$' : '@', ptrdata(o1.txt));
+                    PRINTF("#new variable: %c%s\n",
+                           kind == VAR_TEXT ? '$' : '@', ptrdata(o1.txt));
 		}
 	    }
             check_delete(&o1);
             o1.num = named_var->index;
-	    o1.type= delta ? TYPE_TXT_VAR : TYPE_NUM_VAR;
+            o1.type = kind == VAR_TEXT ? TYPE_TXT_VAR : TYPE_NUM_VAR;
 	    p=&o1;
 	    ret=1;
 	}

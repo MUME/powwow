@@ -156,10 +156,8 @@ keynode *keydefs;                  /* head of key binding list */
 delaynode *delays;                 /* head of delayed commands list */
 delaynode *dead_delays;            /* head of dead-delayed commands list */
 
-varnode *named_vars[2][MAX_HASH];  /* head of named variables hash list */
-varnode *sortednamed_vars[2];	   /* head of (ASCII) sorted named variables list */
+struct named_vars named_vars[VAR_KINDS];
 int max_named_vars = 100;	   /* max number of named vars (grows as needed) */
-int num_named_vars[2];		   /* number of named variables actually used */
 
 static param_stack paramstk;	   /* stack of local unnamed vars */
 static unnamedvar global_var[NUMVAR]; /* global unnamed vars */
@@ -471,11 +469,11 @@ int main(int argc, char **argv)
     paramstk.curr = 0;
 
     /* allocate permanent variables */
-    if ((prompt = add_varnode("prompt", 1))
-	&& (prompt->str = ptrnew(PARAMLEN))
-	&& (marked_prompt = ptrnew(PARAMLEN))
-	&& (last_line = add_varnode("last_line", 1))
-	&& (last_line->str = ptrnew(PARAMLEN))
+    if ((prompt = add_varnode("prompt", VAR_TEXT)) != NULL
+        && (prompt->str = ptrnew(PARAMLEN)) != NULL
+        && (marked_prompt = ptrnew(PARAMLEN)) != NULL
+        && (last_line = add_varnode("last_line", VAR_TEXT)) != NULL
+        && (last_line->str = ptrnew(PARAMLEN)) != NULL
 	&& !MEM_ERROR)
 	;
     else
@@ -2505,7 +2503,7 @@ static int subst_param(ptr **buf, char *src)
 
 static int jit_subst_vars(ptr **buf, char *src)
 {
-    int i, done, kind;
+    int i, done;
     char *tmp, *name, *dst, c;
     varnode *named_var;
 
@@ -2535,7 +2533,7 @@ static int jit_subst_vars(ptr **buf, char *src)
 	done = 0;
 	if (*src == '$' || *src == '@') {
 	    i = 0;
-	    kind = *src == '$' ? 1 : 0;
+            enum var_kind kind = *src == '$' ? VAR_TEXT : VAR_NUM;
 	    tmp = src + 1;
 	    if (*tmp == '{') {
 		tmp = skipspace(tmp+1);
@@ -2571,7 +2569,7 @@ static int jit_subst_vars(ptr **buf, char *src)
 		    src = tmp + 1; /* skip the '}' */
 
 		    /* now the actual substitution */
-		    if (kind == 1) {
+                    if (kind == VAR_TEXT) {
 			if (*VAR[i].str && (data = ptrdata(*VAR[i].str)))
 			    max = ptrlen(*VAR[i].str);
 		    } else {

@@ -1428,14 +1428,14 @@ int read_settings(void)
     while (substitutions != NULL)
       delete_substnode(&substitutions);
     for (n = 0; n < MAX_HASH; n++) {
-	while (named_vars[0][n])
-	    delete_varnode(&named_vars[0][n], 0);
-	first = &named_vars[1][n];
+        while (named_vars[VAR_NUM].buckets[n] != NULL)
+            delete_varnode(&named_vars[VAR_NUM].buckets[n], VAR_NUM);
+        first = &named_vars[VAR_TEXT].buckets[n];
 	while (*first) {
 	    if (is_permanent_variable(*first))
 		first = &(*first)->next;
 	    else
-		delete_varnode(first, 1);
+                delete_varnode(first, VAR_TEXT);
 	}
     }
 
@@ -1714,7 +1714,8 @@ int save_settings(void)
     }
 
     if (failed > 0) {
-	for (flag = 0, vp = sortednamed_vars[0]; vp && failed > 0; vp = vp->snext) {
+        for (flag = 0, vp = named_vars[VAR_NUM].sorted;
+             vp != NULL && failed > 0; vp = vp->snext) {
 	    if (vp->num) {
 		failed = fprintf(f, "%s@%s = %ld", flag ? ", " : "#(",
 				 vp->name, vp->num);
@@ -1725,7 +1726,8 @@ int save_settings(void)
     if (failed > 0 && flag) failed = fprintf(f, ")\n");
 
     if (failed > 0) {
-	for (vp = sortednamed_vars[1]; vp && failed > 0; vp = vp->snext) {
+        for (vp = named_vars[VAR_TEXT].sorted; vp != NULL && failed > 0;
+             vp = vp->snext) {
 	    if (!is_permanent_variable(vp) && vp->str && ptrlen(vp->str)) {
 		pp = ptrescape(pp, vp->str, 0);
 		if (MEM_ERROR) { failed = -1; break; }

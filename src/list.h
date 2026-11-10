@@ -19,7 +19,7 @@ void add_keynode(const char *name, const char *sequence, int seqlen,
                  function_str funct, const char *call_data);
 void add_substnode(char *pattern, char *replacement, bool mbeg, bool wild);
 delaynode *add_delaynode(char *name, char *command, vtime *when, int is_dead);
-varnode *add_varnode(const char *name, int type);
+varnode *add_varnode(const char *name, enum var_kind kind);
 
 aliasnode  **lookup_alias(char *name);
 actionnode **lookup_action(char *label);
@@ -29,7 +29,7 @@ marknode   **lookup_marker(char *pattern, bool mbeg);
 substnode  **lookup_subst(char *pattern, bool mbeg);
 keynode    **lookup_key(const char *name);
 delaynode  **lookup_delay(char *name, int is_dead);
-varnode    **lookup_varnode(char *name, int type);
+varnode    **lookup_varnode(char *name, enum var_kind kind);
 
 void delete_aliasnode(aliasnode **base);
 void delete_actionnode(actionnode **base);
@@ -38,7 +38,7 @@ void delete_marknode(marknode **base);
 void delete_keynode(keynode **base);
 void delete_delaynode(delaynode **base);
 void delete_substnode(substnode **base);
-void delete_varnode(varnode **base, int type);
+void delete_varnode(varnode **base, enum var_kind kind);
 
 #endif /* _LIST_H_ */
 

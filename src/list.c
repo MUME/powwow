@@ -337,15 +337,12 @@ delaynode *add_delaynode(char *name, char *command, vtime *when, int is_dead)
  *
  * do NOT allocate a ptr!
  */
-varnode *add_varnode(const char *name, int type)
+varnode *add_varnode(const char *name, enum var_kind kind)
 {
     varnode *new;
     int m, n;
 
-    if (type)
-	type = 1;
-
-    if (num_named_vars[type] >= max_named_vars) {
+    if (named_vars[kind].count >= max_named_vars) {
 	/* we are running low on var pointers. try to enlarge */
 	m = NUMTOT + max_named_vars;
 	n = NUMTOT + max_named_vars * 2;
@@ -384,19 +381,19 @@ varnode *add_varnode(const char *name, int type)
     }
     new->num = 0;
     new->str = (ptr *)0;
-    new->index = m = NUMPARAM + num_named_vars[type];
+    new->index = m = NUMPARAM + named_vars[kind].count;
 
-    if (type)
-	VAR[m].str = &new->str;
+    if (kind == VAR_TEXT)
+        VAR[m].str = &new->str;
     else
-	VAR[m].num = &new->num;
-    num_named_vars[type]++;
+        VAR[m].num = &new->num;
+    ++named_vars[kind].count;
 
-    varnode **bucket = &named_vars[type][hash_bucket(name)];
+    varnode **bucket = &named_vars[kind].buckets[hash_bucket(name)];
     new->next = *bucket;
     *bucket = new;
     /* the list of the variables in ASCII order */
-    varnode **sorted = &sortednamed_vars[type];
+    varnode **sorted = &named_vars[kind].sorted;
     while (*sorted != NULL && strcmp((*sorted)->name, new->name) < 0)
         sorted = &(*sorted)->snext;
     new->snext = *sorted;
@@ -505,9 +502,9 @@ delaynode **lookup_delay(char *name, int is_dead)
  * look up a named variable node by name:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-varnode **lookup_varnode(char *name, int type)
+varnode **lookup_varnode(char *name, enum var_kind kind)
 {
-    varnode **p = &named_vars[type][hash_bucket(name)];
+    varnode **p = &named_vars[kind].buckets[hash_bucket(name)];
     while (*p && strcmp(name, (*p)->name))
 	p = &(*p)->next;
     return p;
@@ -627,13 +624,13 @@ void delete_delaynode(delaynode **base)
 /*
  * delete a named variable node, given a pointer to its precessor's pointer
  */
-void delete_varnode(varnode **base, int type)
+void delete_varnode(varnode **base, enum var_kind kind)
 {
     varnode *p = *base;
     int idx = p->index, i;
 
     *base = p->next;
-    varnode **sorted = &sortednamed_vars[type];
+    varnode **sorted = &named_vars[kind].sorted;
     while (*sorted != NULL && *sorted != p)
         sorted = &(*sorted)->snext;
     if (*sorted == NULL) {
@@ -644,10 +641,11 @@ void delete_varnode(varnode **base, int type)
     }
     *sorted = p->snext;
     if (p->name) free(p->name);
-    if (type != 0 && p->str != NULL) ptrdel(&p->str);
+    if (kind == VAR_TEXT && p->str != NULL)
+        ptrdel(&p->str);
     free((void*)p);
 
-    i = NUMPARAM + --num_named_vars[type];
+    i = NUMPARAM + --named_vars[kind].count;
 
     if (idx == i)
 	return;
@@ -655,7 +653,8 @@ void delete_varnode(varnode **base, int type)
     /* the variable with the last index takes the index of the deleted one */
     varnode *moved = NULL;
     for (int n = 0; n < MAX_HASH && moved == NULL; ++n) {
-        for (varnode *v = named_vars[type][n]; v != NULL; v = v->next) {
+        for (varnode *v = named_vars[kind].buckets[n]; v != NULL;
+             v = v->next) {
             if (v->index == i) {
                 moved = v;
                 break;
@@ -669,7 +668,7 @@ void delete_varnode(varnode **base, int type)
     }
 
     moved->index = idx;
-    if (type != 0) {
+    if (kind == VAR_TEXT) {
         VAR[idx].str = &moved->str;
         VAR[i].str = NULL;
     } else {
