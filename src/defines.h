@@ -176,15 +176,15 @@ typedef struct aliasnode {
     struct aliasnode *snext;
     char *subst;
     char *group;
-    int active;
+    bool active;
 } aliasnode;
 
 typedef struct basenode
 {
     char *pattern;
     char *start, *end; /* temporary data: start/end of current line match */
-    char mbeg;
-    char wild;
+    bool mbeg;
+    bool wild;
 } basenode;
 
 typedef struct marknode {
@@ -203,7 +203,7 @@ typedef struct substnode
 typedef struct triggernode {
     struct triggernode *next;
     char *command, *label;
-    int active;
+    bool active;
     int type;				/* ACTION_WEAK or ACTION_REGEXP */
     char *pattern;
 #ifdef USE_REGEXP

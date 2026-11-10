@@ -55,7 +55,7 @@ void show_aliases(void)
         char buf[BUFSIZE];
         escape_specials(buf, p->name);
         tty_message("#alias %s%s%s%s=%s\n",
-                    p->active != 0 ? "" : "(disabled) ",
+                    p->active ? "" : "(disabled) ",
                     buf, group_delim, p->group == NULL ? "*" : p->group,
                     p->subst);
     }
@@ -231,7 +231,7 @@ static void delete_action(actionnode **nodep)
 {
     if (opt_info) {
         PRINTF("#deleting action: >%c%s %s\n",
-               (*nodep)->active != 0 ? '+' : '-', (*nodep)->label,
+               (*nodep)->active ? '+' : '-', (*nodep)->label,
                (*nodep)->pattern);
     }
     delete_actionnode(nodep);
@@ -244,7 +244,7 @@ static void delete_prompt(actionnode **nodep)
 {
     if (opt_info) {
         PRINTF("#deleting prompt: >%c%s %s\n",
-               (*nodep)->active != 0 ? '+' : '-', (*nodep)->label,
+               (*nodep)->active ? '+' : '-', (*nodep)->label,
                (*nodep)->pattern);
     }
     delete_promptnode(nodep);
@@ -324,7 +324,7 @@ static void change_actionorprompt(actionnode *node, char *pattern,
     if (opt_info) {
         PRINTF("#changed %s %c%c%s %s=%s\n", ONPROMPT,
                action_chars[node->type],
-               node->active != 0 ? '+' : '-',
+               node->active ? '+' : '-',
                node->label, node->pattern, node->command);
     }
 }
@@ -341,7 +341,7 @@ void show_actions(void)
     for (actionnode *p = actions; p != NULL; p = p->next)
         tty_message("#action %c%c%s%s%s %s=%s\n",
                     action_chars[p->type],
-                    p->active != 0 ? '+' : '-', p->label,
+                    p->active ? '+' : '-', p->label,
                     group_delim,
                     p->group == NULL ? "*" : p->group,
                     p->pattern,
@@ -360,7 +360,7 @@ void show_prompts(void)
     for (promptnode *p = prompts; p != NULL; p = p->next)
         tty_message("#prompt %c%c%s %s=%s\n",
                     action_chars[p->type],
-                    p->active != 0 ? '+' : '-', p->label,
+                    p->active ? '+' : '-', p->label,
                     p->pattern, p->command);
 }
 
@@ -585,7 +585,7 @@ void parse_action(char *str, bool onprompt)
             if (np != NULL && *np != NULL) {
                 fmt_next_edit("#%s %c%c%s %s=%s", ONPROMPT,
                               action_chars[(*np)->type],
-                              (*np)->active != 0 ? '+' : '-',
+                              (*np)->active ? '+' : '-',
                               (*np)->label,
                               (*np)->pattern,
                               (*np)->command);
@@ -703,7 +703,7 @@ void show_marks(void)
            (markers != NULL && markers->next == NULL) ? " is" : "s are",
            markers != NULL ? ':' : '.');
     for (marknode *p = markers; p != NULL; p = p->next)
-        tty_message("#mark %s%s=%s\n", p->b.mbeg != 0 ? "^" : "",
+        tty_message("#mark %s%s=%s\n", p->b.mbeg ? "^" : "",
                     p->b.pattern, attr_name(&p->attr));
 }
 
@@ -733,7 +733,7 @@ void parse_mark(char *str)
                 return;
             }
             char *name = attr_name(&n->attr);
-            fmt_next_edit("#mark %s%s=%s", n->b.mbeg != 0 ? "^" : "",
+            fmt_next_edit("#mark %s%s=%s", n->b.mbeg ? "^" : "",
                           pbuf != NULL ? ptrdata(pbuf) : "", name);
             ptrdel(&pbuf);
         } else {
@@ -775,7 +775,7 @@ void parse_mark(char *str)
             if (n != NULL) {
                 if (opt_info) {
                     PRINTF("#deleting mark: %s%s=%s\n",
-                           n->b.mbeg != 0 ? "^" : "",
+                           n->b.mbeg ? "^" : "",
                            n->b.pattern, attr_name(&n->attr));
                 }
                 delete_marknode(np);
@@ -904,7 +904,7 @@ void parse_substitute(char *str)
                         mbeg ? "^" : "", pattern);
             return;
         }
-        subst_info("deleting", n->b.mbeg != 0, n->b.pattern, n->replacement);
+        subst_info("deleting", n->b.mbeg, n->b.pattern, n->replacement);
         delete_substnode(np);
     } else if (n != NULL) {
         char *replacement = my_strdup(p);
