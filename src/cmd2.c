@@ -543,7 +543,6 @@ void parse_action(char *str, bool onprompt)
                         error = NO_MEM_ERROR;
                         out_of_memory();
                     }
-                    regfree(regexp);
                     free(regexp);
                     return;
                 }
