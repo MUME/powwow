@@ -48,6 +48,9 @@ int message_wrap(const char *cont, const char *format, ...)
     PRINTF_FUNCTION(2, 3);
 /* the start of the lines that continue a message */
 #define WRAP_CONT "#    "
+/* text that powwow wraps itself is at most this wide, for readability */
+enum { WRAP_COLUMNS = 80 };
+int wrap_width(void);
 /* like PRINTF, but wrapped as message_wrap() with WRAP_CONT */
 int wrap_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);
 

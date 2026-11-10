@@ -409,11 +409,21 @@ static int text_width(const char *text, size_t len)
 }
 
 /*
- * 'text' wrapped to the width of the terminal before the words that do
- * not fit, which go on a new line after 'cont'; NULL if out of memory
+ * the columns that powwow wraps its own text to: those of the terminal,
+ * but no more than on one of WRAP_COLUMNS
+ */
+int wrap_width(void)
+{
+    return cols_1 < WRAP_COLUMNS - 1 ? cols_1 : WRAP_COLUMNS - 1;
+}
+
+/*
+ * 'text' wrapped to wrap_width() before the words that do not fit, which
+ * go on a new line after 'cont'; NULL if out of memory
  */
 static char *wrap_text(const char *text, const char *cont)
 {
+    int max = wrap_width();
     size_t cont_len = strlen(cont);
     size_t size = strlen(text) + 1 + (strlen(text) / 2 + 1) * (cont_len + 1);
     char *out = malloc(size);
@@ -433,7 +443,7 @@ static char *wrap_text(const char *text, const char *cont)
         size_t len = strcspn(word, " \n");
         int width = text_width(word, len);
         if (len > 0 && col > line_start
-            && col + (int)spaces + width > cols_1) {
+            && col + (int)spaces + width > max) {
             out[n++] = '\n';
             memcpy(out + n, cont, cont_len);
             n += cont_len;
