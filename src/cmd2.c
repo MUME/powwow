@@ -1307,7 +1307,8 @@ static void parse_bind_noninteractive(char *arg)
     *p++ = '\0';
 
     keynode **kp = lookup_key(arg);
-    if (kp != NULL && *kp != NULL)
+    bool redefined = kp != NULL && *kp != NULL;
+    if (redefined)
         delete_keynode(kp);
 
     char *params;
@@ -1320,10 +1321,7 @@ static void parse_bind_noninteractive(char *arg)
 
     if (opt_info) {
         PRINTF("#%s: %s %s=%s\n",
-               (kp != NULL && *kp != NULL
-                ? "redefined key"
-                : "new key binding"),
-               arg, seq, p);
+               redefined ? "redefined key" : "new key binding", arg, seq, p);
     }
 }
 
