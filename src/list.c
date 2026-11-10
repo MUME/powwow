@@ -340,33 +340,6 @@ delaynode *add_delaynode(char *name, char *command, vtime *when, int is_dead)
 varnode *add_varnode(const char *name, enum var_kind kind)
 {
     varnode *new;
-    int m, n;
-
-    if (named_vars[kind].count >= max_named_vars) {
-	/* we are running low on var pointers. try to enlarge */
-	m = NUMTOT + max_named_vars;
-	n = NUMTOT + max_named_vars * 2;
-	if (n < 0) {
-	    /* overflow */
-	    print_error(error=OUT_OF_VAR_SPACE_ERROR);
-	    return NULL;
-	}
-	else {
-	    vars *newvar;
-	    if ((newvar = (vars *)realloc(var, n*sizeof(vars) )))
-		;
-	    else if ((newvar = (vars *)malloc( n*sizeof(vars) ))) {
-	        memmove(newvar, var, m * sizeof(vars));
-		free((void *)var);
-	    } else {
-		out_of_memory();
-		return NULL;
-	    }
-	    var = newvar;
-	    max_named_vars += n-m;
-	    memset(var + m, 0, (n - m) * sizeof(vars));
-	}
-    }
 
     new = (varnode*)malloc(sizeof(varnode));
     if (!new) {
@@ -381,14 +354,6 @@ varnode *add_varnode(const char *name, enum var_kind kind)
     }
     new->num = 0;
     new->str = (ptr *)0;
-    new->index = m = PARAM_COUNT + named_vars[kind].count;
-
-    if (kind == VAR_TEXT)
-        VAR[m].str = &new->str;
-    else
-        VAR[m].num = &new->num;
-    ++named_vars[kind].count;
-
     varnode **bucket = &named_vars[kind].buckets[hash_bucket(name)];
     new->next = *bucket;
     *bucket = new;
@@ -627,7 +592,6 @@ void delete_delaynode(delaynode **base)
 void delete_varnode(varnode **base, enum var_kind kind)
 {
     varnode *p = *base;
-    int idx = p->index, i;
 
     *base = p->next;
     varnode **sorted = &named_vars[kind].sorted;
@@ -644,35 +608,4 @@ void delete_varnode(varnode **base, enum var_kind kind)
     if (kind == VAR_TEXT && p->str != NULL)
         ptrdel(&p->str);
     free((void*)p);
-
-    i = PARAM_COUNT + --named_vars[kind].count;
-
-    if (idx == i)
-	return;
-
-    /* the variable with the last index takes the index of the deleted one */
-    varnode *moved = NULL;
-    for (int n = 0; n < MAX_HASH && moved == NULL; ++n) {
-        for (varnode *v = named_vars[kind].buckets[n]; v != NULL;
-             v = v->next) {
-            if (v->index == i) {
-                moved = v;
-                break;
-            }
-        }
-    }
-    if (moved == NULL) {        /* should NEVER happen */
-        error = UNDEFINED_VARIABLE_ERROR;
-        print_error(error);
-        return;
-    }
-
-    moved->index = idx;
-    if (kind == VAR_TEXT) {
-        VAR[idx].str = &moved->str;
-        VAR[i].str = NULL;
-    } else {
-        VAR[idx].num = &moved->num;
-        VAR[i].num = NULL;
-    }
 }

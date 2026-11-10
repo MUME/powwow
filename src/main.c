@@ -157,23 +157,31 @@ delaynode *delays;                 /* head of delayed commands list */
 delaynode *dead_delays;            /* head of dead-delayed commands list */
 
 struct named_vars named_vars[VAR_KINDS];
-int max_named_vars = 100;	   /* max number of named vars (grows as needed) */
 
-static param_stack paramstk;	   /* stack of local unnamed vars */
-static unnamedvar global_var[GLOBAL_VAR_COUNT]; /* global unnamed vars */
+/* the numbered variables */
+static struct {
+    unnamedvar globals[GLOBAL_VAR_COUNT];       /* @-50..@-1 */
+    unnamedvar params[MAX_STACK][PARAM_COUNT];  /* @0..@9 per call */
+    int depth;                                  /* current call */
+} vars;
 
-vars *var;			   /* vector of all vars */
+/* the variable @n or $n, for n from -GLOBAL_VAR_COUNT to PARAM_COUNT - 1 */
+static unnamedvar *numbered_var(int n)
+{
+    assert(-GLOBAL_VAR_COUNT <= n && n < PARAM_COUNT);
+    return (n < 0
+            ? &vars.globals[n + GLOBAL_VAR_COUNT]
+            : &vars.params[vars.depth][n]);
+}
 
 long *num_var(int n)
 {
-    assert(-GLOBAL_VAR_COUNT <= n && n < PARAM_COUNT + max_named_vars);
-    return VAR[n].num;
+    return &numbered_var(n)->num;
 }
 
 ptr **text_var(int n)
 {
-    assert(-GLOBAL_VAR_COUNT <= n && n < PARAM_COUNT + max_named_vars);
-    return VAR[n].str;
+    return &numbered_var(n)->str;
 }
 
 varnode *prompt;		   /* $prompt is always set */
@@ -462,23 +470,6 @@ int main(int argc, char **argv)
     strcat(copyfile, copyname);
     if (access(copyfile, R_OK) == -1 && !access(copyname, R_OK))
 	strcpy(copyfile, copyname);
-
-    /* initialize variables */
-    if ((var = (vars *)malloc(sizeof(vars)*(NUMTOT+max_named_vars)))) {
-        for (int n = 0; n < GLOBAL_VAR_COUNT; ++n) {
-            var[n].num = &global_var[n].num;
-            var[n].str = &global_var[n].str;
-        }
-        /* the parameters outside of any call */
-        for (int n = 0; n < PARAM_COUNT; ++n) {
-            VAR[n].num = &paramstk.p[0][n].num;
-            VAR[n].str = &paramstk.p[0][n].str;
-        }
-    } else
-	syserr("out of memory");
-
-    /* stack is empty */
-    paramstk.curr = 0;
 
     /* allocate permanent variables */
     if ((prompt = add_varnode("prompt", VAR_TEXT)) != NULL
@@ -2078,55 +2069,40 @@ static char *split_words(char *str)
  */
 static void free_allparams(void)
 {
-    int i,j;
+    vars.depth = 0;    /* reset stack to empty */
 
-    paramstk.curr = 0;    /* reset stack to empty */
-
-    for (i=1; i<MAX_STACK; i++) {
-        for (j=0; j<PARAM_COUNT; j++) {
-	    ptrdel(&paramstk.p[i][j].str);
-	    paramstk.p[i][j].str = (ptr *)0;
-	}
-    }
-    for (j=0; j<PARAM_COUNT; j++) {
-	VAR[j].num = &paramstk.p[0][j].num;
-	VAR[j].str = &paramstk.p[0][j].str;
+    for (int depth = 1; depth < MAX_STACK; ++depth) {
+        for (int n = 0; n < PARAM_COUNT; ++n)
+            ptrdel(&vars.params[depth][n].str);
     }
 }
 
 void push_params(void)
 {
-    int i;
-
-    if (paramstk.curr < MAX_STACK - 1)
-	paramstk.curr++;
-    else {
-	print_error(error=DYN_STACK_OV_ERROR);
-	free_allparams();
-	return;
+    if (vars.depth == MAX_STACK - 1) {
+        error = DYN_STACK_OV_ERROR;
+        print_error(error);
+        free_allparams();
+        return;
     }
-    for (i=0; i<PARAM_COUNT; i++) {
-	        *(VAR[i].num = &paramstk.p[paramstk.curr][i].num) = 0;
-	ptrzero(*(VAR[i].str = &paramstk.p[paramstk.curr][i].str));
+    ++vars.depth;
+    for (int n = 0; n < PARAM_COUNT; ++n) {
+        vars.params[vars.depth][n].num = 0;
+        ptrzero(vars.params[vars.depth][n].str);
     }
 }
 
 void pop_params(void)
 {
-    int i;
-
-    if (paramstk.curr > 0)
-	paramstk.curr--;
-    else {
-	print_error(error=DYN_STACK_UND_ERROR);
-	free_allparams();
-	return;
+    if (vars.depth == 0) {
+        error = DYN_STACK_UND_ERROR;
+        print_error(error);
+        free_allparams();
+        return;
     }
-    for (i=0; i<PARAM_COUNT; i++) {
-	ptrdel(VAR[i].str); *VAR[i].str = (ptr *)0;
-	VAR[i].num = &paramstk.p[paramstk.curr][i].num;
-	VAR[i].str = &paramstk.p[paramstk.curr][i].str;
-    }
+    for (int n = 0; n < PARAM_COUNT; ++n)
+        ptrdel(&vars.params[vars.depth][n].str);
+    --vars.depth;
 }
 
 static void set_params(char *line, int *match_s, int *match_e)
@@ -2549,6 +2525,8 @@ static int jit_subst_vars(ptr **buf, char *src)
 	if (*src == '$' || *src == '@') {
 	    i = 0;
             enum var_kind kind = *src == '$' ? VAR_TEXT : VAR_NUM;
+            long *num = NULL;
+            ptr **text = NULL;
 	    tmp = src + 1;
 	    if (*tmp == '{') {
 		tmp = skipspace(tmp+1);
@@ -2560,6 +2538,8 @@ static int jit_subst_vars(ptr **buf, char *src)
 			    tmp++;
 			while (isdigit(*tmp))
 			    tmp++;
+                        num = num_var(i);
+                        text = text_var(i);
 			done = 1;
 		    }
 		} else if (isalpha(*tmp) || *tmp == '_') {
@@ -2571,8 +2551,9 @@ static int jit_subst_vars(ptr **buf, char *src)
 		    *tmp = '\0';
 		    named_var = *lookup_varnode(name, kind);
 		    *tmp = c;
-		    if (named_var) {
-			i = named_var->index;
+                    if (named_var != NULL) {
+                        num = &named_var->num;
+                        text = &named_var->str;
 			done = 1;
 		    }
 		}
@@ -2585,13 +2566,13 @@ static int jit_subst_vars(ptr **buf, char *src)
 
 		    /* now the actual substitution */
                     if (kind == VAR_TEXT) {
-                        if (*text_var(i) != NULL) {
-                            data = ptrdata(*text_var(i));
-                            max = ptrlen(*text_var(i));
+                        if (*text != NULL) {
+                            data = ptrdata(*text);
+                            max = ptrlen(*text);
                         }
 		    } else {
                         data = buf2;
-                        sprintf(data, "%ld", *num_var(i));
+                        sprintf(data, "%ld", *num);
 			max = strlen(buf2);
 		    }
 		    if (data && max) {
