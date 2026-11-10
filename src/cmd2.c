@@ -12,7 +12,6 @@
  *
  */
 
-
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
@@ -45,125 +44,127 @@
  */
 void show_aliases(void)
 {
-    aliasnode *p;
-    char buf[BUFSIZE];
-
-    PRINTF("#%s alias%s defined%c\n", sortedaliases ? "the following" : "no",
-               (sortedaliases && !sortedaliases->snext) ? " is" : "es are",
-               sortedaliases ? ':' : '.');
+    PRINTF("#%s alias%s defined%c\n",
+           sortedaliases != NULL ? "the following" : "no",
+           (sortedaliases != NULL && sortedaliases->snext == NULL
+            ? " is"
+            : "es are"),
+           sortedaliases != NULL ? ':' : '.');
     reverse_sortedlist((sortednode **)&sortedaliases);
-    for (p = sortedaliases; p; p = p->snext) {
+    for (aliasnode *p = sortedaliases; p != NULL; p = p->snext) {
+        char buf[BUFSIZE];
         escape_specials(buf, p->name);
         tty_message("#alias %s%s%s%s=%s\n",
-                        p->active ? "" : "(disabled) ",
-                        buf, group_delim, p->group == NULL ? "*" : p->group, p->subst);
+                    p->active != 0 ? "" : "(disabled) ",
+                    buf, group_delim, p->group == NULL ? "*" : p->group,
+                    p->subst);
     }
     reverse_sortedlist((sortednode **)&sortedaliases);
 }
 
 /*
  * check if an alias name contains dangerous things.
- * return 1 if illegal name (and print reason).
+ * return true if illegal name (and print reason).
  * if valid, print a warning for unbalanced () {} and ""
  */
-static int check_alias(char *name)
+static bool check_alias(char *name)
 {
-    char *p = name, c;
-    enum { NORM, ESCAPE } state = NORM;
-    int quotes=0, paren=0, braces=0, ok = 1;
-
-    if (!*p) {
+    if (*name == '\0') {
         PRINTF("#illegal alias name: is empty!\n");
         error = INVALID_NAME_ERROR;
-        return 1;
+        return true;
     }
-    if (*p == '{') {
+    if (*name == '{') {
         wrap_printf("#illegal beginning '{' in alias name: \"%s\"", name);
         error = INVALID_NAME_ERROR;
-        return 1;
+        return true;
     }
-    if (strchr(name, ' ')) {
+    if (strchr(name, ' ') != NULL) {
         wrap_printf("#illegal spaces in alias name: \"%s\"", name);
         error = INVALID_NAME_ERROR;
-        return 1;
+        return true;
     }
 
-    for (; ok && (c = *p); p++) switch (state) {
-      case NORM:
-        if (c == ESC)
-            state = ESCAPE;
-        else if (quotes) {
-            if (c == '\"')
-                quotes = 0;
+    enum { NORM, ESCAPE } state = NORM;
+    bool quotes = false, ok = true;
+    int paren = 0, braces = 0;
+    for (char *p = name; ok && *p != '\0'; ++p) {
+        char c = *p;
+        switch (state) {
+        case NORM:
+            if (c == ESC)
+                state = ESCAPE;
+            else if (quotes) {
+                if (c == '\"')
+                    quotes = false;
+            } else if (c == '\"')
+                quotes = true;
+            else if (c == ')')
+                --paren;
+            else if (c == '(')
+                ++paren;
+            else if (c == '}')
+                --braces;
+            else if (c == '{')
+                ++braces;
+            else if (c == CMDSEP && paren == 0 && braces == 0)
+                ok = false;
+            break;
+        case ESCAPE:
+            if (c == ESC)
+                state = ESCAPE;
+            else
+                state = NORM;
+            break;
+        default:
+            break;
         }
-        else if (c == '\"')
-            quotes = 1;
-        else if (c == ')')
-            paren--;
-        else if (c == '(')
-            paren++;
-        else if (c == '}')
-            braces--;
-        else if (c == '{')
-            braces++;
-        else if (c == CMDSEP && !paren && !braces)
-            ok = 0;
-        break;
-      case ESCAPE:
-        if (c == ESC)
-            state = ESCAPE;
-        else /* if (c == ESC2 || c != ESC2) */
-            state = NORM;
-      default:
-        break;
     }
 
     if (!ok) {
         wrap_printf("#illegal non-escaped ';' in alias name: \"%s\"", name);
         error = INVALID_NAME_ERROR;
-        return 1;
+        return true;
     }
 
-    if (quotes || paren || braces) {
-        wrap_printf("#warning: unbalanced%s%s%s in alias name \"%s\" may "
-                    "cause problems", quotes ? " \"\"" : "",
-                    paren ? " ()" : "", braces ? " {}" : "", name);
+    if (quotes || paren != 0 || braces != 0) {
+        wrap_printf("#warning: unbalanced%s%s%s in alias name \"%s\" may"
+                    " cause problems", quotes ? " \"\"" : "",
+                    paren != 0 ? " ()" : "", braces != 0 ? " {}" : "", name);
     }
 
-    return 0;
+    return false;
 }
-
 
 /*
  * parse the #alias command
  */
 void parse_alias(char *str)
 {
-    char *left, *right, *group;
-    aliasnode **np, *p;
+    char *left = skipspace(str);
 
-    left = str = skipspace(str);
-
-    str = first_valid(str, '=');
+    str = first_valid(left, '=');
 
     if (*str == '=') {
         *str = '\0';
-        right = ++str;
+        ++str;
+        char *right = str;
         unescape(left);
 
         /* break out group name (if present) */
-        group = strstr( left, group_delim );
-        if( group ) {
-            *group = 0;
-            group += strlen( group_delim );
+        char *group = strstr(left, group_delim);
+        if (group != NULL) {
+            *group = '\0';
+            group += strlen(group_delim);
         }
 
         if (check_alias(left))
             return;
-        p = *(np = lookup_alias(left));
-        if (!*str) {
+        aliasnode **np = lookup_alias(left);
+        aliasnode *p = *np;
+        if (*str == '\0') {
             /* delete alias */
-            if (p) {
+            if (p != NULL) {
                 if (opt_info) {
                     PRINTF("#deleting alias: %s=%s\n", left, p->subst);
                 }
@@ -174,29 +175,31 @@ void parse_alias(char *str)
         } else {
             /* add/redefine alias */
 
-            /* direct recursion is supported (alias CAN be defined by itself) */
-            if (p) {
+            /* an alias CAN be defined by itself (direct recursion) */
+            if (p != NULL) {
                 free(p->subst);
                 p->subst = my_strdup(right);
-            } else
+            } else {
                 add_aliasnode(left, right);
+            }
 
             /* get alias again to add group (if needed)
              * don't take the lookup penalty though if not changing groups */
-            if( group != NULL ) {
+            if (group != NULL) {
                 np = lookup_alias(left);
-                if( (*np)->group != NULL )
-                        free((*np)->group);
+                if ((*np)->group != NULL)
+                    free((*np)->group);
 
-                if ( *group == '\0' || strcmp(group,"*") == 0 )
-                        group = NULL;
+                if (*group == '\0' || strcmp(group, "*") == 0)
+                    group = NULL;
 
                 (*np)->group = my_strdup(group);
             }
 
             if (opt_info) {
-                PRINTF("#%s alias in group '%s': %s=%s\n", p ? "changed" : "new",
-                        group == NULL ? "*" : group, left, right);
+                PRINTF("#%s alias in group '%s': %s=%s\n",
+                       p != NULL ? "changed" : "new",
+                       group == NULL ? "*" : group, left, right);
             }
         }
     } else {
@@ -206,8 +209,8 @@ void parse_alias(char *str)
         unescape(left);
         if (check_alias(left))
             return;
-        np = lookup_alias(left);
-        if (*np) {
+        aliasnode **np = lookup_alias(left);
+        if (*np != NULL) {
             char buf[BUFSIZE];
             escape_specials(buf, left);
             fmt_next_edit("#alias %s%s%s=%s",
@@ -227,8 +230,9 @@ void parse_alias(char *str)
 static void delete_action(actionnode **nodep)
 {
     if (opt_info) {
-        PRINTF("#deleting action: >%c%s %s\n", (*nodep)->active ?
-                   '+' : '-', (*nodep)->label, (*nodep)->pattern);
+        PRINTF("#deleting action: >%c%s %s\n",
+               (*nodep)->active != 0 ? '+' : '-', (*nodep)->label,
+               (*nodep)->pattern);
     }
     delete_actionnode(nodep);
 }
@@ -239,8 +243,9 @@ static void delete_action(actionnode **nodep)
 static void delete_prompt(actionnode **nodep)
 {
     if (opt_info) {
-        PRINTF("#deleting prompt: >%c%s %s\n", (*nodep)->active ?
-                   '+' : '-', (*nodep)->label, (*nodep)->pattern);
+        PRINTF("#deleting prompt: >%c%s %s\n",
+               (*nodep)->active != 0 ? '+' : '-', (*nodep)->label,
+               (*nodep)->pattern);
     }
     delete_promptnode(nodep);
 }
@@ -248,42 +253,45 @@ static void delete_prompt(actionnode **nodep)
 /*
  * create new action
  */
-static void add_new_action(char *label, char *pattern, char *command, int active, int type, void *q)
+static void add_new_action(char *label, char *pattern, char *command,
+                           bool active, int type, void *q)
 {
     add_actionnode(pattern, command, label, active, type, q);
     if (opt_info) {
         PRINTF("#new action: %c%c%s %s=%s\n",
-                   action_chars[type],
-                   active ? '+' : '-', label,
-                   pattern, command);
+               action_chars[type],
+               active ? '+' : '-', label,
+               pattern, command);
     }
 }
 
 /*
  * create new prompt
  */
-static void add_new_prompt(char *label, char *pattern, char *command, int active, int type, void *q)
+static void add_new_prompt(char *label, char *pattern, char *command,
+                           bool active, int type, void *q)
 {
     add_promptnode(pattern, command, label, active, type, q);
     if (opt_info) {
         PRINTF("#new prompt: %c%c%s %s=%s\n",
-                   action_chars[type],
-                   active ? '+' : '-', label,
-                   pattern, command);
+               action_chars[type],
+               active ? '+' : '-', label,
+               pattern, command);
     }
 }
 
 /*
  * add an action with numbered label
  */
-static void add_anonymous_action(char *pattern, char *command, int type, void *q)
+static void add_anonymous_action(char *pattern, char *command, int type,
+                                 void *q)
 {
     static int last = 0;
     char label[16];
     do {
         sprintf(label, "%d", ++last);
-    } while (*lookup_action(label));
-    add_new_action(label, pattern, command, 1, type, q);
+    } while (*lookup_action(label) != NULL);
+    add_new_action(label, pattern, command, true, type, q);
 }
 
 #define ONPROMPT (onprompt ? "prompt" : "action")
@@ -292,30 +300,32 @@ static void add_anonymous_action(char *pattern, char *command, int type, void *q
  * change fields of an existing action node
  * pattern or commands can be NULL if no change
  */
-static void change_actionorprompt(actionnode *node, char *pattern, char *command, int type, void *q, int onprompt)
+static void change_actionorprompt(actionnode *node, char *pattern,
+                                  char *command, int type, void *q,
+                                  bool onprompt)
 {
 #ifdef USE_REGEXP
-    if (node->type == ACTION_REGEXP && node->regexp) {
-        regfree((regex_t *)(node->regexp));
+    if (node->type == ACTION_REGEXP && node->regexp != NULL) {
+        regfree(node->regexp);
         free(node->regexp);
     }
     node->regexp = q;
 #endif
-    if (pattern) {
+    if (pattern != NULL) {
         free(node->pattern);
         node->pattern = my_strdup(pattern);
         node->type = type;
     }
-    if (command) {
+    if (command != NULL) {
         free(node->command);
         node->command = my_strdup(command);
     }
 
     if (opt_info) {
         PRINTF("#changed %s %c%c%s %s=%s\n", ONPROMPT,
-                   action_chars[node->type],
-                   node->active ? '+' : '-',
-                   node->label, node->pattern, node->command);
+               action_chars[node->type],
+               node->active != 0 ? '+' : '-',
+               node->label, node->pattern, node->command);
     }
 }
 
@@ -324,18 +334,18 @@ static void change_actionorprompt(actionnode *node, char *pattern, char *command
  */
 void show_actions(void)
 {
-    actionnode *p;
-
-    PRINTF("#%s action%s defined%c\n", actions ? "the following" : "no",
-               (actions && !actions->next) ? " is" : "s are", actions ? ':' : '.');
-    for (p = actions; p; p = p->next)
+    PRINTF("#%s action%s defined%c\n",
+           actions != NULL ? "the following" : "no",
+           (actions != NULL && actions->next == NULL) ? " is" : "s are",
+           actions != NULL ? ':' : '.');
+    for (actionnode *p = actions; p != NULL; p = p->next)
         tty_message("#action %c%c%s%s%s %s=%s\n",
-                   action_chars[p->type],
-                   p->active ? '+' : '-', p->label,
-           group_delim,
-                   p->group == NULL ? "*" : p->group,
-                   p->pattern,
-                   p->command);
+                    action_chars[p->type],
+                    p->active != 0 ? '+' : '-', p->label,
+                    group_delim,
+                    p->group == NULL ? "*" : p->group,
+                    p->pattern,
+                    p->command);
 }
 
 /*
@@ -343,15 +353,15 @@ void show_actions(void)
  */
 void show_prompts(void)
 {
-    promptnode *p;
-
-    PRINTF("#%s prompt%s defined%c\n", prompts ? "the following" : "no",
-               (prompts && !prompts->next) ? " is" : "s are", prompts ? ':' : '.');
-    for (p = prompts; p; p = p->next)
+    PRINTF("#%s prompt%s defined%c\n",
+           prompts != NULL ? "the following" : "no",
+           (prompts != NULL && prompts->next == NULL) ? " is" : "s are",
+           prompts != NULL ? ':' : '.');
+    for (promptnode *p = prompts; p != NULL; p = p->next)
         tty_message("#prompt %c%c%s %s=%s\n",
-                   action_chars[p->type],
-                   p->active ? '+' : '-', p->label,
-                   p->pattern, p->command);
+                    action_chars[p->type],
+                    p->active != 0 ? '+' : '-', p->label,
+                    p->pattern, p->command);
 }
 
 /*
@@ -359,94 +369,88 @@ void show_prompts(void)
  * this function is too damn complex because of the hairy syntax. it should be
  * split up or rewritten as an fsm instead.
  */
-void parse_action(char *str, int onprompt)
+void parse_action(char *str, bool onprompt)
 {
-    char *p, label[BUFSIZE], pattern[BUFSIZE], *command, *group;
-    actionnode **np = NULL;
-    char sign, assign, hastail;
-    char active, type = ACTION_WEAK, kind;
-    void *regexp = 0;
-
-    sign = *(p = skipspace(str));
-    if (!sign) {
+    char *p = skipspace(str);
+    char sign = *p;
+    if (sign == '\0') {
         PRINTF("%s: no arguments given\n", ONPROMPT);
         return;
     }
 
     str = p + 1;
 
+    char assign;
+    char type = ACTION_WEAK;
     switch (sign) {
-      case '+':
-      case '-':         /* edit */
-      case '<':         /* delete */
-      case '=':         /* list */
+    case '+':
+    case '-':           /* edit */
+    case '<':           /* delete */
+    case '=':           /* list */
         assign = sign;
         break;
-      case '%': /* action_chars[ACTION_REGEXP] */
+    case '%':           /* action_chars[ACTION_REGEXP] */
         type = ACTION_REGEXP;
-        /* falltrough */
-      case '>': /* action_chars[ACTION_WEAK] */
-
+        /* fall through */
+    case '>':           /* action_chars[ACTION_WEAK] */
         /* define/edit */
         assign = '>';
         sign = *(p + 1);
-        if (!sign) {
+        if (sign == '\0') {
             PRINTF("#%s: label expected\n", ONPROMPT);
             return;
-        } else if (sign == '+' || sign == '-')
-            str++;
-        else
+        } else if (sign == '+' || sign == '-') {
+            ++str;
+        } else {
             sign = '+';
+        }
         break;
-      default:
-        assign = 0;     /* anonymous action */
+    default:
+        assign = '\0';  /* anonymous action */
         str = p;
         break;
     }
 
-    /* labelled action: */
-    if (assign != 0) {
+    if (assign != '\0') {
+        /* labelled action */
         p = first_regular(str, ' ');
-        if ((hastail = *p))
+        bool hastail = *p != '\0';
+        if (hastail)
             *p = '\0';
 
         /* break out group name (if present) */
-        group = strstr( str, group_delim );
-        if( group ) {
-                *group = 0;
-                group += strlen( group_delim );
+        char *group = strstr(str, group_delim);
+        if (group != NULL) {
+            *group = '\0';
+            group += strlen(group_delim);
         }
 
-        my_strncpy(label, str, BUFSIZE-1);
+        char label[BUFSIZE];
+        my_strncpy(label, str, BUFSIZE - 1);
         if (hastail)
             *p++ = ' '; /* p points to start of pattern, or to \0 */
 
-        if (!*label) {
+        if (*label == '\0') {
             PRINTF("#%s: label expected\n", ONPROMPT);
             return;
         }
 
+        actionnode **np = (onprompt
+                           ? lookup_prompt(label)
+                           : lookup_action(label));
 
-        if (onprompt)
-            np = lookup_prompt(label);
-        else
-            np = lookup_action(label);
-
-        /* '<' : remove action */
         if (assign == '<') {
-            if (!np || !*np) {
+            /* '<' : remove action */
+            if (np == NULL || *np == NULL) {
                 wrap_printf("#no %s, cannot delete label: \"%s\"", ONPROMPT,
                             label);
+            } else if (onprompt) {
+                delete_prompt(np);
+            } else {
+                delete_action(np);
             }
-            else {
-                if (onprompt)
-                    delete_prompt(np);
-                else
-                    delete_action(np);
-            }
-
-            /* '>' : define action */
         } else if (assign == '>') {
+            /* '>' : define action */
 #ifndef USE_REGEXP
             if (type == ACTION_REGEXP) {
                 PRINTF("#error: regexp not allowed\n");
@@ -454,58 +458,55 @@ void parse_action(char *str, int onprompt)
             }
 #endif
 
-            if (sign == '+')
-                active = 1;
-            else
-                active = 0;
-
-            if (!*label) {
-                PRINTF("#%s: label expected\n", ONPROMPT);
-                return;
-            }
+            bool active = sign == '+';
 
             p = skipspace(p);
+            char pattern[BUFSIZE];
             if (*p == '(') {
-                ptr *pbuf = (ptr *)0;
-                p++;
-                kind = evalp(&pbuf, &p);
+                ptr *pbuf = NULL;
+                ++p;
+                char kind = evalp(&pbuf, &p);
                 if (!REAL_ERROR && kind != TYPE_TXT)
-                    error=NO_STRING_ERROR;
+                    error = NO_STRING_ERROR;
                 if (REAL_ERROR) {
                     PRINTF("#%s: ", ONPROMPT);
-                    print_error(error=NO_STRING_ERROR);
+                    error = NO_STRING_ERROR;
+                    print_error(error);
                     ptrdel(&pbuf);
                     return;
                 }
-                if (pbuf) {
-                    my_strncpy(pattern, ptrdata(pbuf), BUFSIZE-1);
+                if (pbuf != NULL) {
+                    my_strncpy(pattern, ptrdata(pbuf), BUFSIZE - 1);
                     ptrdel(&pbuf);
-                } else
+                } else {
                     pattern[0] = '\0';
-                if (*p)
-                    p = skipspace(++p);
-                if ((hastail = *p == '='))
-                    p++;
-            }
-            else {
-                p = first_regular(command = p, '=');
-                if ((hastail = *p))
+                }
+                if (*p != '\0')
+                    p = skipspace(p + 1);
+                hastail = *p == '=';
+                if (hastail)
+                    ++p;
+            } else {
+                char *start = p;
+                p = first_regular(start, '=');
+                hastail = *p != '\0';
+                if (hastail)
                     *p = '\0';
-                my_strncpy(pattern, command, BUFSIZE-1);
+                my_strncpy(pattern, start, BUFSIZE - 1);
 
                 if (hastail)
                     *p++ = '=';
             }
 
-            if (!*pattern) {
+            if (*pattern == '\0') {
                 wrap_printf("#error: pattern of #%ss must be non-empty.",
                             ONPROMPT);
                 return;
             }
 
+            void *regexp = NULL;
 #ifdef USE_REGEXP
             if (type == ACTION_REGEXP && hastail) {
-                int errcode;
                 char unesc_pat[BUFSIZE];
 
                 /*
@@ -517,7 +518,7 @@ void parse_action(char *str, int onprompt)
                 unescape(unesc_pat);
 
                 regexp = malloc(sizeof(regex_t));
-                if (!regexp) {
+                if (regexp == NULL) {
                     out_of_memory();
                     return;
                 }
@@ -528,15 +529,14 @@ void parse_action(char *str, int onprompt)
 #else
                 const int cflags = REG_EXTENDED;
 #endif
-                if ((errcode = regcomp((regex_t *)regexp, unesc_pat, cflags))) {
-                    int n;
-                    char *tmp;
-                    n = regerror(errcode, (regex_t *)regexp, NULL, 0);
-                    tmp = (char *)malloc(n);
-                    if (tmp) {
-                        if (!regerror(errcode, (regex_t *)regexp, tmp, n))
+                int errcode = regcomp(regexp, unesc_pat, cflags);
+                if (errcode != 0) {
+                    int n = regerror(errcode, regexp, NULL, 0);
+                    char *tmp = malloc(n);
+                    if (tmp != NULL) {
+                        if (regerror(errcode, regexp, tmp, n) == 0) {
                             errmsg("invalid regular expression");
-                        else {
+                        } else {
                             PRINTF("#regexp error: %s\n", tmp);
                         }
                         free(tmp);
@@ -544,50 +544,48 @@ void parse_action(char *str, int onprompt)
                         error = NO_MEM_ERROR;
                         out_of_memory();
                     }
-                    regfree((regex_t *)regexp);
+                    regfree(regexp);
                     free(regexp);
                     return;
                 }
             }
 #endif
-            command = p;
+            char *command = p;
 
             if (hastail) {
-                if (np && *np) {
-                    change_actionorprompt(*np, pattern, command, type, regexp, onprompt);
+                if (np != NULL && *np != NULL) {
+                    change_actionorprompt(*np, pattern, command, type, regexp,
+                                          onprompt);
                     (*np)->active = active;
+                } else if (onprompt) {
+                    add_new_prompt(label, pattern, command, active, type,
+                                   regexp);
                 } else {
-                    if (onprompt)
-                        add_new_prompt(label, pattern, command, active,
-                                       type, regexp);
-                    else
-                        add_new_action(label, pattern, command, active,
-                                       type, regexp);
+                    add_new_action(label, pattern, command, active, type,
+                                   regexp);
                 }
 
-                if( group != NULL ) {
-                        /* I don't know why but we need to clip this because somehow
-                         * the original string is restored to *p at some point instead
-                         * of the null-clipped one we used waaaay at the top. */
-                        p = first_regular(group, ' ');
-                        *p = '\0';
-                        np = lookup_action(label);
-                        if( (*np)->group != NULL )
-                                free( (*np)->group );
+                if (group != NULL) {
+                    /* the space after the label was put back above, so the
+                     * group name is still followed by the pattern */
+                    p = first_regular(group, ' ');
+                    *p = '\0';
+                    np = lookup_action(label);
+                    if ((*np)->group != NULL)
+                        free((*np)->group);
 
-                        if ( *group == '\0' || strcmp(group,"*") == 0 )
-                                group = NULL;
+                    if (*group == '\0' || strcmp(group, "*") == 0)
+                        group = NULL;
 
-                        (*np) -> group = my_strdup( group );
+                    (*np)->group = my_strdup(group);
                 }
             }
-
+        } else if (assign == '=') {
             /* '=': list action */
-        } else if (assign == '='){
-            if (np && *np) {
+            if (np != NULL && *np != NULL) {
                 fmt_next_edit("#%s %c%c%s %s=%s", ONPROMPT,
                               action_chars[(*np)->type],
-                              (*np)->active ? '+' : '-',
+                              (*np)->active != 0 ? '+' : '-',
                               (*np)->label,
                               (*np)->pattern,
                               (*np)->command);
@@ -595,53 +593,54 @@ void parse_action(char *str, int onprompt)
                 wrap_printf("#no %s, cannot list label: \"%s\"", ONPROMPT,
                             label);
             }
-
-            /* '+', '-': turn action on/off */
         } else {
-            if (np && *np) {
-                (*np)->active = (sign == '+');
+            /* '+', '-': turn action on/off */
+            if (np != NULL && *np != NULL) {
+                (*np)->active = sign == '+';
                 if (opt_info) {
                     wrap_printf("#%s %c%s %s is now o%s.", ONPROMPT,
                                 action_chars[(*np)->type], label,
-                                (*np)->pattern, (sign == '+') ? "n" : "ff");
+                                (*np)->pattern, sign == '+' ? "n" : "ff");
                 }
             } else {
                 wrap_printf("#no %s, cannot turn o%s label: \"%s\"", ONPROMPT,
-                            (sign == '+') ? "n" : "ff", label);
+                            sign == '+' ? "n" : "ff", label);
             }
         }
-
-        /* anonymous action, cannot be regexp */
     } else {
+        /* anonymous action, cannot be regexp */
 
         if (onprompt) {
-            PRINTF("#anonymous prompts not supported.\n#please use labelled prompts.\n");
+            PRINTF("#anonymous prompts not supported.\n"
+                   "#please use labelled prompts.\n");
             return;
         }
 
-        command = first_regular(str, '=');
+        char *command = first_regular(str, '=');
 
         if (*command == '=') {
             *command = '\0';
 
-            my_strncpy(pattern, str, BUFSIZE-1);
+            char pattern[BUFSIZE];
+            my_strncpy(pattern, str, BUFSIZE - 1);
             *command++ = '=';
-            np = lookup_action_pattern(pattern);
+            actionnode **np = lookup_action_pattern(pattern);
             if (*command != '\0') {
-                if (np && *np)
-                    change_actionorprompt(*np, NULL, command, ACTION_WEAK, NULL, 0);
+                if (np != NULL && *np != NULL)
+                    change_actionorprompt(*np, NULL, command, ACTION_WEAK,
+                                          NULL, false);
                 else
                     add_anonymous_action(pattern, command, ACTION_WEAK, NULL);
-            } else if (np && *np)
+            } else if (np != NULL && *np != NULL) {
                 delete_action(np);
-            else {
+            } else {
                 wrap_printf("#no action, cannot delete pattern: \"%s\"",
                             pattern);
                 return;
             }
         } else {
-            np = lookup_action_pattern(str);
-            if (np && *np) {
+            actionnode **np = lookup_action_pattern(str);
+            if (np != NULL && *np != NULL) {
                 fmt_next_edit("#action %s=%s",
                               (*np)->pattern,
                               (*np)->command);
@@ -660,10 +659,13 @@ void parse_action(char *str, int onprompt)
 void show_attr_syntax(void)
 {
     PRINTF("#an attribute is: [<style>...] [<color>] [on <color>]\n"
-           "  styles:   bold, dim, italic, underline, blink, inverse, hidden,\n"
+           "  styles:   bold, dim, italic, underline, blink, inverse,"
+           " hidden,\n"
            "            strike, overline\n"
-           "  colors:   black, red, green, yellow, blue, magenta, cyan, white,\n"
-           "            bright with a capital (Black, Red, ...), 0 to 255 for the\n"
+           "  colors:   black, red, green, yellow, blue, magenta, cyan,"
+           " white,\n"
+           "            bright with a capital (Black, Red, ...), 0 to 255 for"
+           " the\n"
            "            256-color palette, #rrggbb or none\n"
            "  example:  bold yellow on blue\n");
 }
@@ -696,83 +698,84 @@ char *attr_name(const struct attr *attr)
  */
 void show_marks(void)
 {
-    marknode *p;
-    PRINTF("#%s marker%s defined%c\n", markers ? "the following" : "no",
-               (markers && !markers->next) ? " is" : "s are",
-               markers ? ':' : '.');
-    for (p = markers; p; p = p->next)
+    PRINTF("#%s marker%s defined%c\n",
+           markers != NULL ? "the following" : "no",
+           (markers != NULL && markers->next == NULL) ? " is" : "s are",
+           markers != NULL ? ':' : '.');
+    for (marknode *p = markers; p != NULL; p = p->next)
         tty_message("#mark %s%s=%s\n", p->b.mbeg != 0 ? "^" : "",
-                   p->b.pattern, attr_name(&p->attr));
+                    p->b.pattern, attr_name(&p->attr));
 }
-
 
 /*
  * parse arguments to the #mark command
  */
 void parse_mark(char *str)
 {
-    char *p;
-    marknode **np, *n;
-    char mbeg = 0;
-
     if (*str == '=') {
         PRINTF("#marker must be non-empty.\n");
         return;
     }
-    p = first_regular(str, '=');
-    if (!*p) {
-        if (*str ==  '^')
-            mbeg = 1, str++;
+    char *p = first_regular(str, '=');
+    bool mbeg = false;
+    if (*p == '\0') {
+        if (*str == '^') {
+            mbeg = true;
+            ++str;
+        }
         unescape(str);
-        np = lookup_marker(str, mbeg);
-        if ((n = *np)) {
-            ptr *pbuf = (ptr *)0;
-            char *name;
-            pbuf = ptrmescape(pbuf, n->b.pattern, strlen(n->b.pattern), 0);
-            if (MEM_ERROR) { ptrdel(&pbuf); return; }
-            name = attr_name(&n->attr);
+        marknode *n = *lookup_marker(str, mbeg);
+        if (n != NULL) {
+            ptr *pbuf = ptrmescape(NULL, n->b.pattern,
+                                   strlen(n->b.pattern), 0);
+            if (MEM_ERROR) {
+                ptrdel(&pbuf);
+                return;
+            }
+            char *name = attr_name(&n->attr);
             fmt_next_edit("#mark %s%s=%s", n->b.mbeg != 0 ? "^" : "",
-                          pbuf ? ptrdata(pbuf) : "", name);
+                          pbuf != NULL ? ptrdata(pbuf) : "", name);
             ptrdel(&pbuf);
         } else {
             wrap_printf("#unknown marker, cannot show: \"%s\"", str);
         }
-
     } else {
-        int wild = 0;
-        char pattern[BUFSIZE], *p2;
-
         *(p++) = '\0';
         p = skipspace(p);
-        if (*str ==  '^')
-            mbeg = 1, str++;
-        my_strncpy(pattern, str, BUFSIZE-1);
+        if (*str == '^') {
+            mbeg = true;
+            ++str;
+        }
+        char pattern[BUFSIZE];
+        my_strncpy(pattern, str, BUFSIZE - 1);
         unescape(pattern);
-        p2 = pattern;
-        while (*p2) {
+        bool wild = false;
+        for (char *p2 = pattern; *p2 != '\0'; ++p2) {
             if (ISMARKWILDCARD(*p2)) {
-                wild = 1;
+                wild = true;
                 if (ISMARKWILDCARD(*(p2 + 1))) {
-                    error=SYNTAX_ERROR;
-                    wrap_printf("#error: two wildcards (& or $) may not be "
-                                "next to eachother");
+                    error = SYNTAX_ERROR;
+                    wrap_printf("#error: two wildcards (& or $) may not be"
+                                " next to eachother");
                     return;
                 }
             }
-            p2++;
         }
 
-        np = lookup_marker(pattern, mbeg);
+        marknode **np = lookup_marker(pattern, mbeg);
         struct attr attr;
         char why[BUFSIZE];
         if (!attr_parse_why(p, &attr, why, sizeof(why))) {
             PRINTF("#mark: %s.\n", why);
-            error=SYNTAX_ERROR;
-            if (opt_info) show_attr_syntax();
-        } else if (!*p)
-            if ((n = *np)) {
+            error = SYNTAX_ERROR;
+            if (opt_info)
+                show_attr_syntax();
+        } else if (*p == '\0') {
+            marknode *n = *np;
+            if (n != NULL) {
                 if (opt_info) {
-                    PRINTF("#deleting mark: %s%s=%s\n", n->b.mbeg != 0 ? "^" : "",
+                    PRINTF("#deleting mark: %s%s=%s\n",
+                           n->b.mbeg != 0 ? "^" : "",
                            n->b.pattern, attr_name(&n->attr));
                 }
                 delete_marknode(np);
@@ -780,8 +783,8 @@ void parse_mark(char *str)
                 wrap_printf("#unknown marker, cannot delete: \"%s%s\"",
                             mbeg ? "^" : "", pattern);
             }
-        else {
-            if (*np) {
+        } else {
+            if (*np != NULL) {
                 (*np)->attr = attr;
                 if (opt_info) {
                     PRINTF("#changed");
@@ -799,7 +802,6 @@ void parse_mark(char *str)
     }
 }
 
-
 /*
  * show defined substitutions
  */
@@ -807,14 +809,16 @@ void show_substitutions(void)
 {
     PRINTF("#%s substitution%s defined%c\n",
            substitutions != NULL ? "the following" : "no",
-           (substitutions != NULL && substitutions->next == NULL) ? " is" : "s are",
+           (substitutions != NULL && substitutions->next == NULL
+            ? " is"
+            : "s are"),
            substitutions != NULL ? ':' : '.');
 
     ptr *pbuf = NULL;
     for (substnode *p = substitutions; p != NULL; p = p->next) {
         pbuf = ptrsubstdef(pbuf, p->b.mbeg, p->b.pattern, p->replacement);
         if (MEM_ERROR)
-          break;
+            break;
         tty_message("#substitute %s\n", ptrdata(pbuf));
     }
     ptrdel(&pbuf);
@@ -823,14 +827,15 @@ void show_substitutions(void)
 /*
  * tell the user what happened to a substitution
  */
-static void subst_info(const char *what, char mbeg, char *pattern, char *replacement)
+static void subst_info(const char *what, bool mbeg, char *pattern,
+                       char *replacement)
 {
-    if (opt_info == 0)
-      return;
+    if (!opt_info)
+        return;
 
     ptr *pbuf = ptrsubstdef(NULL, mbeg, pattern, replacement);
     if (!MEM_ERROR)
-      PRINTF("#%s substitution: %s\n", what, ptrdata(pbuf));
+        PRINTF("#%s substitution: %s\n", what, ptrdata(pbuf));
     ptrdel(&pbuf);
 }
 
@@ -845,9 +850,9 @@ void parse_substitute(char *str)
     }
 
     char *p = first_regular(str, '=');
-    char mbeg = 0;
+    bool mbeg = false;
     if (*str == '^') {
-        mbeg = 1;
+        mbeg = true;
         ++str;
     }
 
@@ -858,9 +863,10 @@ void parse_substitute(char *str)
             wrap_printf("#unknown substitution, cannot show: \"%s\"", str);
             return;
         }
-        ptr *pbuf = ptrsubstdef(NULL, n->b.mbeg, n->b.pattern, n->replacement);
+        ptr *pbuf = ptrsubstdef(NULL, n->b.mbeg, n->b.pattern,
+                                n->replacement);
         if (!MEM_ERROR)
-          fmt_next_edit("#substitute %s", ptrdata(pbuf));
+            fmt_next_edit("#substitute %s", ptrdata(pbuf));
         ptrdel(&pbuf);
         return;
     }
@@ -869,22 +875,22 @@ void parse_substitute(char *str)
     ++p;
 
     char pattern[BUFSIZE];
-    my_strncpy(pattern, str, BUFSIZE-1);
+    my_strncpy(pattern, str, BUFSIZE - 1);
     unescape(pattern);
     if (*pattern == '\0') {
         PRINTF("#substitute must be non-empty.\n");
         return;
     }
 
-    char wild = 0;
+    bool wild = false;
     for (const char *q = pattern; *q != '\0'; ++q) {
         if (!ISMARKWILDCARD(*q))
-          continue;
-        wild = 1;
+            continue;
+        wild = true;
         if (ISMARKWILDCARD(q[1])) {
             error = SYNTAX_ERROR;
-            wrap_printf("#error: two wildcards (& or $) may not be next to "
-                        "eachother");
+            wrap_printf("#error: two wildcards (& or $) may not be next to"
+                        " eachother");
             return;
         }
     }
@@ -895,10 +901,10 @@ void parse_substitute(char *str)
     if (*p == '\0') {
         if (n == NULL) {
             wrap_printf("#unknown substitution, cannot delete: \"%s%s\"",
-                        mbeg != 0 ? "^" : "", pattern);
+                        mbeg ? "^" : "", pattern);
             return;
         }
-        subst_info("deleting", n->b.mbeg, n->b.pattern, n->replacement);
+        subst_info("deleting", n->b.mbeg != 0, n->b.pattern, n->replacement);
         delete_substnode(np);
     } else if (n != NULL) {
         char *replacement = my_strdup(p);
@@ -922,12 +928,13 @@ void parse_substitute(char *str)
  */
 static char *unescape_seq(char *buf, char *seq, int *seqlen)
 {
-    char c, *start = buf;
+    char *start = buf;
     enum { NORM, ESCSINGLE, ESCAPE, CARET, DONE } state = NORM;
 
-    for (; (c = *seq); seq++) {
+    for (; *seq != '\0'; ++seq) {
+        char c = *seq;
         switch (state) {
-          case NORM:
+        case NORM:
             if (c == '^')
                 state = CARET;
             else if (c == ESC)
@@ -937,28 +944,29 @@ static char *unescape_seq(char *buf, char *seq, int *seqlen)
             else
                 *(buf++) = c;
             break;
-          case CARET:
+        case CARET:
             /*
              * handle ^@ ^A  ... ^_ as expected:
              * ^@ == 0x00, ^A == 0x01, ... , ^_ == 0x1f
              */
-            if (c > 0x40 && c < 0x60)
+            if (c > 0x40 && c < 0x60) {
                 *(buf++) = c & 0x1f;
-            /* special case: ^? == 0x7f */
-            else if (c == '?')
+            } else if (c == '?') {
+                /* special case: ^? == 0x7f */
                 *(buf++) = 0x7f;
+            }
             state = NORM;
             break;
-          case ESCSINGLE:
-          case ESCAPE:
+        case ESCSINGLE:
+        case ESCAPE:
             /*
              * \012 ==> octal number
              */
-            if (state == ESCSINGLE &&
-                is_odigit(seq[0]) && is_odigit(seq[1]) && is_odigit(seq[2])) {
-                *(buf++) =(((seq[0] - '0') << 6) |
-                           ((seq[1] - '0') << 3) |
-                           (seq[2] - '0'));
+            if (state == ESCSINGLE && is_odigit(seq[0])
+                && is_odigit(seq[1]) && is_odigit(seq[2])) {
+                *(buf++) = (((seq[0] - '0') << 6)
+                            | ((seq[1] - '0') << 3)
+                            | (seq[2] - '0'));
                 seq += 2;
             } else {
                 *(buf++) = c;
@@ -968,7 +976,7 @@ static char *unescape_seq(char *buf, char *seq, int *seqlen)
                     state = NORM;
             }
             break;
-          default:
+        default:
             break;
         }
         if (state == DONE)
@@ -986,29 +994,29 @@ static char *unescape_seq(char *buf, char *seq, int *seqlen)
  */
 static int get_one_char(int timeout)
 {
-    struct timeval timeoutbuf;
-    fd_set fds;
-    int n;
-    char c;
     /* tty_read() may hold characters that select() cannot see */
     bool buffered = tty_has_chars() != 0;
 
  again:
-    if (buffered)
-        goto read_tty;
-    FD_ZERO(&fds);
-    FD_SET(tty_read_fd, &fds);
-    timeoutbuf.tv_sec = 0;
-    timeoutbuf.tv_usec = timeout * uSEC_PER_mSEC;
-    n = select(tty_read_fd + 1, &fds, NULL, NULL,
-               timeout ? &timeoutbuf : NULL);
-    if (n == 0 || (n == -1 && errno == EINTR))
-        return -1;
-    if (n == -1) {
-        errmsg("cannot wait for the terminal");
-        return -1;
+    if (!buffered) {
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(tty_read_fd, &fds);
+        struct timeval timeoutbuf = {
+            .tv_sec = 0,
+            .tv_usec = timeout * uSEC_PER_mSEC,
+        };
+        int n = select(tty_read_fd + 1, &fds, NULL, NULL,
+                       timeout != 0 ? &timeoutbuf : NULL);
+        if (n == 0 || (n == -1 && errno == EINTR))
+            return -1;
+        if (n == -1) {
+            errmsg("cannot wait for the terminal");
+            return -1;
+        }
     }
- read_tty:
+    int n;
+    char c;
     do {
         n = tty_read(&c, 1);
     } while (n < 0 && errno == EINTR);
@@ -1019,7 +1027,7 @@ static int get_one_char(int timeout)
             errmsg("cannot read from the terminal");
         return -1;
     }
-    /* n == 0: at most an incomplete character was buffered, so wait for more */
+    /* n == 0: at most an incomplete character is buffered, wait for more */
     if (timeout == 0 || buffered) {
         buffered = false;
         goto again;
@@ -1063,7 +1071,7 @@ static void print_seq(char *seq, int len)
  */
 char *seq_name(char *seq, int len)
 {
-    static char buf[CAPLEN*4];
+    static char buf[CAPLEN * 4];
     char *p = buf;
     /*
      * rules: control chars are written as ^X, where
@@ -1073,9 +1081,9 @@ char *seq_name(char *seq, int len)
      *
      * special case: 0x7f is written ^?
      */
-    while (len--) {
+    while (len-- != 0) {
         unsigned char c = *seq++;
-        if (c == '^' || (c && strchr(SPECIAL_CHARS, c)))
+        if (c == '^' || (c != 0 && strchr(SPECIAL_CHARS, c) != NULL))
             *(p++) = ESC;
 
         if (c < ' ') {
@@ -1085,10 +1093,11 @@ char *seq_name(char *seq, int len)
             *(p++) = '^';
             *(p++) = '?';
         } else if (c & 0x80) {
-            sprintf(p, "\\%03o", (int)c);
+            sprintf(p, "\\%03o", c);
             p += strlen(p);
-        } else
+        } else {
             *(p++) = c;
+        }
     }
     *p = '\0';
     return buf;
@@ -1101,20 +1110,19 @@ char *seq_name(char *seq, int len)
 static char *read_seq(char *name, int *len)
 {
     static char seq[CAPLEN];
-    int i = 1, tmp;
 
     PRINTF("#please press the key \"%s\" : ", name);
     tty_flush();
 
-    if ((tmp = get_one_char(0)) >= 0)
-        seq[0] = tmp;
-    else {
+    int tmp = get_one_char(0);
+    if (tmp < 0) {
         tty_message("#unable to get key. Giving up.\n");
         return NULL;
     }
+    seq[0] = tmp;
 
-    while (i < CAPLEN - 1 &&
-           (tmp = get_one_char(KBD_TIMEOUT)) >= 0)
+    int i = 1;
+    while (i < CAPLEN - 1 && (tmp = get_one_char(KBD_TIMEOUT)) >= 0)
         seq[i++] = tmp;
     *len = i;
     print_seq(seq, i);
@@ -1140,14 +1148,11 @@ static void show_single_bind(char *msg, keynode *p)
         PRINTF("#%s %s %s=%s%s%s\n", msg, p->name,
                seq_name(p->sequence, p->seqlen),
                internal_functions[lookup_edit_function(p->funct)].name,
-               p->call_data ? " " : "",
-               p->call_data ? p->call_data : "");
+               p->call_data != NULL ? " " : "",
+               p->call_data != NULL ? p->call_data : "");
     }
 }
 
-/*
- * list keyboard bindings
- */
 /*
  * list the key bindings whose sequences start with the 'len' bytes of
  * 'prefix', the keys named 'names', for a key sequence followed by C-h
@@ -1208,7 +1213,8 @@ void reset_bind(char *name)
     /* another key with the same sequence would hide this one */
     int len = strlen(d->seq);
     for (kp = &keydefs; *kp != NULL; ) {
-        if ((*kp)->seqlen == len && memcmp((*kp)->sequence, d->seq, len) == 0) {
+        if ((*kp)->seqlen == len
+            && memcmp((*kp)->sequence, d->seq, len) == 0) {
             show_single_bind("deleting key binding:", *kp);
             delete_keynode(kp);
         } else {
@@ -1216,17 +1222,20 @@ void reset_bind(char *name)
         }
     }
     add_keynode(name, d->seq, 0, d->funct, d->command);
-    if (*(kp = lookup_key(name)) != NULL)
+    kp = lookup_key(name);
+    if (*kp != NULL)
         show_single_bind("default key binding:", *kp);
 }
 
-void show_binds(char edit)
+/*
+ * list keyboard bindings
+ */
+void show_binds(bool edit)
 {
-    keynode *p;
     int count = 0;
-    for (p = keydefs; p; p = p->next) {
+    for (keynode *p = keydefs; p != NULL; p = p->next) {
         if (edit != (p->funct == key_run_command)) {
-            if (!count) {
+            if (count == 0) {
                 if (edit) {
                     PRINTF("#line-editing keys:\n");
                 } else {
@@ -1237,33 +1246,32 @@ void show_binds(char edit)
             ++count;
         }
     }
-    if (!count) {
+    if (count == 0) {
         PRINTF("#no key bindings defined right now.\n");
     }
 }
-
 
 /*
  * interactively create a new keybinding
  */
 static void define_new_key(char *name, char *command)
 {
-    char *seq, *arg;
-    keynode *p;
-    int seqlen, function;
+    int seqlen;
+    char *seq = read_seq(name, &seqlen);
+    if (seq == NULL)
+        return;
 
-    seq = read_seq(name, &seqlen);
-    if (!seq) return;
-
-    for (p = keydefs; p; p = p->next)
+    for (keynode *p = keydefs; p != NULL; p = p->next) {
         /* don't allow binding of supersets of another bind */
-        if (!memcmp(p->sequence, seq, MIN2(p->seqlen, seqlen))) {
+        if (memcmp(p->sequence, seq, MIN2(p->seqlen, seqlen)) == 0) {
             show_single_bind("key already bound as:", p);
             return;
         }
+    }
 
-    function = lookup_edit_name(command, &arg);
-    if (function)
+    char *arg;
+    int function = lookup_edit_name(command, &arg);
+    if (function != 0)
         add_keynode(name, seq, seqlen,
                     internal_functions[function].funct, arg);
     else
@@ -1280,30 +1288,31 @@ static void define_new_key(char *name, char *command)
  */
 static void parse_bind_noninteractive(char *arg)
 {
-    char rawseq[CAPLEN], *p, *seq, *params;
-    int function, seqlen;
-    keynode **kp;
-
-    p = strchr(arg, ' ');
-    if (!p) {
+    char *p = strchr(arg, ' ');
+    if (p == NULL) {
         PRINTF("#syntax error: \"#bind %s\"\n", arg);
         return;
     }
     *(p++) = '\0';
-    seq = p = skipspace(p);
+    p = skipspace(p);
+    char *seq = p;
 
+    char rawseq[CAPLEN];
+    int seqlen;
     p = unescape_seq(rawseq, p, &seqlen);
-    if (!p[0] || !p[1]) {
+    if (p[0] == '\0' || p[1] == '\0') {
         PRINTF("#syntax error: \"#bind %s %s\"\n", arg, seq);
         return;
     }
     *p++ = '\0';
 
-    kp = lookup_key(arg);
-    if (kp && *kp)
+    keynode **kp = lookup_key(arg);
+    if (kp != NULL && *kp != NULL)
         delete_keynode(kp);
 
-    if ((function = lookup_edit_name(p, &params)))
+    char *params;
+    int function = lookup_edit_name(p, &params);
+    if (function != 0)
         add_keynode(arg, rawseq, seqlen,
                     internal_functions[function].funct, params);
     else
@@ -1311,7 +1320,9 @@ static void parse_bind_noninteractive(char *arg)
 
     if (opt_info) {
         PRINTF("#%s: %s %s=%s\n",
-               (kp && *kp) ? "redefined key" : "new key binding",
+               (kp != NULL && *kp != NULL
+                ? "redefined key"
+                : "new key binding"),
                arg, seq, p);
     }
 }
@@ -1321,29 +1332,27 @@ static void parse_bind_noninteractive(char *arg)
  */
 void parse_bind(char *arg)
 {
-    char *p, *q, *command, *params;
     char *name = arg;
-    keynode **npp, *np;
-    int function;
+    char *p = first_valid(arg, '=');
+    char *q = skipspace(first_valid(arg, ' '));
 
-    p = first_valid(arg, '=');
-    q = first_valid(arg, ' ');
-    q = skipspace(q);
-
-    if (*p && *q && p > q) {
+    if (*p != '\0' && *q != '\0' && p > q) {
         parse_bind_noninteractive(arg);
         return;
     }
 
-    if (*p) {
+    if (*p != '\0') {
         *(p++) = '\0';
-        np = *(npp = lookup_key(name));
-        if (*p) {
-            command = p;
-            if (np) {
+        keynode **npp = lookup_key(name);
+        keynode *np = *npp;
+        if (*p != '\0') {
+            char *command = p;
+            if (np != NULL) {
                 if (np->funct == key_run_command)
                     free(np->call_data);
-                if ((function = lookup_edit_name(command, &params))) {
+                char *params;
+                int function = lookup_edit_name(command, &params);
+                if (function != 0) {
                     np->call_data = my_strdup(params);
                     np->funct = internal_functions[function].funct;
                 } else {
@@ -1352,34 +1361,33 @@ void parse_bind(char *arg)
                 }
                 if (opt_info) {
                     PRINTF("#redefined key: %s %s=%s\n", name,
-                               seq_name(np->sequence, np->seqlen),
-                               command);
+                           seq_name(np->sequence, np->seqlen),
+                           command);
                 }
-            } else
-                define_new_key(name, command);
-        } else {
-            if (np) {
-                if (opt_info)
-                    show_single_bind("deleting key binding:", np);
-                delete_keynode(npp);
             } else {
-                wrap_printf("#no such key: \"%s\"", name);
+                define_new_key(name, command);
             }
+        } else if (np != NULL) {
+            if (opt_info)
+                show_single_bind("deleting key binding:", np);
+            delete_keynode(npp);
+        } else {
+            wrap_printf("#no such key: \"%s\"", name);
         }
     } else {
-        np = *(npp = lookup_key(name));
-        if (np) {
+        keynode *np = *lookup_key(name);
+        if (np != NULL) {
             char *seqname = seq_name(np->sequence, np->seqlen);
 
-            if (np->funct == key_run_command)
+            if (np->funct == key_run_command) {
                 fmt_next_edit("#bind %s %s=%s", name, seqname, np->call_data);
-            else {
+            } else {
                 const char *fname
                     = internal_functions[lookup_edit_function(np->funct)].name;
                 fmt_next_edit("#bind %s %s=%s%s%s",
                               name, seqname, fname,
-                              np->call_data ? " " : "",
-                              np->call_data ? np->call_data : "");
+                              np->call_data != NULL ? " " : "",
+                              np->call_data != NULL ? np->call_data : "");
             }
         } else {
             wrap_printf("#no such key: \"%s\"", name);
@@ -1389,34 +1397,32 @@ void parse_bind(char *arg)
 
 void parse_rebind(char *arg)
 {
-    char rawseq[CAPLEN], *seq, **old;
-    keynode **kp, *p;
-    int seqlen;
-
     arg = skipspace(arg);
-    if (!*arg) {
+    if (*arg == '\0') {
         PRINTF("#rebind: missing key.\n");
         return;
     }
 
-    seq = first_valid(arg, ' ');
-    if (*seq) {
+    char *seq = first_valid(arg, ' ');
+    if (*seq != '\0') {
         *seq++ = '\0';
         seq = skipspace(seq);
     }
 
-    kp = lookup_key(arg);
-    if (!kp || !*kp) {
+    keynode **kp = lookup_key(arg);
+    if (kp == NULL || *kp == NULL) {
         wrap_printf("#no such key: \"%s\"", arg);
         return;
     }
 
-    if (!*seq) {
+    char rawseq[CAPLEN];
+    int seqlen;
+    if (*seq == '\0') {
         seq = read_seq(arg, &seqlen);
-        if (!seq)
+        if (seq == NULL)
             return;
     } else {
-        (void)unescape_seq(rawseq, seq, &seqlen);
+        unescape_seq(rawseq, seq, &seqlen);
         seq = rawseq;
     }
 
@@ -1425,10 +1431,10 @@ void parse_rebind(char *arg)
         return;
     }
 
-    for (p = keydefs; p; p = p->next) {
+    for (keynode *p = keydefs; p != NULL; p = p->next) {
         if (p == *kp)
             continue;
-        if (!memcmp(p->sequence, seq, MIN2(seqlen, p->seqlen))) {
+        if (memcmp(p->sequence, seq, MIN2(seqlen, p->seqlen)) == 0) {
             show_single_bind("key already bound as:", p);
             return;
         }
@@ -1441,8 +1447,8 @@ void parse_rebind(char *arg)
     }
     memmove(new_seq, seq, seqlen);
 
-    old = &((*kp)->sequence);
-    if (*old)
+    char **old = &(*kp)->sequence;
+    if (*old != NULL)
         free(*old);
     *old = new_seq;
     (*kp)->seqlen = seqlen;
@@ -1457,70 +1463,73 @@ void parse_rebind(char *arg)
  * if needed, use/malloc "pbuf" as buffer (on error, also free pbuf)
  * return resulting char *
  */
-char *redirect(char *arg, ptr **pbuf, char *kind, char *name, int also_num, long *start, long *end)
+char *redirect(char *arg, ptr **pbuf, char *kind, char *name, bool also_num,
+               long *start, long *end)
 {
-    char *tmp = skipspace(arg), k;
-    int type, i;
-
-    if (!pbuf) {
-        print_error(error=INTERNAL_ERROR);
+    if (pbuf == NULL) {
+        error = INTERNAL_ERROR;
+        print_error(error);
         return NULL;
     }
 
-    k = *tmp;
-    if (k == '!' || k == '<')
-        arg = ++tmp;
-    else
-        k = 0;
+    char *tmp = skipspace(arg);
+    char k = *tmp;
+    if (k == '!' || k == '<') {
+        ++tmp;
+        arg = tmp;
+    } else {
+        k = '\0';
+    }
 
-    *start = *end = 0;
+    *start = 0;
+    *end = 0;
 
-    if (*tmp=='(') {
-
+    if (*tmp == '(') {
         arg = tmp + 1;
-        type = evalp(pbuf, &arg);
-        if (!REAL_ERROR && type!=TYPE_TXT && !also_num)
-            error=NO_STRING_ERROR;
+        int type = evalp(pbuf, &arg);
+        if (!REAL_ERROR && type != TYPE_TXT && !also_num)
+            error = NO_STRING_ERROR;
         if (REAL_ERROR) {
             PRINTF("#%s: ", name);
             print_error(error);
             ptrdel(pbuf);
             return NULL;
         }
-        for (i=0; i<2; i++) if (*arg == CMDSEP) {
-            long buf;
+        for (int i = 0; i < 2; ++i) {
+            if (*arg == CMDSEP) {
+                ++arg;
+                if (i == 0 && *arg == CMDSEP) {
+                    *start = 1;
+                    continue;
+                } else if (i != 0 && *arg == ')') {
+                    *end = LONG_MAX;
+                    continue;
+                }
 
-            arg++;
-            if (!i && *arg == CMDSEP) {
-                *start = 1;
-                continue;
+                long buf;
+                type = evall(&buf, &arg);
+                if (!REAL_ERROR && type != TYPE_NUM)
+                    error = NO_NUM_VALUE_ERROR;
+                if (REAL_ERROR) {
+                    PRINTF("#%s: ", name);
+                    print_error(error);
+                    ptrdel(pbuf);
+                    return NULL;
+                }
+                if (i != 0)
+                    *end = buf;
+                else
+                    *start = buf;
             }
-            else if (i && *arg == ')') {
-                *end = LONG_MAX;
-                continue;
-            }
-
-            type = evall(&buf, &arg);
-            if (!REAL_ERROR && type != TYPE_NUM)
-                error=NO_NUM_VALUE_ERROR;
-            if (REAL_ERROR) {
-                PRINTF("#%s: ", name);
-                print_error(error);
-                ptrdel(pbuf);
-                return NULL;
-            }
-            if (i)
-                *end = buf;
-            else
-                *start = buf;
         }
         if (*arg != ')') {
             PRINTF("#%s: ", name);
-            print_error(error=MISSING_PAREN_ERROR);
+            error = MISSING_PAREN_ERROR;
+            print_error(error);
             ptrdel(pbuf);
             return NULL;
         }
-        if (!*pbuf) {
+        if (*pbuf == NULL) {
             /* make space to add a final \n */
             *pbuf = ptrsetlen(*pbuf, 1);
             ptrzero(*pbuf);
@@ -1531,10 +1540,11 @@ char *redirect(char *arg, ptr **pbuf, char *kind, char *name, int also_num, long
             }
         }
         arg = ptrdata(*pbuf);
-        if (!*start && *end)
+        if (*start == 0 && *end != 0)
             *start = 1;
-    } else
+    } else {
         unescape(arg);
+    }
 
     *kind = k;
     return arg;
@@ -1542,16 +1552,13 @@ char *redirect(char *arg, ptr **pbuf, char *kind, char *name, int also_num, long
 
 void show_vars(void)
 {
-    varnode *v;
-    int i, type;
-    ptr *p = (ptr *)0;
+    ptr *p = NULL;
 
     PRINTF("#the following variables are defined:\n");
 
-    for (type = 0; !REAL_ERROR && type < 2; type++) {
+    for (int type = 0; !REAL_ERROR && type < 2; ++type) {
         reverse_sortedlist((sortednode **)&sortednamed_vars[type]);
-        v = sortednamed_vars[type];
-        while (v) {
+        for (varnode *v = sortednamed_vars[type]; v != NULL; v = v->snext) {
             if (type == 0) {
                 tty_message("#(@%s = %ld)\n", v->name, v->num);
             } else {
@@ -1561,20 +1568,19 @@ void show_vars(void)
                     break;
                 }
                 tty_message("#($%s = \"%s\")\n", v->name,
-                           p ? ptrdata(p) : "");
+                            p != NULL ? ptrdata(p) : "");
             }
-            v = v->snext;
         }
         reverse_sortedlist((sortednode **)&sortednamed_vars[type]);
     }
-    for (i = -NUMVAR; !REAL_ERROR && i < NUMPARAM; i++) {
-        if (*VAR[i].num)
+    for (int i = -NUMVAR; !REAL_ERROR && i < NUMPARAM; ++i) {
+        if (*VAR[i].num != 0)
             tty_message("#(@%d = %ld)\n", i, *VAR[i].num);
     }
-    for (i = -NUMVAR; !REAL_ERROR && i < NUMPARAM; i++) {
-        if (*VAR[i].str && ptrlen(*VAR[i].str)) {
+    for (int i = -NUMVAR; !REAL_ERROR && i < NUMPARAM; ++i) {
+        if (*VAR[i].str != NULL && ptrlen(*VAR[i].str) != 0) {
             p = ptrescape(p, *VAR[i].str, 0);
-            if (p && ptrlen(p))
+            if (p != NULL && ptrlen(p) != 0)
                 tty_message("#($%d = \"%s\")\n", i, ptrdata(p));
         }
     }
@@ -1583,66 +1589,58 @@ void show_vars(void)
 
 void show_delaynode(delaynode *p, int in_or_at)
 {
-    long d;
-    struct tm *s;
-    char buf[BUFSIZE];
-
     update_now();
-    d = diff_vtime(&p->when, &now);
-    s = localtime((time_t *)&p->when.tv_sec);
-    /* s now points to a calendar struct */
-    if (in_or_at) {
-
+    long d = diff_vtime(&p->when, &now);
+    struct tm *s = localtime(&p->when.tv_sec);
+    if (in_or_at != 0) {
         if (in_or_at == 2) {
-            /* write time in buf */
-            (void)strftime(buf, BUFSIZE - 1, "%H%M%S", s);
-            fmt_next_edit("#at %s (%s) %s",
-                          p->name, buf, p->command);
+            char buf[BUFSIZE];
+            strftime(buf, BUFSIZE - 1, "%H%M%S", s);
+            fmt_next_edit("#at %s (%s) %s", p->name, buf, p->command);
+        } else {
+            fmt_next_edit("#in %s (%ld) %s", p->name, d, p->command);
         }
-        else
-            fmt_next_edit("#in %s (%ld) %s",
-                          p->name, d, p->command);
     } else {
-        (void)strftime(buf, BUFSIZE - 1, "%H:%M:%S", s);
+        char buf[BUFSIZE];
+        strftime(buf, BUFSIZE - 1, "%H:%M:%S", s);
         PRINTF("#at (%s) #in (%ld) \"%s\" %s\n", buf, d, p->name, p->command);
     }
 }
 
 void show_delays(void)
 {
-    delaynode *p;
-    int n = (delays ? delays->next ? 2 : 1 : 0) +
-        (dead_delays ? dead_delays->next ? 2 : 1 : 0);
+    int n = ((delays == NULL ? 0 : delays->next == NULL ? 1 : 2)
+             + (dead_delays == NULL ? 0 : dead_delays->next == NULL ? 1 : 2));
 
-    PRINTF("#%s delay label%s defined%c\n", n ? "the following" : "no",
-               n == 1 ? " is" : "s are", n ? ':' : '.');
-    for (p = delays; p; p = p->next)
+    PRINTF("#%s delay label%s defined%c\n", n != 0 ? "the following" : "no",
+           n == 1 ? " is" : "s are", n != 0 ? ':' : '.');
+    for (delaynode *p = delays; p != NULL; p = p->next)
         show_delaynode(p, 0);
-    for (p = dead_delays; p; p = p->next)
+    for (delaynode *p = dead_delays; p != NULL; p = p->next)
         show_delaynode(p, 0);
 }
 
 void change_delaynode(delaynode **p, char *command, long millisec)
 {
-    delaynode *m=*p;
+    delaynode *m = *p;
 
     *p = m->next;
     m->when.tv_usec = (millisec % mSEC_PER_SEC) * uSEC_PER_mSEC;
-    m->when.tv_sec  =  millisec / mSEC_PER_SEC;
+    m->when.tv_sec = millisec / mSEC_PER_SEC;
     update_now();
     add_vtime(&m->when, &now);
-    if (*command) {
+    if (*command != '\0') {
         if (strlen(command) > strlen(m->command)) {
-            free((void*)m->command);
+            free(m->command);
             m->command = my_strdup(command);
-        }
-        else
+        } else {
             strcpy(m->command, command);
+        }
     }
     if (millisec < 0)
-        add_node((defnode*)m, (defnode**)&dead_delays, rev_time_sort);
+        add_node((defnode *)m, (defnode **)&dead_delays, rev_time_sort);
     else
-        add_node((defnode*)m, (defnode**)&delays, time_sort);
+        add_node((defnode *)m, (defnode **)&delays, time_sort);
     if (opt_info) {
         PRINTF("#changed ");
         show_delaynode(m, 0);
@@ -1651,15 +1649,14 @@ void change_delaynode(delaynode **p, char *command, long millisec)
 
 void new_delaynode(char *name, char *command, long millisec)
 {
-    vtime t;
-    delaynode *node;
-
-    t.tv_usec = (millisec % mSEC_PER_SEC) * uSEC_PER_mSEC;
-    t.tv_sec  =  millisec / mSEC_PER_SEC;
+    vtime t = {
+        .tv_sec = millisec / mSEC_PER_SEC,
+        .tv_usec = (millisec % mSEC_PER_SEC) * uSEC_PER_mSEC,
+    };
     update_now();
     add_vtime(&t, &now);
-    node = add_delaynode(name, command, &t, millisec < 0);
-    if (opt_info && node) {
+    delaynode *node = add_delaynode(name, command, &t, millisec < 0);
+    if (opt_info && node != NULL) {
         PRINTF("#new ");
         show_delaynode(node, 0);
     }
@@ -1667,35 +1664,35 @@ void new_delaynode(char *name, char *command, long millisec)
 
 void show_history(int count)
 {
-    int i = curline;
+    if (count == 0)
+        count = lines - 1;
+    if (count >= MAX_HIST)
+        count = MAX_HIST - 1;
+    int i = curline - count;
+    if (i < 0)
+        i += MAX_HIST;
 
-    if (!count) count = lines - 1;
-    if (count >= MAX_HIST) count = MAX_HIST - 1;
-    i -= count;
-    if (i < 0) i += MAX_HIST;
-
-    while (count) {
-        if (hist[i]) {
+    while (count != 0) {
+        if (hist[i] != NULL) {
             PRINTF("#%2d: %s\n", count, hist[i]);
         }
-        count--;
-        if (++i == MAX_HIST) i = 0;
+        --count;
+        ++i;
+        if (i == MAX_HIST)
+            i = 0;
     }
 }
 
 void exe_history(int count)
 {
-    int i = curline;
-    char buf[BUFSIZE];
-
     if (count >= MAX_HIST)
         count = MAX_HIST - 1;
-    i -= count;
+    int i = curline - count;
     if (i < 0)
         i += MAX_HIST;
-    if (hist[i]) {
+    if (hist[i] != NULL) {
+        char buf[BUFSIZE];
         strcpy(buf, hist[i]);
         parse_user_input(buf, false);
     }
 }
-
