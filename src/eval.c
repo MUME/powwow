@@ -37,10 +37,26 @@
 #include "eval.h"
 #include "charset.h"
 
+/*
+ * An operand that is a variable points to it with num_ref or txt_ref, which
+ * is safe because an expression may create variables but never delete one
+ * or run a command, and an evaluation returns values, not references to
+ * variables:
+ * - variables are deleted only by commands (#var @x=, #reset var), and the
+ *   frames of @0..@9 and $0..$9 change only around the commands run by
+ *   aliases, actions, #for and #while; so a pointer from one call of
+ *   eval_any() does not outlive the variable;
+ * - creating a variable does not move the others, as each varnode is its
+ *   own allocation;
+ * - txt_ref is the address of the field that holds the text, which stays
+ *   put when assigning reallocates the text.
+ */
 typedef struct {
-  int  type;
-  long num;      /* used for numeric types or as index for all variables */
-  ptr  *txt;      /* used for text types */
+    int type;
+    long num;                   /* the value of TYPE_NUM */
+    ptr *txt;                   /* the value of TYPE_TXT */
+    long *num_ref;              /* the variable of TYPE_NUM_VAR */
+    ptr **txt_ref;              /* the variable of TYPE_TXT_VAR */
 } object;
 
 #define LEFT  1
@@ -433,7 +449,10 @@ static int check_object(object *obj)
 	}
 	*end = c;
 	line = end;
-	obj->num = named_var->index;
+        if (kind == VAR_TEXT)
+            obj->txt_ref = &named_var->str;
+        else
+            obj->num_ref = &named_var->num;
 	i = 1;
     }
     else if (!strncmp(line, "timer", 5)) {
@@ -498,12 +517,12 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o2.type==TYPE_NUM_VAR) {
-            o2.num = *num_var(o2.num);
+            o2.num = *o2.num_ref;
 	    o2.type = TYPE_NUM;
 	}
 
 	if (o1.type==TYPE_NUM_VAR && o2.type==TYPE_NUM) {
-            *num_var(o1.num) = o2.num;
+            *o1.num_ref = o2.num;
 	    p=&o2;
 	    ret=1;
 	}
@@ -511,12 +530,12 @@ static int exe_op(operator *op)
 		 (o2.type==TYPE_TXT || o2.type==TYPE_TXT_VAR)) {
 
 	    if (o2.type==TYPE_TXT_VAR) {
-                o2.txt = ptrdup(*text_var(o2.num));
+                o2.txt = ptrdup(*o2.txt_ref);
 		if (REAL_ERROR) break;
 		o2.type=TYPE_TXT;
 	    }
 
-            *text_var(o1.num) = ptrcpy(*text_var(o1.num), o2.txt);
+            *o1.txt_ref = ptrcpy(*o1.txt_ref, o2.txt);
 	    if (REAL_ERROR) break;
 	    p=&o2;
 	    ret=1;
@@ -541,12 +560,12 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o2.type==TYPE_NUM_VAR) {
-            o2.num = *num_var(o2.num);
+            o2.num = *o2.num_ref;
 	    o2.type = TYPE_NUM;
 	}
 
 	if (o1.type==TYPE_NUM_VAR && o2.type==TYPE_NUM) {
-            l=num_var(o1.num);
+            l = o1.num_ref;
 
 	    switch (*op) {
 	      case op_or_or_eq:    if ( o2.num) *l = 1;   else *l = !!*l; break;
@@ -578,12 +597,12 @@ static int exe_op(operator *op)
 	    if (o2.type==TYPE_TXT)
 		src=o2.txt;
 	    else
-                src=*text_var(o2.num);
+                src = *o2.txt_ref;
 
-            *text_var(o1.num) = ptrcat(*text_var(o1.num), src);
+            *o1.txt_ref = ptrcat(*o1.txt_ref, src);
 	    check_delete(&o2);
 
-            dst = ptrdup(*text_var(o1.num));
+            dst = ptrdup(*o1.txt_ref);
 	    if (REAL_ERROR) break;
 
 	    o1.type=TYPE_TXT;
@@ -595,28 +614,28 @@ static int exe_op(operator *op)
 		 (o2.type==TYPE_NUM || o2.type==TYPE_NUM_VAR)) {
 
 	    if (o2.type==TYPE_NUM_VAR) {
-                o2.num = *num_var(o2.num);
+                o2.num = *o2.num_ref;
 		o2.type = TYPE_NUM;
 	    }
 
 	    if (o2.num < 0)
 		error = OUT_RANGE_ERROR;
 	    else if (o2.num == 0)
-                ptrzero(*text_var(o1.num));
+                ptrzero(*o1.txt_ref);
 	    else if (o2.num == 1)
 		;
-            else if (*text_var(o1.num) != NULL
-                     && (delta = ptrlen(*text_var(o1.num))) != 0) {
+            else if (*o1.txt_ref != NULL
+                     && (delta = ptrlen(*o1.txt_ref)) != 0) {
 		long n;
-                *text_var(o1.num) = ptrsetlen(*text_var(o1.num),
+                *o1.txt_ref = ptrsetlen(*o1.txt_ref,
                                               delta * o2.num);
-                tmp = ptrdata(*text_var(o1.num));
+                tmp = ptrdata(*o1.txt_ref);
 		for (n = 1; !error && n<o2.num; n++)
 		    memcpy(tmp+n*delta, tmp, delta);
 	    }
 
 	    check_delete(&o2);
-            dst = ptrdup(*text_var(o1.num));
+            dst = ptrdup(*o1.txt_ref);
 	    if (REAL_ERROR) break;
 
 	    o1.type=TYPE_TXT;
@@ -650,11 +669,11 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o1.type==TYPE_NUM_VAR) {
-            o1.num = *num_var(o1.num);
+            o1.num = *o1.num_ref;
 	    o1.type = TYPE_NUM;
 	}
 	if (o2.type==TYPE_NUM_VAR) {
-            o2.num = *num_var(o2.num);
+            o2.num = *o2.num_ref;
 	    o2.type = TYPE_NUM;
 	}
 
@@ -699,7 +718,7 @@ static int exe_op(operator *op)
 		 (o2.type==TYPE_TXT || o2.type==TYPE_TXT_VAR)) {
 
 	    if (o1.type==TYPE_TXT_VAR) {
-                o1.txt = ptrdup(*text_var(o1.num));
+                o1.txt = ptrdup(*o1.txt_ref);
         o1.type = TYPE_TXT; /* not a var anymore */
 		if (REAL_ERROR) break;
 	    }
@@ -707,7 +726,7 @@ static int exe_op(operator *op)
 	    if (o2.type==TYPE_TXT)
 		src=o2.txt;
 	    else
-                src=*text_var(o2.num);
+                src = *o2.txt_ref;
 
 	    if (*op == op_plus) {
 		dst = ptrcat(dst, src);
@@ -743,7 +762,7 @@ static int exe_op(operator *op)
 		 && o2.type==TYPE_NUM) {
 
 	    if (o2.num > 0 && o1.type==TYPE_TXT_VAR) {
-                o1.txt = ptrdup(*text_var(o1.num));
+                o1.txt = ptrdup(*o1.txt_ref);
 		if (REAL_ERROR) break;
 	    }
 	    dst = o1.txt;
@@ -786,7 +805,7 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o2.type==TYPE_NUM_VAR) {
-            o2.num = *num_var(o2.num);
+            o2.num = *o2.num_ref;
 	    o2.type = TYPE_NUM;
 	}
 
@@ -802,8 +821,10 @@ static int exe_op(operator *op)
 
 	if (o1.type==TYPE_TXT_VAR) {
 	    o1.type=TYPE_TXT;
-	    o1.txt=dst=NULL;
-            src=start=*text_var(o1.num);
+            o1.txt = NULL;
+            dst = NULL;
+            start = *o1.txt_ref;
+            src = start;
 	}
 	else {
 	    /* Potentially dangerous: src and dst are overlapping */
@@ -958,7 +979,7 @@ static int exe_op(operator *op)
 	if (o1.type==TYPE_TXT)
 	    src=o1.txt;
 	else if (o1.type==TYPE_TXT_VAR)
-            src=*text_var(o1.num);
+            src = *o1.txt_ref;
 	else {
 	    error=SYNTAX_ERROR;
 	    break;
@@ -1009,14 +1030,14 @@ static int exe_op(operator *op)
 	if (o1.type==TYPE_TXT)
 	    src = o1.txt;
 	else if (o1.type==TYPE_TXT_VAR)
-            src = *text_var(o1.num);
+            src = *o1.txt_ref;
 	else
 	    error = SYNTAX_ERROR;
 
 	if (o2.type==TYPE_TXT)
 	    dst = o2.txt;
 	else if (o2.type==TYPE_TXT_VAR)
-            dst = *text_var(o2.num);
+            dst = *o2.txt_ref;
 	else
 	    error = SYNTAX_ERROR;
 
@@ -1068,7 +1089,7 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o1.type==TYPE_NUM_VAR) {
-            o1.num = *num_var(o1.num);
+            o1.num = *o1.num_ref;
 	    o1.type = TYPE_NUM;
 	}
 	if (o1.type==TYPE_NUM) {
@@ -1096,7 +1117,7 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o1.type==TYPE_TXT_VAR) {
-            o1.txt = ptrdup(*text_var(o1.num));
+            o1.txt = ptrdup(*o1.txt_ref);
 	    if (REAL_ERROR) break;
 	    o1.type = TYPE_TXT;
 	}
@@ -1125,9 +1146,9 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o1.type==TYPE_NUM_VAR)
-            o1.num = *num_var(o1.num);
+            o1.num = *o1.num_ref;
 	else if (o1.type==TYPE_TXT_VAR)
-            o1.txt = *text_var(o1.num);
+            o1.txt = *o1.txt_ref;
 
 	if (o1.type==TYPE_NUM || o1.type==TYPE_NUM_VAR) {
 	    o1.txt = NULL;
@@ -1176,7 +1197,7 @@ static int exe_op(operator *op)
 	else if (REAL_ERROR) break;
 
 	if (o1.type==TYPE_NUM_VAR) {
-            l=num_var(o1.num);
+            l = o1.num_ref;
 	    o1.type=TYPE_NUM;
 
 	    if (*op==op_pre_plus_plus)
@@ -1203,7 +1224,7 @@ static int exe_op(operator *op)
 
 	if (o1.type==TYPE_NUM_VAR) {
 	    o1.type=TYPE_NUM;
-            o1.num=*num_var(o1.num);
+            o1.num = *o1.num_ref;
 	}
 
 	if (o1.type==TYPE_NUM) {
@@ -1211,7 +1232,13 @@ static int exe_op(operator *op)
 		error=OUT_RANGE_ERROR;
 		break;
 	    }
-            o1.type = kind == VAR_TEXT ? TYPE_TXT_VAR : TYPE_NUM_VAR;
+            if (kind == VAR_TEXT) {
+                o1.type = TYPE_TXT_VAR;
+                o1.txt_ref = text_var(o1.num);
+            } else {
+                o1.type = TYPE_NUM_VAR;
+                o1.num_ref = num_var(o1.num);
+            }
 	    p=&o1;
 	    ret=1;
 	} else {
@@ -1219,7 +1246,7 @@ static int exe_op(operator *op)
 	    char c;
 
 	    if (o1.type==TYPE_TXT_VAR)
-                o1.txt = *text_var(o1.num);
+                o1.txt = *o1.txt_ref;
 	    else if (o1.type!=TYPE_TXT) {
 		error=SYNTAX_ERROR;
 		break;
@@ -1247,8 +1274,13 @@ static int exe_op(operator *op)
 		}
 	    }
             check_delete(&o1);
-            o1.num = named_var->index;
-            o1.type = kind == VAR_TEXT ? TYPE_TXT_VAR : TYPE_NUM_VAR;
+            if (kind == VAR_TEXT) {
+                o1.type = TYPE_TXT_VAR;
+                o1.txt_ref = &named_var->str;
+            } else {
+                o1.type = TYPE_NUM_VAR;
+                o1.num_ref = &named_var->num;
+            }
 	    p=&o1;
 	    ret=1;
 	}
@@ -1400,7 +1432,7 @@ int eval_any(long *lres, ptr **pres, char **what)
     } else if (printmode!=PRINT_NOTHING || opt_debug) {
 	if (res.type==TYPE_NUM || res.type==TYPE_NUM_VAR) {
 
-            val = res.type==TYPE_NUM ? res.num : *num_var(res.num);
+            val = res.type==TYPE_NUM ? res.num : *res.num_ref;
 
 	    if (printmode==PRINT_AS_PTR) {
 		*pres = ptrsetlen(*pres, LONGLEN);
@@ -1419,7 +1451,7 @@ int eval_any(long *lres, ptr **pres, char **what)
 		}
 	    }
 	} else {
-            txt = res.type==TYPE_TXT ? res.txt : *text_var(res.num);
+            txt = res.type==TYPE_TXT ? res.txt : *res.txt_ref;
 	    if (printmode==PRINT_AS_PTR) {
 		if (txt && *ptrdata(txt)) {
 		    if (res.type == TYPE_TXT)
