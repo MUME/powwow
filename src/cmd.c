@@ -248,7 +248,7 @@ static cmdstruct default_commands[] =
     { 0 }
 };
 
-static char *cmd_sort_name(cmdstruct *cmd)
+static const char *cmd_sort_name(cmdstruct *cmd)
 {
     return cmd->sortname == NULL ? cmd->name : cmd->sortname;
 }
@@ -962,7 +962,8 @@ static void cmd_identify(char *arg)
         }
         my_strncpy(edit_start, arg, BUFSIZE - 1);
     }
-    cmd_request("editor");
+    char request[] = "editor";
+    cmd_request(request);
 }
 
 static void cmd_in(char *arg)
@@ -2861,7 +2862,7 @@ static void cmd_load(char *arg)
     }
 }
 
-static char *trivial_eval(ptr **pbuf, char *arg, char *name)
+static char *trivial_eval(ptr **pbuf, char *arg, const char *name)
 {
     if (pbuf == NULL)
         return NULL;
@@ -2880,7 +2881,7 @@ static char *trivial_eval(ptr **pbuf, char *arg, char *name)
         if (*pbuf != NULL)
             arg = ptrdata(*pbuf);
         else
-            arg = "";
+            arg += strlen(arg); /* the empty string at its end */
     } else
         unescape(arg);
 

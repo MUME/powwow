@@ -1141,7 +1141,7 @@ static char *read_seq(char *name, int *len)
  * show full definition of one binding,
  * with custom message
  */
-static void show_single_bind(char *msg, keynode *p)
+static void show_single_bind(const char *msg, keynode *p)
 {
     if (p->funct == key_run_command) {
         PRINTF("#%s %s %s=%s\n", msg, p->name,
@@ -1462,8 +1462,8 @@ void parse_rebind(char *arg)
  * if needed, use/malloc "pbuf" as buffer (on error, also free pbuf)
  * return resulting char *
  */
-char *redirect(char *arg, ptr **pbuf, char *kind, char *name, bool also_num,
-               long *start, long *end)
+char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
+               bool also_num, long *start, long *end)
 {
     if (pbuf == NULL) {
         error = INTERNAL_ERROR;

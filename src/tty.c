@@ -529,7 +529,7 @@ void tty_add_initial_binds(void)
  * rename the key 'old' to 'new', if it has the sequence 'seq' and there
  * is no key 'new' yet, and add it to the list 'renamed', of 'size'
  */
-static void rename_key(char *old, const char *seq, char *new,
+static void rename_key(const char *old, const char *seq, const char *new,
                        char *renamed, size_t size)
 {
     keynode *k = *lookup_key(old);
