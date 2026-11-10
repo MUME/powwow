@@ -1026,10 +1026,10 @@ void sgr_prompt_draw(void)
 }
 
 /* the prompt stays on screen: the text from the MUD continues after it */
-void sgr_prompt_commit(const char *prompt, size_t len)
+void sgr_prompt_commit(const char *text, size_t len)
 {
     sgr_stream = sgr_prompt;
-    sgr_apply(&sgr_stream, prompt, len);
+    sgr_apply(&sgr_stream, text, len);
     sgr_dirty = true;
 }
 
@@ -1115,7 +1115,7 @@ static void sig_chld_handler(int signum)
     sig_pending = sig_chld_got = 1;
 }
 
-static void sig_term_handler(int signum)
+static noreturn void sig_term_handler(int signum)
 {
     tty_printf("%s\n#termination signal.\n", edattrend);
     exit_powwow();

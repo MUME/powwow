@@ -14,6 +14,9 @@ typedef struct cmdstruct {
 
 extern cmdstruct *commands;
 
+/* defined by a plugin and called when #module loads it */
+void powwow_init(void);
+
 void cmd_add_command( cmdstruct *cmd );
 
 void initialize_cmd(void);

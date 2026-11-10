@@ -27,7 +27,7 @@ static struct termios ttybsave;
  * Set the terminal to character-at-a-time-without-echo mode, and save the
  * original state in ttybsave
  */
-static void set_terminal()
+static void set_terminal(void)
 {
     tcgetattr(0, &ttybsave);
     struct termios ttyb = ttybsave;
@@ -42,7 +42,7 @@ static void set_terminal()
 /*
  * Reset the terminal to its original state
  */
-static void reset_terminal()
+static void reset_terminal(void)
 {
     tcsetattr(0, TCSANOW, &ttybsave);
 }
