@@ -1305,6 +1305,18 @@ void syserr(const char *msg)
     exit(1);
 }
 
+/*
+ * in a child process, report that exec could not run 'what', and end the
+ * child with the status that shells use for a command they cannot run,
+ * without what exit() and syserr() do for powwow itself, such as
+ * resetting the terminal
+ */
+void exec_failed(const char *what)
+{
+    fprintf(stderr, "#cannot run %s: %s\n", what, strerror(errno));
+    _exit(127);
+}
+
 static void load_missing_stuff(int n)
 {
     char buf[BUFSIZE];
