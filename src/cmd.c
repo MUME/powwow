@@ -1844,7 +1844,7 @@ static void cmd_var(char *arg)
 
     varnode **p_named_var = NULL, *named_var = NULL;
     ptr *pbuf = NULL;
-    int idx;
+    int idx = 0;
     ++arg;
     if (isalpha(*arg) || *arg == '_') {
         /* found a named variable */
@@ -1873,8 +1873,6 @@ static void cmd_var(char *arg)
             }
         } else
             named_var = *p_named_var;
-
-        idx = named_var->index;
     } else {
         /* not a named variable, may be
          * an unnamed variable or an expression */
@@ -1948,7 +1946,6 @@ static void cmd_var(char *arg)
                         return;
                     }
                 }
-                idx = named_var->index;
             }
         } else {
             /* an unnamed var */
@@ -1972,9 +1969,11 @@ static void cmd_var(char *arg)
         }
     }
 
+    long *var_num = named_var != NULL ? &named_var->num : num_var(idx);
+    ptr **var_text = named_var != NULL ? &named_var->str : text_var(idx);
 
-    if (kind == VAR_TEXT && right && *text_var(idx) == NULL) {
-        *text_var(idx) = ptrnew(PARAMLEN);
+    if (kind == VAR_TEXT && right && *var_text == NULL) {
+        *var_text = ptrnew(PARAMLEN);
         if (MEM_ERROR) {
             print_error(error);
             ptrdel(&pbuf);
@@ -1995,22 +1994,22 @@ static void cmd_var(char *arg)
             }
         } else if (kind == VAR_TEXT) {
         /* R.I.P. unnamed variables */
-            if (*text_var(idx) != NULL) {
+            if (*var_text != NULL) {
                 if (idx < 0) {
-                    ptrdel(text_var(idx));
-                    *text_var(idx) = NULL;
+                    ptrdel(var_text);
+                    *var_text = NULL;
                 } else
-                    ptrzero(*text_var(idx));
+                    ptrzero(*var_text);
             }
         } else
-            *num_var(idx) = 0;
+            *var_num = 0;
         ptrdel(&pbuf);
         return;
     } else if (!right) {
         /* no right-hand expression, just show */
         if (named_var != NULL) {
             if (kind == VAR_TEXT) {
-                pbuf = ptrescape(pbuf, *text_var(idx), 0);
+                pbuf = ptrescape(pbuf, *var_text, 0);
                 if (REAL_ERROR) {
                     print_error(error);
                     ptrdel(&pbuf);
@@ -2022,16 +2021,16 @@ static void cmd_var(char *arg)
             } else {
                 fmt_next_edit("#(@%s = %ld)",
                               named_var->name,
-                              *num_var(idx));
+                              *var_num);
             }
         } else {
             if (kind == VAR_TEXT) {
-                pbuf = ptrescape(pbuf, *text_var(idx), 0);
+                pbuf = ptrescape(pbuf, *var_text, 0);
                 fmt_next_edit("#($%d = \"%s\")", idx,
                               pbuf != NULL ? ptrdata(pbuf) : "");
             } else {
                 fmt_next_edit("#(@%d = %ld)", idx,
-                              *num_var(idx));
+                              *var_num);
             }
         }
         ptrdel(&pbuf);
@@ -2085,10 +2084,10 @@ static void cmd_var(char *arg)
                 error = NO_NUM_VALUE_ERROR;
                 print_error(error);
             }
-            *num_var(idx) = num;
+            *var_num = num;
         }
     } else {
-        *text_var(idx) = ptrmcpy(*text_var(idx), arg, strlen(arg));
+        *var_text = ptrmcpy(*var_text, arg, strlen(arg));
         if (MEM_ERROR)
             print_error(error);
     }
