@@ -52,14 +52,14 @@ int message_wrap(const char *cont, const char *format, ...)
 int wrap_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);
 
 ptr  *ptrescape(ptr *dst, ptr *src, int append);
-ptr  *ptrmescape(ptr *dst, char *src, int srclen, int append);
+ptr  *ptrmescape(ptr *dst, const char *src, int srclen, int append);
 
 ptr  *ptraddsubst_and_marks(ptr *dst, ptr *line);
-ptr  *ptrmaddsubst_and_marks(ptr *dst, char *line, int len);
+ptr  *ptrmaddsubst_and_marks(ptr *dst, const char *line, int len);
 ptr  *ptrsubstdef(ptr *dst, bool mbeg, char *pattern, char *replacement);
 
 void put_marks(char *dst, char *line);
-void smart_print(char *line, char newline);
+void smart_print(const char *line, char newline);
 char *split_first_word(char *dst, int dstlen, char *src);
 char *first_valid(const char *p, char ch);
 char *first_regular(const char *p, char c);

@@ -24,8 +24,8 @@ void show_binds_starting(const char *prefix, int len, const char *names);
 void parse_bind(char *arg);
 void parse_rebind(char *arg);
 
-char *redirect(char *arg, ptr **pbuf, char *kind, char *name, bool also_num,
-               long *start, long *end);
+char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
+               bool also_num, long *start, long *end);
 
 void show_vars(void);
 void show_delaynode(delaynode *p, int in_or_at);

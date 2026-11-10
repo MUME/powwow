@@ -337,7 +337,7 @@ delaynode *add_delaynode(char *name, char *command, vtime *when, int is_dead)
  *
  * do NOT allocate a ptr!
  */
-varnode *add_varnode(char *name, int type)
+varnode *add_varnode(const char *name, int type)
 {
     varnode *new;
     int m, n;
@@ -481,7 +481,7 @@ substnode **lookup_subst(char *pattern, bool mbeg)
  * look up a key node by name:
  * return pointer to pointer to node or a pointer to NULL if nothing found
  */
-keynode **lookup_key(char *name)
+keynode **lookup_key(const char *name)
 {
     keynode **p = &keydefs;
     while (*p && strcmp(name, (*p)->name))

@@ -40,7 +40,7 @@ editsess *edit_sess;	/* head of session list */
 char edit_start[BUFSIZE]; /* messages to send to host when starting */
 char edit_end[BUFSIZE];   /* or leaving editing sessions */
 
-static void write_message(char *s)
+static void write_message(const char *s)
 {
     clear_input_line(opt_compact);
     if (!opt_compact) {
@@ -315,18 +315,15 @@ cleanup_file: if (unlink(sp->file) < 0)
 void message_edit(char *text, int msglen, char view, char builtin)
 {
     char tmpname[BUFSIZE], command_str[BUFSIZE];
-    char *errdesc = "#warning: protocol error (message_edit, no %s)\n";
+    const char *errdesc = "#warning: protocol error (message_edit, no %s)\n";
     int tmpfd, i, childpid;
     unsigned int key;
     editsess *s;
-    char *editor, *descr, *title;
-    char *args[4];
+    const char *editor;
+    char *descr, *title;
     int waitforeditor;
 
     status(1);
-
-    args[0] = "/bin/sh"; args[1] = "-c";
-    args[2] = command_str; args[3] = 0;
 
     if (view) {
 	key = ~0U;
@@ -451,7 +448,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	}
 	sprintf(command_str, "%s %s", editor, s->file);
         setenv("TITLE", title, 1);
-	execvp(args[0], args);
+        execl("/bin/sh", "/bin/sh", "-c", command_str, (char *)NULL);
 	syserr("cannot run the editor");
 	break;
       case -1:

@@ -19,7 +19,7 @@ void add_keynode(const char *name, const char *sequence, int seqlen,
                  function_str funct, const char *call_data);
 void add_substnode(char *pattern, char *replacement, bool mbeg, bool wild);
 delaynode *add_delaynode(char *name, char *command, vtime *when, int is_dead);
-varnode *add_varnode(char *name, int type);
+varnode *add_varnode(const char *name, int type);
 
 aliasnode  **lookup_alias(char *name);
 actionnode **lookup_action(char *label);
@@ -27,7 +27,7 @@ actionnode **lookup_prompt(char *label);
 actionnode **lookup_action_pattern(char *pattern);
 marknode   **lookup_marker(char *pattern, bool mbeg);
 substnode  **lookup_subst(char *pattern, bool mbeg);
-keynode    **lookup_key(char *name);
+keynode    **lookup_key(const char *name);
 delaynode  **lookup_delay(char *name, int is_dead);
 varnode    **lookup_varnode(char *name, int type);
 

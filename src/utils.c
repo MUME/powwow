@@ -495,7 +495,7 @@ int wrap_printf(const char *format, ...)
 /*
  * add escapes (backslashes) to src
  */
-ptr *ptrmescape(ptr *dst, char *src, int srclen, int append)
+ptr *ptrmescape(ptr *dst, const char *src, int srclen, int append)
 {
     int len;
     char *p;
@@ -595,10 +595,11 @@ void escape_specials(char *dst, const char *src)
  * if 1, start and end contain the match bounds
  * if 0, start and end are undefined on return
  */
-static int match_mark_or_subst(basenode *bp, char *src)
+static int match_mark_or_subst(basenode *bp, const char *src)
 {
     char *pat = bp->pattern;
-    char *npat=0, *npat2=0, *nsrc=0, *prm=0, *endprm=0, *tmp, c;
+    char *npat = NULL, *npat2 = NULL, c;
+    const char *nsrc = NULL, *prm = NULL, *endprm = NULL, *tmp;
     static char mpat[BUFSIZE];
     int mbeg = bp->mbeg, mword = 0, p;
 
@@ -707,10 +708,11 @@ static int match_mark_or_subst(basenode *bp, char *src)
 /*
  * add marks to line. write in dst.
  */
-static ptr *ptrmaddmarks(ptr *dst, char *line, int len)
+static ptr *ptrmaddmarks(ptr *dst, const char *line, int len)
 {
     marknode *mp, *mfirst;
-    char begin[ATTR_SGR_MAX], end[ATTR_SGR_MAX], *lineend = line + len;
+    char begin[ATTR_SGR_MAX], end[ATTR_SGR_MAX];
+    const char *lineend = line + len;
     int start = 1, matchlen, matched = 0;
 
     ptrzero(dst);
@@ -769,7 +771,7 @@ static ptr *ptrmaddmarks(ptr *dst, char *line, int len)
 /*
  * add substitutions to line. write in dst.
  */
-static ptr *ptrmaddsubst(ptr *dst, char *line, int len)
+static ptr *ptrmaddsubst(ptr *dst, const char *line, int len)
 {
     ptrzero(dst);
 
@@ -779,7 +781,7 @@ static ptr *ptrmaddsubst(ptr *dst, char *line, int len)
     for (substnode *sp = substitutions; sp != NULL; sp = sp->next)
       sp->b.start = NULL;
 
-    char *lineend = line + len;
+    const char *lineend = line + len;
     bool start = true;
 
     for (;;) {
@@ -827,7 +829,7 @@ static ptr *ptrmaddsubst(ptr *dst, char *line, int len)
 /*
  * add substitutions and markers to line. write in dst.
  */
-ptr *ptrmaddsubst_and_marks(ptr *dst, char *line, int len)
+ptr *ptrmaddsubst_and_marks(ptr *dst, const char *line, int len)
 {
     if (substitutions == NULL)
       return ptrmaddmarks(dst, line, len);
@@ -1035,7 +1037,7 @@ void sgr_prompt_commit(const char *prompt, size_t len)
  * add substitutions and marks to line and print.
  * if newline, also print a final \n
  */
-void smart_print(char *line, char newline)
+void smart_print(const char *line, char newline)
 {
     static ptr *ptrbuf = NULL;
     static char *buf;
