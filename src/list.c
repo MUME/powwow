@@ -584,6 +584,7 @@ void delete_aliasnode(aliasnode **base)
 	return;
     if (p->name) free(p->name);
     if (p->subst) free(p->subst);
+    free(p->group);
     free((void*)p);
 }
 
@@ -596,6 +597,7 @@ void delete_actionnode(actionnode **base)
     if (p->pattern) free(p->pattern);
     if (p->command) free(p->command);
     if (p->label) free(p->label);
+    free(p->group);
 #ifdef USE_REGEXP
     if (p->type == ACTION_REGEXP && p->regexp) {
 	regfree((regex_t *)p->regexp);
@@ -615,6 +617,7 @@ void delete_promptnode(promptnode **base)
     if (p->pattern) free(p->pattern);
     if (p->command) free(p->command);
     if (p->label) free(p->label);
+    free(p->group);
 #ifdef USE_REGEXP
     if (p->type == ACTION_REGEXP && p->regexp) {
 	regfree((regex_t *)p->regexp);
