@@ -344,8 +344,9 @@ void add_keynode(const char *name, const char *sequence, int seqlen,
     }
     new->name = my_strdup(name);
     if (!seqlen) seqlen = strlen(sequence);
-    new->sequence = (char *)malloc(seqlen + 1);
-    memmove(new->sequence, sequence, seqlen);
+    new->sequence = malloc(seqlen + 1);
+    if (new->sequence != NULL)
+        memmove(new->sequence, sequence, seqlen);
     new->seqlen = seqlen;
     new->funct = funct;
     new->call_data = my_strdup(call_data);
