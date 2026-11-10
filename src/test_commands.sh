@@ -641,6 +641,66 @@ if [ "$(getconf LONG_BIT)" -ge 64 ]; then
     has '-3000000000'
 fi
 
+run 'numbered variables from -50 to 9' \
+    '#(@-50 = 7, @9 = 9, $-50 = "a50", $9 = "n9")
+#var @9=-3
+#var $-50=b50
+#print (%(@-50) + " " + %(@9) + " " + $-50 + " " + $9)
+#var
+#(@-51 = 1)
+#(@10 = 1)
+#print ($-51)
+#var @-51=3
+#var $10=x'
+has '7 -3 b50 n9'
+has '#(@-50 = 7)'
+has '#(@9 = -3)'
+has '#($-50 = "b50")'
+has '#($9 = "n9")'
+has '#print: #error: operand or index out of range.'
+[ "$(grep -c '^#error: operand or index out of range\.$' "$tmp/out")" = 4 ] \
+    || fail 'expected 4 errors for @-51, @10, @-51 and $10'
+
+run 'nested aliases and actions have their own parameters' \
+    '#alias in={#(@(1) = 7);#print ("in "+$(0)+"|"+$(1)+"|"+$(2)+"|"+%(@(1)))}
+#alias out={#(@(1)=3);in x;#print ("o "+$(0)+"|"+$(1)+"|"+$(2)+"|"+%(@(1)))}
+#action >+hit ^hit &1={#(@(1) = 4);out a b;#print ("hit "+$(0)+"|"+%(@(1)))}
+#emulate hit foo'
+has 'in x|x||7'
+has 'o a b|a|b|3'
+has 'hit hit foo|4'
+
+run 'deleting a named variable keeps the others' \
+    '#(@a = 1, @b = 2, @c = 3, $x = "x", $y = "y", $z = "z")
+#var @a=
+#var $x=
+#print (%(@b) + %(@c) + $y + $z)
+#(@b += 10, @c += 20, $y += "Y", $z += "Z", @d = 4, $w = "w")
+#print (%(@b) + " " + %(@c) + " " + %(@d) + " " + $w + $y + $z)
+#var'
+has '23yz'
+has '12 23 4 wyYzZ'
+has '#(@b = 12)'
+has '#(@d = 4)'
+has '#($y = "yY")'
+has '#($w = "w")'
+lacks '#(@a = 1)'
+lacks '#($x = "x")'
+
+run 'an expression assigns to a variable that it reads' \
+    '#(@foo = 5)
+#(@foo = @foo + 1)
+#(@foo += @foo)
+#print (@foo)
+#($foo = "ab")
+#($foo += $foo)
+#print ($foo)
+#($foo = $foo + "c" + $foo)
+#print ($foo)'
+has '12'
+has 'abab'
+has 'ababcabab'
+
 run 'help prefers an exact match' '#help in' ''
 has '#in [<label> [(<delay>) [<command>]]]'
 lacks 'Normally, powwow prints on screen some messages each time you'
