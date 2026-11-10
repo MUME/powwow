@@ -2,7 +2,7 @@ SUBDIRS=src doc man
 
 pkgdata_DATA = COPYING
 
-EXTRA_DIST = .clang-tidy
+EXTRA_DIST = .clang-tidy AGENTS.md
 
 # check the markup of the man page (needs mandoc)
 lint:

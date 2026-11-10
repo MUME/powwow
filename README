@@ -19,6 +19,8 @@ Files you should have received:
 	src/*.[ch]	    Sources.
 	doc/Hacking	    Read this if you want to improve powwow
 			    yourself.
+	AGENTS.md	    The coding conventions, and how to test,
+			    document and commit a change.
 
 COMPILING
 

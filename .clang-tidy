@@ -15,7 +15,6 @@ Checks: >-
   -clang-analyzer-security.MmapWriteExec,
   -clang-analyzer-unix.Errno,
   -clang-analyzer-unix.Stream,
-  -clang-diagnostic-invalid-source-encoding,
   bugprone-implicit-widening-of-multiplication-result,
   bugprone-macro-parentheses,
   bugprone-suspicious-realloc-usage,
