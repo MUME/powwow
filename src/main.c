@@ -97,8 +97,8 @@ static int  jit_subst_vars(ptr **buf, char *src);
 
 
 /*        GLOBALS                */
-static char *helpname = HELPNAME;
-static char *copyname = COPYNAME;
+static const char *helpname = HELPNAME;
+static const char *copyname = COPYNAME;
 
 long received = 0;	/* amount of data received from remote host */
 long sent = 0;		/* amount of data sent to remote host */
@@ -223,7 +223,7 @@ const char action_chars[ACTION_TYPES] = { '>', '%' };
 #define DELIMSET_NORMAL   " ;"
 #define DELIMSET_PROGRAM  " <>!=(),;\"'{}[]+-/*%"
 
-char *delim_list[] = { DELIMSET_NORMAL, DELIMSET_PROGRAM, NULL };
+const char *delim_list[] = { DELIMSET_NORMAL, DELIMSET_PROGRAM, NULL };
 int   delim_len [] = {
     sizeof DELIMSET_NORMAL - 1, sizeof DELIMSET_PROGRAM - 1, 0
 };
@@ -2227,19 +2227,20 @@ char *parse_instruction(char *line, bool silent, bool subs,
      *
      * So care is required to avoid clashes.
      */
+    char empty[] = "";
     if (subs && subst_param(&pbuf, line)) {
-	line = pbuf != NULL ? ptrdata(pbuf) : "";
+        line = pbuf != NULL ? ptrdata(pbuf) : empty;
 	swap_ptrs(&pbusy, &pbuf);
 	copied = 1;
     }
     if (jit_subs && jit_subst_vars(&pbuf, line)) {
-	line = pbuf != NULL ? ptrdata(pbuf) : "";
+        line = pbuf != NULL ? ptrdata(pbuf) : empty;
 	swap_ptrs(&pbusy, &pbuf);
 	copied = 1;
     }
     if (!copied) {
 	pbuf = ptrmcpy(pbuf, line, strlen(line));
-	line = pbuf != NULL ? ptrdata(pbuf) : "";
+        line = pbuf != NULL ? ptrdata(pbuf) : empty;
 	swap_ptrs(&pbusy, &pbuf);
     }
     if (subs || jit_subs)

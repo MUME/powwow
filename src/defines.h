@@ -164,7 +164,7 @@ typedef struct aliasnode {
 typedef struct basenode
 {
     char *pattern;
-    char *start, *end; /* temporary data: start/end of current line match */
+    const char *start, *end; /* temporary data: start/end of current match */
     bool mbeg;
     bool wild;
 } basenode;

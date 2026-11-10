@@ -130,7 +130,7 @@ extern bool opt_autoclear;
 
 extern function_str last_edit_cmd;
 
-extern char *delim_list[];
+extern const char *delim_list[];
 extern int   delim_len[];
 extern const char *const delim_name[];
 extern int   delim_mode;

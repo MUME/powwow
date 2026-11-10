@@ -1421,15 +1421,17 @@ void put_word(char *s)
  */
 void set_custom_delimeters(char *s)
 {
-    char *old = delim_list[DELIM_CUSTOM];
-    if (!(delim_list[DELIM_CUSTOM] = my_strdup(s)))
-	out_of_memory();
-    else {
-	if (old)
-	    free(old);
-	delim_len[DELIM_CUSTOM] = strlen(s);
-	delim_mode = DELIM_CUSTOM;
+    static char *custom;
+    char *new = my_strdup(s);
+    if (new == NULL) {
+        out_of_memory();
+        return;
     }
+    free(custom);
+    custom = new;
+    delim_list[DELIM_CUSTOM] = custom;
+    delim_len[DELIM_CUSTOM] = strlen(s);
+    delim_mode = DELIM_CUSTOM;
 }
 
 void fmt_next_edit(const char *fmt, ...)
