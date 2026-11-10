@@ -74,13 +74,15 @@ static void F(help), F(shell), F(action), F(add),
 /* This must be init'd now at runtime */
 cmdstruct *commands = NULL;
 
-#define C(name, func, help) { NULL, name, help, func, NULL }
+#define C(cname, cfunct, chelp) \
+    { .name = (cname), .help = (chelp), .funct = (cfunct) }
 
 /* The builtin commands */
 static cmdstruct default_commands[] =
 {
     C("help",       cmd_help,
-      "[-P|--no-pager] [keys|math|<command>]\tthis text, or help on specified topic"),
+      "[-P|--no-pager] [keys|math|<command>]\tthis text, or help on"
+      " specified topic"),
     C("17", (function_str)0,
       "<command>\trepeat <command> 17 times"),
 #ifdef USE_SHELL
@@ -101,7 +103,8 @@ static cmdstruct default_commands[] =
     C("beep",       cmd_beep,
       "\tmake your terminal beep (like #print (*7))"),
     C("bind",       cmd_bind,
-      "[edit|functions|<key> [<sequence>][=[<command>]]]\tdelete/list/define key bindings"),
+      "[edit|functions|<key> [<sequence>][=[<command>]]]\tdelete/list/define"
+      " key bindings"),
     C("cancel",     cmd_cancel,
       "[<number>]\tcancel editing session"),
     C("capture",    cmd_capture,
@@ -170,7 +173,8 @@ static cmdstruct default_commands[] =
     C("net",        cmd_net,
       "\tprint amount of data received from/sent to host"),
     C("nice",       cmd_nice,
-      "[{<number>|(<expr>)} [<command>]]\tset/show priority of new actions/marks"),
+      "[{<number>|(<expr>)} [<command>]]\tset/show priority of new"
+      " actions/marks"),
     C("option",     cmd_option,
       "[[+|-|=]<option>|list]...\tlist or view various options"),
     C("prefix",     cmd_prefix,
@@ -208,7 +212,8 @@ static cmdstruct default_commands[] =
     C("request",    cmd_request,
       "[editor][prompt][all]\tsend various identification strings"),
     C("reset",      cmd_reset,
-      "{all|<list-name>|bind [<key>]}\tclear the whole defined list and reload\n"
+      "{all|<list-name>|bind [<key>]}\tclear the whole defined list"
+      " and reload\n"
       "default, or reset one key"),
     C("retrace",    cmd_retrace,
       "[<number>]\tretrace the last number steps"),
@@ -240,186 +245,165 @@ static cmdstruct default_commands[] =
       "[>|!](<expr>;<filename>)\twrite the result of <expr> to <filename>"),
     C("zap",        cmd_zap,
       "<session-id>\tclose a connection"),
-    { NULL }
+    { 0 }
 };
 
-static char *_cmd_sort_name( cmdstruct *cmd ) {
-        if( cmd -> sortname == NULL )
-                return( cmd -> name );
-        else
-                return( cmd -> sortname );
+static char *cmd_sort_name(cmdstruct *cmd)
+{
+    return cmd->sortname == NULL ? cmd->name : cmd->sortname;
 }
 
 /* Adds a cmd to commands (inserts the ptr in the list, DO NOT FREE IT) */
-void cmd_add_command( cmdstruct *cmd ) {
-        /* do insert/sort */
-        cmdstruct *c = commands;
-
-        /*
-         * make sure it doesn't override another commmand
-         * this is important not just because it'd be irritating,
-         * but if a module defined the command in the global static
-         * space, it would create an infinite loop because the -> next
-         * ptr would point at itself
-         *
-         * doing it up front because based on the sortname, we may never see
-         * the dup item if we do it at sort time
-         */
-        for( c = commands; c != NULL; c = c -> next ) {
-                if( strcmp( cmd -> name, c -> name ) == 0 ) {
-                        PRINTF( "#error %s is already defined\n", c -> name );
-                        return;
-                }
+void cmd_add_command(cmdstruct *cmd)
+{
+    /*
+     * make sure it doesn't override another commmand
+     * this is important not just because it'd be irritating,
+     * but if a module defined the command in the global static
+     * space, it would create an infinite loop because the -> next
+     * ptr would point at itself
+     *
+     * doing it up front because based on the sortname, we may never see
+     * the dup item if we do it at sort time
+     */
+    for (cmdstruct *c = commands; c != NULL; c = c->next) {
+        if (strcmp(cmd->name, c->name) == 0) {
+            PRINTF("#error %s is already defined\n", c->name);
+            return;
         }
+    }
 
 
-        /* catch insertion to head of list */
-        if( commands == NULL ) {
-                /* no commands yet */
-                commands = cmd;
-                cmd -> next = NULL;
+    /* catch insertion to head of list */
+    if (commands == NULL) {
+        commands = cmd;
+        cmd->next = NULL;
+        return;
+    }
+
+    if (strcmp(cmd_sort_name(commands), cmd_sort_name(cmd)) > 0) {
+        /* this is lower in sort than every item, so
+         * make it the head of the list */
+        cmd->next = commands;
+        commands = cmd;
+        return;
+    }
+
+    for (cmdstruct *c = commands; c != NULL; c = c->next) {
+        if (strcmp(cmd_sort_name(cmd), cmd_sort_name(c)) >= 0) {
+            /* Need second check to handle empty string case */
+            if (c->next == NULL
+                || strcmp(cmd_sort_name(cmd), cmd_sort_name(c->next)) <= 0) {
+                /* insert after this one, it is greater than this
+                 * entry but less than the next */
+                cmd->next = c->next;
+                c->next = cmd;
                 return;
+            }
         }
+    }
 
-        if( strcmp( _cmd_sort_name( commands ), _cmd_sort_name( cmd ) ) > 0 ) {
-                /* this is lower in sort than every item, so
-                 * make it the head of the list */
-                cmd -> next = commands;
-                commands = cmd;
-                return;
-        }
-
-        for( c = commands; c != NULL; c = c -> next ) {
-                if( strcmp( _cmd_sort_name( cmd ), _cmd_sort_name( c ) ) >= 0 ) {
-                        /* Need second check to handle empty string case */
-                        if( c -> next == NULL || strcmp( _cmd_sort_name( cmd ), _cmd_sort_name( c -> next ) ) <= 0 ) {
-                                /*PRINTF( "Inserting %s after %s\n", cmd -> name, c -> name ); */
-
-                                /* insert after this one, it is greater than this
-                                 * entry but less than the next */
-                                cmd -> next = c -> next;
-                                c -> next = cmd;
-                                return;
-                        }
-                }
-        }
-
-        PRINTF( "ERROR INSERTING COMMAND\n" );
+    PRINTF("ERROR INSERTING COMMAND\n");
 }
 
 /* Init the command listing, called from main */
-void initialize_cmd(void) {
-        int i;
-
-        /* Now add the default command list */
-        for( i = 0; default_commands[ i ].name; i++ )
-                cmd_add_command( &default_commands[ i ] );
+void initialize_cmd(void)
+{
+    for (int i = 0; default_commands[i].name != NULL; ++i)
+        cmd_add_command(&default_commands[i]);
 }
 
 #ifdef HAVE_LIBDL
-static void cmd_module(char *arg) {
-        char libname[1024];
-        void *lib;
-        void (*func)();
+static void cmd_module(char *arg)
+{
+    arg = skipspace(arg);
 
-        int pindex;
+    static const char *const prefixes[] = {
+        PLUGIN_DIR,
+        ".",
+        "/lib/powwow",
+        "/usr/lib/powwow",
+        "/usr/local/lib/powwow",
+    };
+    char libname[1024];
+
+    /*
+     * use the first of the directories that has <arg>.so; if none has it,
+     * dlopen() below reports why the one in the last directory cannot be
+     * loaded
+     */
+    for (size_t pindex = 0; pindex < sizeof(prefixes) / sizeof(*prefixes);
+         ++pindex) {
+        /* only <arg>.so: a file named <arg>, such as in the current
+         * directory, is probably not a library */
         struct stat junk;
-        char *prefixes[] = {
-                PLUGIN_DIR,
-                ".",
-                "/lib/powwow",
-                "/usr/lib/powwow",
-                "/usr/local/lib/powwow",
-                "$HOME/.powwow/lib" /* this doesn't work, but is here to remind me :p */
-        };
-
-        arg = skipspace(arg);
-
-        /* I changed it to work this way so that you can have libs in multiple places and
-         * also eventually to allow it to use .dll instead of .so under the cygwin environment */
-        for( pindex = 0; pindex < 5; pindex++ ) {
-                memset( libname, 0, sizeof libname );
-
-        /* don't look for name without .so, it breaks if you have a file
-         * with the same name in the current dir and making it .so for sure
-         * will skip these files since they are probably not libs to load
-                snprintf( libname, 1024, "%s/%s", prefixes[ pindex ], arg );
-                if( stat( libname, &junk ) == 0 ) {
-                        break;
-                }
-        */
-
-                snprintf( libname, 1024, "%s/%s.so", prefixes[ pindex ], arg );
-                if( stat( libname, &junk ) == 0 ) {
-                        break;
-                }
+        snprintf(libname, 1024, "%s/%s.so", prefixes[pindex], arg);
+        if (stat(libname, &junk) == 0) {
+            break;
         }
+    }
 
-        /* open lib */
-        lib = dlopen( libname, RTLD_GLOBAL | RTLD_LAZY );
-        if( ! lib ) {
-                PRINTF( "#module error: %s\n", dlerror() );
-                return;
-        }else{
-                PRINTF( "#module loaded %s\n", libname );
-        }
+    void *lib = dlopen(libname, RTLD_GLOBAL | RTLD_LAZY);
+    if (lib == NULL) {
+        PRINTF("#module error: %s\n", dlerror());
+        return;
+    } else {
+        PRINTF("#module loaded %s\n", libname);
+    }
 
-        func = dlsym( lib, "powwow_init" );
-        if( func ) {
-                (*func)();
-        }else{
-                PRINTF( "#module error: %s\n", dlerror() );
-        }
+    void (*func)(void) = dlsym(lib, "powwow_init");
+    if (func != NULL) {
+        (*func)();
+    } else {
+        PRINTF("#module error: %s\n", dlerror());
+    }
 }
 #endif
 
-static void cmd_group(char *arg) {
-    char *group;
-    int active;
-    aliasnode *p;
-    actionnode *a;
-
+static void cmd_group(char *arg)
+{
     arg = skipspace(arg);
 
-    if( *arg ) {
-        arg = first_regular( group = arg, ' ');
+    if (*arg != '\0') {
+        char *group = arg;
+        arg = first_regular(group, ' ');
         *arg = '\0';
-        arg = skipspace( arg + 1 );
+        arg = skipspace(arg + 1);
 
-        if( strcmp( arg, "on" ) == 0 ) {
-                active = 1;
-        }else if( strcmp( arg, "off" ) == 0 ) {
-                active = 0;
-        }else if( strcmp( arg, "list" ) == 0 ) {
-                PRINTF( "#not implemented\n" );
-                return;
-        }else{
-                PRINTF( "#unknown group command, use off/on/list\n" );
-                return;
+        bool active;
+        if (strcmp(arg, "on") == 0) {
+            active = true;
+        } else if (strcmp(arg, "off") == 0) {
+            active = false;
+        } else if (strcmp(arg, "list") == 0) {
+            PRINTF("#not implemented\n");
+            return;
+        } else {
+            PRINTF("#unknown group command, use off/on/list\n");
+            return;
         }
 
-        /* Now loop over all aliases/actions by groupname and toggle */
-        for( p = sortedaliases; p; p = p -> snext ) {
-                if( p -> group && strcmp( p -> group, group ) == 0 ) {
-                        p -> active = active;
-                }
+        for (aliasnode *p = sortedaliases; p != NULL; p = p->snext) {
+            if (p->group != NULL && strcmp(p->group, group) == 0) {
+                p->active = active;
+            }
         }
 
-        /* Same for actions */
-        for( a = actions; a; a = a -> next ) {
-                if( a -> group && strcmp( a -> group, group ) == 0 ) {
-                        a -> active = active;
-                }
+        for (actionnode *a = actions; a != NULL; a = a->next) {
+            if (a->group != NULL && strcmp(a->group, group) == 0) {
+                a->active = active;
+            }
         }
-    }else{
-        PRINTF( "#group name required\n" );
+    } else {
+        PRINTF("#group name required\n");
     }
 }
 
-static void cmd_groupdelim(char *arg) {
-    if( *arg != 0 ) {
-        free( group_delim );
-        group_delim = my_strdup( arg );
+static void cmd_groupdelim(char *arg)
+{
+    if (*arg != 0) {
+        free(group_delim);
+        group_delim = my_strdup(arg);
     }
 }
 
@@ -500,13 +484,6 @@ static void show_help_text(char *text, bool use_pager)
 
 static void cmd_help(char *arg)
 {
-    int i, size;
-    char *text, *tmp;
-    FILE *f;
-    char line[BUFSIZE];
-    int len;
-    cmdstruct *c;
-
     arg = skipspace(arg);
     bool use_pager = true;
     size_t flag_len = strcspn(arg, " \t");
@@ -516,34 +493,35 @@ static void cmd_help(char *arg)
         arg = skipspace(arg + flag_len);
     }
     strip_end(arg);
-    if (*arg == '#') arg++;
-    if (!*arg) {
-        size = 25;
-        for( c = commands; c != NULL; c = c -> next ) {
-            size += strlen(c -> name) + strlen(c -> help) + 5;
+    if (*arg == '#') ++arg;
+    if (*arg == '\0') {
+        int size = 25;
+        for (cmdstruct *c = commands; c != NULL; c = c->next) {
+            size += strlen(c->name) + strlen(c->help) + 5;
             for (const char *p = c->help; p != NULL; p = strchr(p + 1, '\n'))
                 size += HELP_COLUMN + 1;
         }
 
-        text = tmp = (char *)malloc(size);
-        if (!text) {
+        char *text = malloc(size);
+        char *tmp = text;
+        if (text == NULL) {
             out_of_memory();
             return;
         }
 
-        /* do not use sprintf() return value, almost every OS returns a different thing. */
+        /* do not use the return value of sprintf(), almost every OS returns
+         * a different thing */
         sprintf(tmp, "#help\n#commands available:\n");
         tmp += strlen(tmp);
 
-        for( c = commands; c != NULL; c = c -> next )
+        for (cmdstruct *c = commands; c != NULL; c = c->next)
             tmp = format_command_help(tmp, c);
 
         show_help_text(text, use_pager);
         return;
     }
 
-    if (!strncmp(arg, "copyright", strlen(arg))) {
-        int fd, left, got = 0;
+    if (strncmp(arg, "copyright", strlen(arg)) == 0) {
         struct stat stbuf;
 
         if (stat(copyfile, &stbuf) < 0) {
@@ -551,16 +529,21 @@ static void cmd_help(char *arg)
             return;
         }
 
-        if (!(text = (char *)malloc(left = stbuf.st_size))) {
+        int left = stbuf.st_size;
+        char *text = malloc(left);
+        if (text == NULL) {
             out_of_memory();
             return;
         }
-        if ((fd = open(copyfile, O_RDONLY)) < 0) {
+        int fd = open(copyfile, O_RDONLY);
+        if (fd < 0) {
             errmsg("cannot open %s", copyfile);
             free(text);
             return;
         }
+        int got = 0;
         while (left > 0) {
+            int i;
             while ((i = read(fd, text + got, left)) < 0 && errno == EINTR)
               ;
             if (i < 0 && errno == EINTR) {
@@ -571,7 +554,8 @@ static void cmd_help(char *arg)
             }
             if (i == 0)
                 break;
-            left -= i, got += i;
+            left -= i;
+            got += i;
         }
         close(fd);
         show_help_text(text, use_pager);
@@ -580,13 +564,14 @@ static void cmd_help(char *arg)
 
     /* !copyright */
 
-    f = fopen(helpfile, "r");
-    if (!f) {
+    FILE *f = fopen(helpfile, "r");
+    if (f == NULL) {
         wrap_printf("#cannot open help file \"%s\": %s", helpfile,
                     strerror(errno));
         return;
     }
 
+    char line[BUFSIZE];
     /* an exact match comes first: otherwise "in" would find "info" */
     if (!find_help_entry(f, line, BUFSIZE, arg, true)
         && !find_help_entry(f, line, BUFSIZE, arg, false)) {
@@ -595,25 +580,30 @@ static void cmd_help(char *arg)
         return;
     }
 
-    if (!(text = malloc(size = BUFSIZE + 32))) {
+    int size = BUFSIZE + 32;
+    char *text = malloc(size);
+    if (text == NULL) {
         out_of_memory();
         fclose(f);
         return;
     }
 
     /* the first line becomes $TITLE */
-    tmp = strchr(line, '\n');
-    if (tmp) *tmp = '\0';
-    i = sprintf(text, "Help on '%s'\n", line + 1);
+    char *tmp = strchr(line, '\n');
+    if (tmp != NULL) *tmp = '\0';
+    int i = sprintf(text, "Help on '%s'\n", line + 1);
 
     /* allow multiple commands to share the same help */
-    while (utf8_fgets(line, BUFSIZE, f) && line[0] == '@') ;
+    while (utf8_fgets(line, BUFSIZE, f) != NULL && line[0] == '@') ;
 
     do {
-        if ((len = strlen(line)) >= size - i) {
+        int len = strlen(line);
+        if (len >= size - i) {
             /* Not enough space in current buffer */
 
-            if (!(tmp = (char *)malloc(size += BUFSIZE))) {
+            size += BUFSIZE;
+            tmp = malloc(size);
+            if (tmp == NULL) {
                 out_of_memory();
                 free(text);
                 fclose(f);
@@ -626,7 +616,7 @@ static void cmd_help(char *arg)
         }
         memcpy(text + i, line, len);
         i += len;
-    } while (utf8_fgets(line, BUFSIZE, f) && line[0] != '@');
+    } while (utf8_fgets(line, BUFSIZE, f) != NULL && line[0] != '@');
 
     fclose(f);
     text[i] = '\0'; /* safe, there is space */
@@ -648,7 +638,7 @@ static void cmd_clear(char *arg)
 #ifdef USE_SHELL
 static void cmd_shell(char *arg)
 {
-    if (!*arg) {
+    if (*arg == '\0') {
         if (opt_info) {
             PRINTF("#that's easy.\n");
         }
@@ -656,7 +646,9 @@ static void cmd_shell(char *arg)
         tty_quit();
         int wstatus = system(arg);
         tty_start();
-        tty_gotoxy(col0 = 0, line0 = lines -1);
+        col0 = 0;
+        line0 = lines - 1;
+        tty_gotoxy(col0, line0);
         tty_puts(tty_clreoln);
 
         if (wstatus == -1) {
@@ -673,7 +665,7 @@ static void cmd_shell(char *arg)
 static void cmd_alias(char *arg)
 {
     arg = skipspace(arg);
-    if (!*arg)
+    if (*arg == '\0')
         show_aliases();
     else
         parse_alias(arg);
@@ -682,19 +674,19 @@ static void cmd_alias(char *arg)
 static void cmd_action(char *arg)
 {
     arg = skipspace(arg);
-    if (!*arg)
+    if (*arg == '\0')
         show_actions();
     else
-        parse_action(arg, 0);
+        parse_action(arg, false);
 }
 
 static void cmd_prompt(char *arg)
 {
     arg = skipspace(arg);
-    if (!*arg)
+    if (*arg == '\0')
         show_prompts();
     else
-        parse_action(arg, 1);
+        parse_action(arg, true);
 }
 
 static void cmd_beep(char *arg)
@@ -710,10 +702,10 @@ static void cmd_bind(char *arg)
     arg = skipspace(arg);
     if (strchr(arg, '=') == NULL)
         strip_end(arg);         /* not in the command bound */
-    if (!*arg)
-        show_binds(0);
-    else if (!strcmp(arg, "edit"))
-        show_binds(1);
+    if (*arg == '\0')
+        show_binds(false);
+    else if (strcmp(arg, "edit") == 0)
+        show_binds(true);
     else if (strcmp(arg, "functions") == 0)
         show_edit_functions();
     else
@@ -722,19 +714,17 @@ static void cmd_bind(char *arg)
 
 static void cmd_delim(char *arg)
 {
-    char buf[BUFSIZE];
-    int n;
-
     arg = skipspace(arg);
-    if (!*arg) {
+    if (*arg == '\0') {
         wrap_printf("#delim: \"%s\" (%s)", delim_name[delim_mode], DELIM);
         return;
     }
 
+    char buf[BUFSIZE];
     arg = split_first_word(buf, BUFSIZE, arg);
-    n = 0;
+    int n = 0;
     while (n < DELIM_MODES && strncmp(delim_name[n], buf, strlen(buf)) != 0)
-        n++;
+        ++n;
 
     if (n >= DELIM_MODES) {
         PRINTF("#delim [normal|program|{custom <chars>}\n");
@@ -742,8 +732,8 @@ static void cmd_delim(char *arg)
     }
 
     if (n == DELIM_CUSTOM) {
-        if (!strchr(arg, ' ')) {
-            my_strncpy(buf+1, arg, BUFSIZE-2);
+        if (strchr(arg, ' ') == NULL) {
+            my_strncpy(buf + 1, arg, BUFSIZE - 2);
             *buf = ' ';                         /* force ' ' in the delims */
             arg = buf;
         }
@@ -755,39 +745,39 @@ static void cmd_delim(char *arg)
 
 static void cmd_do(char *arg)
 {
-    int type;
-    long result;
-
     arg = skipspace(arg);
     if (*arg != '(') {
         PRINTF("#do: ");
-        print_error(error=MISMATCH_PAREN_ERROR);
+        error = MISMATCH_PAREN_ERROR;
+        print_error(error);
         return;
     }
-    arg++;
+    ++arg;
 
-    type = evall(&result, &arg);
+    long result;
+    int type = evall(&result, &arg);
     if (REAL_ERROR) return;
 
     if (type != TYPE_NUM) {
         PRINTF("#do: ");
-        print_error(error=NO_NUM_VALUE_ERROR);
+        error = NO_NUM_VALUE_ERROR;
+        print_error(error);
         return;
     }
 
     if (*arg == ')') {          /* skip the ')' */
         if (*++arg == ' ')
-            arg++;
-    }
-    else {
+            ++arg;
+    } else {
         PRINTF("#do: ");
-        print_error(error=MISSING_PAREN_ERROR);
+        error = MISSING_PAREN_ERROR;
+        print_error(error);
         return;
     }
 
     if (result >= 0)
-        while (!error && result--)
-            (void)parse_instruction(arg, true, false, true);
+        while (error == 0 && result-- != 0)
+            parse_instruction(arg, true, false, true);
     else {
         PRINTF("#do: bogus repeat count \"%ld\"\n", result);
     }
@@ -795,11 +785,9 @@ static void cmd_do(char *arg)
 
 static void cmd_hilite(char *arg)
 {
-    struct attr attr;
-    bool messages = false;
-
     arg = skipspace(arg);
     size_t len = strcspn(arg, " ");
+    bool messages = false;
     if (len == 8 && strncmp(arg, "messages", 8) == 0) {
         messages = true;
         arg = skipspace(arg + len);
@@ -807,6 +795,7 @@ static void cmd_hilite(char *arg)
         arg = skipspace(arg + len);
     }
 
+    struct attr attr;
     char why[BUFSIZE];
     if (!attr_parse_why(arg, &attr, why, sizeof(why))) {
         PRINTF("#hilite: %s.\n", why);
@@ -839,25 +828,26 @@ static void cmd_hilite(char *arg)
 
 static void cmd_history(char *arg)
 {
-    int num = 0;
-    long buf;
-
     arg = skipspace(arg);
 
     if (history_done >= MAX_HIST) {
-        print_error(error=HISTORY_RECURSION_ERROR);
+        error = HISTORY_RECURSION_ERROR;
+        print_error(error);
         return;
     }
-    history_done++;
+    ++history_done;
 
+    int num = 0;
     if (*arg == '(') {
-        arg++;
+        ++arg;
+        long buf;
         num = evall(&buf, &arg);
         if (!REAL_ERROR && num != TYPE_NUM)
-            error=NO_NUM_VALUE_ERROR;
+            error = NO_NUM_VALUE_ERROR;
         if (REAL_ERROR) {
             PRINTF("#history: ");
-            print_error(error=NO_NUM_VALUE_ERROR);
+            error = NO_NUM_VALUE_ERROR;
+            print_error(error);
             return;
         }
         num = (int)buf;
@@ -888,16 +878,16 @@ static bool parse_charset_flag(const char *arg, bool *utf8)
 static void cmd_host(char *arg)
 {
     arg = skipspace(arg);
-    if (*arg) {
+    if (*arg != '\0') {
         char hostname[BUFSIZE];
         arg = split_first_word(hostname, BUFSIZE, arg);
-        if (*arg) {
+        if (*arg != '\0') {
             char buf[BUFSIZE];
             arg = split_first_word(buf, BUFSIZE, arg);
             int port = atoi(buf);
             struct tls_options tlsopt = { .use_tls = default_tls };
             bool utf8 = default_utf8;
-            while (*(arg = skipspace(arg))) {
+            while (*(arg = skipspace(arg)) != '\0') {
                 arg = split_first_word(buf, BUFSIZE, arg);
                 if (parse_charset_flag(buf, &utf8))
                     continue;
@@ -918,11 +908,12 @@ static void cmd_host(char *arg)
             hostinfo.utf8 = utf8;
 
             if (opt_info)
-                PRINTF("#host set to: %s %d%s%s\n", hostinfo.name, hostinfo.port,
-                       tlsopt_str(&hostinfo.tlsopt), charset_flag_str(utf8));
+                PRINTF("#host set to: %s %d%s%s\n", hostinfo.name,
+                       hostinfo.port, tlsopt_str(&hostinfo.tlsopt),
+                       charset_flag_str(utf8));
             return;
         }
-    } else if (*hostinfo.name) {
+    } else if (*hostinfo.name != '\0') {
         fmt_next_edit("#host %s %d%s%s",
                       hostinfo.name, hostinfo.port,
                       tlsopt_str(&hostinfo.tlsopt),
@@ -930,7 +921,7 @@ static void cmd_host(char *arg)
         return;
     }
 
-fail:
+ fail:
     error = NOT_SUPPORTED_ERROR;
     PRINTF("#syntax: #host <hostname> <port> [--tls[=<options>]|"
            NO_TLS_FLAG "] [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
@@ -938,19 +929,17 @@ fail:
 
 static void cmd_request(char *arg)
 {
-    char buf[256];
-    int all, len;
-
     if (current_connection == NULL) {
         PRINTF("#not connected to a MUD!\n");
         return;
     }
-    while (*(arg = skipspace(arg))) {
+    while (*(arg = skipspace(arg)) != '\0') {
+        char buf[256];
         arg = split_first_word(buf, 256, arg);
-        if (*buf) {
-            all = !strcmp(buf, "all");
-            len = strlen(buf);
-            if ((all || !strncmp(buf, "editor", len))) {
+        if (*buf != '\0') {
+            bool all = (strcmp(buf, "all") == 0);
+            int len = strlen(buf);
+            if (all || strncmp(buf, "editor", len) == 0) {
                 mpi_identify(current_connection);
                 if (opt_info) {
                     PRINTF("#request editor\n");
@@ -963,61 +952,60 @@ static void cmd_request(char *arg)
 
 static void cmd_identify(char *arg)
 {
-    edit_start[0] = edit_end[0] = '\0';
-    if (*arg) {
+    edit_start[0] = '\0';
+    edit_end[0] = '\0';
+    if (*arg != '\0') {
         char *p = strchr(arg, ' ');
-        if (p) {
+        if (p != NULL) {
             *(p++) = '\0';
-            my_strncpy(edit_end, p, BUFSIZE-1);
+            my_strncpy(edit_end, p, BUFSIZE - 1);
         }
-        my_strncpy(edit_start, arg, BUFSIZE-1);
+        my_strncpy(edit_start, arg, BUFSIZE - 1);
     }
     cmd_request("editor");
 }
 
 static void cmd_in(char *arg)
 {
-    char *name;
-    long millisec, buf;
-    int type;
-    delaynode **p;
-
     arg = skipspace(arg);
-    if (!*arg) {
+    if (*arg == '\0') {
         show_delays();
         return;
     }
 
-    arg = first_regular(name = arg, ' ');
-    if (*arg)
+    char *name = arg;
+    arg = first_regular(name, ' ');
+    if (*arg != '\0')
         *arg++ = 0;
 
     unescape(name);
 
-    p = lookup_delay(name, 0);
-    if (!*p)  p = lookup_delay(name, 1);
+    delaynode **p = lookup_delay(name, 0);
+    if (*p == NULL)  p = lookup_delay(name, 1);
 
-    if (!*arg && !*p) {
+    if (*arg == '\0' && *p == NULL) {
         wrap_printf("#unknown delay label, cannot show: \"%s\"", name);
         return;
     }
-    if (!*arg) {
+    if (*arg == '\0') {
         show_delaynode(*p, 1);
         return;
     }
     if (*arg != '(') {
         PRINTF("#in: ");
-        print_error(error=MISMATCH_PAREN_ERROR);
+        error = MISMATCH_PAREN_ERROR;
+        print_error(error);
         return;
     }
-    arg++;    /* skip the '(' */
+    ++arg;    /* skip the '(' */
 
-    type = evall(&buf, &arg);
+    long buf;
+    int type = evall(&buf, &arg);
     if (!REAL_ERROR) {
-        if (type!=TYPE_NUM)
-            error=NO_NUM_VALUE_ERROR;
+        if (type != TYPE_NUM)
+            error = NO_NUM_VALUE_ERROR;
         else if (*arg != ')')
-            error=MISSING_PAREN_ERROR;
+            error = MISSING_PAREN_ERROR;
     }
     if (REAL_ERROR) {
         PRINTF("#in: ");
@@ -1025,17 +1013,17 @@ static void cmd_in(char *arg)
         return;
     }
 
-    arg = skipspace(arg+1);
-    millisec = buf;
-    if (*p && millisec)
+    arg = skipspace(arg + 1);
+    long millisec = buf;
+    if (*p != NULL && millisec != 0)
         change_delaynode(p, arg, millisec);
-    else if (!*p && millisec) {
-        if (*arg)
+    else if (*p == NULL && millisec != 0) {
+        if (*arg != '\0')
             new_delaynode(name, arg, millisec);
         else {
             wrap_printf("#cannot create delay label without a command.");
         }
-    } else if (*p && !millisec) {
+    } else if (*p != NULL && millisec == 0) {
         if (opt_info) {
             PRINTF("#deleting delay label: %s %s\n", name, (*p)->command);
         }
@@ -1047,70 +1035,69 @@ static void cmd_in(char *arg)
 
 static void cmd_at(char *arg)
 {
-    char *name, *buf = NULL;
-    char dayflag=0;
-    struct tm *twhen;
-    int num, hour = -1, minute = -1, second = -1;
-    delaynode **p;
-    long millisec;
-    ptr *pbuf = (ptr *)0;
-
     arg = skipspace(arg);
-    if (!*arg) {
+    if (*arg == '\0') {
         show_delays();
         return;
     }
 
-    arg = first_regular(name = arg, ' ');
-    if (*arg)
+    char *name = arg;
+    arg = first_regular(name, ' ');
+    if (*arg != '\0')
         *arg++ = 0;
 
     unescape(name);
 
-    p = lookup_delay(name, 0);
-    if (!*p)  p = lookup_delay(name, 1);
+    delaynode **p = lookup_delay(name, 0);
+    if (*p == NULL)  p = lookup_delay(name, 1);
 
-    if (!*arg && !*p) {
+    if (*arg == '\0' && *p == NULL) {
         wrap_printf("#unknown delay label, cannot show: \"%s\"", name);
         return;
     }
-    if (!*arg) {
+    if (*arg == '\0') {
         show_delaynode(*p, 2);
         return;
     }
     if (*arg != '(') {
         PRINTF("#in: ");
-        print_error(error=MISMATCH_PAREN_ERROR);
+        error = MISMATCH_PAREN_ERROR;
+        print_error(error);
         return;
     }
-    arg++;    /* skip the '(' */
+    ++arg;    /* skip the '(' */
 
-    (void)evalp(&pbuf, &arg);
+    ptr *pbuf = NULL;
+    evalp(&pbuf, &arg);
     if (REAL_ERROR) {
         print_error(error);
         ptrdel(&pbuf);
         return;
     }
-    if (pbuf) {
+    char *buf = NULL;
+    int hour = -1, minute = -1, second = -1;
+    if (pbuf != NULL) {
         /* convert time-string into hour, minute, second */
         buf = skipspace(ptrdata(pbuf));
-        if (!*buf || !isdigit(*buf)) {
+        if (*buf == '\0' || !isdigit(*buf)) {
             PRINTF("#at: ");
-            print_error(error=NO_NUM_VALUE_ERROR);
+            error = NO_NUM_VALUE_ERROR;
+            print_error(error);
             ptrdel(&pbuf);
             return;
         }
-        num = atoi(buf);
+        int num = atoi(buf);
         second = num % 100;
-        minute = (num /= 100) % 100;
-        hour   = num / 100;
+        num /= 100;
+        minute = num % 100;
+        hour = num / 100;
     }
-    if (hour < 0 || hour>23 || minute < 0 || minute>59
-        || second < 0 || second>59) {
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59
+        || second < 0 || second > 59) {
 
         wrap_printf("#at: #error: invalid time \"%s\"",
-                    pbuf && buf ? buf : (char *)"");
-        error=OUT_RANGE_ERROR;
+                    pbuf != NULL && buf != NULL ? buf : "");
+        error = OUT_RANGE_ERROR;
         ptrdel(&pbuf);
         return;
     }
@@ -1118,37 +1105,35 @@ static void cmd_at(char *arg)
 
     if (*arg == ')') {        /* skip the ')' */
         if (*++arg == ' ')
-            arg++;
-    }
-    else {
+            ++arg;
+    } else {
         PRINTF("#at: ");
-        print_error(error=MISSING_PAREN_ERROR);
+        error = MISSING_PAREN_ERROR;
+        print_error(error);
         return;
     }
 
     arg = skipspace(arg);
     update_now();
-    twhen = localtime((time_t *)&now.tv_sec);
+    struct tm *twhen = localtime(&now.tv_sec);
     /* put current year, month, day in calendar struct */
 
-    if (hour < twhen->tm_hour ||
-        (hour == twhen->tm_hour &&
-         (minute < twhen->tm_min ||
-          (minute == twhen->tm_min &&
-           second <= twhen->tm_sec)))) {
-        dayflag = 1;
-        /* it is NOT possible to define an #at refering to the past */
-    }
+    /* it is NOT possible to define an #at refering to the past: if you
+     * use a time smaller than the current, it refers to tomorrow */
+    bool tomorrow = (hour < twhen->tm_hour
+                     || (hour == twhen->tm_hour
+                         && (minute < twhen->tm_min
+                             || (minute == twhen->tm_min
+                                 && second <= twhen->tm_sec))));
 
-    /* if you use a time smaller than the current, it refers to tomorrow */
-
-    millisec = (hour - twhen->tm_hour) * 3600 + (minute - twhen->tm_min) * 60 +
-        second - twhen->tm_sec + (dayflag ? 24*60*60 : 0);
+    long millisec = ((hour - twhen->tm_hour) * 3600
+                     + (minute - twhen->tm_min) * 60
+                     + second - twhen->tm_sec + (tomorrow ? 24 * 60 * 60 : 0));
     millisec *= mSEC_PER_SEC; /* Comparing time with current calendar,
                                we finally got the delay */
     millisec -= now.tv_usec / uSEC_PER_mSEC;
 
-    if (*p)
+    if (*p != NULL)
         change_delaynode(p, arg, millisec);
     else if (*arg != '\0')
         new_delaynode(name, arg, millisec);
@@ -1162,8 +1147,8 @@ static void cmd_init(char *arg)
     arg = skipspace(arg);
 
     if (*arg == '=') {
-        if (*++arg) {
-            my_strncpy(initstr, arg, BUFSIZE-1);
+        if (*++arg != '\0') {
+            my_strncpy(initstr, arg, BUFSIZE - 1);
             if (opt_info) {
                 PRINTF("#init: %s\n", initstr);
             }
@@ -1180,17 +1165,17 @@ static void cmd_init(char *arg)
 static void cmd_isprompt(char *arg)
 {
     if (current_connection == main_connection) {
-        int i;
-        long l;
         arg = skipspace(arg);
+        int i;
         if (*arg == '(') {
-            arg++;
+            ++arg;
+            long l;
             i = evall(&l, &arg);
             if (!REAL_ERROR) {
-                if (i!=TYPE_NUM)
-                  error=NO_NUM_VALUE_ERROR;
+                if (i != TYPE_NUM)
+                  error = NO_NUM_VALUE_ERROR;
                 else if (*arg != ')')
-                  error=MISSING_PAREN_ERROR;
+                  error = MISSING_PAREN_ERROR;
             }
             if (REAL_ERROR) {
                 PRINTF("#isprompt: ");
@@ -1204,22 +1189,25 @@ static void cmd_isprompt(char *arg)
         if (i == 0)
             isprompt_len = -1;
         else if (i < 0) {
-            if (i > -NUMPARAM && *VAR[-i].str)
-                ptrtrunc(prompt->str, isprompt_len = ptrlen(*VAR[-i].str));
-        } else
-            ptrtrunc(prompt->str, isprompt_len = i);
+            if (i > -NUMPARAM && *VAR[-i].str != NULL) {
+                isprompt_len = ptrlen(*VAR[-i].str);
+                ptrtrunc(prompt->str, isprompt_len);
+            }
+        } else {
+            isprompt_len = i;
+            ptrtrunc(prompt->str, isprompt_len);
+        }
     }
 }
 
 static void cmd_key(char *arg)
 {
-    keynode *q=NULL;
-
     arg = strip_end(skipspace(arg));
-    if (!*arg)
+    if (*arg == '\0')
         return;
 
-    if ((q = *lookup_key(arg)))
+    keynode *q = *lookup_key(arg);
+    if (q != NULL)
         q->funct(q->call_data);
     else {
         wrap_printf("#no such key: \"%s\"", arg);
@@ -1228,14 +1216,13 @@ static void cmd_key(char *arg)
 
 static void cmd_keyedit(char *arg)
 {
-    int function;
-    char *param;
-
     arg = skipspace(arg);
-    if (!*arg)
+    if (*arg == '\0')
         return;
 
-    if ((function = lookup_edit_name(arg, &param)))
+    char *param;
+    int function = lookup_edit_name(arg, &param);
+    if (function != 0)
         internal_functions[function].funct(param);
     else {
         wrap_printf("#no such editing function: \"%s\"", arg);
@@ -1245,7 +1232,7 @@ static void cmd_keyedit(char *arg)
 static void cmd_map(char *arg)
 {
     arg = skipspace(arg);
-    if (!*arg)  /* show map */
+    if (*arg == '\0')  /* show map */
         map_show();
     else if (*arg == '-')  /* retrace steps without walking */
         map_retrace(atoi(arg + 1), 0);
@@ -1260,7 +1247,7 @@ static void cmd_retrace(char *arg)
 
 static void cmd_mark(char *arg)
 {
-    if (!*arg)
+    if (*arg == '\0')
         show_marks();
     else
         parse_mark(arg);
@@ -1270,7 +1257,7 @@ static void cmd_nice(char *arg)
 {
     int nnice = a_nice;
     arg = skipspace(arg);
-    if (!*arg) {
+    if (*arg == '\0') {
         PRINTF("#nice: %d\n", a_nice);
         return;
     }
@@ -1280,27 +1267,24 @@ static void cmd_nice(char *arg)
             a_nice *= 10;
             a_nice += *arg++ - '0';
         }
-    }
-    else if (*arg++=='(') {
+    } else if (*arg++ == '(') {
         long buf;
-        int type;
-
-        type = evall(&buf, &arg);
-        if (!REAL_ERROR && type!=TYPE_NUM)
-            error=NO_NUM_VALUE_ERROR;
+        int type = evall(&buf, &arg);
+        if (!REAL_ERROR && type != TYPE_NUM)
+            error = NO_NUM_VALUE_ERROR;
         else if (!REAL_ERROR && *arg++ != ')')
-            error=MISSING_PAREN_ERROR;
+            error = MISSING_PAREN_ERROR;
         if (REAL_ERROR) {
             PRINTF("#nice: ");
             print_error(error);
             return;
         }
         a_nice = (int)buf;
-        if (a_nice<0)
+        if (a_nice < 0)
             a_nice = 0;
     }
     arg = skipspace(arg);
-    if (*arg) {
+    if (*arg != '\0') {
         parse_instruction(arg, false, false, true);
         a_nice = nnice;
     }
@@ -1310,18 +1294,18 @@ static void cmd_prefix(char *arg)
 {
     strcpy(prefixstr, arg);
     if (opt_info) {
-        PRINTF("#prefix %s.\n", *arg ? "set" : "cleared");
+        PRINTF("#prefix %s.\n", *arg != '\0' ? "set" : "cleared");
     }
 }
 
 static void cmd_quote(char *arg)
 {
     arg = skipspace(arg);
-    if (!*arg)
+    if (*arg == '\0')
         verbatim = !verbatim;
-    else if (!strcmp(arg, "on"))
+    else if (strcmp(arg, "on") == 0)
         verbatim = true;
-    else if (!strcmp(arg, "off"))
+    else if (strcmp(arg, "off") == 0)
         verbatim = false;
     if (opt_info) {
         PRINTF("#%s mode.\n", verbatim ? "verbatim" : "normal");
@@ -1338,18 +1322,15 @@ static void cmd_rebind(char *arg)
 
 static void cmd_rebindall(char *arg)
 {
-    keynode *kp;
-    char *seq;
-
-    for (kp = keydefs; kp; kp = kp->next) {
-        seq = kp->sequence;
+    for (keynode *kp = keydefs; kp != NULL; kp = kp->next) {
+        char *seq = kp->sequence;
         if (kp->seqlen == 1 && seq[0] < ' ')
             ;
         else if (kp->seqlen == 2 && seq[0] == '\033' && isalnum(seq[1]))
             ;
         else {
             parse_rebind(kp->name);
-            if (error)
+            if (error != 0)
                 break;
         }
     }
@@ -1357,11 +1338,9 @@ static void cmd_rebindall(char *arg)
 
 static void cmd_rebindALL(char *arg)
 {
-    keynode *kp;
-
-    for (kp = keydefs; kp; kp = kp->next) {
+    for (keynode *kp = keydefs; kp != NULL; kp = kp->next) {
         parse_rebind(kp->name);
-        if (error)
+        if (error != 0)
             break;
     }
 }
@@ -1378,11 +1357,10 @@ static void reset_usage(const char *arg)
 
 static void cmd_reset(char *arg)
 {
-    char all = 0;
     arg = skipspace(arg);
     for (size_t len = strlen(arg); len > 0 && arg[len - 1] == ' '; --len)
         arg[len - 1] = '\0';
-    if (!*arg) {
+    if (*arg == '\0') {
         reset_usage(arg);
         return;
     }
@@ -1392,65 +1370,61 @@ static void cmd_reset(char *arg)
         reset_bind(name);
         return;
     }
-    all = !strcmp(arg, "all");
-    if (all || !strcmp(arg, "alias")) {
-        int n;
-        for (n = 0; n < MAX_HASH; n++) {
-            while (aliases[n])
+    bool all = (strcmp(arg, "all") == 0);
+    if (all || strcmp(arg, "alias") == 0) {
+        for (int n = 0; n < MAX_HASH; ++n) {
+            while (aliases[n] != NULL)
                 delete_aliasnode(&aliases[n]);
         }
         if (!all)
             return;
     }
-    if (all || !strcmp(arg, "action")) {
-        while (actions)
+    if (all || strcmp(arg, "action") == 0) {
+        while (actions != NULL)
             delete_actionnode(&actions);
         if (!all)
             return;
     }
-    if (all || !strcmp(arg, "bind")) {
-        while (keydefs)
+    if (all || strcmp(arg, "bind") == 0) {
+        while (keydefs != NULL)
             delete_keynode(&keydefs);
         tty_add_initial_binds();
         tty_add_walk_binds();
         if (!all)
             return;
     }
-    if (all || !strcmp(arg, "in") || !strcmp(arg, "at")) {
-        while (delays)
+    if (all || strcmp(arg, "in") == 0 || strcmp(arg, "at") == 0) {
+        while (delays != NULL)
             delete_delaynode(&delays);
-        while (dead_delays)
+        while (dead_delays != NULL)
             delete_delaynode(&dead_delays);
         if (!all)
             return;
     }
-    if (all || !strcmp(arg, "mark")) {
-        while (markers)
+    if (all || strcmp(arg, "mark") == 0) {
+        while (markers != NULL)
             delete_marknode(&markers);
         if (!all)
             return;
     }
-    if (all || !strcmp(arg, "prompt")) {
-        while (prompts)
+    if (all || strcmp(arg, "prompt") == 0) {
+        while (prompts != NULL)
             delete_promptnode(&prompts);
         if (!all)
             return;
     }
-    if (all != 0 || strcmp(arg, "substitute") == 0) {
+    if (all || strcmp(arg, "substitute") == 0) {
         while (substitutions != NULL)
           delete_substnode(&substitutions);
-        if (all == 0)
+        if (!all)
           return;
     }
-    if (all || !strcmp(arg, "var")) {
-        int n;
-        varnode **first;
-
-        for (n = 0; n < MAX_HASH; n++) {
-            while (named_vars[0][n])
+    if (all || strcmp(arg, "var") == 0) {
+        for (int n = 0; n < MAX_HASH; ++n) {
+            while (named_vars[0][n] != NULL)
                 delete_varnode(&named_vars[0][n], 0);
-            first = &named_vars[1][n];
-            while (*first) {
+            varnode **first = &named_vars[1][n];
+            while (*first != NULL) {
                 if (is_permanent_variable(*first))
                     first = &(*first)->next;
                 else
@@ -1458,7 +1432,7 @@ static void cmd_reset(char *arg)
             }
         }
 
-        for (n = 0; n < NUMVAR; n++) {
+        for (int n = 0; n < NUMVAR; ++n) {
             *var[n].num = 0;
             ptrdel(var[n].str);
             *var[n].str = NULL;
@@ -1472,7 +1446,7 @@ static void cmd_reset(char *arg)
 
 static void cmd_snoop(char *arg)
 {
-    if (!*arg) {
+    if (*arg == '\0') {
         PRINTF("#snoop: which connection?\n");
     } else
         tcp_togglesnoop(arg);
@@ -1480,13 +1454,11 @@ static void cmd_snoop(char *arg)
 
 static void cmd_stop(char *arg)
 {
-    delaynode *dying;
-
-    if (delays)
+    if (delays != NULL)
         update_now();
 
-    while (delays) {
-        dying = delays;
+    while (delays != NULL) {
+        delaynode *dying = delays;
         delays = dying->next;
         dying->when.tv_sec = now.tv_sec;
         dying->when.tv_usec = now.tv_usec;
@@ -1508,12 +1480,10 @@ static void cmd_substitute(char *arg)
 
 static void cmd_time(char *arg)
 {
-    struct tm *s;
-    char buf[BUFSIZE];
-
     update_now();
-    s = localtime((time_t *)&now.tv_sec);
-    (void)strftime(buf, BUFSIZE - 1, "%a,  %d %b %Y  %H:%M:%S", s);
+    struct tm *s = localtime(&now.tv_sec);
+    char buf[BUFSIZE];
+    strftime(buf, BUFSIZE - 1, "%a,  %d %b %Y  %H:%M:%S", s);
     PRINTF("#current time is %s\n", buf);
 }
 
@@ -1531,35 +1501,37 @@ static void cmd_ver(char *arg)
 static void cmd_emulate(char *arg)
 {
     char kind;
-    FILE *fp;
-    long start, end, i = 1;
-    int len;
-    ptr *pbuf = (ptr *)0;
+    long start, end;
+    ptr *pbuf = NULL;
 
-    arg = redirect(arg, &pbuf, &kind, "emulate", 0, &start, &end);
-    if (REAL_ERROR || !arg)
+    arg = redirect(arg, &pbuf, &kind, "emulate", false, &start, &end);
+    if (REAL_ERROR || arg == NULL)
         return;
 
-    if (kind) {
+    if (kind != 0) {
         char buf[BUFSIZE];
 
-        fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
-        if (!fp) {
+        FILE *fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        if (fp == NULL) {
             wrap_printf("#emulate: #error opening \"%s\"", arg);
-            print_error(error=SYNTAX_ERROR);
+            error = SYNTAX_ERROR;
+            print_error(error);
             ptrdel(&pbuf);
             return;
         }
         status(-1); /* we're pretending we got something from the MUD */
-        while (!error && (!start || i<=end) && utf8_fgets(buf, BUFSIZE, fp))
-            if (!start || i++>=start)
+        long i = 1;
+        while (error == 0 && (start == 0 || i <= end)
+               && utf8_fgets(buf, BUFSIZE, fp) != NULL)
+            if (start == 0 || i++ >= start)
                 process_remote_input(buf, strlen(buf));
 
         if (kind == '!') pclose(fp); else fclose(fp);
     } else {
         status(-1); /* idem */
         /* WARNING: no guarantee there is space! */
-        arg[len = strlen(arg)] = '\n';
+        int len = strlen(arg);
+        arg[len] = '\n';
         arg[++len] = '\0';
         process_remote_input(arg, len);
     }
@@ -1569,56 +1541,59 @@ static void cmd_emulate(char *arg)
 static void cmd_eval(char *arg)
 {
     arg = skipspace(arg);
-    if (*arg=='(') {
-        arg++;
-        (void)evaln(&arg);
+    if (*arg == '(') {
+        ++arg;
+        evaln(&arg);
         if (*arg != ')') {
             PRINTF("#(): ");
-            print_error(error=MISSING_PAREN_ERROR);
+            error = MISSING_PAREN_ERROR;
+            print_error(error);
         }
-    }
-    else {
+    } else {
         PRINTF("#(): ");
-        print_error(error=MISMATCH_PAREN_ERROR);
+        error = MISMATCH_PAREN_ERROR;
+        print_error(error);
     }
 }
 
 static void cmd_exe(char *arg)
 {
     char kind;
-    char *clear;
-    long offset, start, end, i = 1;
-    FILE *fp;
-    ptr *pbuf = (ptr *)0;
+    long start, end;
+    ptr *pbuf = NULL;
 
-    arg = redirect(arg, &pbuf, &kind, "exe", 0, &start, &end);
-    if (REAL_ERROR || !arg)
+    arg = redirect(arg, &pbuf, &kind, "exe", false, &start, &end);
+    if (REAL_ERROR || arg == NULL)
         return;
 
-    if (kind) {
+    if (kind != 0) {
         char buf[BUFSIZE];
 
-        fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
-        if (!fp) {
+        FILE *fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        if (fp == NULL) {
             wrap_printf("#exe: #error opening \"%s\"", arg);
             error = SYNTAX_ERROR;
             ptrdel(&pbuf);
             return;
         }
-        offset = 0;
-        /* We may go in to a loop if a single function is more than 4k, but if that's
-         * the case then maybe you should break it down a little bit :p */
-        while (!error && (!start || i<=end) && utf8_fgets(buf + offset, BUFSIZE - offset, fp))
+        long offset = 0;
+        long i = 1;
+        /* We may go in to a loop if a single function is more than 4k, but
+         * if that's the case then maybe you should break it down a little
+         * bit :p */
+        while (error == 0 && (start == 0 || i <= end)
+               && utf8_fgets(buf + offset, BUFSIZE - offset, fp) != NULL)
             /* If it ends with \\\n then it's a line continuation, so clear
              * the \\\n and do another fgets */
             if (buf[offset + strlen(buf + offset) - 2] == '\\') {
                 /* Clear \n prefixed with a literal backslash '\\' */
-                if ((clear = strstr(buf + offset, "\\\n")))
+                char *clear = strstr(buf + offset, "\\\n");
+                if (clear != NULL)
                     *clear = '\0';
                 offset += strlen(buf + offset);
             } else {
-                if (!start || i++ >= start) {
-                    buf[strlen(buf)-1] = '\0';
+                if (start == 0 || i++ >= start) {
+                    buf[strlen(buf) - 1] = '\0';
                     parse_user_input(buf, false);
                     offset = 0;
                 }
@@ -1632,33 +1607,33 @@ static void cmd_exe(char *arg)
 
 static void cmd_print(char *arg)
 {
-    char kind;
-    long start, end, i = 1;
-    FILE *fp;
-    ptr *pbuf = (ptr *)0;
-
     clear_input_line(opt_compact);
 
-    if (!*arg) {
-        smart_print(*VAR[0].str ? ptrdata(*VAR[0].str) : (char *)"", 1);
+    if (*arg == '\0') {
+        smart_print(*VAR[0].str != NULL ? ptrdata(*VAR[0].str) : "", 1);
         return;
     }
 
-    arg = redirect(arg, &pbuf, &kind, "print", 1, &start, &end);
-    if (REAL_ERROR || !arg)
+    char kind;
+    long start, end;
+    ptr *pbuf = NULL;
+    arg = redirect(arg, &pbuf, &kind, "print", true, &start, &end);
+    if (REAL_ERROR || arg == NULL)
         return;
 
-    if (kind) {
+    if (kind != 0) {
         char buf[BUFSIZE];
-        fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
-        if (!fp) {
+        FILE *fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        if (fp == NULL) {
             wrap_printf("#print: #error opening \"%s\"", arg);
-            error=SYNTAX_ERROR;
+            error = SYNTAX_ERROR;
             ptrdel(&pbuf);
             return;
         }
-        while (!error && (!start || i <= end) && utf8_fgets(buf, BUFSIZE, fp))
-            if (!start || i++>=start)
+        long i = 1;
+        while (error == 0 && (start == 0 || i <= end)
+               && utf8_fgets(buf, BUFSIZE, fp) != NULL)
+            if (start == 0 || i++ >= start)
                 tty_puts(buf);
         tty_putc('\n');
 
@@ -1670,29 +1645,31 @@ static void cmd_print(char *arg)
 
 static void cmd_send(char *arg)
 {
-    char *newline, kind;
-    long start, end, i = 1;
-    FILE *fp;
-    ptr *pbuf = (ptr *)0;
+    char kind;
+    long start, end;
+    ptr *pbuf = NULL;
 
-    arg = redirect(arg, &pbuf, &kind, "send", 0, &start, &end);
-    if (REAL_ERROR ||!arg)
+    arg = redirect(arg, &pbuf, &kind, "send", false, &start, &end);
+    if (REAL_ERROR ||arg == NULL)
         return;
 
-    if (kind) {
+    if (kind != 0) {
         char buf[BUFSIZE];
-        fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
-        if (!fp) {
+        FILE *fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        if (fp == NULL) {
             wrap_printf("#send: #error opening \"%s\"", arg);
             error = SYNTAX_ERROR;
             ptrdel(&pbuf);
             return;
         }
-        while (!error && (!start || i<=end) && utf8_fgets(buf, BUFSIZE, fp)) {
-            if ((newline = strchr(buf, '\n')))
+        long i = 1;
+        while (error == 0 && (start == 0 || i <= end)
+               && utf8_fgets(buf, BUFSIZE, fp) != NULL) {
+            char *newline = strchr(buf, '\n');
+            if (newline != NULL)
                 *newline = '\0';
 
-            if (!start || i++>=start) {
+            if (start == 0 || i++ >= start) {
                 if (opt_echo) {
                     PRINTF("[%s]\n", buf);
                 }
@@ -1713,20 +1690,20 @@ static void cmd_rawsend(char *arg)
 {
     char *tmp = skipspace(arg);
 
-    if (*tmp=='(') {
-        ptr *pbuf = (ptr *)0;
+    if (*tmp == '(') {
+        ptr *pbuf = NULL;
         arg = tmp + 1;
         raw_escapes = true;
-        (void)evalp(&pbuf, &arg);
+        evalp(&pbuf, &arg);
         raw_escapes = false;
         if (REAL_ERROR) {
             print_error(error);
             ptrdel(&pbuf);
-        } else if (pbuf)
+        } else if (pbuf != NULL)
             tcp_raw_write(current_connection, ptrdata(pbuf), ptrlen(pbuf));
     } else {
-        int len;
-        if ((len = memunescape(arg, strlen(arg), true)))
+        int len = memunescape(arg, strlen(arg), true);
+        if (len != 0)
             tcp_raw_write(current_connection, arg, len);
     }
 }
@@ -1735,20 +1712,20 @@ static void cmd_rawprint(char *arg)
 {
     char *tmp = skipspace(arg);
 
-    if (*tmp=='(') {
-        ptr *pbuf = (ptr *)0;
+    if (*tmp == '(') {
+        ptr *pbuf = NULL;
         arg = tmp + 1;
         raw_escapes = true;
-        (void)evalp(&pbuf, &arg);
+        evalp(&pbuf, &arg);
         raw_escapes = false;
         if (REAL_ERROR) {
             print_error(error);
             ptrdel(&pbuf);
-        } else if (pbuf)
+        } else if (pbuf != NULL)
             tty_raw_write(ptrdata(pbuf), ptrlen(pbuf));
     } else {
-        int len;
-        if ((len = memunescape(arg, strlen(arg), true)))
+        int len = memunescape(arg, strlen(arg), true);
+        if (len != 0)
             tty_raw_write(arg, len);
     }
 }
@@ -1756,114 +1733,114 @@ static void cmd_rawprint(char *arg)
 
 static void cmd_write(char *arg)
 {
-    ptr *p1 = (ptr *)0, *p2 = (ptr *)0;
-    char *tmp = skipspace(arg), kind;
-    FILE *fp;
+    ptr *p1 = NULL, *p2 = NULL;
+    char *tmp = skipspace(arg);
 
-    kind = *tmp;
+    char kind = *tmp;
     if (kind == '!' || kind == '>')
         arg = ++tmp;
     else
         kind = 0;
 
-    if (*tmp=='(') {
+    if (*tmp == '(') {
         arg = tmp + 1;
-        (void)evalp(&p1, &arg);
+        evalp(&p1, &arg);
         if (REAL_ERROR)
             goto write_cleanup;
 
         if (*arg == CMDSEP) {
-            arg++;
-            (void)evalp(&p2, &arg);
-            if (!REAL_ERROR && !p2)
+            ++arg;
+            evalp(&p2, &arg);
+            if (!REAL_ERROR && p2 == NULL)
                 error = NO_STRING_ERROR;
             if (REAL_ERROR)
                 goto write_cleanup;
         } else {
             PRINTF("#write: ");
-            error=SYNTAX_ERROR;
+            error = SYNTAX_ERROR;
             goto write_cleanup;
         }
         if (*arg != ')') {
             PRINTF("#write: ");
-            error=MISSING_PAREN_ERROR;
+            error = MISSING_PAREN_ERROR;
             goto write_cleanup;
         }
         arg = ptrdata(p2);
 
-        fp = (kind == '!') ? popen(arg, "w") : fopen(arg, kind ? "w" : "a");
-        if (!fp) {
+        FILE *fp = (kind == '!'
+                    ? popen(arg, "w")
+                    : fopen(arg, kind != 0 ? "w" : "a"));
+        if (fp == NULL) {
             wrap_printf("#write: #error opening \"%s\"", arg);
-            error=SYNTAX_ERROR;
+            error = SYNTAX_ERROR;
             goto write_cleanup2;
         }
-        fprintf(fp, "%s\n", p1 ? ptrdata(p1) : (char *)"");
+        fprintf(fp, "%s\n", p1 != NULL ? ptrdata(p1) : "");
         fflush(fp);
         if (kind == '!') pclose(fp); else fclose(fp);
     } else {
         PRINTF("#write: ");
-        error=MISMATCH_PAREN_ERROR;
+        error = MISMATCH_PAREN_ERROR;
     }
 
-write_cleanup:
+ write_cleanup:
     if (REAL_ERROR)
         print_error(error);
-write_cleanup2:
+ write_cleanup2:
     ptrdel(&p1);
     ptrdel(&p2);
 }
 
 static void cmd_var(char *arg)
 {
-    char *buf, *expr, *tmp, kind, type, right = 0, deleting = 0;
-    varnode **p_named_var = NULL, *named_var = NULL;
-    FILE *fp;
-    long start, end, i = 1;
-    int len, idx;
-    ptr *pbuf = (ptr *)0;
-
     arg = skipspace(arg);
-    expr = first_regular(arg, '=');
+    char *expr = first_regular(arg, '=');
 
-    if (*expr) {
+    bool right = false, deleting = false;
+    if (*expr != '\0') {
         *expr++ = '\0';     /* skip the = */
-        if (!*expr)
-            deleting = 1;
+        if (*expr == '\0')
+            deleting = true;
         else {
-            right = 1;
+            right = true;
             if (*expr == ' ')
-                expr++;
+                ++expr;
         }
     }
 
+    char type;
     if (*arg == '$')
         type = TYPE_TXT_VAR;
     else if (*arg == '@')
         type = TYPE_NUM_VAR;
-    else if (*arg) {
-        print_error(error=INVALID_NAME_ERROR);
+    else if (*arg != '\0') {
+        error = INVALID_NAME_ERROR;
+        print_error(error);
         return;
     } else {
         show_vars();
         return;
     }
 
-    kind = *++arg;
+    varnode **p_named_var = NULL, *named_var = NULL;
+    ptr *pbuf = NULL;
+    int idx;
+    char kind = *++arg;
     if (isalpha(kind) || kind == '_') {
         /* found a named variable */
-        tmp = arg;
-        while (*tmp && (isalnum(*tmp) || *tmp == '_'))
-            tmp++;
-        if (*tmp) {
-            print_error(error=INVALID_NAME_ERROR);
+        char *tmp = arg;
+        while (*tmp != '\0' && (isalnum(*tmp) || *tmp == '_'))
+            ++tmp;
+        if (*tmp != '\0') {
+            error = INVALID_NAME_ERROR;
+            print_error(error);
             return;
         }
-        kind = type==TYPE_TXT_VAR ? 1 : 0;
+        kind = type == TYPE_TXT_VAR ? 1 : 0;
         p_named_var = lookup_varnode(arg, kind);
-        if (!*p_named_var) {
+        if (*p_named_var == NULL) {
             /* it doesn't (yet) exist */
             if (!deleting) {
-                /* so create it */
                 named_var = add_varnode(arg, kind);
                 if (REAL_ERROR)
                     return;
@@ -1871,62 +1848,70 @@ static void cmd_var(char *arg)
                     wrap_printf("#new variable: \"%s\"", arg - 1);
                 }
             } else {
-                print_error(error=UNDEFINED_VARIABLE_ERROR);
+                error = UNDEFINED_VARIABLE_ERROR;
+                print_error(error);
                 return;
             }
         } else
-            /* it exists, hold on */
             named_var = *p_named_var;
 
         idx = named_var->index;
     } else {
         /* not a named variable, may be
          * an unnamed variable or an expression */
-        kind = type==TYPE_TXT_VAR ? 1 : 0;
-        tmp = skipspace(arg);
+        kind = type == TYPE_TXT_VAR ? 1 : 0;
+        char *tmp = skipspace(arg);
         if (*tmp == '(') {
             /* an expression */
-            arg = tmp+1;
+            arg = tmp + 1;
             idx = evalp(&pbuf, &arg);
             if (!REAL_ERROR && idx != TYPE_TXT)
-                error=NO_STRING_ERROR;
+                error = NO_STRING_ERROR;
             if (REAL_ERROR) {
                 PRINTF("#var: ");
                 print_error(error);
                 ptrdel(&pbuf);
                 return;
             }
-            if (pbuf)
+            char *buf;
+            if (pbuf != NULL)
                 buf = ptrdata(pbuf);
             else {
-                print_error(error=INVALID_NAME_ERROR);
+                error = INVALID_NAME_ERROR;
+                print_error(error);
                 return;
             }
             char err_det;
-            if (isdigit(*buf) || *buf=='-' || *buf=='+') {
-                if (sscanf(buf, "%d%c", &idx, &err_det)==1) {
+            if (isdigit(*buf) || *buf == '-' || *buf == '+') {
+                if (sscanf(buf, "%d%c", &idx, &err_det) == 1) {
                     if (idx < -NUMVAR || idx >= NUMPARAM) {
-                        print_error(error=OUT_RANGE_ERROR);
+                        error = OUT_RANGE_ERROR;
+                        print_error(error);
                         ptrdel(&pbuf);
                         return;
                     }
                 } else {
-                    print_error(error=INVALID_NAME_ERROR);
+                    error = INVALID_NAME_ERROR;
+                    print_error(error);
                     return;
                 }
             } else {
-                if (!isalpha(*buf) && *buf!='_') {
-                    print_error(error=INVALID_NAME_ERROR);
+                if (!isalpha(*buf) && *buf != '_') {
+                    error = INVALID_NAME_ERROR;
+                    print_error(error);
                     return;
                 }
                 tmp = buf + 1;
-                while (*tmp && (isalnum(*tmp) || *tmp=='_'))
-                    tmp++;
-                if (*tmp) {
-                    print_error(error=INVALID_NAME_ERROR);
+                while (*tmp != '\0' && (isalnum(*tmp) || *tmp == '_'))
+                    ++tmp;
+                if (*tmp != '\0') {
+                    error = INVALID_NAME_ERROR;
+                    print_error(error);
                     return;
                 }
-                if (!(named_var = *(p_named_var = lookup_varnode(buf, kind)))) {
+                p_named_var = lookup_varnode(buf, kind);
+                named_var = *p_named_var;
+                if (named_var == NULL) {
                     if (!deleting) {
                         named_var = add_varnode(buf, kind);
                         if (REAL_ERROR) {
@@ -1935,11 +1920,12 @@ static void cmd_var(char *arg)
                             return;
                         }
                         if (opt_info) {
-                            PRINTF("#new variable: %c%s\n", kind
-                                       ? '$' : '@', buf);
+                            PRINTF("#new variable: %c%s\n",
+                                   kind != 0 ? '$' : '@', buf);
                         }
                     } else {
-                        print_error(error=UNDEFINED_VARIABLE_ERROR);
+                        error = UNDEFINED_VARIABLE_ERROR;
+                        print_error(error);
                         ptrdel(&pbuf);
                         return;
                     }
@@ -1952,7 +1938,7 @@ static void cmd_var(char *arg)
 
             idx = evall(&buf2, &arg);
             if (!REAL_ERROR && idx != TYPE_NUM)
-                error=NO_STRING_ERROR;
+                error = NO_STRING_ERROR;
             if (REAL_ERROR) {
                 PRINTF("#var: ");
                 print_error(error);
@@ -1960,7 +1946,8 @@ static void cmd_var(char *arg)
             }
             idx = (int)buf2;
             if (idx < -NUMVAR || idx >= NUMPARAM) {
-                print_error(error=OUT_RANGE_ERROR);
+                error = OUT_RANGE_ERROR;
+                print_error(error);
                 return;
             }
             /* ok, it's an unnamed var */
@@ -1968,8 +1955,7 @@ static void cmd_var(char *arg)
     }
 
 
-    if (type == TYPE_TXT_VAR && right && !*VAR[idx].str) {
-        /* create it */
+    if (type == TYPE_TXT_VAR && right && *VAR[idx].str == NULL) {
         *VAR[idx].str = ptrnew(PARAMLEN);
         if (MEM_ERROR) {
             print_error(error);
@@ -1980,7 +1966,7 @@ static void cmd_var(char *arg)
 
     if (deleting) {
         /* R.I.P. named variables */
-        if (named_var) {
+        if (named_var != NULL) {
             if (is_permanent_variable(named_var)) {
                 wrap_printf("#cannot delete variable: \"%s\"", arg - 1);
             } else {
@@ -1991,10 +1977,10 @@ static void cmd_var(char *arg)
             }
         } else if (type == TYPE_TXT_VAR) {
         /* R.I.P. unnamed variables */
-            if (*VAR[idx].str) {
+            if (*VAR[idx].str != NULL) {
                 if (idx < 0) {
                     ptrdel(VAR[idx].str);
-                    *VAR[idx].str = 0;
+                    *VAR[idx].str = NULL;
                 } else
                     ptrzero(*VAR[idx].str);
             }
@@ -2004,7 +1990,7 @@ static void cmd_var(char *arg)
         return;
     } else if (!right) {
         /* no right-hand expression, just show */
-        if (named_var) {
+        if (named_var != NULL) {
             if (type == TYPE_TXT_VAR) {
                 pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
                 if (REAL_ERROR) {
@@ -2014,7 +2000,7 @@ static void cmd_var(char *arg)
                 }
                 fmt_next_edit("#($%s = \"%s\")",
                               named_var->name,
-                              pbuf ? ptrdata(pbuf) : (char *)"");
+                              pbuf != NULL ? ptrdata(pbuf) : "");
             } else {
                 fmt_next_edit("#(@%s = %ld)",
                               named_var->name,
@@ -2024,7 +2010,7 @@ static void cmd_var(char *arg)
             if (type == TYPE_TXT_VAR) {
                 pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
                 fmt_next_edit("#($%d = \"%s\")", idx,
-                              pbuf ? ptrdata(pbuf) : (char *)"");
+                              pbuf != NULL ? ptrdata(pbuf) : "");
             } else {
                 fmt_next_edit("#(@%d = %ld)", idx,
                               *VAR[idx].num);
@@ -2035,27 +2021,29 @@ static void cmd_var(char *arg)
     }
 
     /* only case left: assign a value to a variable */
-    arg = redirect(expr, &pbuf, &kind, "var", 1, &start, &end);
-    if (REAL_ERROR || !arg)
+    long start, end;
+    arg = redirect(expr, &pbuf, &kind, "var", true, &start, &end);
+    if (REAL_ERROR || arg == NULL)
         return;
 
-    if (kind) {
+    if (kind != 0) {
         char buf2[BUFSIZE];
-        fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
-        if (!fp) {
+        FILE *fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        if (fp == NULL) {
             wrap_printf("#var: #error opening \"%s\"", arg);
-            error=SYNTAX_ERROR;
+            error = SYNTAX_ERROR;
             ptrdel(&pbuf);
             return;
         }
-        len = 0;
-        i = 1;
-        while (!error && (!start || i<=end) && utf8_fgets(buf2+len, BUFSIZE-len, fp))
-            if (!start || i++>=start)
+        int len = 0;
+        long i = 1;
+        while (error == 0 && (start == 0 || i <= end)
+               && utf8_fgets(buf2 + len, BUFSIZE - len, fp) != NULL)
+            if (start == 0 || i++ >= start)
                 len += strlen(buf2 + len);
 
         if (kind == '!') pclose(fp); else fclose(fp);
-        if (len>PARAMLEN)
+        if (len > PARAMLEN)
             len = PARAMLEN;
         buf2[len] = '\0';
         arg = buf2;
@@ -2070,16 +2058,17 @@ static void cmd_var(char *arg)
 
         if (errno == ERANGE) {
             PRINTF("#var: ");
-            print_error(error=OUT_RANGE_ERROR);
+            error = OUT_RANGE_ERROR;
+            print_error(error);
         } else {
             if (num_end == arg) {
                 PRINTF("#var: ");
-                print_error(error=NO_NUM_VALUE_ERROR);
+                error = NO_NUM_VALUE_ERROR;
+                print_error(error);
             }
             *VAR[idx].num = num;
         }
-    }
-    else {
+    } else {
         *VAR[idx].str = ptrmcpy(*VAR[idx].str, arg, strlen(arg));
         if (MEM_ERROR)
             print_error(error);
@@ -2089,23 +2078,22 @@ static void cmd_var(char *arg)
 
 static void cmd_setvar(char *arg)
 {
-    char *name;
-    int i, func = 0; /* show */
-    long buf;
-
-    name = arg = skipspace(arg);
+    arg = skipspace(arg);
+    char *name = arg;
     arg = first_regular(arg, '=');
-    if (*arg) {
+    bool set = false;           /* else show */
+    long buf;
+    if (*arg != '\0') {
         *arg++ = '\0';
-        if (*arg) {
-            func = 1; /* set */
+        if (*arg != '\0') {
+            set = true;
             if (*arg == '(') {
-                arg++;
-                i = evall(&buf, &arg);
+                ++arg;
+                int i = evall(&buf, &arg);
                 if (!REAL_ERROR && i != TYPE_NUM)
-                    error=NO_NUM_VALUE_ERROR;
+                    error = NO_NUM_VALUE_ERROR;
                 else if (!REAL_ERROR && *arg != ')')
-                    error=MISSING_PAREN_ERROR;
+                    error = MISSING_PAREN_ERROR;
             } else
                 buf = strtol(arg, NULL, 0);
         } else
@@ -2118,23 +2106,22 @@ static void cmd_setvar(char *arg)
         }
     }
 
-    i = strlen(name);
-    if (i && !strncmp(name, "timer", i)) {
-        vtime t;
+    int i = strlen(name);
+    if (i != 0 && strncmp(name, "timer", i) == 0) {
         update_now();
-        if (func == 0)
+        if (!set)
             fmt_next_edit("#setvar timer=%ld",
                           diff_vtime(&now, &ref_time));
         else {
+            vtime t;
             t.tv_usec = ((-buf) % mSEC_PER_SEC) * uSEC_PER_mSEC;
-            t.tv_sec  =  (-buf) / mSEC_PER_SEC;
+            t.tv_sec = (-buf) / mSEC_PER_SEC;
             ref_time.tv_usec = now.tv_usec;
-            ref_time.tv_sec  = now.tv_sec;
+            ref_time.tv_sec = now.tv_sec;
             add_vtime(&ref_time, &t);
         }
-    }
-    else if (i && !strncmp(name, "lines", i)) {
-        if (func == 0)
+    } else if (i != 0 && strncmp(name, "lines", i) == 0) {
+        if (!set)
             fmt_next_edit("#setvar lines=%d", lines);
         else {
             if (buf > 0)
@@ -2143,53 +2130,53 @@ static void cmd_setvar(char *arg)
                 PRINTF("#setvar: lines=%d\n", lines);
             }
         }
-    }
-    else if (i && !strncmp(name, "mem", i)) {
-        if (func == 0)
+    } else if (i != 0 && strncmp(name, "mem", i) == 0) {
+        if (!set)
             fmt_next_edit("#setvar mem=%d", limit_mem);
         else {
             if (buf == 0 || buf >= PARAMLEN)
                 limit_mem = buf <= INT_MAX ? (int)buf : INT_MAX;
             if (opt_info) {
                 PRINTF("#setvar: mem=%d%s\n", limit_mem,
-                       limit_mem ? "" : " (unlimited)");
+                       limit_mem != 0 ? "" : " (unlimited)");
             }
         }
-    }
-    else if (i && !strncmp(name, "buffer", i)) {
-        if (func == 0)
+    } else if (i != 0 && strncmp(name, "buffer", i) == 0) {
+        if (!set)
             fmt_next_edit("#setvar buffer=%d", log_getsize());
         else
             log_resize(buf);
     } else {
         update_now();
-        PRINTF("#setvar buffer=%d\n#setvar lines=%d\n#setvar mem=%d\n#setvar timer=%ld\n",
+        PRINTF("#setvar buffer=%d\n"
+               "#setvar lines=%d\n"
+               "#setvar mem=%d\n"
+               "#setvar timer=%ld\n",
                log_getsize(), lines, limit_mem, diff_vtime(&now, &ref_time));
     }
 }
 
 static void cmd_if(char *arg)
 {
-    long buf;
-    int type;
-
     arg = skipspace(arg);
-    if (*arg!='(') {
+    if (*arg != '(') {
         PRINTF("#if: ");
-        print_error(error=MISMATCH_PAREN_ERROR);
+        error = MISMATCH_PAREN_ERROR;
+        print_error(error);
         return;
     }
-    arg++;  /* skip the '(' */
+    ++arg;  /* skip the '(' */
 
-    type = evall(&buf, &arg);
+    long buf;
+    int type = evall(&buf, &arg);
     if (!REAL_ERROR) {
-        if (type!=TYPE_NUM)
-            error=NO_NUM_VALUE_ERROR;
+        if (type != TYPE_NUM)
+            error = NO_NUM_VALUE_ERROR;
         if (*arg != ')')
-            error=MISSING_PAREN_ERROR;
+            error = MISSING_PAREN_ERROR;
         else {              /* skip the ')' */
             if (*++arg == ' ')
-                arg++;
+                ++arg;
         }
     }
     if (REAL_ERROR) {
@@ -2198,25 +2185,23 @@ static void cmd_if(char *arg)
         return;
     }
 
-    if (buf)
-        (void)parse_instruction(arg, false, false, true);
+    if (buf != 0)
+        parse_instruction(arg, false, false, true);
     else {
         arg = get_next_instr(arg);
-        if (!strncmp(arg = skipspace(arg), "#else ", 6))
-            (void)parse_instruction(arg + 6, false, false, true);
+        arg = skipspace(arg);
+        if (strncmp(arg, "#else ", 6) == 0)
+            parse_instruction(arg + 6, false, false, true);
     }
 }
 
 static void cmd_for(char *arg)
 {
-    int type = TYPE_NUM, loop=MAX_LOOP;
-    long buf;
-    char *check, *tmp, *increm = 0;
-
     arg = skipspace(arg);
     if (*arg != '(') {
         PRINTF("#for: ");
-        print_error(error=MISMATCH_PAREN_ERROR);
+        error = MISMATCH_PAREN_ERROR;
+        print_error(error);
         return;
     }
     push_params();
@@ -2225,90 +2210,96 @@ static void cmd_for(char *arg)
 
     arg = skipspace(arg + 1);    /* skip the '(' */
     if (*arg != CMDSEP)
-        (void)evaln(&arg);       /* execute <init> */
+        evaln(&arg);       /* execute <init> */
 
-    check = arg + 1;
+    char *check = arg + 1;
+    int type = TYPE_NUM, loop = MAX_LOOP;
+    long buf;
+    char *increm = 0;
 
     if (REAL_ERROR)
         ;
     else if (*arg != CMDSEP) {
         PRINTF("#for: ");
-        print_error(error=MISSING_SEPARATOR_ERROR);
-    }
-    else while (!error && loop
-                && (increm=check, (type = evall(&buf, &increm)) == TYPE_NUM
-                    && !error && *increm == CMDSEP && buf)) {
+        error = MISSING_SEPARATOR_ERROR;
+        print_error(error);
+    } else while (error == 0 && loop != 0
+                && (increm = check,
+                    ((type = evall(&buf, &increm)) == TYPE_NUM
+                     && error == 0 && *increm == CMDSEP && buf != 0))) {
 
-        tmp = first_regular(increm + 1, ')');
-        if (*tmp)
-            (void)parse_instruction(tmp + 1, true, true, true);
+        char *tmp = first_regular(increm + 1, ')');
+        if (*tmp != '\0')
+            parse_instruction(tmp + 1, true, true, true);
         else {
             PRINTF("#for: ");
-            print_error(error=MISSING_PAREN_ERROR);
+            error = MISSING_PAREN_ERROR;
+            print_error(error);
         }
 
-        if (!error) {
+        if (error == 0) {
             tmp = increm + 1;
             if (*tmp != ')')
-                (void)evaln(&tmp);
+                evaln(&tmp);
         }
 
-        loop--;
+        --loop;
     }
     if (REAL_ERROR)
         ;
-    else if (increm && *increm != CMDSEP)
-        error=MISSING_SEPARATOR_ERROR;
-    else if (!loop)
-        error=MAX_LOOP_ERROR;
+    else if (increm != NULL && *increm != CMDSEP)
+        error = MISSING_SEPARATOR_ERROR;
+    else if (loop == 0)
+        error = MAX_LOOP_ERROR;
     else if (type != TYPE_NUM)
-        error=NO_NUM_VALUE_ERROR;
+        error = NO_NUM_VALUE_ERROR;
     if (REAL_ERROR) {
         PRINTF("#for: ");
         print_error(error);
     }
-    if (error!=DYN_STACK_UND_ERROR && error!=DYN_STACK_OV_ERROR)
+    if (error != DYN_STACK_UND_ERROR && error != DYN_STACK_OV_ERROR)
         pop_params();
 }
 
 static void cmd_while(char *arg)
 {
-    int type = TYPE_NUM, loop=MAX_LOOP;
-    long buf;
-    char *check, *tmp;
-
     arg = skipspace(arg);
     if (*arg != '(') {
         PRINTF("#while: ");
-        print_error(error=MISMATCH_PAREN_ERROR);
+        error = MISMATCH_PAREN_ERROR;
+        print_error(error);
         return;
     }
     push_params();
 
-    check = ++arg;   /* skip the '(' */
-    while (!error && loop
-           && (arg=check, (type = evall(&buf, &arg)) == TYPE_NUM &&
-               !error && *arg == ')' && buf)) {
+    char *check = ++arg;   /* skip the '(' */
+    int type = TYPE_NUM, loop = MAX_LOOP;
+    long buf;
+    while (error == 0 && loop != 0
+           && (arg = check,
+               ((type = evall(&buf, &arg)) == TYPE_NUM
+                && error == 0 && *arg == ')' && buf != 0))) {
 
-        if (*(tmp = arg + 1) == ' ')          /* skip the ')' */
-            tmp++;
-        if (*tmp)
-            (void)parse_instruction(tmp, true, true, true);
-        loop--;
+        char *tmp = arg + 1;
+        if (*tmp == ' ')          /* skip the ')' */
+            ++tmp;
+        if (*tmp != '\0')
+            parse_instruction(tmp, true, true, true);
+        --loop;
     }
     if (REAL_ERROR)
         ;
     else if (*arg != ')')
-        error=MISSING_PAREN_ERROR;
-    else if (!loop)
-        error=MAX_LOOP_ERROR;
+        error = MISSING_PAREN_ERROR;
+    else if (loop == 0)
+        error = MAX_LOOP_ERROR;
     else if (type != TYPE_NUM)
-        error=NO_NUM_VALUE_ERROR;
+        error = NO_NUM_VALUE_ERROR;
     if (REAL_ERROR) {
         PRINTF("#while: ");
         print_error(error);
     }
-    if (error!=DYN_STACK_UND_ERROR && error!=DYN_STACK_OV_ERROR)
+    if (error != DYN_STACK_UND_ERROR && error != DYN_STACK_OV_ERROR)
         pop_params();
 }
 
@@ -2318,8 +2309,8 @@ static void cmd_capture(char *arg)
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
 
-    if (!*arg) {
-        if (capturefile) {
+    if (*arg == '\0') {
+        if (capturefile != NULL) {
             log_flush();
             fclose(capturefile);
             capturefile = NULL;
@@ -2330,22 +2321,23 @@ static void cmd_capture(char *arg)
             wrap_printf("#capture to what file?");
         }
     } else {
-        if (capturefile) {
+        if (capturefile != NULL) {
             PRINTF("#capture already active.\n");
         } else {
-            short append = 0;
+            bool append = false;
             /* Append to log file, if the name starts with '>' */
             if (*arg == '>') {
-                    arg++;
-                    append = 1;
+                ++arg;
+                append = true;
             }
-            if ((capturefile = fopen(arg, (append) ? "a" : "w")) == NULL) {
+            capturefile = fopen(arg, append ? "a" : "w");
+            if (capturefile == NULL) {
                 wrap_printf("#error writing file \"%s\"", arg);
             } else {
                 snprintf(name, sizeof(name), "%s", arg);
                 if (opt_info)
-                    wrap_printf("#capture to \"%s\" active, \"#capture\" "
-                                "ends.", arg);
+                    wrap_printf("#capture to \"%s\" active, \"#capture\""
+                                " ends.", arg);
             }
         }
     }
@@ -2357,8 +2349,8 @@ static void cmd_movie(char *arg)
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
 
-    if (!*arg) {
-        if (moviefile) {
+    if (*arg == '\0') {
+        if (moviefile != NULL) {
             log_flush();
             fclose(moviefile);
             moviefile = NULL;
@@ -2369,10 +2361,11 @@ static void cmd_movie(char *arg)
             wrap_printf("#movie to what file?");
         }
     } else {
-        if (moviefile) {
+        if (moviefile != NULL) {
             PRINTF("#movie already active.\n");
         } else {
-            if ((moviefile = fopen(arg, "w")) == NULL) {
+            moviefile = fopen(arg, "w");
+            if (moviefile == NULL) {
                 wrap_printf("#error writing file \"%s\"", arg);
             } else {
                 if (opt_info) {
@@ -2394,8 +2387,8 @@ static void cmd_record(char *arg)
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
 
-    if (!*arg) {
-        if (recordfile) {
+    if (*arg == '\0') {
+        if (recordfile != NULL) {
             fclose(recordfile);
             recordfile = NULL;
             if (opt_info) {
@@ -2405,10 +2398,11 @@ static void cmd_record(char *arg)
             wrap_printf("#record to what file?");
         }
     } else {
-        if (recordfile) {
+        if (recordfile != NULL) {
             PRINTF("#record already active.\n");
         } else {
-            if ((recordfile = fopen(arg, "w")) == NULL) {
+            recordfile = fopen(arg, "w");
+            if (recordfile == NULL) {
                 wrap_printf("#error writing file \"%s\"", arg);
             } else {
                 snprintf(name, sizeof(name), "%s", arg);
@@ -2422,10 +2416,8 @@ static void cmd_record(char *arg)
 
 static void cmd_edit(char *arg)
 {
-    editsess *sp;
-
-    if (edit_sess) {
-        for (sp = edit_sess; sp; sp = sp->next) {
+    if (edit_sess != NULL) {
+        for (editsess *sp = edit_sess; sp != NULL; sp = sp->next) {
             PRINTF("# %s (%u)\n", sp->descr, sp->key);
         }
     } else {
@@ -2435,24 +2427,23 @@ static void cmd_edit(char *arg)
 
 static void cmd_cancel(char *arg)
 {
-    editsess *sp;
-
-    if (!edit_sess) {
+    if (edit_sess == NULL) {
         PRINTF("#no editing sessions to cancel.\n");
     } else {
-        if (*arg) {
-            for (sp = edit_sess; sp; sp = sp->next)
+        if (*arg != '\0') {
+            editsess *sp;
+            for (sp = edit_sess; sp != NULL; sp = sp->next)
                 if (strtoul(arg, NULL, 10) == sp->key) {
                     cancel_edit(sp);
                     break;
                 }
-            if (!sp) {
+            if (sp == NULL) {
                 PRINTF("#unknown editing session %d\n", atoi(arg));
             }
         } else {
-            if (edit_sess->next) {
-                wrap_printf("#several editing sessions active, use #cancel "
-                            "<number>");
+            if (edit_sess->next != NULL) {
+                wrap_printf("#several editing sessions active, use #cancel"
+                            " <number>");
             } else
                 cancel_edit(edit_sess);
         }
@@ -2469,14 +2460,13 @@ static void cmd_net(char *arg)
 #ifndef CLOCKS_PER_SEC
 #  define CLOCKS_PER_SEC uSEC_PER_SEC
 #endif
-/* hope it works.... */
 
 static void cmd_cpu(char *arg)
 {
-    float f, l;
     update_now();
-    f = (float)((cpu_clock = clock()) - start_clock) / (float)CLOCKS_PER_SEC;
-    l = (float)(diff_vtime(&now, &start_time)) / (float)mSEC_PER_SEC;
+    cpu_clock = clock();
+    float f = (float)(cpu_clock - start_clock) / (float)CLOCKS_PER_SEC;
+    float l = (float)(diff_vtime(&now, &start_time)) / (float)mSEC_PER_SEC;
     PRINTF("#CPU time used: %.3f sec. (%.2f%%)\n", f,
                (l > 0 && l > f) ? f * 100.0 / l : 100.0);
 }
@@ -2489,7 +2479,7 @@ static void cmd_cpu(char *arg)
 static bool maybe_flag_args(char **argp, struct tls_options *tlsopt,
                             int *tls, int *utf8)
 {
-    while (*argp != NULL && **argp) {
+    while (*argp != NULL && **argp != '\0') {
         bool u;
         if (parse_charset_flag(*argp, &u)) {
             *utf8 = u;
@@ -2518,10 +2508,10 @@ static bool maybe_flag_args(char **argp, struct tls_options *tlsopt,
 static void cmd_connect(char *arg)
 {
 #ifdef TERM
-    wrap_printf("#connect: multiple connections not supported in term "
-                "version.");
+    wrap_printf("#connect: multiple connections not supported in term"
+                " version.");
 #else
-    if (!*skipspace(arg)) {
+    if (*skipspace(arg) == '\0') {
         tcp_show();
         return;
     }
@@ -2541,28 +2531,29 @@ static void cmd_connect(char *arg)
 
     char *s3 = NULL, *s4 = NULL;
 
-    if (s2 && *s2) {
-        argc++;
+    if (s2 != NULL && *s2 != '\0') {
+        ++argc;
         s3 = strtok(NULL, " ");
         if (!maybe_flag_args(&s3, &tlsopt, &tls, &utf8))
             return;
-        if (s3 && *s3) {
-            argc++;
+        if (s3 != NULL && *s3 != '\0') {
+            ++argc;
             s4 = strtok(NULL, " ");
             if (!maybe_flag_args(&s4, &tlsopt, &tls, &utf8))
                 return;
-            if (s4 && *s4)
-                argc++;
+            if (s4 != NULL && *s4 != '\0')
+                ++argc;
         }
     }
 
     if (argc <= 2) {
-        if (*hostinfo.name)
+        if (*hostinfo.name != '\0')
             tcp_open(s1, s2, hostinfo.name, hostinfo.port,
                      tls >= 0 ? &tlsopt : &hostinfo.tlsopt,
-                     utf8 >= 0 ? utf8 : hostinfo.utf8);
+                     (utf8 >= 0 ? utf8 : hostinfo.utf8) != 0);
         else {
-            PRINTF("#connect: no host defined!\n#syntax: #connect"
+            PRINTF("#connect: no host defined!\n"
+                   "#syntax: #connect"
                    " <session-id> [<initstr>] <address> <port>"
                    " [--tls[=<options>]|" NO_TLS_FLAG "]"
                    " [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
@@ -2572,13 +2563,13 @@ static void cmd_connect(char *arg)
             tlsopt.use_tls = default_tls;
         if (utf8 < 0)
             utf8 = default_utf8;
-        if (!*hostinfo.name) {
-            my_strncpy(hostinfo.name, s2, BUFSIZE-1);
+        if (*hostinfo.name == '\0') {
+            my_strncpy(hostinfo.name, s2, BUFSIZE - 1);
             hostinfo.port = atoi(s3);
             hostinfo.tlsopt = tlsopt;
-            hostinfo.utf8 = utf8;
+            hostinfo.utf8 = utf8 != 0;
         }
-        tcp_open(s1, NULL, s2, atoi(s3), &tlsopt, utf8);
+        tcp_open(s1, NULL, s2, atoi(s3), &tlsopt, utf8 != 0);
     } else {
         char *s5 = strtok(NULL, " ");
         if (!maybe_flag_args(&s5, &tlsopt, &tls, &utf8))
@@ -2588,13 +2579,13 @@ static void cmd_connect(char *arg)
         if (utf8 < 0)
             utf8 = default_utf8;
 
-        if (!*hostinfo.name) {
-            my_strncpy(hostinfo.name, s3, BUFSIZE-1);
+        if (*hostinfo.name == '\0') {
+            my_strncpy(hostinfo.name, s3, BUFSIZE - 1);
             hostinfo.port = atoi(s4);
             hostinfo.tlsopt = tlsopt;
-            hostinfo.utf8 = utf8;
+            hostinfo.utf8 = utf8 != 0;
         }
-        tcp_open(s1, s2, s3, atoi(s4), &tlsopt, utf8);
+        tcp_open(s1, s2, s3, atoi(s4), &tlsopt, utf8 != 0);
     }
 #endif /* TERM */
 }
@@ -2602,10 +2593,11 @@ static void cmd_connect(char *arg)
 
 static void cmd_spawn(char *arg)
 {
-    char s[BUFSIZE];
-    if (*(arg = skipspace(arg))) {
+    arg = skipspace(arg);
+    if (*arg != '\0') {
+        char s[BUFSIZE];
         arg = split_first_word(s, BUFSIZE, arg);
-        if (*arg && *s) {
+        if (*arg != '\0' && *s != '\0') {
             tcp_spawn(s, arg);
             return;
         }
@@ -2618,17 +2610,17 @@ static void cmd_spawn(char *arg)
 static void cmd_speedwalk(char *arg)
 {
     bool save_speedwalk = opt_speedwalk;
-    PRINTF( "Executing speedwalk '%s'\n", arg );
+    PRINTF("Executing speedwalk '%s'\n", arg);
     opt_speedwalk = true;
-    if( ! map_walk( skipspace(arg), false, false ) ) {
-        PRINTF( "Error executing speedwalk\n" );
+    if (!map_walk(skipspace(arg), false, false)) {
+        PRINTF("Error executing speedwalk\n");
     }
     opt_speedwalk = save_speedwalk;
 }
 
 static void cmd_zap(char *arg)
 {
-    if (!*arg) {
+    if (*arg == '\0') {
         PRINTF("#zap: no connection name.\n");
     } else
         tcp_close(arg);
@@ -2641,7 +2633,7 @@ static void cmd_qui(char *arg)
 
 static void cmd_quit(char *arg)
 {
-    if (*arg) { /* no skipspace() here! */
+    if (*arg != '\0') { /* no skipspace() here! */
         PRINTF("#quit: spurious argument?\n");
     } else
         exit_powwow();
@@ -2652,35 +2644,35 @@ static const struct {
     bool *option;
     const char *doc;
 } options[] = {
-    { "autoclear", &opt_autoclear,
-      "clear input line before executing commands" },
-    { "autoprint", &opt_autoprint,
-      "#print lines matched by actions" },
-    { "compact",   &opt_compact,
-      "remove prompt when receiving new messages from mud" },
-    { "debug",     &opt_debug,
-      "print commands before executing" },
-    { "echo",      &opt_echo,
-      "print command action commands when executed" },
-    { "exit",      &opt_exit,
-      "automatically exit powwow when mud connection closes" },
-    { "history",   &opt_history,
-      "also save command history" },
-    { "info",      &opt_info,
-      "print information about command effects" },
-    { "keyecho",   &opt_keyecho,
-      "print command bound to key when executed" },
-    { "reprint",   &opt_reprint,
-      "reprint sent commands when getting new prompt" },
-    { "sendsize",  &opt_sendsize,
-      "send terminal size when opening connection" },
-    { "speedwalk", &opt_speedwalk,
-      "enable speed walking (ness3ew...)" },
-    { "words",     &opt_words,
-      "also save word history" },
-    { "wrap",      &opt_wrap,
-      "enable word wrapping" },
-    { NULL }
+    { .name = "autoclear", .option = &opt_autoclear,
+      .doc = "clear input line before executing commands" },
+    { .name = "autoprint", .option = &opt_autoprint,
+      .doc = "#print lines matched by actions" },
+    { .name = "compact", .option = &opt_compact,
+      .doc = "remove prompt when receiving new messages from mud" },
+    { .name = "debug", .option = &opt_debug,
+      .doc = "print commands before executing" },
+    { .name = "echo", .option = &opt_echo,
+      .doc = "print command action commands when executed" },
+    { .name = "exit", .option = &opt_exit,
+      .doc = "automatically exit powwow when mud connection closes" },
+    { .name = "history", .option = &opt_history,
+      .doc = "also save command history" },
+    { .name = "info", .option = &opt_info,
+      .doc = "print information about command effects" },
+    { .name = "keyecho", .option = &opt_keyecho,
+      .doc = "print command bound to key when executed" },
+    { .name = "reprint", .option = &opt_reprint,
+      .doc = "reprint sent commands when getting new prompt" },
+    { .name = "sendsize", .option = &opt_sendsize,
+      .doc = "send terminal size when opening connection" },
+    { .name = "speedwalk", .option = &opt_speedwalk,
+      .doc = "enable speed walking (ness3ew...)" },
+    { .name = "words", .option = &opt_words,
+      .doc = "also save word history" },
+    { .name = "wrap", .option = &opt_wrap,
+      .doc = "enable word wrapping" },
+    { 0 }
 };
 
 /* print all options to 'file', or tty if file is NULL; return -1 on
@@ -2688,11 +2680,11 @@ static const struct {
 int print_all_options(FILE *file)
 {
     const char *prefix = "#option";
-    int width = (file ? 80 : cols) - 16;
-    int len = 0, i;
-    for (i = 0; options[i].name; ++i) {
+    int width = (file != NULL ? 80 : cols) - 16;
+    int len = 0;
+    for (int i = 0; options[i].name != NULL; ++i) {
         int res;
-        if (file)
+        if (file != NULL)
             res = fprintf(file, "%s %c%s", prefix,
                           *options[i].option ? '+' : '-',
                           options[i].name);
@@ -2711,7 +2703,7 @@ int print_all_options(FILE *file)
             prefix = "";
         }
     }
-    if (file) {
+    if (file != NULL) {
         fputc('\n', file);
     } else {
         tty_putc('\n');
@@ -2727,31 +2719,31 @@ const char *option_name(int i)
 
 static void cmd_option(char *arg)
 {
-    char buf[BUFSIZE];
-    int count = 0;
-
     arg = skipspace(arg);
-    if (!*arg) {
+    if (*arg == '\0') {
         print_all_options(NULL);
         return;
     }
 
-    while ((arg = skipspace(split_first_word(buf, BUFSIZE, arg))), *buf) {
+    char buf[BUFSIZE];
+    int count = 0;
+    while ((arg = skipspace(split_first_word(buf, BUFSIZE, arg)),
+            *buf != '\0')) {
         enum { MODE_ON, MODE_OFF, MODE_TOGGLE, MODE_REP } mode;
-        bool *varp = NULL;
         char *p = buf;
         char c = *p;
         int len = strlen(p);
-        int i;
 
         switch (c) {
-        case '=': mode = MODE_REP; p++; break;
-        case '+': mode = MODE_ON;  p++; break;
-        case '-': mode = MODE_OFF; p++; break;
+        case '=': mode = MODE_REP; ++p; break;
+        case '+': mode = MODE_ON;  ++p; break;
+        case '-': mode = MODE_OFF; ++p; break;
         default:  mode = MODE_TOGGLE;     break;
         }
-        count++;
-        for (i = 0; options[i].name; i++) {
+        ++count;
+        bool *varp = NULL;
+        int i;
+        for (i = 0; options[i].name != NULL; ++i) {
             if (strncmp(options[i].name, p, len) == 0) {
                 varp = options[i].option;
                 break;
@@ -2760,7 +2752,7 @@ static void cmd_option(char *arg)
         if (varp == NULL) {
             if (strncmp("list", p, len) == 0) {
                 tty_message("#list of options:\n");
-                for (i = 0; options[i].name; ++i) {
+                for (i = 0; options[i].name != NULL; ++i) {
                     assert(options[i].option != NULL);
                     tty_message("#option %c%-12s    %s\n",
                                *options[i].option ? '+' : '-',
@@ -2778,9 +2770,9 @@ static void cmd_option(char *arg)
         case MODE_REP:
             fmt_next_edit("#option %c%s", *varp ? '+' : '-', p);
             break;
-        case MODE_ON:     *varp  = true; break;
-        case MODE_OFF:    *varp  = false; break;
-        case MODE_TOGGLE: *varp  = !*varp; break;
+        case MODE_ON:     *varp = true; break;
+        case MODE_OFF:    *varp = false; break;
+        case MODE_TOGGLE: *varp = !*varp; break;
         }
         /*
          * reset the reprint buffer if changing its status
@@ -2790,8 +2782,8 @@ static void cmd_option(char *arg)
 
         /* as above, but always print status if
          * "#option info" alone was typed */
-        if (mode != MODE_REP && !*arg && count==1 &&
-            (opt_info || (mode == MODE_TOGGLE && varp==&opt_info))) {
+        if (mode != MODE_REP && *arg == '\0' && count == 1
+            && (opt_info || (mode == MODE_TOGGLE && varp == &opt_info))) {
             PRINTF("#option %s is now o%s.\n",
                    options[i].name,
                    *varp ? "n" : "ff");
@@ -2806,13 +2798,13 @@ static void cmd_file(char *arg)
     if (*arg == '=') {
         set_deffile(++arg);
         if (opt_info) {
-            if (*arg) {
+            if (*arg != '\0') {
                 wrap_printf("#save-file set to \"%s\"", deffile);
             } else {
                 wrap_printf("#save-file is now undefined.");
             }
         }
-    } else if (*deffile) {
+    } else if (*deffile != '\0') {
         fmt_next_edit("#file =%s", deffile);
     } else {
         wrap_printf("#save-file not defined.");
@@ -2823,48 +2815,44 @@ static void cmd_save(char *arg)
 {
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
-    if (*arg) {
+    if (*arg != '\0') {
         set_deffile(arg);
         if (opt_info) {
             wrap_printf("#save-file set to \"%s\"", deffile);
         }
-    } else if (!*deffile) {
+    } else if (*deffile == '\0') {
         wrap_printf("#save-file not defined.");
         return;
     }
 
-    if (*deffile && save_settings() > 0 && opt_info) {
+    if (*deffile != '\0' && save_settings() > 0 && opt_info) {
         wrap_printf("#settings saved to \"%s\".", deffile);
     }
 }
 
 static void cmd_load(char *arg)
 {
-    int res;
-
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
-    if (*arg) {
+    if (*arg != '\0') {
         set_deffile(arg);
         if (opt_info) {
             wrap_printf("#save-file set to \"%s\"", deffile);
         }
-    }
-    else if (!*deffile) {
+    } else if (*deffile == '\0') {
         wrap_printf("#save-file not defined.");
         return;
     }
 
-    res = read_settings();
+    int res = read_settings();
 
     if (res > 0) {
-        /* success */
         if (opt_info) {
             wrap_printf("#settings loaded from file.");
         }
     } else if (res < 0) {
         /* critical error */
-        while (keydefs)
+        while (keydefs != NULL)
             delete_keynode(&keydefs);
         tty_add_initial_binds();
         tty_add_walk_binds();
@@ -2875,40 +2863,38 @@ static void cmd_load(char *arg)
 
 static char *trivial_eval(ptr **pbuf, char *arg, char *name)
 {
-    char *tmp = skipspace(arg);
-
-    if (!pbuf)
+    if (pbuf == NULL)
         return NULL;
 
-    if (*tmp=='(') {
+    char *tmp = skipspace(arg);
+    if (*tmp == '(') {
         arg = tmp + 1;
-        (void)evalp(pbuf, &arg);
+        evalp(pbuf, &arg);
         if (!REAL_ERROR && *arg != ')')
-            error=MISSING_PAREN_ERROR;
+            error = MISSING_PAREN_ERROR;
         if (REAL_ERROR) {
             PRINTF("#%s: ", name);
             print_error(error);
             return NULL;
         }
-        if (*pbuf)
+        if (*pbuf != NULL)
             arg = ptrdata(*pbuf);
         else
             arg = "";
-    }
-    else
+    } else
         unescape(arg);
 
     return arg;
 }
 
-static void do_cmd_add(char *arg, int is_static)
+static void do_cmd_add(char *arg, bool is_static)
 {
-    ptr *pbuf = (ptr *)0;
-    char buf[BUFSIZE];
+    ptr *pbuf = NULL;
 
     arg = trivial_eval(&pbuf, arg, "add");
     if (!REAL_ERROR)
-        while (*arg) {
+        while (*arg != '\0') {
+            char buf[BUFSIZE];
             arg = split_first_word(buf, BUFSIZE, arg);
             if (strlen(buf) >= MIN_WORDLEN)
                 (is_static ? put_static_word : put_word)(buf);
@@ -2918,19 +2904,19 @@ static void do_cmd_add(char *arg, int is_static)
 
 static void cmd_add(char *arg)
 {
-    do_cmd_add(arg, 0);
+    do_cmd_add(arg, false);
 }
 
 static void cmd_addstatic(char *arg)
 {
-    do_cmd_add(arg, 1);
+    do_cmd_add(arg, true);
 }
 
 static void cmd_put(char *arg)
 {
-    ptr *pbuf = (ptr *)0;
+    ptr *pbuf = NULL;
     arg = trivial_eval(&pbuf, arg, "put");
-    if (!REAL_ERROR && *arg)
+    if (!REAL_ERROR && *arg != '\0')
         put_history(arg);
     ptrdel(&pbuf);
 }

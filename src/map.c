@@ -166,7 +166,10 @@ bool map_walk(char *word, bool silent, bool maponly)
 	silent = true;
     buf[1] = '\0';
     while (*word) {
-        if (!silent) { status(1); tty_putc('['); }
+        if (!silent) {
+	    status(1);
+	    tty_putc('[');
+	}
 
         if (isdigit(*word)) {
             n = strtol(word, &word, 10);
