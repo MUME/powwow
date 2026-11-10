@@ -2177,16 +2177,117 @@ static void swap_ptrs(ptr **a, ptr **b)
 }
 
 /*
+ * run 'line', an instruction that is not empty: send it to the MUD, or
+ * after "##name" to the connection 'name', or run it as a block, an alias,
+ * a command of powwow or a speedwalk; '*pbuf' is a buffer that it can
+ * use, and '*old_conn' gets the current connection if it changes it
+ */
+static void run_instruction(char *line, bool silent, bool subs,
+                            bool jit_subs, ptr **pbuf, connsess **old_conn)
+{
+    char *arg = skipspace(line);
+
+    if (arg[0] == '#' && arg[1] == '#') {
+        /* send to another connection */
+        int len = strlen(arg);
+        *pbuf = ptrsetlen(*pbuf, len);
+        if (REAL_ERROR) {
+            print_error(error);
+            return;
+        }
+        /* the first word, the name of the connection, goes in buf */
+        char *buf = ptrdata(*pbuf);
+        line = split_first_word(buf, len + 1, arg + 2);
+        *old_conn = current_connection;
+        current_connection = tcp_find_connection(buf);
+        if (current_connection == NULL) {
+            error = OUT_RANGE_ERROR;
+            wrap_printf("#no connection named \"%s\"", buf);
+            return;
+        }
+        arg = skipspace(line);
+        if (*arg == '\0') {
+            if (current_connection->flags & SPAWN) {
+                error = OUT_RANGE_ERROR;
+                wrap_printf("#only MUD connections can be default ones!");
+            } else {
+                /* set it as main connection */
+                tcp_set_main(current_connection);
+                *old_conn = NULL;
+            }
+            /* stop parsing, otherwise a newline would be sent to tcp_fd */
+            return;
+        }
+        /* now we can trash (pbuf) */
+    }
+
+    if (*arg == '{') {
+        /* a block */
+        char *end = first_regular(arg + 1, '}');
+        if (*end != '\0') {
+            *end = '\0';
+            parse_user_input(arg + 1, silent);
+            *end = '}';
+        } else {
+            error = MISSING_PAREN_ERROR;
+            print_error(error);
+        }
+        return;
+    }
+
+    /* initial spaces are NOT skipped this time */
+    int len = strlen(line);
+    *pbuf = ptrsetlen(*pbuf, len);
+    if (REAL_ERROR) {
+        print_error(error);
+        return;
+    }
+    /* the first word goes in buf, and arg points to the arguments */
+    char *buf = ptrdata(*pbuf);
+    arg = split_first_word(buf, len + 1, line);
+    bool oneword = (*arg == '\0');
+
+    aliasnode *np = *lookup_alias(buf);
+    char *end = skipspace(line);
+    if (np != NULL && np->active) {
+        push_params();
+        if (REAL_ERROR)
+            return;
+        /* the arguments, split into words, go in $0 ... $9 */
+        split_words(arg);
+        parse_instruction(np->subst, false, true, true);
+        if (error != DYN_STACK_UND_ERROR && error != DYN_STACK_OV_ERROR)
+            pop_params();
+    } else if (*end == '#') {
+        /* a command of powwow; after aliases, so they can start with # */
+        end = skipspace(end + 1);
+        if (*end == '(') {
+            /* #(expression) */
+            ++end;
+            evaln(&end);
+            if (REAL_ERROR)
+                print_error(error);
+        } else {
+            parse_commands(buf + 1, arg);
+        }
+    } else if (!oneword || !map_walk(buf, silent, false)) {
+        /* map_walk() takes only one word */
+        if (!subs && !jit_subs)
+            unescape(line);
+        send_line(line, silent);
+    }
+}
+
+/*
  * Parse and exec the first instruction in 'line', and return pointer to the
  * second instruction in 'line' (if any).
  */
 char *parse_instruction(char *line, bool silent, bool subs,
 			bool jit_subs)
 {
-    aliasnode *np;
-    char *buf, *arg, *end, *ret;
+    char *ret;
     char last_is_sep = 0;
-    int len, copied = 0;
+    int copied = 0;
     ptr *pbuf = NULL, *pbusy = NULL;
 
     if (error) return NULL;
@@ -2256,94 +2357,10 @@ char *parse_instruction(char *line, bool silent, bool subs,
 
     connsess *old_conn = NULL;
 
-    if (!*line)
-	send_line(line, silent);
-    else do {
-	arg = skipspace(line);
-
-	if (arg[0] == '#' && arg[1] == '#') { /* send to other connection */
-	    pbuf = ptrsetlen(pbuf, len = strlen(arg));
-	    if (REAL_ERROR) { print_error(error); break; }
-	    buf = ptrdata(pbuf);
-	    line = split_first_word(buf, len+1, arg + 2);
-	    /* now (pbuf) is used too: first word of line */
-	    /* line contains the rest */
-            old_conn = current_connection;
-            current_connection = tcp_find_connection(buf);
-	    if (current_connection == NULL) {
-		error = OUT_RANGE_ERROR;
-		wrap_printf("#no connection named \"%s\"", buf);
-		break;
-	    }
-	    arg = skipspace(line);
-	    if (!*arg) {
-		if (current_connection->flags & SPAWN) {
-		    error = OUT_RANGE_ERROR;
-		    wrap_printf("#only MUD connections can be default ones!");
-		} else {
-		    /* set it as main connection */
-		    tcp_set_main(current_connection);
-                    old_conn = NULL;
-		}
-		/* stop parsing, otherwise a newline would be sent to tcp_fd */
-		break;
-	    }
-	    /* now we can trash (pbuf) */
-	}
-
-	if (*arg == '{') {    /* instruction contains a block */
-	    end = first_regular(line = arg + 1, '}');
-
-	    if (*end) {
-		*end = '\0';
-		parse_user_input(line, silent);
-		*end = '}';
-	    } else
-		print_error(error=MISSING_PAREN_ERROR);
-	} else {
-	    /* initial spaces are NOT skipped this time */
-
-	    pbuf = ptrsetlen(pbuf, len = strlen(line));
-	    if (REAL_ERROR) { print_error(error); break; }
-
-	    buf = ptrdata(pbuf);
-	    arg = split_first_word(buf, len+1, line);
-	    /* buf contains the first word, arg points to arguments */
-
-	    /* now pbuf is used too */
-            bool oneword = (*arg == '\0');
-
-	    if ((np = *lookup_alias(buf))&&np->active) {
-		push_params();
-		if (REAL_ERROR) break;
-
-		split_words(arg);  /* split argument into words
-				    and place them in $0 ... $9 */
-		parse_instruction(np->subst, false, true, true);
-
-		if (error!=DYN_STACK_UND_ERROR && error!=DYN_STACK_OV_ERROR)
-		    pop_params();
-
-		/* now check for internal commands */
-		/* placed here to allow also aliases starting with "#" */
-	    } else if (*(end = skipspace(line)) == '#') {
-
-		if (*(end = skipspace(end + 1)) == '(') {    /* execute #() */
-		    end++;
-		    (void)evaln(&end);
-		    if (REAL_ERROR) print_error(error);
-		} else
-		    parse_commands(buf + 1, arg);
-		/* ok, buf contains skipspace(first word) */
-            } else if (!oneword || !map_walk(buf, silent, false)) {
-		/* it is ok, map_walk accepts only one word */
-
-		if (!subs && !jit_subs)
-		    unescape(line);
-		send_line(line, silent);
-	    }
-	}
-    } while (0);
+    if (*line == '\0')
+        send_line(line, silent);
+    else
+        run_instruction(line, silent, subs, jit_subs, &pbuf, &old_conn);
 
     if (old_conn != NULL)
         current_connection = old_conn;
