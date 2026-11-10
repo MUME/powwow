@@ -787,7 +787,7 @@ static void cmd_do(char *arg)
 
     if (result >= 0)
 	while (!error && result--)
-	    (void)parse_instruction(arg, 1, 0, 1);
+	    (void)parse_instruction(arg, true, false, true);
     else {
 	PRINTF("#do: bogus repeat count \"%ld\"\n", result);
     }
@@ -1250,7 +1250,7 @@ static void cmd_map(char *arg)
     else if (*arg == '-')  /* retrace steps without walking */
 	map_retrace(atoi(arg + 1), 0);
     else
-	map_walk(arg, 1, 1);
+	map_walk(arg, true, true);
 }
 
 static void cmd_retrace(char *arg)
@@ -1301,7 +1301,7 @@ static void cmd_nice(char *arg)
     }
     arg = skipspace(arg);
     if (*arg) {
-	parse_instruction(arg, 0, 0, 1);
+	parse_instruction(arg, false, false, true);
 	a_nice = nnice;
     }
 }
@@ -1619,14 +1619,14 @@ static void cmd_exe(char *arg)
 	    } else {
 	        if (!start || i++ >= start) {
 		    buf[strlen(buf)-1] = '\0';
-		    parse_user_input(buf, 0);
+		    parse_user_input(buf, false);
 		    offset = 0;
 		}
 	    }
 
 	if (kind == '!') pclose(fp); else fclose(fp);
     } else
-	parse_user_input(arg, 0);
+	parse_user_input(arg, false);
     ptrdel(&pbuf);
 }
 
@@ -2199,11 +2199,11 @@ static void cmd_if(char *arg)
     }
 
     if (buf)
-	(void)parse_instruction(arg, 0, 0, 1);
+	(void)parse_instruction(arg, false, false, true);
     else {
 	arg = get_next_instr(arg);
 	if (!strncmp(arg = skipspace(arg), "#else ", 6))
-	    (void)parse_instruction(arg + 6, 0, 0, 1);
+	    (void)parse_instruction(arg + 6, false, false, true);
     }
 }
 
@@ -2241,7 +2241,7 @@ static void cmd_for(char *arg)
 
 	tmp = first_regular(increm + 1, ')');
 	if (*tmp)
-	    (void)parse_instruction(tmp + 1, 1, 1, 1);
+	    (void)parse_instruction(tmp + 1, true, true, true);
 	else {
 	    PRINTF("#for: ");
 	    print_error(error=MISSING_PAREN_ERROR);
@@ -2293,7 +2293,7 @@ static void cmd_while(char *arg)
 	if (*(tmp = arg + 1) == ' ')          /* skip the ')' */
 	    tmp++;
 	if (*tmp)
-	    (void)parse_instruction(tmp, 1, 1, 1);
+	    (void)parse_instruction(tmp, true, true, true);
 	loop--;
     }
     if (REAL_ERROR)
@@ -2617,10 +2617,10 @@ static void cmd_spawn(char *arg)
  * you can manually trigger a speedwalk this way */
 static void cmd_speedwalk(char *arg)
 {
-    char save_speedwalk = opt_speedwalk;
+    bool save_speedwalk = opt_speedwalk;
     PRINTF( "Executing speedwalk '%s'\n", arg );
-    opt_speedwalk = 1;
-    if( ! map_walk( skipspace(arg), 0, 0 ) ) {
+    opt_speedwalk = true;
+    if( ! map_walk( skipspace(arg), false, false ) ) {
         PRINTF( "Error executing speedwalk\n" );
     }
     opt_speedwalk = save_speedwalk;
@@ -2649,7 +2649,7 @@ static void cmd_quit(char *arg)
 
 static const struct {
     const char *name;
-    char *option;
+    bool *option;
     const char *doc;
 } options[] = {
     { "autoclear", &opt_autoclear,
@@ -2738,7 +2738,7 @@ static void cmd_option(char *arg)
 
     while ((arg = skipspace(split_first_word(buf, BUFSIZE, arg))), *buf) {
         enum { MODE_ON, MODE_OFF, MODE_TOGGLE, MODE_REP } mode;
-        char *varp = NULL;
+        bool *varp = NULL;
         char *p = buf;
         char c = *p;
         int len = strlen(p);
@@ -2778,9 +2778,9 @@ static void cmd_option(char *arg)
         case MODE_REP:
             fmt_next_edit("#option %c%s", *varp ? '+' : '-', p);
             break;
-        case MODE_ON:     *varp  = 1; break;
-        case MODE_OFF:    *varp  = 0; break;
-        case MODE_TOGGLE: *varp ^= 1; break;
+        case MODE_ON:     *varp  = true; break;
+        case MODE_OFF:    *varp  = false; break;
+        case MODE_TOGGLE: *varp  = !*varp; break;
         }
         /*
          * reset the reprint buffer if changing its status

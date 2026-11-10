@@ -403,7 +403,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
     /* send a edit_start message (if wanted) */
     if ((!edit_sess) && (*edit_start)) {
 	error = 0;
-	parse_instruction(edit_start, 0, 0, 1);
+	parse_instruction(edit_start, false, false, true);
 	history_done = 0;
     }
 
@@ -499,7 +499,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	free(s->file);
 	if (i != -1 && !edit_sess && *edit_end) {
 	    error = 0;
-	    parse_instruction(edit_end, 0, 0, 1);
+	    parse_instruction(edit_end, false, false, true);
 	    history_done = 0;
 	}
 
@@ -648,7 +648,7 @@ void sig_chld_bottomhalf(void)
 		connsess *old_conn = current_connection;
                 current_connection = conn;
 		error = 0;
-		parse_instruction(edit_end, 0, 0, 1);
+		parse_instruction(edit_end, false, false, true);
 		history_done = 0;
 		current_connection = old_conn;
 	    }

@@ -147,23 +147,23 @@ void map_add_dir(char dir)
 
 /*
  * execute walk if word is valid [speed]walk sequence -
- * return 1 if walked, 0 if not
+ * return true if walked, false if not
  */
-int map_walk(char *word, int silent, int maponly)
+bool map_walk(char *word, bool silent, bool maponly)
 {
     char buf[16];
     int n = strlen(word);
-    int is_main = (current_connection == main_connection);
+    bool is_main = (current_connection == main_connection);
 
     if (!is_main && !maponly && !opt_speedwalk)
-	return 0;
+	return false;
     if (!n || (n > 1 && !opt_speedwalk && !maponly) ||
 	!strchr("neswud", word[n - 1]) ||
 	(int)strspn(word, "neswud0123456789") != n)
-	return 0;
+	return false;
 
     if (maponly)
-	silent = 1;
+	silent = true;
     buf[1] = '\0';
     while (*word) {
         if (!silent) { status(1); tty_putc('['); }
@@ -180,7 +180,7 @@ int map_walk(char *word, int silent, int maponly)
             *buf = *word;
             if (!maponly) {
                 if (*lookup_alias(buf))
-                    parse_instruction(buf, 1, 0, 0); /* we want to execute aliases n,e,s,w,u,d */
+                    parse_instruction(buf, true, false, false); /* we want to execute aliases n,e,s,w,u,d */
                 else tcp_write(current_connection, buf);
 	    }
             if (is_main || maponly)
