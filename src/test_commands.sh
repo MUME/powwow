@@ -128,6 +128,15 @@ run 'action reports errors in its pattern expression' '#action >e (1+)=x
 has '#action: #error: value expected.'
 has '#action: #error: string expected.'
 
+run 'prompt with a group' '#prompt >q@c bar=#print ("prompt")
+#action >p@a foo=#print ("action")
+#prompt >p@b foo=#print ("prompt")
+#group a off
+#emulate foo
+#print ("alive")'
+lacks 'action'
+has 'alive'
+
 run 'substitute define, list and delete' '#substitute foo=bar
 #substitute
 #print ("a foo b foo")

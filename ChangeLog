@@ -87,6 +87,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  @1 to 0, and the same for the other unnamed variables.
 	* Fixed #action and #prompt reporting any error in a pattern given
 	  as an expression, such as `(1+)', as `string expected'.
+	* Fixed a #prompt with a group crashing powwow, or changing the group
+	  of the action with the same label.
 	* C-c stops a loop such as #while also while it runs a shell command
 	  with #!, which received the C-c instead of powwow.
 	* #connect tries every address of the host, and connects to IPv4
