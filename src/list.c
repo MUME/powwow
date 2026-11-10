@@ -173,14 +173,10 @@ void add_marknode(char *pattern, const struct attr *attr, bool mbeg, bool wild)
 	free(new);
 	return;
     }
-#ifdef USE_LIST_SORT
-    add_node((defnode*)new, (defnode**)&markers, ascii_sort);
-#else
     for (p=&markers, i=1; *p && (a_nice==0 || i<a_nice); p = &(*p)->next, i++)
 	;
     new->next = *p;
     *p = new;
-#endif
 }
 
 
@@ -203,15 +199,11 @@ void add_substnode(char *pattern, char *replacement, bool mbeg, bool wild)
         delete_substnode(&new);
         return;
     }
-#ifdef USE_LIST_SORT
-    add_node((defnode*)new, (defnode**)&substitutions, ascii_sort);
-#else
     substnode **p = &substitutions;
     for (int i = 1; *p != NULL && (a_nice == 0 || i < a_nice); ++i)
       p = &(*p)->next;
     new->next = *p;
     *p = new;
-#endif
 }
 
 /*
@@ -246,14 +238,10 @@ void add_actionnode(char *pattern, char *command, char *label, bool active, int 
 	free(new);
 	return;
     }
-#ifdef USE_LIST_SORT
-    add_node((defnode*)new, (defnode**)&actions, ascii_sort);
-#else
     for (p=&actions, i=1; *p && (a_nice==0 || i<a_nice); p = &(*p)->next, i++)
 	;
     new->next = *p;
     *p = new;
-#endif
 }
 
 /*
@@ -287,14 +275,10 @@ void add_promptnode(char *pattern, char *command, char *label, bool active, int 
 	free(new);
 	return;
     }
-#ifdef USE_LIST_SORT
-    add_node((defnode*)new, (defnode**)&prompts, ascii_sort);
-#else
     for (p=&prompts, i=1; *p && (a_nice==0 || i<a_nice); p = &(*p)->next, i++)
 	;
     new->next = *p;
     *p = new;
-#endif
 }
 
 /*
