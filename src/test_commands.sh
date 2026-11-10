@@ -115,6 +115,14 @@ joined() {
          END { if (NR > 0) print line }' "$tmp/out"
 }
 
+run 'var deletes an unnamed number variable' '#($3 = "text")
+#(@3 = 5)
+#var @3=
+#print ($3)
+#print ("@3=" + %(@3))'
+has 'text'
+has '@3=0'
+
 run 'substitute define, list and delete' '#substitute foo=bar
 #substitute
 #print ("a foo b foo")
