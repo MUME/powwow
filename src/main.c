@@ -2005,8 +2005,10 @@ static void get_user_input(void)
 			skip = 1;
 			insert_char(typed[0]);
 		    }
-		    memmove(typed, typed + skip, nchars - skip);
-		    nchars -= skip;
+                    int rest = nchars - skip;   /* the keys after them */
+                    assert(rest >= 0);
+                    memmove(typed, typed + skip, rest);
+                    nchars = rest;
 		    if (nchars > 0)
 			done = 0;
 		} else if (p->seqlen == nchars) {
