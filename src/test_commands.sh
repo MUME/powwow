@@ -147,6 +147,11 @@ if grep -q 'define USE_REGEXP 1' ../config.h 2>/dev/null; then
     has 'alive'
 fi
 
+run 'bind tells a new key from a redefined one' '#bind zzz ^X^Z=#print ("a")
+#bind zzz ^X^Z=#print ("b")'
+has '#new key binding: zzz ^X^Z=#print ("a")'
+has '#redefined key: zzz ^X^Z=#print ("b")'
+
 run 'substitute define, list and delete' '#substitute foo=bar
 #substitute
 #print ("a foo b foo")
