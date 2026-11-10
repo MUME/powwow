@@ -49,14 +49,14 @@ void show_aliases(void)
     char buf[BUFSIZE];
 
     PRINTF("#%s alias%s defined%c\n", sortedaliases ? "the following" : "no",
-	       (sortedaliases && !sortedaliases->snext) ? " is" : "es are",
-	       sortedaliases ? ':' : '.');
+               (sortedaliases && !sortedaliases->snext) ? " is" : "es are",
+               sortedaliases ? ':' : '.');
     reverse_sortedlist((sortednode **)&sortedaliases);
     for (p = sortedaliases; p; p = p->snext) {
-	escape_specials(buf, p->name);
-	tty_message("#alias %s%s%s%s=%s\n",
-			p->active ? "" : "(disabled) ",
-			buf, group_delim, p->group == NULL ? "*" : p->group, p->subst);
+        escape_specials(buf, p->name);
+        tty_message("#alias %s%s%s%s=%s\n",
+                        p->active ? "" : "(disabled) ",
+                        buf, group_delim, p->group == NULL ? "*" : p->group, p->subst);
     }
     reverse_sortedlist((sortednode **)&sortedaliases);
 }
@@ -73,59 +73,59 @@ static int check_alias(char *name)
     int quotes=0, paren=0, braces=0, ok = 1;
 
     if (!*p) {
-	PRINTF("#illegal alias name: is empty!\n");
-	error = INVALID_NAME_ERROR;
-	return 1;
+        PRINTF("#illegal alias name: is empty!\n");
+        error = INVALID_NAME_ERROR;
+        return 1;
     }
     if (*p == '{') {
-	wrap_printf("#illegal beginning '{' in alias name: \"%s\"", name);
-	error = INVALID_NAME_ERROR;
-	return 1;
+        wrap_printf("#illegal beginning '{' in alias name: \"%s\"", name);
+        error = INVALID_NAME_ERROR;
+        return 1;
     }
     if (strchr(name, ' ')) {
-	wrap_printf("#illegal spaces in alias name: \"%s\"", name);
-	error = INVALID_NAME_ERROR;
-	return 1;
+        wrap_printf("#illegal spaces in alias name: \"%s\"", name);
+        error = INVALID_NAME_ERROR;
+        return 1;
     }
 
     for (; ok && (c = *p); p++) switch (state) {
       case NORM:
-	if (c == ESC)
-	    state = ESCAPE;
-	else if (quotes) {
-	    if (c == '\"')
-		quotes = 0;
-	}
-	else if (c == '\"')
-	    quotes = 1;
-	else if (c == ')')
-	    paren--;
-	else if (c == '(')
-	    paren++;
-	else if (c == '}')
-	    braces--;
-	else if (c == '{')
-	    braces++;
-	else if (c == CMDSEP && !paren && !braces)
-	    ok = 0;
-	break;
+        if (c == ESC)
+            state = ESCAPE;
+        else if (quotes) {
+            if (c == '\"')
+                quotes = 0;
+        }
+        else if (c == '\"')
+            quotes = 1;
+        else if (c == ')')
+            paren--;
+        else if (c == '(')
+            paren++;
+        else if (c == '}')
+            braces--;
+        else if (c == '{')
+            braces++;
+        else if (c == CMDSEP && !paren && !braces)
+            ok = 0;
+        break;
       case ESCAPE:
-	if (c == ESC)
-	    state = ESCAPE;
-	else /* if (c == ESC2 || c != ESC2) */
-	    state = NORM;
+        if (c == ESC)
+            state = ESCAPE;
+        else /* if (c == ESC2 || c != ESC2) */
+            state = NORM;
       default:
-	break;
+        break;
     }
 
     if (!ok) {
-	wrap_printf("#illegal non-escaped ';' in alias name: \"%s\"", name);
-	error = INVALID_NAME_ERROR;
-	return 1;
+        wrap_printf("#illegal non-escaped ';' in alias name: \"%s\"", name);
+        error = INVALID_NAME_ERROR;
+        return 1;
     }
 
     if (quotes || paren || braces) {
-	wrap_printf("#warning: unbalanced%s%s%s in alias name \"%s\" may "
+        wrap_printf("#warning: unbalanced%s%s%s in alias name \"%s\" may "
                     "cause problems", quotes ? " \"\"" : "",
                     paren ? " ()" : "", braces ? " {}" : "", name);
     }
@@ -151,15 +151,15 @@ void parse_alias(char *str)
         right = ++str;
         unescape(left);
 
-    	/* break out group name (if present) */
+        /* break out group name (if present) */
         group = strstr( left, group_delim );
-	if( group ) {
-	    *group = 0;
-	    group += strlen( group_delim );
-	}
+        if( group ) {
+            *group = 0;
+            group += strlen( group_delim );
+        }
 
-	if (check_alias(left))
-	    return;
+        if (check_alias(left))
+            return;
         p = *(np = lookup_alias(left));
         if (!*str) {
             /* delete alias */
@@ -174,29 +174,29 @@ void parse_alias(char *str)
         } else {
             /* add/redefine alias */
 
-	    /* direct recursion is supported (alias CAN be defined by itself) */
+            /* direct recursion is supported (alias CAN be defined by itself) */
             if (p) {
                 free(p->subst);
                 p->subst = my_strdup(right);
             } else
                 add_aliasnode(left, right);
 
-	    /* get alias again to add group (if needed)
-	     * don't take the lookup penalty though if not changing groups */
-	    if( group != NULL ) {
+            /* get alias again to add group (if needed)
+             * don't take the lookup penalty though if not changing groups */
+            if( group != NULL ) {
                 np = lookup_alias(left);
-		if( (*np)->group != NULL )
-			free((*np)->group);
+                if( (*np)->group != NULL )
+                        free((*np)->group);
 
-		if ( *group == '\0' || strcmp(group,"*") == 0 )
-			group = NULL;
+                if ( *group == '\0' || strcmp(group,"*") == 0 )
+                        group = NULL;
 
-	    	(*np)->group = my_strdup(group);
-	    }
+                (*np)->group = my_strdup(group);
+            }
 
             if (opt_info) {
                 PRINTF("#%s alias in group '%s': %s=%s\n", p ? "changed" : "new",
-			group == NULL ? "*" : group, left, right);
+                        group == NULL ? "*" : group, left, right);
             }
         }
     } else {
@@ -204,11 +204,11 @@ void parse_alias(char *str)
 
         *str = '\0';
         unescape(left);
-	if (check_alias(left))
-	    return;
+        if (check_alias(left))
+            return;
         np = lookup_alias(left);
         if (*np) {
-	    char buf[BUFSIZE];
+            char buf[BUFSIZE];
             escape_specials(buf, left);
             fmt_next_edit("#alias %s%s%s=%s",
                           buf,
@@ -228,7 +228,7 @@ static void delete_action(actionnode **nodep)
 {
     if (opt_info) {
         PRINTF("#deleting action: >%c%s %s\n", (*nodep)->active ?
-		   '+' : '-', (*nodep)->label, (*nodep)->pattern);
+                   '+' : '-', (*nodep)->label, (*nodep)->pattern);
     }
     delete_actionnode(nodep);
 }
@@ -240,7 +240,7 @@ static void delete_prompt(actionnode **nodep)
 {
     if (opt_info) {
         PRINTF("#deleting prompt: >%c%s %s\n", (*nodep)->active ?
-		   '+' : '-', (*nodep)->label, (*nodep)->pattern);
+                   '+' : '-', (*nodep)->label, (*nodep)->pattern);
     }
     delete_promptnode(nodep);
 }
@@ -253,9 +253,9 @@ static void add_new_action(char *label, char *pattern, char *command, int active
     add_actionnode(pattern, command, label, active, type, q);
     if (opt_info) {
         PRINTF("#new action: %c%c%s %s=%s\n",
-		   action_chars[type],
-		   active ? '+' : '-', label,
-		   pattern, command);
+                   action_chars[type],
+                   active ? '+' : '-', label,
+                   pattern, command);
     }
 }
 
@@ -267,9 +267,9 @@ static void add_new_prompt(char *label, char *pattern, char *command, int active
     add_promptnode(pattern, command, label, active, type, q);
     if (opt_info) {
         PRINTF("#new prompt: %c%c%s %s=%s\n",
-		   action_chars[type],
-		   active ? '+' : '-', label,
-		   pattern, command);
+                   action_chars[type],
+                   active ? '+' : '-', label,
+                   pattern, command);
     }
 }
 
@@ -296,15 +296,15 @@ static void change_actionorprompt(actionnode *node, char *pattern, char *command
 {
 #ifdef USE_REGEXP
     if (node->type == ACTION_REGEXP && node->regexp) {
-	regfree((regex_t *)(node->regexp));
-	free(node->regexp);
+        regfree((regex_t *)(node->regexp));
+        free(node->regexp);
     }
     node->regexp = q;
 #endif
     if (pattern) {
         free(node->pattern);
         node->pattern = my_strdup(pattern);
-	node->type = type;
+        node->type = type;
     }
     if (command) {
         free(node->command);
@@ -313,9 +313,9 @@ static void change_actionorprompt(actionnode *node, char *pattern, char *command
 
     if (opt_info) {
         PRINTF("#changed %s %c%c%s %s=%s\n", ONPROMPT,
-		   action_chars[node->type],
-		   node->active ? '+' : '-',
-		   node->label, node->pattern, node->command);
+                   action_chars[node->type],
+                   node->active ? '+' : '-',
+                   node->label, node->pattern, node->command);
     }
 }
 
@@ -327,15 +327,15 @@ void show_actions(void)
     actionnode *p;
 
     PRINTF("#%s action%s defined%c\n", actions ? "the following" : "no",
-	       (actions && !actions->next) ? " is" : "s are", actions ? ':' : '.');
+               (actions && !actions->next) ? " is" : "s are", actions ? ':' : '.');
     for (p = actions; p; p = p->next)
-	tty_message("#action %c%c%s%s%s %s=%s\n",
-		   action_chars[p->type],
-		   p->active ? '+' : '-', p->label,
+        tty_message("#action %c%c%s%s%s %s=%s\n",
+                   action_chars[p->type],
+                   p->active ? '+' : '-', p->label,
            group_delim,
-		   p->group == NULL ? "*" : p->group,
-		   p->pattern,
-		   p->command);
+                   p->group == NULL ? "*" : p->group,
+                   p->pattern,
+                   p->command);
 }
 
 /*
@@ -346,12 +346,12 @@ void show_prompts(void)
     promptnode *p;
 
     PRINTF("#%s prompt%s defined%c\n", prompts ? "the following" : "no",
-	       (prompts && !prompts->next) ? " is" : "s are", prompts ? ':' : '.');
+               (prompts && !prompts->next) ? " is" : "s are", prompts ? ':' : '.');
     for (p = prompts; p; p = p->next)
-	tty_message("#prompt %c%c%s %s=%s\n",
-		   action_chars[p->type],
-		   p->active ? '+' : '-', p->label,
-		   p->pattern, p->command);
+        tty_message("#prompt %c%c%s %s=%s\n",
+                   action_chars[p->type],
+                   p->active ? '+' : '-', p->label,
+                   p->pattern, p->command);
 }
 
 /*
@@ -369,223 +369,223 @@ void parse_action(char *str, int onprompt)
 
     sign = *(p = skipspace(str));
     if (!sign) {
-	PRINTF("%s: no arguments given\n", ONPROMPT);
-	return;
+        PRINTF("%s: no arguments given\n", ONPROMPT);
+        return;
     }
 
     str = p + 1;
 
     switch (sign) {
       case '+':
-      case '-':		/* edit */
-      case '<':		/* delete */
-      case '=':		/* list */
-	assign = sign;
-	break;
+      case '-':         /* edit */
+      case '<':         /* delete */
+      case '=':         /* list */
+        assign = sign;
+        break;
       case '%': /* action_chars[ACTION_REGEXP] */
-	type = ACTION_REGEXP;
-	/* falltrough */
+        type = ACTION_REGEXP;
+        /* falltrough */
       case '>': /* action_chars[ACTION_WEAK] */
 
-	/* define/edit */
-	assign = '>';
-	sign = *(p + 1);
-	if (!sign) {
-	    PRINTF("#%s: label expected\n", ONPROMPT);
-	    return;
-	} else if (sign == '+' || sign == '-')
-	    str++;
-	else
-	    sign = '+';
-	break;
+        /* define/edit */
+        assign = '>';
+        sign = *(p + 1);
+        if (!sign) {
+            PRINTF("#%s: label expected\n", ONPROMPT);
+            return;
+        } else if (sign == '+' || sign == '-')
+            str++;
+        else
+            sign = '+';
+        break;
       default:
-	assign = 0;	/* anonymous action */
-	str = p;
-	break;
+        assign = 0;     /* anonymous action */
+        str = p;
+        break;
     }
 
     /* labelled action: */
     if (assign != 0) {
         p = first_regular(str, ' ');
-	if ((hastail = *p))
-	    *p = '\0';
+        if ((hastail = *p))
+            *p = '\0';
 
         /* break out group name (if present) */
-	group = strstr( str, group_delim );
-	if( group ) {
-		*group = 0;
-		group += strlen( group_delim );
-	}
+        group = strstr( str, group_delim );
+        if( group ) {
+                *group = 0;
+                group += strlen( group_delim );
+        }
 
-	my_strncpy(label, str, BUFSIZE-1);
-	if (hastail)
-	    *p++ = ' ';	/* p points to start of pattern, or to \0 */
+        my_strncpy(label, str, BUFSIZE-1);
+        if (hastail)
+            *p++ = ' '; /* p points to start of pattern, or to \0 */
 
-	if (!*label) {
-	    PRINTF("#%s: label expected\n", ONPROMPT);
-	    return;
-	}
+        if (!*label) {
+            PRINTF("#%s: label expected\n", ONPROMPT);
+            return;
+        }
 
 
-	if (onprompt)
-	    np = lookup_prompt(label);
-	else
-	    np = lookup_action(label);
+        if (onprompt)
+            np = lookup_prompt(label);
+        else
+            np = lookup_action(label);
 
-	/* '<' : remove action */
+        /* '<' : remove action */
         if (assign == '<') {
             if (!np || !*np) {
                 wrap_printf("#no %s, cannot delete label: \"%s\"", ONPROMPT,
                             label);
             }
             else {
-		if (onprompt)
-		    delete_prompt(np);
-		else
-		    delete_action(np);
-	    }
+                if (onprompt)
+                    delete_prompt(np);
+                else
+                    delete_action(np);
+            }
 
-	    /* '>' : define action */
+            /* '>' : define action */
         } else if (assign == '>') {
 #ifndef USE_REGEXP
-	    if (type == ACTION_REGEXP) {
-		PRINTF("#error: regexp not allowed\n");
-		return;
-	    }
+            if (type == ACTION_REGEXP) {
+                PRINTF("#error: regexp not allowed\n");
+                return;
+            }
 #endif
 
             if (sign == '+')
-		active = 1;
+                active = 1;
             else
-		active = 0;
+                active = 0;
 
-	    if (!*label) {
-		PRINTF("#%s: label expected\n", ONPROMPT);
-		return;
-	    }
+            if (!*label) {
+                PRINTF("#%s: label expected\n", ONPROMPT);
+                return;
+            }
 
             p = skipspace(p);
             if (*p == '(') {
-		ptr *pbuf = (ptr *)0;
-		p++;
-		kind = evalp(&pbuf, &p);
-		if (!REAL_ERROR && kind != TYPE_TXT)
-		    error=NO_STRING_ERROR;
-		if (REAL_ERROR) {
-		    PRINTF("#%s: ", ONPROMPT);
-		    print_error(error=NO_STRING_ERROR);
-		    ptrdel(&pbuf);
-		    return;
-		}
-		if (pbuf) {
-		    my_strncpy(pattern, ptrdata(pbuf), BUFSIZE-1);
-		    ptrdel(&pbuf);
-		} else
-		    pattern[0] = '\0';
-		if (*p)
-		    p = skipspace(++p);
-		if ((hastail = *p == '='))
-		    p++;
-	    }
+                ptr *pbuf = (ptr *)0;
+                p++;
+                kind = evalp(&pbuf, &p);
+                if (!REAL_ERROR && kind != TYPE_TXT)
+                    error=NO_STRING_ERROR;
+                if (REAL_ERROR) {
+                    PRINTF("#%s: ", ONPROMPT);
+                    print_error(error=NO_STRING_ERROR);
+                    ptrdel(&pbuf);
+                    return;
+                }
+                if (pbuf) {
+                    my_strncpy(pattern, ptrdata(pbuf), BUFSIZE-1);
+                    ptrdel(&pbuf);
+                } else
+                    pattern[0] = '\0';
+                if (*p)
+                    p = skipspace(++p);
+                if ((hastail = *p == '='))
+                    p++;
+            }
             else {
-		p = first_regular(command = p, '=');
-		if ((hastail = *p))
-		    *p = '\0';
-		my_strncpy(pattern, command, BUFSIZE-1);
+                p = first_regular(command = p, '=');
+                if ((hastail = *p))
+                    *p = '\0';
+                my_strncpy(pattern, command, BUFSIZE-1);
 
-		if (hastail)
-		    *p++ = '=';
-	    }
+                if (hastail)
+                    *p++ = '=';
+            }
 
-	    if (!*pattern) {
-		wrap_printf("#error: pattern of #%ss must be non-empty.",
+            if (!*pattern) {
+                wrap_printf("#error: pattern of #%ss must be non-empty.",
                             ONPROMPT);
-		return;
-	    }
+                return;
+            }
 
 #ifdef USE_REGEXP
-	    if (type == ACTION_REGEXP && hastail) {
-		int errcode;
-		char unesc_pat[BUFSIZE];
+            if (type == ACTION_REGEXP && hastail) {
+                int errcode;
+                char unesc_pat[BUFSIZE];
 
-		/*
-		 * HACK WARNING:
-		 * we unescape regexp patterns now, instead of doing
-		 * jit+unescape at runtime, as for weak actions.
-		 */
-		strcpy(unesc_pat, pattern);
-		unescape(unesc_pat);
+                /*
+                 * HACK WARNING:
+                 * we unescape regexp patterns now, instead of doing
+                 * jit+unescape at runtime, as for weak actions.
+                 */
+                strcpy(unesc_pat, pattern);
+                unescape(unesc_pat);
 
-		regexp = malloc(sizeof(regex_t));
-		if (!regexp) {
-		    out_of_memory();
-		    return;
-		}
+                regexp = malloc(sizeof(regex_t));
+                if (!regexp) {
+                    out_of_memory();
+                    return;
+                }
 
 #ifdef REG_UTF
-		/* PCRE2: match UTF-8 characters, not bytes */
-		const int cflags = REG_EXTENDED | REG_UTF;
+                /* PCRE2: match UTF-8 characters, not bytes */
+                const int cflags = REG_EXTENDED | REG_UTF;
 #else
-		const int cflags = REG_EXTENDED;
+                const int cflags = REG_EXTENDED;
 #endif
-		if ((errcode = regcomp((regex_t *)regexp, unesc_pat, cflags))) {
-		    int n;
-		    char *tmp;
-		    n = regerror(errcode, (regex_t *)regexp, NULL, 0);
-		    tmp = (char *)malloc(n);
-		    if (tmp) {
-			if (!regerror(errcode, (regex_t *)regexp, tmp, n))
-			    errmsg("invalid regular expression");
-			else {
-			    PRINTF("#regexp error: %s\n", tmp);
-			}
-			free(tmp);
-		    } else {
-			error = NO_MEM_ERROR;
-			out_of_memory();
-		    }
-		    regfree((regex_t *)regexp);
-		    free(regexp);
-		    return;
-		}
-	    }
+                if ((errcode = regcomp((regex_t *)regexp, unesc_pat, cflags))) {
+                    int n;
+                    char *tmp;
+                    n = regerror(errcode, (regex_t *)regexp, NULL, 0);
+                    tmp = (char *)malloc(n);
+                    if (tmp) {
+                        if (!regerror(errcode, (regex_t *)regexp, tmp, n))
+                            errmsg("invalid regular expression");
+                        else {
+                            PRINTF("#regexp error: %s\n", tmp);
+                        }
+                        free(tmp);
+                    } else {
+                        error = NO_MEM_ERROR;
+                        out_of_memory();
+                    }
+                    regfree((regex_t *)regexp);
+                    free(regexp);
+                    return;
+                }
+            }
 #endif
             command = p;
 
             if (hastail) {
                 if (np && *np) {
-		    change_actionorprompt(*np, pattern, command, type, regexp, onprompt);
+                    change_actionorprompt(*np, pattern, command, type, regexp, onprompt);
                     (*np)->active = active;
                 } else {
-		    if (onprompt)
-			add_new_prompt(label, pattern, command, active,
-				       type, regexp);
-		    else
-			add_new_action(label, pattern, command, active,
-				       type, regexp);
-		}
+                    if (onprompt)
+                        add_new_prompt(label, pattern, command, active,
+                                       type, regexp);
+                    else
+                        add_new_action(label, pattern, command, active,
+                                       type, regexp);
+                }
 
-		if( group != NULL ) {
-			/* I don't know why but we need to clip this because somehow
-			 * the original string is restored to *p at some point instead
-			 * of the null-clipped one we used waaaay at the top. */
-        		p = first_regular(group, ' ');
-			*p = '\0';
-	    		np = lookup_action(label);
-			if( (*np)->group != NULL )
-				free( (*np)->group );
+                if( group != NULL ) {
+                        /* I don't know why but we need to clip this because somehow
+                         * the original string is restored to *p at some point instead
+                         * of the null-clipped one we used waaaay at the top. */
+                        p = first_regular(group, ' ');
+                        *p = '\0';
+                        np = lookup_action(label);
+                        if( (*np)->group != NULL )
+                                free( (*np)->group );
 
-			if ( *group == '\0' || strcmp(group,"*") == 0 )
-				group = NULL;
+                        if ( *group == '\0' || strcmp(group,"*") == 0 )
+                                group = NULL;
 
-			(*np) -> group = my_strdup( group );
-		}
+                        (*np) -> group = my_strdup( group );
+                }
             }
 
-	    /* '=': list action */
+            /* '=': list action */
         } else if (assign == '='){
             if (np && *np) {
-		fmt_next_edit("#%s %c%c%s %s=%s", ONPROMPT,
+                fmt_next_edit("#%s %c%c%s %s=%s", ONPROMPT,
                               action_chars[(*np)->type],
                               (*np)->active ? '+' : '-',
                               (*np)->label,
@@ -596,7 +596,7 @@ void parse_action(char *str, int onprompt)
                             label);
             }
 
-	    /* '+', '-': turn action on/off */
+            /* '+', '-': turn action on/off */
         } else {
             if (np && *np) {
                 (*np)->active = (sign == '+');
@@ -611,29 +611,29 @@ void parse_action(char *str, int onprompt)
             }
         }
 
-	/* anonymous action, cannot be regexp */
+        /* anonymous action, cannot be regexp */
     } else {
 
-	if (onprompt) {
-	    PRINTF("#anonymous prompts not supported.\n#please use labelled prompts.\n");
-	    return;
-	}
+        if (onprompt) {
+            PRINTF("#anonymous prompts not supported.\n#please use labelled prompts.\n");
+            return;
+        }
 
         command = first_regular(str, '=');
 
         if (*command == '=') {
             *command = '\0';
 
-	    my_strncpy(pattern, str, BUFSIZE-1);
+            my_strncpy(pattern, str, BUFSIZE-1);
             *command++ = '=';
             np = lookup_action_pattern(pattern);
             if (*command != '\0') {
-		if (np && *np)
-		    change_actionorprompt(*np, NULL, command, ACTION_WEAK, NULL, 0);
-		else
-		    add_anonymous_action(pattern, command, ACTION_WEAK, NULL);
+                if (np && *np)
+                    change_actionorprompt(*np, NULL, command, ACTION_WEAK, NULL, 0);
+                else
+                    add_anonymous_action(pattern, command, ACTION_WEAK, NULL);
             } else if (np && *np)
-		delete_action(np);
+                delete_action(np);
             else {
                 wrap_printf("#no action, cannot delete pattern: \"%s\"",
                             pattern);
@@ -698,11 +698,11 @@ void show_marks(void)
 {
     marknode *p;
     PRINTF("#%s marker%s defined%c\n", markers ? "the following" : "no",
-	       (markers && !markers->next) ? " is" : "s are",
-	       markers ? ':' : '.');
+               (markers && !markers->next) ? " is" : "s are",
+               markers ? ':' : '.');
     for (p = markers; p; p = p->next)
-	tty_message("#mark %s%s=%s\n", p->b.mbeg != 0 ? "^" : "",
-		   p->b.pattern, attr_name(&p->attr));
+        tty_message("#mark %s%s=%s\n", p->b.mbeg != 0 ? "^" : "",
+                   p->b.pattern, attr_name(&p->attr));
 }
 
 
@@ -716,70 +716,70 @@ void parse_mark(char *str)
     char mbeg = 0;
 
     if (*str == '=') {
-	PRINTF("#marker must be non-empty.\n");
-	return;
+        PRINTF("#marker must be non-empty.\n");
+        return;
     }
     p = first_regular(str, '=');
     if (!*p) {
-	if (*str ==  '^')
-	    mbeg = 1, str++;
+        if (*str ==  '^')
+            mbeg = 1, str++;
         unescape(str);
         np = lookup_marker(str, mbeg);
         if ((n = *np)) {
-	    ptr *pbuf = (ptr *)0;
-	    char *name;
-	    pbuf = ptrmescape(pbuf, n->b.pattern, strlen(n->b.pattern), 0);
-	    if (MEM_ERROR) { ptrdel(&pbuf); return; }
+            ptr *pbuf = (ptr *)0;
+            char *name;
+            pbuf = ptrmescape(pbuf, n->b.pattern, strlen(n->b.pattern), 0);
+            if (MEM_ERROR) { ptrdel(&pbuf); return; }
             name = attr_name(&n->attr);
             fmt_next_edit("#mark %s%s=%s", n->b.mbeg != 0 ? "^" : "",
                           pbuf ? ptrdata(pbuf) : "", name);
-	    ptrdel(&pbuf);
+            ptrdel(&pbuf);
         } else {
             wrap_printf("#unknown marker, cannot show: \"%s\"", str);
         }
 
     } else {
         int wild = 0;
-	char pattern[BUFSIZE], *p2;
+        char pattern[BUFSIZE], *p2;
 
         *(p++) = '\0';
-	p = skipspace(p);
-	if (*str ==  '^')
-	    mbeg = 1, str++;
-	my_strncpy(pattern, str, BUFSIZE-1);
+        p = skipspace(p);
+        if (*str ==  '^')
+            mbeg = 1, str++;
+        my_strncpy(pattern, str, BUFSIZE-1);
         unescape(pattern);
-	p2 = pattern;
-	while (*p2) {
-	    if (ISMARKWILDCARD(*p2)) {
-		wild = 1;
-		if (ISMARKWILDCARD(*(p2 + 1))) {
-		    error=SYNTAX_ERROR;
-		    wrap_printf("#error: two wildcards (& or $) may not be "
+        p2 = pattern;
+        while (*p2) {
+            if (ISMARKWILDCARD(*p2)) {
+                wild = 1;
+                if (ISMARKWILDCARD(*(p2 + 1))) {
+                    error=SYNTAX_ERROR;
+                    wrap_printf("#error: two wildcards (& or $) may not be "
                                 "next to eachother");
-		    return;
-		}
-	    }
-	    p2++;
-	}
+                    return;
+                }
+            }
+            p2++;
+        }
 
         np = lookup_marker(pattern, mbeg);
         struct attr attr;
         char why[BUFSIZE];
         if (!attr_parse_why(p, &attr, why, sizeof(why))) {
             PRINTF("#mark: %s.\n", why);
-	    error=SYNTAX_ERROR;
+            error=SYNTAX_ERROR;
             if (opt_info) show_attr_syntax();
         } else if (!*p)
-	    if ((n = *np)) {
-		if (opt_info) {
-		    PRINTF("#deleting mark: %s%s=%s\n", n->b.mbeg != 0 ? "^" : "",
-			   n->b.pattern, attr_name(&n->attr));
-		}
-		delete_marknode(np);
-	    } else {
-		wrap_printf("#unknown marker, cannot delete: \"%s%s\"",
+            if ((n = *np)) {
+                if (opt_info) {
+                    PRINTF("#deleting mark: %s%s=%s\n", n->b.mbeg != 0 ? "^" : "",
+                           n->b.pattern, attr_name(&n->attr));
+                }
+                delete_marknode(np);
+            } else {
+                wrap_printf("#unknown marker, cannot delete: \"%s%s\"",
                             mbeg ? "^" : "", pattern);
-	    }
+            }
         else {
             if (*np) {
                 (*np)->attr = attr;
@@ -793,8 +793,8 @@ void parse_mark(char *str)
                 }
             }
             if (opt_info)
-		tty_message(" mark: %s%s=%s\n", mbeg ? "^" : "",
-			    pattern, attr_name(&attr));
+                tty_message(" mark: %s%s=%s\n", mbeg ? "^" : "",
+                            pattern, attr_name(&attr));
         }
     }
 }
@@ -926,53 +926,53 @@ static char *unescape_seq(char *buf, char *seq, int *seqlen)
     enum { NORM, ESCSINGLE, ESCAPE, CARET, DONE } state = NORM;
 
     for (; (c = *seq); seq++) {
-	switch (state) {
-	  case NORM:
-	    if (c == '^')
-		state = CARET;
-	    else if (c == ESC)
-		state = ESCSINGLE;
-	    else if (c == '=')
-		state = DONE;
-	    else
-		*(buf++) = c;
-	    break;
-	  case CARET:
-	    /*
-	     * handle ^@ ^A  ... ^_ as expected:
-	     * ^@ == 0x00, ^A == 0x01, ... , ^_ == 0x1f
-	     */
-	    if (c > 0x40 && c < 0x60)
-		*(buf++) = c & 0x1f;
-	    /* special case: ^? == 0x7f */
-	    else if (c == '?')
-		*(buf++) = 0x7f;
-	    state = NORM;
-	    break;
-	  case ESCSINGLE:
-	  case ESCAPE:
-	    /*
-	     * \012 ==> octal number
-	     */
-	    if (state == ESCSINGLE &&
-		is_odigit(seq[0]) && is_odigit(seq[1]) && is_odigit(seq[2])) {
-		*(buf++) =(((seq[0] - '0') << 6) |
-			   ((seq[1] - '0') << 3) |
-			   (seq[2] - '0'));
-		seq += 2;
-	    } else {
-		*(buf++) = c;
-		if (c == ESC)
-		    state = ESCAPE;
-		else
-		    state = NORM;
-	    }
-	    break;
-	  default:
-	    break;
-	}
-	if (state == DONE)
-	    break;
+        switch (state) {
+          case NORM:
+            if (c == '^')
+                state = CARET;
+            else if (c == ESC)
+                state = ESCSINGLE;
+            else if (c == '=')
+                state = DONE;
+            else
+                *(buf++) = c;
+            break;
+          case CARET:
+            /*
+             * handle ^@ ^A  ... ^_ as expected:
+             * ^@ == 0x00, ^A == 0x01, ... , ^_ == 0x1f
+             */
+            if (c > 0x40 && c < 0x60)
+                *(buf++) = c & 0x1f;
+            /* special case: ^? == 0x7f */
+            else if (c == '?')
+                *(buf++) = 0x7f;
+            state = NORM;
+            break;
+          case ESCSINGLE:
+          case ESCAPE:
+            /*
+             * \012 ==> octal number
+             */
+            if (state == ESCSINGLE &&
+                is_odigit(seq[0]) && is_odigit(seq[1]) && is_odigit(seq[2])) {
+                *(buf++) =(((seq[0] - '0') << 6) |
+                           ((seq[1] - '0') << 3) |
+                           (seq[2] - '0'));
+                seq += 2;
+            } else {
+                *(buf++) = c;
+                if (c == ESC)
+                    state = ESCAPE;
+                else
+                    state = NORM;
+            }
+            break;
+          default:
+            break;
+        }
+        if (state == DONE)
+            break;
     }
     *buf = '\0';
     *seqlen = buf - start;
@@ -1003,10 +1003,10 @@ static int get_one_char(int timeout)
     n = select(tty_read_fd + 1, &fds, NULL, NULL,
                timeout ? &timeoutbuf : NULL);
     if (n == 0 || (n == -1 && errno == EINTR))
-	return -1;
+        return -1;
     if (n == -1) {
-	errmsg("cannot wait for the terminal");
-	return -1;
+        errmsg("cannot wait for the terminal");
+        return -1;
     }
  read_tty:
     do {
@@ -1016,7 +1016,7 @@ static int get_one_char(int timeout)
         return (unsigned char)c;
     if (n < 0) {
         if (errno != EAGAIN)
-	    errmsg("cannot read from the terminal");
+            errmsg("cannot read from the terminal");
         return -1;
     }
     /* n == 0: at most an incomplete character was buffered, so wait for more */
@@ -1035,7 +1035,7 @@ static void print_seq(char *seq, int len)
     char buf[6 * CAPLEN + 1];
     int n = 0;
     for (; len > 0 && n < (int)sizeof(buf) - 6; --len) {
-	unsigned char ch = *(seq++);
+        unsigned char ch = *(seq++);
         if (ch == '\033') {
             n += sprintf(buf + n, "esc ");
             continue;
@@ -1045,13 +1045,13 @@ static void print_seq(char *seq, int len)
             ch |= '@';
         }
         if (ch == ' ')
-	    n += sprintf(buf + n, "space ");
+            n += sprintf(buf + n, "space ");
         else if (ch == 0x7f)
-	    n += sprintf(buf + n, "del ");
+            n += sprintf(buf + n, "del ");
         else if (ch & 0x80)
-	    n += sprintf(buf + n, "\\%03o ", ch);
+            n += sprintf(buf + n, "\\%03o ", ch);
         else
-	    n += sprintf(buf + n, "%c ", ch);
+            n += sprintf(buf + n, "%c ", ch);
     }
     buf[n] = '\0';
     tty_message("%s", buf);
@@ -1076,19 +1076,19 @@ char *seq_name(char *seq, int len)
     while (len--) {
         unsigned char c = *seq++;
         if (c == '^' || (c && strchr(SPECIAL_CHARS, c)))
-	    *(p++) = ESC;
+            *(p++) = ESC;
 
-	if (c < ' ') {
+        if (c < ' ') {
             *(p++) = '^';
             *(p++) = c | '@';
-	} else if (c == 0x7f) {
-	    *(p++) = '^';
-	    *(p++) = '?';
+        } else if (c == 0x7f) {
+            *(p++) = '^';
+            *(p++) = '?';
         } else if (c & 0x80) {
-	    sprintf(p, "\\%03o", (int)c);
-	    p += strlen(p);
-	} else
-	    *(p++) = c;
+            sprintf(p, "\\%03o", (int)c);
+            p += strlen(p);
+        } else
+            *(p++) = c;
     }
     *p = '\0';
     return buf;
@@ -1107,22 +1107,22 @@ static char *read_seq(char *name, int *len)
     tty_flush();
 
     if ((tmp = get_one_char(0)) >= 0)
-	seq[0] = tmp;
+        seq[0] = tmp;
     else {
-	tty_message("#unable to get key. Giving up.\n");
-	return NULL;
+        tty_message("#unable to get key. Giving up.\n");
+        return NULL;
     }
 
     while (i < CAPLEN - 1 &&
-	   (tmp = get_one_char(KBD_TIMEOUT)) >= 0)
-	seq[i++] = tmp;
+           (tmp = get_one_char(KBD_TIMEOUT)) >= 0)
+        seq[i++] = tmp;
     *len = i;
     print_seq(seq, i);
 
     tty_putc('\n');
     if (seq[0] >= ' ' && seq[0] <= '~') {
-	PRINTF("#that is not a redefinable key.\n");
-	return NULL;
+        PRINTF("#that is not a redefinable key.\n");
+        return NULL;
     }
     return seq;
 }
@@ -1134,14 +1134,14 @@ static char *read_seq(char *name, int *len)
 static void show_single_bind(char *msg, keynode *p)
 {
     if (p->funct == key_run_command) {
-	PRINTF("#%s %s %s=%s\n", msg, p->name,
-	       seq_name(p->sequence, p->seqlen), p->call_data);
+        PRINTF("#%s %s %s=%s\n", msg, p->name,
+               seq_name(p->sequence, p->seqlen), p->call_data);
     } else {
-	PRINTF("#%s %s %s=%s%s%s\n", msg, p->name,
-	       seq_name(p->sequence, p->seqlen),
-	       internal_functions[lookup_edit_function(p->funct)].name,
-	       p->call_data ? " " : "",
-	       p->call_data ? p->call_data : "");
+        PRINTF("#%s %s %s=%s%s%s\n", msg, p->name,
+               seq_name(p->sequence, p->seqlen),
+               internal_functions[lookup_edit_function(p->funct)].name,
+               p->call_data ? " " : "",
+               p->call_data ? p->call_data : "");
     }
 }
 
@@ -1225,17 +1225,17 @@ void show_binds(char edit)
     keynode *p;
     int count = 0;
     for (p = keydefs; p; p = p->next) {
-	if (edit != (p->funct == key_run_command)) {
-	    if (!count) {
-		if (edit) {
-		    PRINTF("#line-editing keys:\n");
-		} else {
-		    PRINTF("#user-defined keys:\n");
-		}
-	    }
-	    show_single_bind("bind", p);
-	    ++count;
-	}
+        if (edit != (p->funct == key_run_command)) {
+            if (!count) {
+                if (edit) {
+                    PRINTF("#line-editing keys:\n");
+                } else {
+                    PRINTF("#user-defined keys:\n");
+                }
+            }
+            show_single_bind("bind", p);
+            ++count;
+        }
     }
     if (!count) {
         PRINTF("#no key bindings defined right now.\n");
@@ -1256,22 +1256,22 @@ static void define_new_key(char *name, char *command)
     if (!seq) return;
 
     for (p = keydefs; p; p = p->next)
-	/* don't allow binding of supersets of another bind */
-	if (!memcmp(p->sequence, seq, MIN2(p->seqlen, seqlen))) {
-	    show_single_bind("key already bound as:", p);
-	    return;
-	}
+        /* don't allow binding of supersets of another bind */
+        if (!memcmp(p->sequence, seq, MIN2(p->seqlen, seqlen))) {
+            show_single_bind("key already bound as:", p);
+            return;
+        }
 
     function = lookup_edit_name(command, &arg);
     if (function)
-	add_keynode(name, seq, seqlen,
-		    internal_functions[function].funct, arg);
+        add_keynode(name, seq, seqlen,
+                    internal_functions[function].funct, arg);
     else
-	add_keynode(name, seq, seqlen, key_run_command, command);
+        add_keynode(name, seq, seqlen, key_run_command, command);
 
     if (opt_info) {
-	PRINTF("#new key binding: %s %s=%s\n",
-	       name, seq_name(seq, seqlen), command);
+        PRINTF("#new key binding: %s %s=%s\n",
+               name, seq_name(seq, seqlen), command);
     }
 }
 
@@ -1301,16 +1301,16 @@ static void parse_bind_noninteractive(char *arg)
 
     kp = lookup_key(arg);
     if (kp && *kp)
-	delete_keynode(kp);
+        delete_keynode(kp);
 
     if ((function = lookup_edit_name(p, &params)))
-	add_keynode(arg, rawseq, seqlen,
-		    internal_functions[function].funct, params);
+        add_keynode(arg, rawseq, seqlen,
+                    internal_functions[function].funct, params);
     else
-	add_keynode(arg, rawseq, seqlen, key_run_command, p);
+        add_keynode(arg, rawseq, seqlen, key_run_command, p);
 
     if (opt_info) {
-	PRINTF("#%s: %s %s=%s\n",
+        PRINTF("#%s: %s %s=%s\n",
                (kp && *kp) ? "redefined key" : "new key binding",
                arg, seq, p);
     }
@@ -1332,7 +1332,7 @@ void parse_bind(char *arg)
 
     if (*p && *q && p > q) {
         parse_bind_noninteractive(arg);
-	return;
+        return;
     }
 
     if (*p) {
@@ -1342,26 +1342,26 @@ void parse_bind(char *arg)
             command = p;
             if (np) {
                 if (np->funct == key_run_command)
-		    free(np->call_data);
-		if ((function = lookup_edit_name(command, &params))) {
-		    np->call_data = my_strdup(params);
-		    np->funct = internal_functions[function].funct;
-		} else {
+                    free(np->call_data);
+                if ((function = lookup_edit_name(command, &params))) {
+                    np->call_data = my_strdup(params);
+                    np->funct = internal_functions[function].funct;
+                } else {
                     np->call_data = my_strdup(command);
-		    np->funct = key_run_command;
-		}
+                    np->funct = key_run_command;
+                }
                 if (opt_info) {
                     PRINTF("#redefined key: %s %s=%s\n", name,
-			       seq_name(np->sequence, np->seqlen),
-			       command);
+                               seq_name(np->sequence, np->seqlen),
+                               command);
                 }
             } else
-		define_new_key(name, command);
+                define_new_key(name, command);
         } else {
             if (np) {
                 if (opt_info)
-		    show_single_bind("deleting key binding:", np);
-		delete_keynode(npp);
+                    show_single_bind("deleting key binding:", np);
+                delete_keynode(npp);
             } else {
                 wrap_printf("#no such key: \"%s\"", name);
             }
@@ -1369,19 +1369,19 @@ void parse_bind(char *arg)
     } else {
         np = *(npp = lookup_key(name));
         if (np) {
-	    char *seqname = seq_name(np->sequence, np->seqlen);
+            char *seqname = seq_name(np->sequence, np->seqlen);
 
-	    if (np->funct == key_run_command)
-		fmt_next_edit("#bind %s %s=%s", name, seqname, np->call_data);
-	    else {
-		const char *fname
+            if (np->funct == key_run_command)
+                fmt_next_edit("#bind %s %s=%s", name, seqname, np->call_data);
+            else {
+                const char *fname
                     = internal_functions[lookup_edit_function(np->funct)].name;
-		fmt_next_edit("#bind %s %s=%s%s%s",
+                fmt_next_edit("#bind %s %s=%s%s%s",
                               name, seqname, fname,
                               np->call_data ? " " : "",
                               np->call_data ? np->call_data : "");
-	    }
-	} else {
+            }
+        } else {
             wrap_printf("#no such key: \"%s\"", name);
         }
     }
@@ -1395,60 +1395,60 @@ void parse_rebind(char *arg)
 
     arg = skipspace(arg);
     if (!*arg) {
-	PRINTF("#rebind: missing key.\n");
-	return;
+        PRINTF("#rebind: missing key.\n");
+        return;
     }
 
     seq = first_valid(arg, ' ');
     if (*seq) {
-	*seq++ = '\0';
-	seq = skipspace(seq);
+        *seq++ = '\0';
+        seq = skipspace(seq);
     }
 
     kp = lookup_key(arg);
     if (!kp || !*kp) {
-	wrap_printf("#no such key: \"%s\"", arg);
-	return;
+        wrap_printf("#no such key: \"%s\"", arg);
+        return;
     }
 
     if (!*seq) {
-	seq = read_seq(arg, &seqlen);
-	if (!seq)
-	    return;
+        seq = read_seq(arg, &seqlen);
+        if (!seq)
+            return;
     } else {
-	(void)unescape_seq(rawseq, seq, &seqlen);
-	seq = rawseq;
+        (void)unescape_seq(rawseq, seq, &seqlen);
+        seq = rawseq;
     }
 
     if (seqlen == 0) {
-	PRINTF("#rebind: empty key sequence.\n");
-	return;
+        PRINTF("#rebind: empty key sequence.\n");
+        return;
     }
 
     for (p = keydefs; p; p = p->next) {
-	if (p == *kp)
-	    continue;
-	if (!memcmp(p->sequence, seq, MIN2(seqlen, p->seqlen))) {
-	    show_single_bind("key already bound as:", p);
-	    return;
-	}
+        if (p == *kp)
+            continue;
+        if (!memcmp(p->sequence, seq, MIN2(seqlen, p->seqlen))) {
+            show_single_bind("key already bound as:", p);
+            return;
+        }
     }
 
     char *new_seq = malloc(seqlen);
     if (new_seq == NULL) {
-	out_of_memory();
-	return;
+        out_of_memory();
+        return;
     }
     memmove(new_seq, seq, seqlen);
 
     old = &((*kp)->sequence);
     if (*old)
-	free(*old);
+        free(*old);
     *old = new_seq;
     (*kp)->seqlen = seqlen;
 
     if (opt_info)
-	show_single_bind("redefined key:", *kp);
+        show_single_bind("redefined key:", *kp);
 }
 
 /*
@@ -1463,78 +1463,78 @@ char *redirect(char *arg, ptr **pbuf, char *kind, char *name, int also_num, long
     int type, i;
 
     if (!pbuf) {
-	print_error(error=INTERNAL_ERROR);
-	return NULL;
+        print_error(error=INTERNAL_ERROR);
+        return NULL;
     }
 
     k = *tmp;
     if (k == '!' || k == '<')
-	arg = ++tmp;
+        arg = ++tmp;
     else
-	k = 0;
+        k = 0;
 
     *start = *end = 0;
 
     if (*tmp=='(') {
 
-	arg = tmp + 1;
-	type = evalp(pbuf, &arg);
-	if (!REAL_ERROR && type!=TYPE_TXT && !also_num)
-	    error=NO_STRING_ERROR;
-	if (REAL_ERROR) {
-	    PRINTF("#%s: ", name);
-	    print_error(error);
-	    ptrdel(pbuf);
-	    return NULL;
-	}
-	for (i=0; i<2; i++) if (*arg == CMDSEP) {
-	    long buf;
+        arg = tmp + 1;
+        type = evalp(pbuf, &arg);
+        if (!REAL_ERROR && type!=TYPE_TXT && !also_num)
+            error=NO_STRING_ERROR;
+        if (REAL_ERROR) {
+            PRINTF("#%s: ", name);
+            print_error(error);
+            ptrdel(pbuf);
+            return NULL;
+        }
+        for (i=0; i<2; i++) if (*arg == CMDSEP) {
+            long buf;
 
-	    arg++;
-	    if (!i && *arg == CMDSEP) {
-		*start = 1;
-		continue;
-	    }
-	    else if (i && *arg == ')') {
-		*end = LONG_MAX;
-		continue;
-	    }
+            arg++;
+            if (!i && *arg == CMDSEP) {
+                *start = 1;
+                continue;
+            }
+            else if (i && *arg == ')') {
+                *end = LONG_MAX;
+                continue;
+            }
 
-	    type = evall(&buf, &arg);
-	    if (!REAL_ERROR && type != TYPE_NUM)
-		error=NO_NUM_VALUE_ERROR;
-	    if (REAL_ERROR) {
-		PRINTF("#%s: ", name);
-		print_error(error);
-		ptrdel(pbuf);
-		return NULL;
-	    }
-	    if (i)
-		*end = buf;
-	    else
-		*start = buf;
-	}
-	if (*arg != ')') {
-	    PRINTF("#%s: ", name);
-	    print_error(error=MISSING_PAREN_ERROR);
-	    ptrdel(pbuf);
-	    return NULL;
-	}
-	if (!*pbuf) {
-	    /* make space to add a final \n */
-	    *pbuf = ptrsetlen(*pbuf, 1);
-	    ptrzero(*pbuf);
-	    if (REAL_ERROR) {
-		print_error(error);
-		ptrdel(pbuf);
-		return NULL;
-	    }
-	}
-	arg = ptrdata(*pbuf);
-	if (!*start && *end)
-	    *start = 1;
+            type = evall(&buf, &arg);
+            if (!REAL_ERROR && type != TYPE_NUM)
+                error=NO_NUM_VALUE_ERROR;
+            if (REAL_ERROR) {
+                PRINTF("#%s: ", name);
+                print_error(error);
+                ptrdel(pbuf);
+                return NULL;
+            }
+            if (i)
+                *end = buf;
+            else
+                *start = buf;
+        }
+        if (*arg != ')') {
+            PRINTF("#%s: ", name);
+            print_error(error=MISSING_PAREN_ERROR);
+            ptrdel(pbuf);
+            return NULL;
+        }
+        if (!*pbuf) {
+            /* make space to add a final \n */
+            *pbuf = ptrsetlen(*pbuf, 1);
+            ptrzero(*pbuf);
+            if (REAL_ERROR) {
+                print_error(error);
+                ptrdel(pbuf);
+                return NULL;
+            }
+        }
+        arg = ptrdata(*pbuf);
+        if (!*start && *end)
+            *start = 1;
     } else
-	unescape(arg);
+        unescape(arg);
 
     *kind = k;
     return arg;
@@ -1549,34 +1549,34 @@ void show_vars(void)
     PRINTF("#the following variables are defined:\n");
 
     for (type = 0; !REAL_ERROR && type < 2; type++) {
-	reverse_sortedlist((sortednode **)&sortednamed_vars[type]);
-	v = sortednamed_vars[type];
-	while (v) {
-	    if (type == 0) {
-		tty_message("#(@%s = %ld)\n", v->name, v->num);
-	    } else {
-		p = ptrescape(p, v->str, 0);
-		if (REAL_ERROR) {
-		    print_error(error);
-		    break;
-		}
-		tty_message("#($%s = \"%s\")\n", v->name,
+        reverse_sortedlist((sortednode **)&sortednamed_vars[type]);
+        v = sortednamed_vars[type];
+        while (v) {
+            if (type == 0) {
+                tty_message("#(@%s = %ld)\n", v->name, v->num);
+            } else {
+                p = ptrescape(p, v->str, 0);
+                if (REAL_ERROR) {
+                    print_error(error);
+                    break;
+                }
+                tty_message("#($%s = \"%s\")\n", v->name,
                            p ? ptrdata(p) : "");
-	    }
-	    v = v->snext;
-	}
-	reverse_sortedlist((sortednode **)&sortednamed_vars[type]);
+            }
+            v = v->snext;
+        }
+        reverse_sortedlist((sortednode **)&sortednamed_vars[type]);
     }
     for (i = -NUMVAR; !REAL_ERROR && i < NUMPARAM; i++) {
-	if (*VAR[i].num)
-	    tty_message("#(@%d = %ld)\n", i, *VAR[i].num);
+        if (*VAR[i].num)
+            tty_message("#(@%d = %ld)\n", i, *VAR[i].num);
     }
     for (i = -NUMVAR; !REAL_ERROR && i < NUMPARAM; i++) {
-	if (*VAR[i].str && ptrlen(*VAR[i].str)) {
-	    p = ptrescape(p, *VAR[i].str, 0);
-	    if (p && ptrlen(p))
-		tty_message("#($%d = \"%s\")\n", i, ptrdata(p));
-	}
+        if (*VAR[i].str && ptrlen(*VAR[i].str)) {
+            p = ptrescape(p, *VAR[i].str, 0);
+            if (p && ptrlen(p))
+                tty_message("#($%d = \"%s\")\n", i, ptrdata(p));
+        }
     }
     ptrdel(&p);
 }
@@ -1593,18 +1593,18 @@ void show_delaynode(delaynode *p, int in_or_at)
     /* s now points to a calendar struct */
     if (in_or_at) {
 
-	if (in_or_at == 2) {
-	    /* write time in buf */
-	    (void)strftime(buf, BUFSIZE - 1, "%H%M%S", s);
-	    fmt_next_edit("#at %s (%s) %s",
+        if (in_or_at == 2) {
+            /* write time in buf */
+            (void)strftime(buf, BUFSIZE - 1, "%H%M%S", s);
+            fmt_next_edit("#at %s (%s) %s",
                           p->name, buf, p->command);
-	}
-	else
-	    fmt_next_edit("#in %s (%ld) %s",
+        }
+        else
+            fmt_next_edit("#in %s (%ld) %s",
                           p->name, d, p->command);
     } else {
-	(void)strftime(buf, BUFSIZE - 1, "%H:%M:%S", s);
-	PRINTF("#at (%s) #in (%ld) \"%s\" %s\n", buf, d, p->name, p->command);
+        (void)strftime(buf, BUFSIZE - 1, "%H:%M:%S", s);
+        PRINTF("#at (%s) #in (%ld) \"%s\" %s\n", buf, d, p->name, p->command);
     }
 }
 
@@ -1612,14 +1612,14 @@ void show_delays(void)
 {
     delaynode *p;
     int n = (delays ? delays->next ? 2 : 1 : 0) +
-	(dead_delays ? dead_delays->next ? 2 : 1 : 0);
+        (dead_delays ? dead_delays->next ? 2 : 1 : 0);
 
     PRINTF("#%s delay label%s defined%c\n", n ? "the following" : "no",
-	       n == 1 ? " is" : "s are", n ? ':' : '.');
+               n == 1 ? " is" : "s are", n ? ':' : '.');
     for (p = delays; p; p = p->next)
-	show_delaynode(p, 0);
+        show_delaynode(p, 0);
     for (p = dead_delays; p; p = p->next)
-	show_delaynode(p, 0);
+        show_delaynode(p, 0);
 }
 
 void change_delaynode(delaynode **p, char *command, long millisec)
@@ -1632,20 +1632,20 @@ void change_delaynode(delaynode **p, char *command, long millisec)
     update_now();
     add_vtime(&m->when, &now);
     if (*command) {
-	if (strlen(command) > strlen(m->command)) {
-	    free((void*)m->command);
-	    m->command = my_strdup(command);
-	}
-	else
-	    strcpy(m->command, command);
+        if (strlen(command) > strlen(m->command)) {
+            free((void*)m->command);
+            m->command = my_strdup(command);
+        }
+        else
+            strcpy(m->command, command);
     }
     if (millisec < 0)
-	add_node((defnode*)m, (defnode**)&dead_delays, rev_time_sort);
+        add_node((defnode*)m, (defnode**)&dead_delays, rev_time_sort);
     else
-	add_node((defnode*)m, (defnode**)&delays, time_sort);
+        add_node((defnode*)m, (defnode**)&delays, time_sort);
     if (opt_info) {
-	PRINTF("#changed ");
-	show_delaynode(m, 0);
+        PRINTF("#changed ");
+        show_delaynode(m, 0);
     }
 }
 
@@ -1660,8 +1660,8 @@ void new_delaynode(char *name, char *command, long millisec)
     add_vtime(&t, &now);
     node = add_delaynode(name, command, &t, millisec < 0);
     if (opt_info && node) {
-	PRINTF("#new ");
-	show_delaynode(node, 0);
+        PRINTF("#new ");
+        show_delaynode(node, 0);
     }
 }
 
@@ -1675,11 +1675,11 @@ void show_history(int count)
     if (i < 0) i += MAX_HIST;
 
     while (count) {
-	if (hist[i]) {
-	    PRINTF("#%2d: %s\n", count, hist[i]);
-	}
-	count--;
-	if (++i == MAX_HIST) i = 0;
+        if (hist[i]) {
+            PRINTF("#%2d: %s\n", count, hist[i]);
+        }
+        count--;
+        if (++i == MAX_HIST) i = 0;
     }
 }
 
@@ -1689,13 +1689,13 @@ void exe_history(int count)
     char buf[BUFSIZE];
 
     if (count >= MAX_HIST)
-	count = MAX_HIST - 1;
+        count = MAX_HIST - 1;
     i -= count;
     if (i < 0)
-	i += MAX_HIST;
+        i += MAX_HIST;
     if (hist[i]) {
-	strcpy(buf, hist[i]);
-	parse_user_input(buf, false);
+        strcpy(buf, hist[i]);
+        parse_user_input(buf, false);
     }
 }
 
