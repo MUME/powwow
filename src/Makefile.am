@@ -2,6 +2,7 @@
 AM_CPPFLAGS=-D_XOPEN_SOURCE=700 @feature_cppflags@ -DPOWWOW_DIR=\"$(pkgdatadir)\" \
 	-DPLUGIN_DIR=\"$(plugindir)\" -DPOWWOW_BUILD_DIR=\"$(abs_builddir)\" \
 	-DPOWWOW_SOURCE_DIR=\"$(abs_top_srcdir)\"
+AM_CFLAGS = $(WARN_CFLAGS)
 
 bin_PROGRAMS = powwow powwow-movieplay
 if HAVE_CURSES
@@ -35,7 +36,7 @@ EXTRA_DIST = plugtest.c test_commands.sh
 
 plugtest.so: plugtest.c
 	$(CC) -c -fPIC $(DEFS) $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) \
-		$(CPPFLAGS) $(CFLAGS) -o plugtest.o $(srcdir)/plugtest.c
+		$(CPPFLAGS) $(WARN_CFLAGS) $(CFLAGS) -o plugtest.o $(srcdir)/plugtest.c
 	$(CC) -shared $(CFLAGS) $(plugin_ldflags) $(LDFLAGS) \
 		-o plugtest.so plugtest.o
 
