@@ -24,13 +24,6 @@ AC_ARG_ENABLE([regex],
     [],
     [enable_regex=yes])
 
-AC_ARG_ENABLE([sort],
-    AS_HELP_STRING([--enable-sort],[sort aliases and actions]),
-    [],
-    [enable_sort=no])
-AS_IF([ test "${enable_sort}" = yes ],
-    [ AC_DEFINE(USE_LIST_SORT, 1, [Enable to sort entries in some lists.]) ])
-
 AC_ARG_ENABLE([shell],
     AS_HELP_STRING([--disable-shell],[disables the "#!" command.]),
     [],
@@ -239,7 +232,6 @@ enable-regex:       ${enable_regex} (${enable_regex_using})
 enable-tls:         ${enable_tls}
 with-libgrapheme:   ${with_libgrapheme}
 with-zlib:          ${with_zlib}
-enable-sort:        ${enable_sort}
 enable-shell:       ${enable_shell}
 
 Host:               ${host}
