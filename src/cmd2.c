@@ -297,21 +297,21 @@ static void add_anonymous_action(char *pattern, char *command, int type,
 #define ONPROMPT (onprompt ? "prompt" : "action")
 
 /*
- * change fields of an existing action node
- * pattern or commands can be NULL if no change
+ * change fields of an existing action node: 'pattern', with its compiled
+ * regexp 'q', or 'command' can be NULL if they do not change
  */
 static void change_actionorprompt(actionnode *node, char *pattern,
                                   char *command, int type, void *q,
                                   bool onprompt)
 {
-#ifdef USE_REGEXP
-    if (node->type == ACTION_REGEXP && node->regexp != NULL) {
-        regfree(node->regexp);
-        free(node->regexp);
-    }
-    node->regexp = q;
-#endif
     if (pattern != NULL) {
+#ifdef USE_REGEXP
+        if (node->type == ACTION_REGEXP && node->regexp != NULL) {
+            regfree(node->regexp);
+            free(node->regexp);
+        }
+        node->regexp = q;
+#endif
         free(node->pattern);
         node->pattern = my_strdup(pattern);
         node->type = type;
