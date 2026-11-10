@@ -569,7 +569,9 @@ void parse_action(char *str, bool onprompt)
                      * group name is still followed by the pattern */
                     p = first_regular(group, ' ');
                     *p = '\0';
-                    np = lookup_action(label);
+                    np = (onprompt
+                          ? lookup_prompt(label)
+                          : lookup_action(label));
                     if ((*np)->group != NULL)
                         free((*np)->group);
 
