@@ -96,9 +96,7 @@ extern int a_nice;
 extern keynode *keydefs;
 extern delaynode *delays;
 extern delaynode *dead_delays;
-extern varnode *named_vars[2][MAX_HASH];
-extern varnode *sortednamed_vars[2];
-extern int num_named_vars[2];
+extern struct named_vars named_vars[VAR_KINDS];
 extern int max_named_vars;
 extern vars *var;
 #define VAR (var+NUMVAR)

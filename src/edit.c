@@ -992,12 +992,14 @@ static void complete_var(struct word_list *l, int arg, const char *args,
 {
     if (arg != 0)
         return;
-    static const char signs[2] = { '@', '$' };  /* numbers and text */
-    for (int type = 0; type < 2; ++type) {
-        for (const varnode *v = sortednamed_vars[type]; v != NULL;
+    static const char signs[VAR_KINDS] = {
+        [VAR_NUM] = '@', [VAR_TEXT] = '$'
+    };
+    for (enum var_kind kind = VAR_NUM; kind < VAR_KINDS; ++kind) {
+        for (const varnode *v = named_vars[kind].sorted; v != NULL;
              v = v->snext) {
             char name[BUFSIZE];
-            snprintf(name, sizeof(name), "%c%s", signs[type], v->name);
+            snprintf(name, sizeof(name), "%c%s", signs[kind], v->name);
             word_list_add(l, name);
         }
     }

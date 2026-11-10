@@ -1555,9 +1555,10 @@ void show_vars(void)
 
     PRINTF("#the following variables are defined:\n");
 
-    for (int type = 0; !REAL_ERROR && type < 2; ++type) {
-        for (varnode *v = sortednamed_vars[type]; v != NULL; v = v->snext) {
-            if (type == 0) {
+    for (enum var_kind kind = VAR_NUM; !REAL_ERROR && kind < VAR_KINDS;
+         ++kind) {
+        for (varnode *v = named_vars[kind].sorted; v != NULL; v = v->snext) {
+            if (kind == VAR_NUM) {
                 tty_message("#(@%s = %ld)\n", v->name, v->num);
             } else {
                 p = ptrescape(p, v->str, 0);
