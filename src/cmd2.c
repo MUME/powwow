@@ -1003,8 +1003,8 @@ static int get_one_char(int timeout)
         FD_ZERO(&fds);
         FD_SET(tty_read_fd, &fds);
         struct timeval timeoutbuf = {
-            .tv_sec = 0,
-            .tv_usec = timeout * uSEC_PER_mSEC,
+            .tv_sec = timeout / mSEC_PER_SEC,
+            .tv_usec = (timeout % mSEC_PER_SEC) * uSEC_PER_mSEC,
         };
         int n = select(tty_read_fd + 1, &fds, NULL, NULL,
                        timeout != 0 ? &timeoutbuf : NULL);
