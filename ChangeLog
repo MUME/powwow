@@ -94,6 +94,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  expression action crashing powwow when the action was matched.
 	* Fixed `#bind <name> <sequence>=<command>' calling a new key a
 	  redefined one, and the other way around.
+	* Fixed the first alias, action, #for or #while losing the values
+	  that $0..$9 and @0..@9 had outside of any of them.
 	* C-c stops a loop such as #while also while it runs a shell command
 	  with #!, which received the C-c instead of powwow.
 	* #connect tries every address of the host, and connects to IPv4
