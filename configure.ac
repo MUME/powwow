@@ -76,6 +76,34 @@ case "x${ac_prog_cc_stdc}" in
     x ) AC_MSG_ERROR([not found]) ;;
     * ) AC_MSG_WARN([unknown version ${ac_prog_cc_stdc}]) ;;
 esac
+
+# the warnings that the code is kept free of, those that the compiler
+# accepts; a -Wno-... is checked as the warning it turns off, as gcc
+# accepts any -Wno-...
+powwow_warnings="all extra missing-declarations missing-prototypes \
+    nested-externs no-missing-field-initializers no-unused-parameter \
+    old-style-definition pointer-arith shadow unused-macros write-strings"
+AS_IF([${CC} --version 2>/dev/null | grep clang >/dev/null],
+    [powwow_warnings="${powwow_warnings} assign-enum embedded-directive \
+        extra-semi extra-semi-stmt gnu-union-cast gnu-empty-initializer \
+        gnu-empty-struct gnu-folding-constant \
+        gnu-conditional-omitted-operand gnu-flexible-array-initializer \
+        missing-noreturn missing-variable-declarations \
+        tautological-unsigned-zero-compare"],
+    [powwow_warnings="${powwow_warnings} no-packed-bitfield-compat"])
+WARN_CFLAGS=
+echo 'int main(void) { return 0; }' > conftest-warn.c
+for warning in ${powwow_warnings}; do
+    probe=`echo "${warning}" | sed 's/^no-//'`
+    AC_MSG_CHECKING([whether ${CC} accepts -W${warning}])
+    AS_IF([${CC} ${CFLAGS} -Werror -W${probe} -c conftest-warn.c \
+               -o conftest-warn.o >/dev/null 2>&1],
+        [AC_MSG_RESULT([yes])
+         WARN_CFLAGS="${WARN_CFLAGS} -W${warning}"],
+        [AC_MSG_RESULT([no])])
+done
+rm -f conftest-warn.c conftest-warn.o
+AC_SUBST([WARN_CFLAGS])
 # clang-tidy, or else the newest with a version, as clang-tidy-15 (Debian,
 # Ubuntu) or clang-tidy19 (FreeBSD), with one line of output
 AC_CACHE_CHECK([for clang-tidy], [ac_cv_path_CLANG_TIDY],
@@ -238,6 +266,7 @@ Host:               ${host}
 Compiler:           ${CC}
 Preprocessor flags: ${CPPFLAGS}
 Compiler flags:     ${CFLAGS}
+Warning flags:      ${WARN_CFLAGS}
 Linker flags:       ${LDFLAGS}
 Libraries:          ${LIBS}
 
