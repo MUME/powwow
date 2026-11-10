@@ -10,6 +10,7 @@
  *
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -91,20 +92,26 @@ int rev_time_sort(defnode *node1, defnode *node2)
     return cmp_vtime(&((delaynode *)node2)->when, &((delaynode *)node1)->when);
 }
 
-/*
- * compute the hash value of a name
- */
-int hash(const char *name, int optlen)
+/* the 32-bit FNV-1a hash of 'name' */
+static uint32_t hash(const char *name)
 {
-    int h = 0, i = 0;
-    if (optlen < 0)
-	optlen = strlen(name);
-    while (optlen-- > 0) {
-	h += ((*name++) ^ i) << i;
-	if (++i == LOG_MAX_HASH)
-	    i = 0;
+    uint32_t h = 0x811c9dc5;
+    for (const unsigned char *p = (const unsigned char *)name; *p != '\0';
+         ++p) {
+        h ^= *p;
+        h *= 0x01000193;
     }
-    return (h + (h >> LOG_MAX_HASH) + (h >> (2*LOG_MAX_HASH))) & (MAX_HASH-1);
+    return h;
+}
+
+/*
+ * the list for 'name' in a hash table of MAX_HASH lists: its hash
+ * xor-folded to HASH_BITS bits, as the authors of FNV recommend
+ */
+static uint32_t hash_bucket(const char *name)
+{
+    uint32_t h = hash(name);
+    return ((h >> HASH_BITS) ^ h) & (MAX_HASH - 1);
 }
 
 /*
@@ -142,7 +149,7 @@ void add_aliasnode(char *name, char *subst)
 	free(new);
 	return;
     }
-    add_node((defnode*)new, (defnode**)&aliases[hash(name,-1)], rev_sort);
+    add_node((defnode*)new, (defnode**)&aliases[hash_bucket(name)], rev_sort);
     /* the list of the aliases in ASCII order */
     aliasnode **sorted = &sortedaliases;
     while (*sorted != NULL && strcmp((*sorted)->name, new->name) < 0)
@@ -407,7 +414,8 @@ varnode *add_varnode(char *name, int type)
 	VAR[m].num = &new->num;
     num_named_vars[type]++;
 
-    add_node((defnode*)new, (defnode**)&named_vars[type][hash(name,-1)], rev_sort);
+    add_node((defnode*)new, (defnode**)&named_vars[type][hash_bucket(name)],
+             rev_sort);
     /* the list of the variables in ASCII order */
     varnode **sorted = &sortednamed_vars[type];
     while (*sorted != NULL && strcmp((*sorted)->name, new->name) < 0)
@@ -423,7 +431,7 @@ varnode *add_varnode(char *name, int type)
  */
 aliasnode **lookup_alias(char *name)
 {
-    aliasnode **p = &aliases[hash(name,-1)];
+    aliasnode **p = &aliases[hash_bucket(name)];
     while (*p && strcmp(name, (*p)->name))
 	p = &(*p)->next;
     return p;
@@ -520,7 +528,7 @@ delaynode **lookup_delay(char *name, int is_dead)
  */
 varnode **lookup_varnode(char *name, int type)
 {
-    varnode **p = &named_vars[type][hash(name,-1)];
+    varnode **p = &named_vars[type][hash_bucket(name)];
     while (*p && strcmp(name, (*p)->name))
 	p = &(*p)->next;
     return p;
