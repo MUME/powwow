@@ -1989,7 +1989,7 @@ static void cmd_var(char *arg)
 		    wrap_printf("#deleted variable: \"%s\"", arg - 1);
 		}
 	    }
-	} else if ((type = TYPE_TXT_VAR)) {
+	} else if (type == TYPE_TXT_VAR) {
 	/* R.I.P. unnamed variables */
 	    if (*VAR[idx].str) {
 		if (idx < 0) {
