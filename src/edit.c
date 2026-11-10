@@ -444,7 +444,7 @@ static struct {
     bool typing;                /* characters are being typed */
 } undo_cmd;
 
-static void undo_push(struct undo_list *list, const char *line, int pos)
+static void undo_push(struct undo_list *list, const char *line, int cursor)
 {
     char *copy = my_strdup(line);
     if (copy == NULL)
@@ -455,7 +455,8 @@ static void undo_push(struct undo_list *list, const char *line, int pos)
                 (UNDO_MAX - 1) * sizeof(*list->steps));
         --list->count;
     }
-    list->steps[list->count++] = (struct undo_step){ .line = copy, .pos = pos };
+    list->steps[list->count++] = (struct undo_step){ .line = copy,
+                                                     .pos = cursor };
 }
 
 static void undo_clear(struct undo_list *list)
@@ -464,10 +465,10 @@ static void undo_clear(struct undo_list *list)
         free(list->steps[--list->count].line);
 }
 
-/* record 'line' with the cursor at 'pos' as the line before a change */
-static void undo_record(const char *line, int pos)
+/* record 'line' with the cursor at 'cursor' as the line before a change */
+static void undo_record(const char *line, int cursor)
 {
-    undo_push(&undos->undo, line, pos);
+    undo_push(&undos->undo, line, cursor);
     undo_clear(&undos->redo);
 }
 
@@ -799,10 +800,10 @@ static void word_list_add(struct word_list *l, const char *word)
     }
     if (l->count == l->size) {
         int size = l->size > 0 ? 2 * l->size : 32;
-        char **words = realloc(l->words, size * sizeof(*words));
-        if (words == NULL)
+        char **new_words = realloc(l->words, size * sizeof(*new_words));
+        if (new_words == NULL)
             return;
-        l->words = words;
+        l->words = new_words;
         l->size = size;
     }
     char *copy = my_strdup(word);
@@ -1439,7 +1440,7 @@ void fmt_next_edit(const char *fmt, ...)
     va_list va;
     va_start(va, fmt);
     int n = vsnprintf(inserted_next, sizeof inserted_next, fmt, va);
-    if (n >= sizeof inserted_next) {
+    if (n < 0 || (size_t)n >= sizeof inserted_next) {
         static const char msg[] = " [TRUNCATED]";
         memcpy(inserted_next + sizeof inserted_next - sizeof msg,
                msg, sizeof msg);
@@ -2160,8 +2161,8 @@ static void charin_end(void)
     input_moveto(charin.saved_pos);
 }
 
-/* start reading a name in 'file' after 'prompt' */
-static void charin_start(const char *file, const char *prompt)
+/* start reading a name in 'file' after 'label' */
+static void charin_start(const char *file, const char *label)
 {
     if (charin.active)
         return;
@@ -2170,8 +2171,8 @@ static void charin_start(const char *file, const char *prompt)
     charin.file = file;
     strcpy(charin.saved, edbuf);
     charin.saved_pos = pos;
-    edlabel = (int)strlen(prompt);
-    input_replace(0, edlen, prompt, strlen(prompt));
+    edlabel = (int)strlen(label);
+    input_replace(0, edlen, label, strlen(label));
     edstart = edlen;
     undos = &name_undo;
 }
@@ -2495,13 +2496,13 @@ static void charin_complete(void)
     /* the names that start with the name typed, or else with its first
      * word, are the ones meant, if any */
     const struct name_set *set = &m->all;
-    const struct charname_align *words = &m->all_words;
+    const struct charname_align *align = &m->all_words;
     if (m->all.count > 1 && m->prefixed.count > 0) {
         set = &m->prefixed;
-        words = &m->prefixed_words;
+        align = &m->prefixed_words;
     } else if (m->all.count > 1 && m->anchored.count > 0) {
         set = &m->anchored;
-        words = &m->anchored_words;
+        align = &m->anchored_words;
     }
     /* the words typed as the whole words they stand for, and the cursor
      * where the names differ, as "latin  letter aa" for "lati letter aa",
@@ -2509,7 +2510,7 @@ static void charin_complete(void)
     char text[sizeof(charin.name)];
     size_t cursor;
     if (set->count > 1
-        && charname_align_text(words, pattern, text, sizeof(text),
+        && charname_align_text(align, pattern, text, sizeof(text),
                                &cursor)) {
         int at = edstart + charin.name_at + (int)m->keep;
         if (strcmp(text, pattern) != 0 || at + (int)cursor != pos) {

@@ -133,7 +133,7 @@ static bool parse_color(const char *tok, size_t len, struct color *color)
 }
 
 /* return the flag of the style [tok, tok + len), or 0 */
-static enum attr_flag style_flag(const char *tok, size_t len)
+static unsigned style_flag(const char *tok, size_t len)
 {
     for (size_t i = 0; i < N_STYLES; ++i) {
         if (token_is(tok, len, styles[i].name, true))
@@ -185,7 +185,7 @@ bool attr_parse_why(const char *text, struct attr *attr, char *why,
 
     /* styles */
     while (len > 0) {
-        enum attr_flag flag = style_flag(text, len);
+        unsigned flag = style_flag(text, len);
         if (flag == 0)
             break;
         a.flags |= flag;

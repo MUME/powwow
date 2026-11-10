@@ -80,10 +80,10 @@
 #ifdef MOTDFILE
 static void printmotd(void);
 #endif
-static void mainloop(void);
+static noreturn void mainloop(void);
 static void exec_delays(void);
 static void prompt_reset_iac(void);
-static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds);
+static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds);
 static void get_user_input(void);
 
 static int  search_action_or_prompt(char *line, char clearline, char onprompt);
@@ -757,7 +757,7 @@ static void compute_sleeptime(vtime **timeout, bool force_zero)
 /*
  * main loop.
  */
-static void mainloop(void)
+static noreturn void mainloop(void)
 {
     fd_set readfds, cache_read_fds;
     int i, err;
@@ -1039,7 +1039,7 @@ static void effective_prompt(void)
     struct sgr_state *attrs = malloc((len + 1) * sizeof *attrs);
     char *pend = NULL;          /* other escapes and controls, pending */
     size_t npend = 0, pendsize = 0;
-    size_t pos = 0, ncells = 0, nattrs = 0;
+    size_t at = 0, ncells = 0, nattrs = 0;
     struct sgr_state cur;
     int cur_attr = -1;          /* index of cur in attrs, if any */
 
@@ -1065,10 +1065,10 @@ static void effective_prompt(void)
     for (size_t p = 0; p < len; ++p) {
         char c = pstr[p];
         if (c == '\b') {
-            if (pos > 0)
-                --pos;
+            if (at > 0)
+                --at;
         } else if (c == '\r') {
-            pos = 0;
+            at = 0;
         } else if (c == '\033') {
             size_t q = p + 1;
             if (q < len && pstr[q] == '[') {
@@ -1079,11 +1079,11 @@ static void effective_prompt(void)
                     && (pstr[q] == 'K'
                         && (q == p + 2 || (q == p + 3 && pstr[p + 2] == '0')))) {
                     /* erase to end of line */
-                    UNSPLIT(pos);
-                    for (size_t i = pos; i < ncells; ++i)
+                    UNSPLIT(at);
+                    for (size_t i = at; i < ncells; ++i)
                         free(cells[i].other);
-                    if (ncells > pos)
-                        ncells = pos;
+                    if (ncells > at)
+                        ncells = at;
                     p = q;
                     continue;
                 }
@@ -1105,26 +1105,26 @@ static void effective_prompt(void)
             uint32_t cp;
             int n = utf8_get(pstr + p, len - p, &cp);
             int w = cp_width(cp);
-            size_t i = pos - 1;
-            if (pos > 0 && cells[i].kind == WIDE_RIGHT && i > 0)
+            size_t i = at - 1;
+            if (at > 0 && cells[i].kind == WIDE_RIGHT && i > 0)
                 --i;
-            if (pos > 0 && cell_add(&cells[i].cs, cp)) {
+            if (at > 0 && cell_add(&cells[i].cs, cp)) {
                 /* e.g. a combining character: joins the previous cell */
                 buf_add(&cells[i].text, &cells[i].len, &cells[i].size,
                         pstr + p, n);
-                if (cells[i].kind == NARROW && i + 1 == pos
+                if (cells[i].kind == NARROW && i + 1 == at
                     && cells[i].cs.width == 2) {
                     /* e.g. VS16 made it an emoji, two columns wide */
-                    UNSPLIT(pos);
-                    if (pos >= ncells) {
-                        cells[pos].other = NULL;
-                        ncells = pos + 1;
+                    UNSPLIT(at);
+                    if (at >= ncells) {
+                        cells[at].other = NULL;
+                        ncells = at + 1;
                     }
                     cells[i].kind = WIDE_LEFT;
-                    cells[pos].len = 0;
-                    cells[pos].kind = WIDE_RIGHT;
-                    cells[pos].attr = cells[i].attr;
-                    ++pos;
+                    cells[at].len = 0;
+                    cells[at].kind = WIDE_RIGHT;
+                    cells[at].attr = cells[i].attr;
+                    ++at;
                 }
                 p += n - 1;
                 continue;
@@ -1139,14 +1139,14 @@ static void effective_prompt(void)
                 attrs[nattrs] = cur;
                 cur_attr = nattrs++;
             }
-            UNSPLIT(pos);
+            UNSPLIT(at);
             if (w == 2)
-                UNSPLIT(pos + 1);
+                UNSPLIT(at + 1);
             for (int half = 0; half < w; ++half) {
-                struct cell *cl = &cells[pos];
-                if (pos >= ncells) {
+                struct cell *cl = &cells[at];
+                if (at >= ncells) {
                     cl->other = NULL;
-                    ncells = pos + 1;
+                    ncells = at + 1;
                 }
                 if (half == 0 && npend > 0) {
                     size_t used = cl->other ? strlen(cl->other) : 0;
@@ -1162,7 +1162,7 @@ static void effective_prompt(void)
                     cl->kind = WIDE_RIGHT;
                 }
                 cl->attr = cur_attr;
-                ++pos;
+                ++at;
             }
             p += n - 1;
         }
@@ -1191,12 +1191,12 @@ static void effective_prompt(void)
     sgr_transition(&out, &used, &size, &emitted, &cur, base);
     if (npend > 0)
         buf_add(&out, &used, &size, pend, npend);
-    if (pos < ncells) {
+    if (at < ncells) {
         /* the cursor is not at the end: move it back */
-        if (pos == 0)
+        if (at == 0)
             buf_add(&out, &used, &size, "\r", 1);
         else
-            for (size_t i = pos; i < ncells; ++i)
+            for (size_t i = at; i < ncells; ++i)
                 buf_add(&out, &used, &size, "\b", 1);
     }
 
@@ -1505,7 +1505,7 @@ static void common_clear(int newline)
 /*
  * get data from the socket and process/display it.
  */
-static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
+static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
 {
     /*
      * tcp_read() stores up to three bytes of UTF-8 per byte read;
@@ -1535,9 +1535,9 @@ static void get_remote_input(fd_set *fdset, unsigned *ncache_read_fds)
     int got = tcp_read(current_connection, buf, TCP_READ_EXPANSION * BUFSIZE - i);
     if (!got)
 	return;
-    if (!FD_ISSET(current_connection->fd, fdset)
+    if (!FD_ISSET(current_connection->fd, read_fds)
         && current_connection->fns->can_read(current_connection)) {
-        FD_SET(current_connection->fd, fdset);
+        FD_SET(current_connection->fd, read_fds);
         ++*ncache_read_fds;
     }
 
@@ -1852,27 +1852,27 @@ static int search_action_or_prompt(char *line, char clearline, char onprompt)
 }
 
 /*
- * the length of the unbound key sequence that starts 'typed', of 'n'
+ * the length of the unbound key sequence that starts 'seq', of 'n'
  * bytes, that no binding matches although its first key starts one: for
  * ESC, ESC and a character for a meta key, or a whole CSI (ESC [) or SS3
  * (ESC O) sequence for a function key, and for another control key, such
- * as C-x, all of it; return 0 if 'typed' does not start with a control
+ * as C-x, all of it; return 0 if 'seq' does not start with a control
  * key, or -1 if the sequence is incomplete
  */
-static int unbound_key_len(const char *typed, int n)
+static int unbound_key_len(const char *seq, int n)
 {
-    if (n < 2 || (unsigned char)typed[0] >= ' ')
+    if (n < 2 || (unsigned char)seq[0] >= ' ')
         return 0;
-    if (typed[0] != '\033')
+    if (seq[0] != '\033')
         return n;
-    if (typed[1] == '\033')
+    if (seq[1] == '\033')
         return 1;
-    if (typed[1] == 'O')
+    if (seq[1] == 'O')
         return n >= 3 ? 3 : -1;
-    if (typed[1] == '[') {
+    if (seq[1] == '[') {
         /* parameter and intermediate bytes, until a final byte */
         for (int i = 2; i < n; ++i) {
-            if (typed[i] >= 0x40 && typed[i] <= 0x7e)
+            if (seq[i] >= 0x40 && seq[i] <= 0x7e)
                 return i + 1;
         }
         return -1;
@@ -1886,7 +1886,7 @@ static int unbound_key_len(const char *typed, int n)
  */
 static void get_user_input(void)
 {
-    int i, j, chunk = 1;
+    int j, chunk = 1;
     static char buf[BUFSIZE+1];   /* allow for terminating \0 */
     char *c = buf;
 
