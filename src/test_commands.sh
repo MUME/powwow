@@ -123,6 +123,11 @@ run 'var deletes an unnamed number variable' '#($3 = "text")
 has 'text'
 has '@3=0'
 
+run 'action reports errors in its pattern expression' '#action >e (1+)=x
+#action >f (1)=x'
+has '#action: #error: value expected.'
+has '#action: #error: string expected.'
+
 run 'substitute define, list and delete' '#substitute foo=bar
 #substitute
 #print ("a foo b foo")

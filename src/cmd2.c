@@ -470,7 +470,6 @@ void parse_action(char *str, bool onprompt)
                     error = NO_STRING_ERROR;
                 if (REAL_ERROR) {
                     PRINTF("#%s: ", ONPROMPT);
-                    error = NO_STRING_ERROR;
                     print_error(error);
                     ptrdel(&pbuf);
                     return;
