@@ -152,6 +152,17 @@ run 'bind tells a new key from a redefined one' '#bind zzz ^X^Z=#print ("a")
 has '#new key binding: zzz ^X^Z=#print ("a")'
 has '#redefined key: zzz ^X^Z=#print ("b")'
 
+run 'aliases and variables are listed in ASCII order' '#alias b=2
+#alias c=3
+#alias a=1
+#alias
+#($zb="2")
+#($za="1")
+#var'
+order=$(sed -n -e 's/^#alias \([abc]\)@\*=.*/\1/p' \
+               -e 's/^#(\$\(z[ab]\) = .*/\1/p' "$tmp/out" | tr -d '\n')
+[ "$order" = abczazb ] || fail "listed in the order $order"
+
 run 'substitute define, list and delete' '#substitute foo=bar
 #substitute
 #print ("a foo b foo")

@@ -1640,7 +1640,6 @@ int save_settings(void)
 	failed = fprintf(f, "#setvar buffer=%d\n", i);
 
     if (failed > 0) {
-	reverse_sortedlist((sortednode **)&sortedaliases);
 	for (alp = sortedaliases; alp && failed > 0; alp = alp->snext) {
 	    pp = ptrmescape(pp, alp->name, strlen(alp->name), 0);
 	    if (MEM_ERROR) { failed = -1; break; }
@@ -1649,7 +1648,6 @@ int save_settings(void)
 		alp -> group == NULL ? "" : alp -> group,
 		alp->subst);
 	}
-	reverse_sortedlist((sortednode **)&sortedaliases);
     }
 
     for (acp = actions; acp && failed > 0; acp = acp->next) {
@@ -1702,7 +1700,6 @@ int save_settings(void)
     }
 
     if (failed > 0) {
-	reverse_sortedlist((sortednode **)&sortednamed_vars[0]);
 	for (flag = 0, vp = sortednamed_vars[0]; vp && failed > 0; vp = vp->snext) {
 	    if (vp->num) {
 		failed = fprintf(f, "%s@%s = %ld", flag ? ", " : "#(",
@@ -1710,12 +1707,10 @@ int save_settings(void)
 		flag = 1;
 	    }
 	}
-	reverse_sortedlist((sortednode **)&sortednamed_vars[0]);
     }
     if (failed > 0 && flag) failed = fprintf(f, ")\n");
 
     if (failed > 0) {
-	reverse_sortedlist((sortednode **)&sortednamed_vars[1]);
 	for (vp = sortednamed_vars[1]; vp && failed > 0; vp = vp->snext) {
 	    if (!is_permanent_variable(vp) && vp->str && ptrlen(vp->str)) {
 		pp = ptrescape(pp, vp->str, 0);
@@ -1723,7 +1718,6 @@ int save_settings(void)
 		failed = fprintf(f, "#($%s = \"%s\")\n", vp->name, ptrdata(pp));
 	    }
 	}
-	reverse_sortedlist((sortednode **)&sortednamed_vars[1]);
     }
 
     if (failed > 0 && opt_history) {

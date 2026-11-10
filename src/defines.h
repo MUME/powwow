@@ -160,15 +160,10 @@ typedef struct defnode {
  * twin linked list node: used to build pair of parallel lists,
  * one sorted and one not, with the same nodes
  */
-typedef struct sortednode {
-    struct sortednode *next;
-    char *sortfield;
-    struct sortednode *snext;
-} sortednode;
-
 /*
- * linked list nodes: keep "next" first, then string to sort by,
- * then (eventually) `snext'
+ * linked list nodes: keep "next" first, then the string to sort by, as
+ * add_node() handles them as a defnode; the aliases and variables are
+ * also in a list in ASCII order of their names, linked through `snext'
  */
 typedef struct aliasnode {
     struct aliasnode *next;
