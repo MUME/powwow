@@ -230,6 +230,15 @@ typedef struct varnode {        /* for named variables */
     ptr  *str;
 } varnode;
 
+enum var_kind { VAR_NUM, VAR_TEXT, VAR_KINDS };     /* @name, $name */
+
+/* the named variables of one kind */
+struct named_vars {
+    varnode *buckets[MAX_HASH];
+    varnode *sorted;            /* in ASCII order */
+    int count;
+};
+
 typedef struct {                /* for unnamed vars */
     long num;
     ptr  *str;

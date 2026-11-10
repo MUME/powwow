@@ -1442,14 +1442,14 @@ static void cmd_reset(char *arg)
     }
     if (all || strcmp(arg, "var") == 0) {
         for (int n = 0; n < MAX_HASH; ++n) {
-            while (named_vars[0][n] != NULL)
-                delete_varnode(&named_vars[0][n], 0);
-            varnode **first = &named_vars[1][n];
+            while (named_vars[VAR_NUM].buckets[n] != NULL)
+                delete_varnode(&named_vars[VAR_NUM].buckets[n], VAR_NUM);
+            varnode **first = &named_vars[VAR_TEXT].buckets[n];
             while (*first != NULL) {
                 if (is_permanent_variable(*first))
                     first = &(*first)->next;
                 else
-                    delete_varnode(first, 1);
+                    delete_varnode(first, VAR_TEXT);
             }
         }
 
@@ -1829,11 +1829,11 @@ static void cmd_var(char *arg)
         }
     }
 
-    char type;
+    enum var_kind kind;
     if (*arg == '$')
-        type = TYPE_TXT_VAR;
+        kind = VAR_TEXT;
     else if (*arg == '@')
-        type = TYPE_NUM_VAR;
+        kind = VAR_NUM;
     else if (*arg != '\0') {
         error = INVALID_NAME_ERROR;
         print_error(error);
@@ -1846,8 +1846,8 @@ static void cmd_var(char *arg)
     varnode **p_named_var = NULL, *named_var = NULL;
     ptr *pbuf = NULL;
     int idx;
-    char kind = *++arg;
-    if (isalpha(kind) || kind == '_') {
+    ++arg;
+    if (isalpha(*arg) || *arg == '_') {
         /* found a named variable */
         char *tmp = arg;
         while (*tmp != '\0' && (isalnum(*tmp) || *tmp == '_'))
@@ -1857,7 +1857,6 @@ static void cmd_var(char *arg)
             print_error(error);
             return;
         }
-        kind = type == TYPE_TXT_VAR ? 1 : 0;
         p_named_var = lookup_varnode(arg, kind);
         if (*p_named_var == NULL) {
             /* it doesn't (yet) exist */
@@ -1880,7 +1879,6 @@ static void cmd_var(char *arg)
     } else {
         /* not a named variable, may be
          * an unnamed variable or an expression */
-        kind = type == TYPE_TXT_VAR ? 1 : 0;
         char *tmp = skipspace(arg);
         if (*tmp == '(') {
             /* an expression */
@@ -1942,7 +1940,7 @@ static void cmd_var(char *arg)
                         }
                         if (opt_info) {
                             PRINTF("#new variable: %c%s\n",
-                                   kind != 0 ? '$' : '@', buf);
+                                   kind == VAR_TEXT ? '$' : '@', buf);
                         }
                     } else {
                         error = UNDEFINED_VARIABLE_ERROR;
@@ -1976,7 +1974,7 @@ static void cmd_var(char *arg)
     }
 
 
-    if (type == TYPE_TXT_VAR && right && *VAR[idx].str == NULL) {
+    if (kind == VAR_TEXT && right && *VAR[idx].str == NULL) {
         *VAR[idx].str = ptrnew(PARAMLEN);
         if (MEM_ERROR) {
             print_error(error);
@@ -1996,7 +1994,7 @@ static void cmd_var(char *arg)
                     wrap_printf("#deleted variable: \"%s\"", arg - 1);
                 }
             }
-        } else if (type == TYPE_TXT_VAR) {
+        } else if (kind == VAR_TEXT) {
         /* R.I.P. unnamed variables */
             if (*VAR[idx].str != NULL) {
                 if (idx < 0) {
@@ -2012,7 +2010,7 @@ static void cmd_var(char *arg)
     } else if (!right) {
         /* no right-hand expression, just show */
         if (named_var != NULL) {
-            if (type == TYPE_TXT_VAR) {
+            if (kind == VAR_TEXT) {
                 pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
                 if (REAL_ERROR) {
                     print_error(error);
@@ -2028,7 +2026,7 @@ static void cmd_var(char *arg)
                               *VAR[idx].num);
             }
         } else {
-            if (type == TYPE_TXT_VAR) {
+            if (kind == VAR_TEXT) {
                 pbuf = ptrescape(pbuf, *VAR[idx].str, 0);
                 fmt_next_edit("#($%d = \"%s\")", idx,
                               pbuf != NULL ? ptrdata(pbuf) : "");
@@ -2042,14 +2040,15 @@ static void cmd_var(char *arg)
     }
 
     /* only case left: assign a value to a variable */
+    char from;
     long start, end;
-    arg = redirect(expr, &pbuf, &kind, "var", true, &start, &end);
+    arg = redirect(expr, &pbuf, &from, "var", true, &start, &end);
     if (REAL_ERROR || arg == NULL)
         return;
 
-    if (kind != 0) {
+    if (from != 0) {
         char buf2[BUFSIZE];
-        FILE *fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        FILE *fp = (from == '!') ? popen(arg, "r") : fopen(arg, "r");
         if (fp == NULL) {
             wrap_printf("#var: #error opening \"%s\"", arg);
             error = SYNTAX_ERROR;
@@ -2063,14 +2062,14 @@ static void cmd_var(char *arg)
             if (start == 0 || i++ >= start)
                 len += strlen(buf2 + len);
 
-        if (kind == '!') pclose(fp); else fclose(fp);
+        if (from == '!') pclose(fp); else fclose(fp);
         if (len > PARAMLEN)
             len = PARAMLEN;
         buf2[len] = '\0';
         arg = buf2;
     }
 
-    if (type == TYPE_NUM_VAR) {
+    if (kind == VAR_NUM) {
         arg = skipspace(arg);
 
         char *num_end;
