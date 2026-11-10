@@ -1346,8 +1346,7 @@ void parse_bind(char *arg)
         if (*p != '\0') {
             char *command = p;
             if (np != NULL) {
-                if (np->funct == key_run_command)
-                    free(np->call_data);
+                free(np->call_data);
                 char *params;
                 int function = lookup_edit_name(command, &params);
                 if (function != 0) {
