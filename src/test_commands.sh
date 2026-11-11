@@ -178,6 +178,18 @@ has '#no connection named "nosuch"'
 has '#error: missing right parenthesis.'
 has 'alive'
 
+run 'typing does not draw the character before the cursor again' '' \
+    "xyz$(printf '\025')"
+grep -Fq 'xyz' "$tmp/out" || fail "xyz not shown"
+! grep -Eq 'xyz<ESC>\[[0-9;]*H[xyz]' "$tmp/out" \
+    || fail "drew the typed characters again"
+
+run 'Tab does not draw the start of the word that it completes again' '' \
+    "#hilite mess	$(printf '\025')"
+grep -Fq 'ages ' "$tmp/out" || fail "messages not completed"
+[ "$(grep -o 'mess' "$tmp/out" | wc -l)" -eq 1 ] \
+    || fail "drew the start of the word again"
+
 run 'substitute define, list and delete' '#substitute foo=bar
 #substitute
 #print ("a foo b foo")
@@ -465,6 +477,12 @@ if [ -n "$utf8" ]; then
 "
     has 'ǅungla Οδος 12Ab!'
 
+    # C-b and C-f draw the e first, so that the accent joins its cell
+    run 'a combining character typed after its base draws them again' '' \
+        "$(printf 'e\002\006\314\201\025')"
+    grep -Eq "<ESC>\\[[0-9;]*He$(printf '\314\201')" "$tmp/out" \
+        || fail "e and the accent not drawn again together"
+
     run 'version with a copyright sign and an en dash' '#ver'
     grep -q ', © 1998–[0-9]* by the powwow authors$' "$tmp/out" \
         || fail "expected © and an en dash"
@@ -566,7 +584,7 @@ b
 
 "
     has 'a🧙‍♂️'
-    grep -q 'person-fant man mage' "$tmp/raw" \
+    grep -Eq 'person-fant man mag(<ESC>\[[0-9;]*H)?e' "$tmp/out" \
         || fail 'person-fant man mag is not completed to person-fant man mage'
 
     run 'emoji can be browsed by group and subgroup' '' \

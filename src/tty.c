@@ -993,12 +993,18 @@ static int input_fit(const char *str, int n, int max)
 }
 
 /*
- * start of the cell before byte offset 'p' of the input line: a change
- * at 'p' may join text to that cell, so it must be redrawn too
+ * where to redraw the input line from after changing it at byte offset
+ * 'p': the start of the cell before 'p' if the change joined text to it,
+ * such as a combining character, so that it must be redrawn too, or else
+ * 'p'
  */
 static int input_redraw_start(int p)
 {
-    return utf8_prev_cell(edbuf, edbuf + p) - edbuf;
+    int prev = utf8_prev_cell(edbuf, edbuf + p) - edbuf;
+    if (prev == p)
+        return p;
+    int len = utf8_cell_len(edbuf + prev, edlen - prev);
+    return prev + len > p ? prev : p;
 }
 
 /*
@@ -1023,17 +1029,18 @@ static void input_redraw_goto(int from)
  */
 void input_delete_nofollow_chars(int n)
 {
-    int p = pos, from = input_redraw_start(pos);
+    int p = pos;
 
     if (n > edlen - pos)
 	n = edlen - pos;
     if (n <= 0)
 	return;
 
-    input_redraw_goto(from);
     memmove(edbuf + p, edbuf + p + n, edlen - p - n + 1);
     edlen -= n;
     pos = p;
+    int from = input_redraw_start(p);
+    input_redraw_goto(from);
 
     if (line_status == 0)
         input_redraw_from(from);
@@ -1045,16 +1052,17 @@ void input_delete_nofollow_chars(int n)
  */
 void input_insert_follow_chars(char *str, int n)
 {
-    int p = pos, from = input_redraw_start(pos);
+    int p = pos;
 
     n = input_fit(str, n, BUFSIZE - edlen - 1);
     if (n <= 0)
 	return;
 
-    input_redraw_goto(from);
     memmove(edbuf + p + n, edbuf + p, edlen + 1 - p);
     memmove(edbuf + p, str, n);
     edlen += n; pos = p + n;
+    int from = input_redraw_start(p);
+    input_redraw_goto(from);
 
     if (line_status == 0)
         input_redraw_from(from);
@@ -1062,19 +1070,27 @@ void input_insert_follow_chars(char *str, int n)
 
 /*
  * replace 'len' bytes at byte offset 'from' of the input line with 'n'
- * bytes of UTF-8 from 'str'; the position is set to after them
+ * bytes of UTF-8 from 'str'; the position is set to after them.  The
+ * line is redrawn from the first character that differs, so that
+ * completing a word does not draw its start again
  */
 void input_replace(int from, int len, const char *str, int n)
 {
-    int start = input_redraw_start(from);
-
-    input_redraw_goto(start);
-
     n = input_fit(str, n, BUFSIZE - 1 - (edlen - len));
+    int same = 0;
+    while (same < len && same < n && edbuf[from + same] == str[same])
+        ++same;
+    /* back to the start of the character that differs */
+    while (same > 0 && same < n
+           && ((unsigned char)str[same] & 0xc0) == 0x80) {
+        --same;
+    }
     memmove(edbuf + from + n, edbuf + from + len, edlen - from - len + 1);
     memcpy(edbuf + from, str, n);
     edlen += n - len;
     pos = from + n;
+    int start = input_redraw_start(from + same);
+    input_redraw_goto(start);
 
     if (line_status == 0)
         input_redraw_from(start);
