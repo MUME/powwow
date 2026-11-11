@@ -25,11 +25,12 @@ Files you should have received:
 COMPILING
 
 	Powwow is supported on Linux, macOS, FreeBSD, and Windows using
-	WSL2, where it is built as on Linux.  It needs a C11 compiler,
-	GnuTLS (unless configured with --disable-tls), and ncurses
-	(unless configured with --enable-vt100).  PCRE2, libgrapheme and
-	zlib are used if available; with zlib, the names of the
-	characters and emoji are installed compressed.
+	WSL2, where it is built as on Linux, or Cygwin, where #module is
+	not available.  It needs a C11 compiler, GnuTLS (unless
+	configured with --disable-tls), and ncurses (unless configured
+	with --enable-vt100).  PCRE2, libgrapheme and zlib are used if
+	available; with zlib, the names of the characters and emoji are
+	installed compressed.
 
 	On Debian and Ubuntu, including WSL2, install the packages needed
 	to build powwow, and optionally PCRE2 and zlib, with:
@@ -42,6 +43,12 @@ COMPILING
 
 	pkg install autoconf automake pkgconf gnutls
 	pkg install pcre2
+
+	On Cygwin, install these packages using its setup program:
+
+	setup-x86_64.exe -q -P gcc-core,make,autoconf,automake,pkg-config
+	setup-x86_64.exe -q -P libgnutls-devel,libncurses-devel
+	setup-x86_64.exe -q -P libpcre2-devel,zlib-devel
 
 	Powwow is built using GNU autoconf scripts, it should detect any
 	system dependancies it needs and set the appropriate flags.  Just

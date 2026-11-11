@@ -34,8 +34,10 @@ AS_IF([ test "${enable_shell}" != no ],
 # _XOPEN_SOURCE hides extensions such as SIGWINCH; make these systems
 # show them
 is_darwin=
+is_cygwin=
 feature_cppflags=
 case "${host_os}" in
+    cygwin*) is_cygwin=t ;;
     darwin*) is_darwin=t; feature_cppflags=-D_DARWIN_C_SOURCE ;;
     freebsd* | dragonfly*) feature_cppflags=-D__BSD_VISIBLE=1 ;;
     openbsd*) feature_cppflags=-D_BSD_SOURCE ;;
@@ -137,10 +139,12 @@ AM_CONDITIONAL([HAVE_CURSES], [test "x${have_curses}" = xyes])
 AC_CHECK_FUNC([getopt_long],
     AC_DEFINE(HAVE_GETOPT_LONG, 1, [Define to use getopt_long().]))
 
-# Dynamic modules
-AC_SEARCH_LIBS(dlopen,[dl],[
-    AC_DEFINE(HAVE_LIBDL, 1, [Define if we have -ldl.])
-    dl_ldflags="-rdynamic"])
+# Dynamic modules, except on Cygwin, where a DLL cannot use the symbols
+# of the powwow executable without an import library
+AS_IF([test -z "${is_cygwin}"], [
+    AC_SEARCH_LIBS(dlopen,[dl],[
+        AC_DEFINE(HAVE_LIBDL, 1, [Define if we have -ldl.])
+        dl_ldflags="-rdynamic"]) ])
 AC_SUBST(dl_ldflags)
 
 # plugins use symbols from the powwow binary, which macOS must allow
