@@ -30,7 +30,8 @@ static void tls_nofail(int error, const char *file, int line, const char *func)
 {
     if (error >= 0)
         return;
-    PRINTF("#%s:%d: %s: %s", file, line, func, gnutls_strerror(error));
+    PRINTF("#%s:%d: %s: %s\n", file, line, func, gnutls_strerror(error));
+    tty_flush();
     abort();
 }
 
@@ -134,6 +135,13 @@ static int cert_verify_callback(gnutls_session_t session)
     return 0;
 }
 
+/* the CA certificates of common systems, for when GnuTLS finds none of
+   the system, such as without the trust module of p11-kit */
+static const char *const ca_files[] = {
+    "/etc/pki/tls/certs/ca-bundle.crt",
+    "/etc/ssl/certs/ca-certificates.crt"
+};
+
 bool tls_upgrade(struct connsess *conn, const struct tls_options *tlsopt)
 {
     static bool did_init;
@@ -154,13 +162,34 @@ bool tls_upgrade(struct connsess *conn, const struct tls_options *tlsopt)
 
     tls_nofail(
         gnutls_certificate_allocate_credentials(&tls->xcred));
-    tls_nofail(
-        gnutls_certificate_set_x509_system_trust(tls->xcred));
+    /* without them, the certificates of servers cannot be verified */
+    int certs = gnutls_certificate_set_x509_system_trust(tls->xcred);
+    int error = certs;
+    for (size_t i = 0;
+         certs <= 0 && i < sizeof ca_files / sizeof ca_files[0];
+         ++i) {
+        certs = gnutls_certificate_set_x509_trust_file(
+            tls->xcred, ca_files[i], GNUTLS_X509_FMT_PEM);
+    }
+    if (certs <= 0 && error < 0) {
+        wrap_printf("#warning: cannot load the CA certificates of the"
+                    " system: %s", gnutls_strerror(error));
+    } else if (certs <= 0) {
+        wrap_printf("#warning: found no CA certificates of the system");
+    }
     tls_nofail(gnutls_anon_allocate_client_credentials(
                    &tls->anon_cred));
 
     tls_nofail(gnutls_init(&tls->session, GNUTLS_CLIENT));
-    tls_nofail(gnutls_set_default_priority(tls->session));
+    /* the default priorities may come from a configuration file of the
+       system, which can be missing */
+    int prio = gnutls_set_default_priority(tls->session);
+    if (prio < 0) {
+        wrap_printf("#warning: cannot set the default TLS priorities: %s",
+                    gnutls_strerror(prio));
+        tls_nofail(gnutls_priority_set_direct(
+                       tls->session, "NORMAL", NULL));
+    }
     tls_nofail(gnutls_credentials_set(
                    tls->session, GNUTLS_CRD_ANON, tls->anon_cred));
     tls_nofail(gnutls_credentials_set(
