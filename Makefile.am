@@ -33,7 +33,9 @@ tidy:
 
 # on Cygwin: a tree of powwow with what it needs from Cygwin, and an
 # installer of it for Windows (needs Inno Setup); see README; with +, as
-# the script runs make, which then shares the jobs of make -j
+# the script runs make, which then shares the jobs of make -j; V=1, which
+# make passes on from its command line or the environment, makes the
+# scripts show their commands as they run them
 windows-bundle: all
 	+$(srcdir)/cygwin/bundle.sh powwow-win
 
@@ -53,6 +55,12 @@ help:
 	@echo '  make check TESTS=test_ptr  run a single test'
 	@echo '  The results are in src/test-suite.log and src/<test>.log.'
 	@echo ''
+if CYGWIN
+	@echo 'Showing the commands:'
+	@echo '  make V=1 [TARGET]  also show the commands that the scripts of the'
+	@echo '                     cygwin targets run, as they run them'
+	@echo ''
+endif
 	@echo 'Available targets:'
 	@echo '  all               build everything (the default)'
 	@echo '  check             build and run the tests'
