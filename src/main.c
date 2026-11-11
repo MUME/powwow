@@ -440,6 +440,34 @@ static bool print_completion_of(const char *shell)
 }
 #endif
 
+#ifdef __CYGWIN__
+/*
+ * started from Windows, such as from cmd.exe or Explorer, PATH has only
+ * the folders of Windows, as no /etc/profile added /usr/bin: put it and
+ * /bin first then, for the shell, pager and editor that powwow runs
+ */
+static void add_cygwin_path(void)
+{
+    const char *path = getenv("PATH");
+    if (path == NULL)
+        path = "";
+    size_t len = strlen(path);
+    char *colons = xmalloc(len + 3);
+    sprintf(colons, ":%s:", path);
+    bool has_bin = (strstr(colons, ":/usr/bin:") != NULL
+                    || strstr(colons, ":/usr/bin/:") != NULL);
+    free(colons);
+    if (has_bin)
+        return;
+
+    static const char bins[] = "/usr/bin:/bin";
+    char *new_path = xmalloc(sizeof bins + 1 + len);
+    sprintf(new_path, len > 0 ? "%s:%s" : "%s", bins, path);
+    setenv("PATH", new_path, 1);
+    free(new_path);
+}
+#endif
+
 /* the settings are loaded and the screen is set up, for the messages */
 static bool session_started = false;
 
@@ -456,6 +484,10 @@ static void warn_deffile_busy(void)
 
 int main(int argc, char **argv)
 {
+#ifdef __CYGWIN__
+    add_cygwin_path();
+#endif
+
     if (setlocale(LC_ALL, "") == NULL)
         fprintf(stderr, "Failed setlocale(LC_ALL, \"\")\n");
 

@@ -10,6 +10,8 @@
 /test_secret
 *.log
 *.trs
+# the programs of a build on Cygwin
+/*.exe
 /gitversion.h
 # the completion of bash, which make install installs
 /completion/
