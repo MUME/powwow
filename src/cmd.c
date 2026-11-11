@@ -40,6 +40,7 @@
 #include "beam.h"
 #include "cmd.h"
 #include "cmd2.h"
+#include "charname.h"
 #include "edit.h"
 #include "list.h"
 #include "map.h"
@@ -504,35 +505,77 @@ static void show_help_text(char *text, bool use_pager)
     free(text);
 }
 
-/* show the file of the license, with a title as the help texts have */
+/*
+ * append the file 'path' to the 'len' bytes of '*text', after an empty
+ * line if 'sep', ending it with '\0'; return false, and leave '*text' as
+ * it was, if it cannot be read
+ */
+static bool append_file(char **text, size_t *len, const char *path,
+                        bool sep)
+{
+    FILE *f = fopen(path, "r");
+    struct stat st;
+    if (f == NULL || fstat(fileno(f), &st) < 0) {
+        if (f != NULL)
+            fclose(f);
+        return false;
+    }
+    size_t gap = sep ? 1 : 0;
+    char *new_text = realloc(*text, *len + gap + st.st_size + 1);
+    if (new_text == NULL) {
+        fclose(f);
+        return false;
+    }
+    *text = new_text;
+    if (sep)
+        new_text[*len] = '\n';
+    size_t got = fread(new_text + *len + gap, 1, st.st_size, f);
+    bool ok = ferror(f) == 0;
+    fclose(f);
+    if (ok)
+        *len += gap + got;
+    new_text[*len] = '\0';
+    return ok;
+}
+
+/*
+ * the file 'name' in the directory of the file 'path', in 'buf' of
+ * BUFSIZE bytes
+ */
+static const char *file_beside(char *buf, const char *path,
+                               const char *name)
+{
+    const char *slash = strrchr(path, '/');
+    int dir_len = slash != NULL ? (int)(slash - path) + 1 : 0;
+    snprintf(buf, BUFSIZE, "%.*s%s", dir_len, path, name);
+    return buf;
+}
+
+/*
+ * show the license of powwow, with a title as the help texts have, and
+ * then the licenses of what comes with it: those that LICENSES.txt
+ * beside COPYING lists, if there is one, and that of the Unicode data of
+ * the names
+ */
 static void show_copyright(bool use_pager)
 {
     static const char title[] = "Help on 'copyright'\n";
-    size_t title_len = sizeof title - 1;
-    FILE *f = fopen(copyfile, "r");
-    struct stat st;
-    if (f == NULL || fstat(fileno(f), &st) < 0) {
-        wrap_printf("#cannot open \"%s\": %s", copyfile, strerror(errno));
-        if (f != NULL)
-            fclose(f);
-        return;
-    }
-    char *text = malloc(title_len + st.st_size + 1);
+    size_t len = sizeof title - 1;
+    char *text = my_strdup(title);
     if (text == NULL) {
         out_of_memory();
-        fclose(f);
         return;
     }
-    memcpy(text, title, title_len);
-    size_t len = fread(text + title_len, 1, st.st_size, f);
-    if (ferror(f) != 0) {
-        wrap_printf("#cannot read \"%s\"", copyfile);
+    if (!append_file(&text, &len, copyfile, false)) {
+        wrap_printf("#cannot read \"%s\": %s", copyfile, strerror(errno));
         free(text);
-        fclose(f);
         return;
     }
-    fclose(f);
-    text[title_len + len] = '\0';
+    char path[BUFSIZE];
+    append_file(&text, &len, file_beside(path, copyfile, "LICENSES.txt"),
+                true);
+    append_file(&text, &len,
+                file_beside(path, namesfile, "unicode-license.txt"), true);
     show_help_text(text, use_pager);
 }
 
