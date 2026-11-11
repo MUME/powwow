@@ -1016,6 +1016,11 @@ static void complete_option(struct word_list *l, int arg, const char *args,
 {
     for (int i = 0; option_name(i) != NULL; ++i)
         word_list_add(l, option_name(i));
+    for (int i = 0; command_option_name(i) != NULL; ++i) {
+        char name[BUFSIZE];
+        snprintf(name, sizeof(name), "%s=", command_option_name(i));
+        word_list_add(l, name);
+    }
     word_list_add(l, "list");
 }
 
@@ -1336,12 +1341,14 @@ static bool complete_command(void)
         }
     }
     if (matches == 1) {
-        /* a space after it, unless it is a directory, to go on in it */
+        /* a space after it, unless it is a directory, to go on in it, or
+         * an option that a command follows, as editor= */
         char text[BUFSIZE];
         size_t only_len = strlen(only);
-        snprintf(text, sizeof(text),
-                 only_len > 0 && only[only_len - 1] == '/' ? "%s" : "%s ",
-                 only);
+        bool go_on = (only_len > 0
+                      && (only[only_len - 1] == '/'
+                          || only[only_len - 1] == '='));
+        snprintf(text, sizeof(text), go_on ? "%s" : "%s ", only);
         input_replace(word, len, text, strlen(text));
         tabbed = false;
     } else if (matches > 1 && (int)strlen(common) > len) {

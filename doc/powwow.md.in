@@ -950,6 +950,10 @@ It is possible to capture in the `#movie` file even text that you have
 
 Executes a command using /bin/sh. Powwow waits until your shell
 finishes, but you can put jobs in the background with `&` as usual.
+If `#option shell` or the environment variable `POWWOWSHELL` is set,
+such as to `zsh -c`, the command is given to that shell
+instead, as its last argument; so are the commands after `!` of `#var`,
+`#exe`, `#send`, `#print`, `#emulate` and `#write`.
 Example:
 
 ```
@@ -1235,6 +1239,26 @@ Currently available option names are
 | `#option -name` | turns it off |
 | `#option name` | toggles it |
 | `#option =name` | reports its status |
+
+#### `#option editor`, `pager` and `shell`
+
+```
+#option <name>=[<command>]
+```
+
+These options are commands, each the rest of the line: `editor` edits
+the texts that the MUD sends to edit, `pager` shows texts such as
+`#help`, and `shell` runs `#!` and the commands after `!` of `#var`
+and others. Each comes before its environment
+variable, `POWWOWEDITOR`, `POWWOWPAGER` and `POWWOWSHELL`, and they are
+saved with the other options. An empty command clears one, and
+`#option =name` puts it in the input line to edit.
+
+```
+#option editor=&emacsclient
+#option shell=zsh -c
+#option pager=
+```
 
 #### `#option exit`
 

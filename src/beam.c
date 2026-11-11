@@ -405,13 +405,14 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	history_done = 0;
     }
 
-    if (view) {
-	if (!(editor = getenv("POWWOWPAGER")) && !(editor = getenv("PAGER")))
-	    editor = "more";
-    } else {
-	if (!(editor = getenv("POWWOWEDITOR")) && !(editor = getenv("EDITOR")))
-	    editor = "vi";
-    }
+    /* #option pager and editor come first, then the environment */
+    editor = view ? opt_pager : opt_editor;
+    if (editor == NULL)
+        editor = getenv(view ? "POWWOWPAGER" : "POWWOWEDITOR");
+    if (editor == NULL)
+        editor = getenv(view ? "PAGER" : "EDITOR");
+    if (editor == NULL)
+        editor = view ? "more" : "vi";
 
     if (editor[0] == '&') {
 	waitforeditor = 0;

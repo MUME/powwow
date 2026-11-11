@@ -99,6 +99,12 @@ INSTALLING
 	several texts at the same time.	 To achieve this, let the first
 	character of your editor/pager be '&' (which is then skipped).
 
+	#option editor=<command>, pager=<command> and shell=<command> come
+	before these variables, and are saved.  #! runs its command with
+	/bin/sh, or gives it to the shell in POWWOWSHELL, such as "zsh -c",
+	as its last argument; so do #var $x=!<command> and the other commands
+	that run a command after !.
+
 	Example: (Bourne shell syntax)
 
 	POWWOWEDITOR=vi		  Use vi as normal editor (same window as

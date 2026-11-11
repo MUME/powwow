@@ -188,6 +188,45 @@ run 'help copyright shows all of COPYING, with and without the pager' \
 [ "$(grep -c '^UNICODE LICENSE V3$' "$tmp/out")" -eq 2 ] \
     || fail "missing the license of the Unicode data"
 
+POWWOWSHELL='printf "[%s]\n"'
+export POWWOWSHELL
+run 'the shell of #! gets the command as one argument with POWWOWSHELL' \
+    "#! echo it's a | b"
+# the terminal is reset before the command, on the same line
+grep -Fq "[echo it's a | b]" "$tmp/out" || fail "expected the command"
+unset POWWOWSHELL
+
+POWWOWSHELL='printf "<%s>\r\n"'
+export POWWOWSHELL
+run '#var $x=! runs POWWOWSHELL too, and drops the CR of CR LF' '#var $v=!a b
+#print ("[" + $v + "]")'
+has '[<a b>'
+grep -q "<a b>$cr" "$tmp/raw" && fail "the CR was kept"
+unset POWWOWSHELL
+
+POWWOWSHELL='printf "{%s}\n"'
+export POWWOWSHELL
+run '#option shell overrides POWWOWSHELL until cleared' '#option shell=printf "[%s]\n"
+#! one
+#option shell=
+#! two'
+grep -Fq '[one]' "$tmp/out" || fail "expected [one]"
+grep -Fq '{two}' "$tmp/out" || fail "expected {two}"
+unset POWWOWSHELL
+
+run '#save saves #option editor as typed' "#file =$tmp/options.pw
+#option editor=my ed\\;it -x
+#save"
+grep -Fxq '#option editor=my ed\;it -x' "$tmp/options.pw" \
+    || fail "expected #option editor in the file"
+
+run 'Tab completes #option editor= without a space' '' "#option ed	vi
+"
+has '#option editor is now: vi'
+
+run '#! runs the command with sh without POWWOWSHELL' "#! echo it\\'s a | tr a b"
+grep -Fq ">it's b" "$tmp/out" || fail "expected it's b"
+
 run 'typing does not draw the character before the cursor again' '' \
     "xyz$(printf '\025')"
 grep -Fq 'xyz' "$tmp/out" || fail "xyz not shown"
@@ -957,8 +996,8 @@ has 'black  blink  blue   bold'
 run 'Tab lists the words down and then across' '' \
     "#option 		$(printf '\025')
 "
-has 'autoclear  debug      history    list       speedwalk'
-has 'autoprint  echo       info       reprint    words'
+has 'autoclear  debug      exit       keyecho    reprint    speedwalk'
+has 'compact    editor=    info       pager=     shell=     wrap'
 
 # powwow-movieplay -a converts a movie to text, without its pauses
 name='powwow-movieplay -a'

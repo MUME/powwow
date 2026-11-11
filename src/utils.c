@@ -123,13 +123,18 @@ char *utf8_fgets(char *buf, int size, FILE *f)
     if (!fgets(buf, size, f))
         return NULL;
 
+    /* turn a CR LF line ending, as on Windows, into LF */
     size_t len = strlen(buf);
+    if (len >= 2 && buf[len - 2] == '\r' && buf[len - 1] == '\n') {
+        buf[len - 2] = '\n';
+        buf[--len] = '\0';
+    }
     char tmp[3 * len + 1];
     size_t n = utf8_sanitize(buf, len, tmp);
     if (n == len && memcmp(buf, tmp, len) == 0)
         return buf;             /* valid */
     if (n >= (size_t)size) {
-        n = size - 1;
+        n = (size_t)size - 1;
         while (n > 0 && ((unsigned char)tmp[n] & 0xc0) == 0x80)
             n--;
     }

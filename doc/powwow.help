@@ -395,6 +395,7 @@ commands, all those words will always be possible to Tab-complete on.
 
 @option
 #option [[+|-|=]<option>|list]...
+#option <command-option>=[<command>]
 
 This command lets you list or change various options of powwow.
 
@@ -404,6 +405,14 @@ This command lets you list or change various options of powwow.
      #option +<option>  enable <option>
      #option -<option>  disable <option>
      #option <option>   toggle <option>
+
+The command options editor, pager and shell are the commands that edit
+the texts of the MUD, show texts such as #help, and run #! and the
+commands after ! of #var and others; they come before $POWWOWEDITOR,
+$POWWOWPAGER and $POWWOWSHELL, are saved, and take the rest of the line:
+
+     #option editor=&emacsclient  edit in another window
+     #option shell=               clear it: use $POWWOWSHELL, or /bin/sh
 
 @put
 #put {<text>|(<expr>)}
@@ -665,6 +674,10 @@ POSSIBILITY OF SUCH DAMAGES.
 Execute a command using /bin/sh. Powwow waits until your shell finishes,
 but you can put jobs in the background with & as usual. Semicolons,
 escapes and braces need to be escaped if they are to be sent to the shell.
+
+If #option shell or $POWWOWSHELL is set, such as to "zsh -c", the
+command is given to that shell instead, as its last argument; so are
+the commands after ! of #var, #exe, #send, #print, #emulate and #write.
 @beep
 #beep
 

@@ -25,6 +25,7 @@ int print_all_options(FILE *file);
 
 /* the name of option 'i', or NULL after the last one */
 const char *option_name(int i);
+const char *command_option_name(int i);
 
 #endif /* _CMD_H_ */
 
