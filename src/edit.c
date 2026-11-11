@@ -1196,6 +1196,30 @@ static const struct {
     { "zap", complete_session, "" },
 };
 
+/*
+ * where the name of a file starts in the word at 'word', of a command
+ * 'name' that reads one after a <, as #send <file and #var $x=<file, or -1
+ */
+static int redirect_file(const char *name, int word)
+{
+    static const char *const readers[] = {
+        "emulate", "exe", "print", "send", "var"
+    };
+    size_t i = 0;
+    while (i < sizeof(readers) / sizeof(*readers)
+           && strcmp(readers[i], name) != 0)
+        ++i;
+    if (i == sizeof(readers) / sizeof(*readers))
+        return -1;
+    int p = word;
+    if (strcmp(name, "var") == 0) {
+        while (p < pos && edbuf[p] != '=')
+            ++p;
+        p = p < pos ? p + 1 : word;
+    }
+    return p < pos && edbuf[p] == '<' ? p + 1 : -1;
+}
+
 /* the command that 'name' runs, as its start, or NULL */
 static const cmdstruct *find_command(const char *name, int len)
 {
@@ -1281,6 +1305,7 @@ static bool complete_command(void)
         --word;
     struct word_list l = { 0 };
     bool file_names = false;
+    bool last = false;          /* nothing follows the word, not a space */
     if (word == start) {
         for (const cmdstruct *c = commands; c != NULL; c = c->next) {
             if (c->funct != NULL && isalpha((unsigned char)c->name[0])) {
@@ -1294,30 +1319,41 @@ static bool complete_command(void)
         const cmdstruct *c = find_command(edbuf + start + 1, name_len);
         if (c == NULL)
             return false;
-        size_t i = 0;
-        while (i < sizeof(arg_completions) / sizeof(*arg_completions)
-               && strcmp(arg_completions[i].command, c->name) != 0)
-            ++i;
-        if (i == sizeof(arg_completions) / sizeof(*arg_completions))
-            return false;
+        int file = redirect_file(c->name, word);
+        if (file >= 0) {
+            word = file;
+            char typed[BUFSIZE];
+            snprintf(typed, sizeof(typed), "%.*s", pos - word, edbuf + word);
+            complete_file(&l, 0, "", typed);
+            file_names = true;
+            last = true;
+        } else {
+            size_t i = 0;
+            while (i < sizeof(arg_completions) / sizeof(*arg_completions)
+                   && strcmp(arg_completions[i].command, c->name) != 0)
+                ++i;
+            if (i == sizeof(arg_completions) / sizeof(*arg_completions))
+                return false;
 
-        int args = start + 1 + name_len;
-        while (args < word && edbuf[args] == ' ')
-            ++args;
-        int arg = 0;
-        for (int p = args; p < word; ++p) {
-            if (edbuf[p] == ' ' && edbuf[p + 1] != ' ')
-                ++arg;
+            int args = start + 1 + name_len;
+            while (args < word && edbuf[args] == ' ')
+                ++args;
+            int arg = 0;
+            for (int p = args; p < word; ++p) {
+                if (edbuf[p] == ' ' && edbuf[p + 1] != ' ')
+                    ++arg;
+            }
+            char before[BUFSIZE];
+            snprintf(before, sizeof(before), "%.*s", word - args,
+                     edbuf + args);
+            while (word < pos && edbuf[word] != '\0'
+                   && strchr(arg_completions[i].prefix, edbuf[word]) != NULL)
+                ++word;
+            char typed[BUFSIZE];
+            snprintf(typed, sizeof(typed), "%.*s", pos - word, edbuf + word);
+            arg_completions[i].complete(&l, arg, before, typed);
+            file_names = arg_completions[i].complete == complete_file;
         }
-        char before[BUFSIZE];
-        snprintf(before, sizeof(before), "%.*s", word - args, edbuf + args);
-        while (word < pos && edbuf[word] != '\0'
-               && strchr(arg_completions[i].prefix, edbuf[word]) != NULL)
-            ++word;
-        char typed[BUFSIZE];
-        snprintf(typed, sizeof(typed), "%.*s", pos - word, edbuf + word);
-        arg_completions[i].complete(&l, arg, before, typed);
-        file_names = arg_completions[i].complete == complete_file;
     }
     if (l.count > 0)            /* else words is NULL, which qsort rejects */
         qsort(l.words, l.count, sizeof(*l.words), compare_words);
@@ -1342,13 +1378,15 @@ static bool complete_command(void)
         }
     }
     if (matches == 1) {
-        /* a space after it, unless it is a directory, to go on in it, or
-         * an option that a command follows, as editor= */
+        /* a space after it, unless it is a directory, to go on in it, an
+         * option that a command follows, as editor=, or the file after a
+         * <, which a space would be part of */
         char text[BUFSIZE];
         size_t only_len = strlen(only);
-        bool go_on = (only_len > 0
-                      && (only[only_len - 1] == '/'
-                          || only[only_len - 1] == '='));
+        bool go_on = (last
+                      || (only_len > 0
+                          && (only[only_len - 1] == '/'
+                              || only[only_len - 1] == '=')));
         snprintf(text, sizeof(text), go_on ? "%s" : "%s ", only);
         input_replace(word, len, text, strlen(text));
         tabbed = false;
