@@ -10,6 +10,8 @@
 # registry or in the folders where Inno Setup installs by default.
 
 set -e
+# V=1, such as from make V=1, shows the commands as they run
+[ "${V:-0}" = 0 ] || set -x
 
 if [ $# -ne 2 ] || [ ! -d "$1" ]; then
     echo "usage: $0 DIR VERSION, where DIR is the tree that bundle.sh" \

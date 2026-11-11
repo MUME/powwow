@@ -17,17 +17,18 @@ tidy:
 
 # on Cygwin: a tree of powwow with what it needs from Cygwin, and an
 # installer of it for Windows (needs Inno Setup); see README
+# V=1 makes the scripts show their commands as they run them
 cygwin-bundle: all
 	rm -rf powwow-win
-	$(srcdir)/cygwin/bundle.sh powwow-win
+	V='$(V)' $(srcdir)/cygwin/bundle.sh powwow-win
 
 cygwin-installer: cygwin-bundle
-	$(srcdir)/cygwin/installer.sh powwow-win $(VERSION)
+	V='$(V)' $(srcdir)/cygwin/installer.sh powwow-win $(VERSION)
 
 # download the Cygwin source packages of the bundle again, and update
 # their license files in cygwin-licenses
 update-cygwin-licenses:
-	$(srcdir)/cygwin/update-licenses.sh
+	V='$(V)' $(srcdir)/cygwin/update-licenses.sh
 
 help:
 	@echo 'Usage: make [TARGET]'
@@ -37,6 +38,12 @@ help:
 	@echo '  make check TESTS=test_ptr  run a single test'
 	@echo '  The results are in src/test-suite.log and src/<test>.log.'
 	@echo ''
+if CYGWIN
+	@echo 'Showing the commands:'
+	@echo '  make V=1 [TARGET]  also show the commands that the scripts of the'
+	@echo '                     cygwin targets run, as they run them'
+	@echo ''
+endif
 	@echo 'Available targets:'
 	@echo '  all               build everything (the default)'
 	@echo '  check             build and run the tests'

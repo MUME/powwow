@@ -16,6 +16,8 @@
 # run, which downloads their source packages
 
 set -e
+# V=1, such as from make V=1, shows the commands as they run
+[ "${V:-0}" = 0 ] || set -x
 
 case $(uname -s) in
     CYGWIN*) ;;
