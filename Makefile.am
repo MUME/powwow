@@ -30,9 +30,6 @@ help:
 	@echo '  uninstall         remove the installed files'
 	@echo '  clean             remove the files built by make'
 	@echo '  distclean         also remove the files created by configure'
-	@echo '  maintainer-clean  also remove files that need special tools to rebuild'
-	@echo '  dist              create a source tarball'
-	@echo '  distcheck         create a source tarball and check that it works'
 	@echo '  help              show this list'
 
 .PHONY: lint tidy help
