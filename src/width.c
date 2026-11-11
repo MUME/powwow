@@ -36,6 +36,19 @@ int cp_width(uint32_t cp)
     if (cp < 0x20 || cp == 0x7f)
         return 0;               /* control characters */
 #ifdef USE_LOCALE
+#if WCHAR_MAX < 0x10ffff
+    /* a wchar_t of 16 bits, as on Cygwin, cannot hold the characters
+     * above U+FFFF, such as most emoji: wcswidth() takes them as their
+     * UTF-16 surrogates */
+    if (cp > WCHAR_MAX) {
+        const wchar_t utf16[] = {
+            (wchar_t)(0xd800 + ((cp - 0x10000) >> 10)),
+            (wchar_t)(0xdc00 + ((cp - 0x10000) & 0x3ff))
+        };
+        int w = wcswidth(utf16, 2);
+        return w >= 0 ? w : 1;
+    }
+#endif
     int w = wcwidth((wchar_t)cp);
     if (w >= 0)
         return w;

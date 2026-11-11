@@ -1131,7 +1131,9 @@ static void tty_put_wc(uint32_t cp)
 
     size_t r;
     int ignore_error = 0;
-    wchar_t wc = cp;
+    /* a wchar_t of 16 bits, as on Cygwin, cannot hold it; no charset but
+     * UTF-8, which does not come here, has it */
+    wchar_t wc = cp <= WCHAR_MAX ? (wchar_t)cp : '?';
     if (tty_write_state.used + MB_LEN_MAX > sizeof tty_write_state.data)
         tty_flush();
 again:
@@ -1242,6 +1244,26 @@ int tty_has_chars(void)
     return tty_in_used != tty_in_start || tty_out_used != tty_out_start;
 }
 
+/*
+ * the character that the wchar_t 'wc' read is, or 0 if it is the first of
+ * two: a wchar_t of 16 bits, as on Cygwin, holds a character above U+FFFF
+ * as its UTF-16 surrogates, which 'high' keeps the first of
+ */
+static uint32_t wc_char(wchar_t wc, uint32_t *high)
+{
+    uint32_t cp = (uint32_t)wc;
+#if WCHAR_MAX < 0x10ffff
+    if (cp >= 0xd800 && cp <= 0xdbff) {
+        *high = cp;
+        return 0;
+    }
+    if (cp >= 0xdc00 && cp <= 0xdfff && *high != 0)
+        cp = 0x10000 + ((*high - 0xd800) << 10) + (cp - 0xdc00);
+    *high = 0;
+#endif
+    return cp;
+}
+
 static int safe_mbtowc(wchar_t *pwc, char *s, size_t *n)
 {
     static mbstate_t ps;
@@ -1292,11 +1314,15 @@ int tty_read(char *buf, size_t count)
                                         &avail);
             tty_in_used = tty_in_start + avail;
             if (converted >= 0) {
+                static uint32_t high;
                 if (converted == 0)
                     converted = 1;
                 tty_in_start += converted;
+                uint32_t cp = wc_char(wc, &high);
+                if (cp == 0 && wc != L'\0')
+                    continue;   /* the first half of a character */
                 tty_out_start = 0;
-                tty_out_used = utf8_put(wc, tty_out_buf);
+                tty_out_used = utf8_put(cp, tty_out_buf);
                 continue;
             }
         }
@@ -1329,9 +1355,13 @@ void tty_gets(char *s, int size)
     if (!fgetws(ws, size, stdin))
 	return;
 
+    uint32_t high = 0;
     for (const wchar_t *w = ws; *w != L'\0'; ++w) {
+        uint32_t cp = wc_char(*w, &high);
+        if (cp == 0)
+            continue;           /* the first half of a character */
         char buf[UTF8_MAX];
-        int n = utf8_put(*w, buf);
+        int n = utf8_put(cp, buf);
         if (s + n > end)
             break;
         memcpy(s, buf, n);
