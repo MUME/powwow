@@ -871,11 +871,10 @@ Record all text typed from the keyboard to a local file. Output from the
 remote host is not recorded. Type #record without argument to close the
 file.
 @request
-#request [editor][prompt][all]
+#request [editor][all]
 
-Send identification strings to the server: editor is the same as #identify,
-and prompt asks for the special sequence IAC GA at the end of each prompt,
-which helps to detect it.
+Send identification strings to the server: editor is the same as
+#identify.
 @retrace
 #retrace [<number>]
 

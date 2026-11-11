@@ -1180,29 +1180,6 @@ Example:
 
 (where foo and bar are aliases that do something useful)
 
-### Identify as a IAC GA compliant client
-
-```
-#request prompt
-```
-
-This command sends an identification string to the server, to
-indicate that the client supports (and wants) the special sequence
-IAC GA at the end of each prompt. This helps the client
-to automatically detect the prompt, and can be used as alternative
-to `#prompt` / `#isprompt` if all you want with the prompt is detecting
-it (and not altering it)
-
-*Big warning*:
-this is experimental and not tested!
-
-Example:
-
-```
-#action >mume ***  MUME={#print;#identify;#request prompt}
-#request prompt
-```
-
 ### List all editing sessions
 
 ```

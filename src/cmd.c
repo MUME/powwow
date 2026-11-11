@@ -219,7 +219,7 @@ static cmdstruct default_commands[] =
     C("record",     cmd_record,
       "[<filename>]\tbegin/end of record to file"),
     C("request",    cmd_request,
-      "[editor][prompt][all]\tsend various identification strings"),
+      "[editor][all]\tsend various identification strings"),
     C("reset",      cmd_reset,
       "{all|<list-name>|bind [<key>]}\tclear the whole defined list"
       " and reload"
