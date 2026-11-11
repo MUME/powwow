@@ -87,9 +87,8 @@ WINDOWS INSTALLER
 	On Cygwin, powwow can be built into a directory, powwow-win, with
 	the Cygwin DLLs it needs, mintty to run it in, sh, less, nano, and
 	the CA certificates, which runs without Cygwin installed, and into a
-	Windows installer of that directory.  It needs the Cygwin packages
-	less, nano and ca-certificates, and the prefix /usr or /usr/local,
-	the default:
+	Windows installer of that directory, with the prefix /usr or
+	/usr/local, the default:
 
 	./configure
 	make cygwin-bundle             (just the directory powwow-win)
@@ -100,6 +99,14 @@ WINDOWS INSTALLER
 	it downloads those, about 200 MB, which needs an internet connection,
 	and extracts their licenses.  Later builds in the same build
 	directory download only those of packages that are new.
+
+	The setup program of Cygwin installs the packages that these need,
+	to build powwow, to bundle it and to get the licenses, from the
+	folder that has it in the Windows command prompt:
+
+	setup-x86_64.exe -q -P gcc-core,make,autoconf,automake,pkg-config ^
+	    -P libgnutls-devel,libpcre2-devel,libncurses-devel,zlib-devel ^
+	    -P less,nano,ca-certificates,xz,zstd,bzip2,lzip
 
 	The installer needs Inno Setup 6.3 or later
 	(https://jrsoftware.org/isinfo.php); cygwin/installer.sh finds its
