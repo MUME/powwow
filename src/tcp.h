@@ -31,16 +31,6 @@ extern int conn_max_index;	/* 1 + highest used conn_list[] index */
 #define GOTSB		9
 #define GOTSBIAC       10
 
-/* connection flags: */
-/* ACTIVE:	display remote output	*/
-/* SPAWN:	spawned cmd, not a mud	*/
-/* IDEDITOR:	sent #request editor	*/
-/* IDEDITOR_UTF8: last #request editor announced UTF-8 support */
-#define ACTIVE	 1
-#define SPAWN	 2
-#define IDEDITOR 4
-#define IDEDITOR_UTF8 16
-
 /* telnet CHARSET option state (RFC 2066): */
 /* CS_WILL_SENT:   we sent WILL CHARSET			*/
 /* CS_DO_RCVD:     got DO CHARSET; we may send REQUEST	*/
@@ -68,7 +58,10 @@ typedef struct connsess {
     struct tls *tls;            /* NULL unless TLS in use */
     const struct io_fns *fns;
     char *fragment;		/* for SPAWN connections: unprocessed text */
-    char flags;
+    bool active;                /* display what it sends */
+    bool spawn;                 /* a command that #spawn runs, not a MUD */
+    bool ideditor;              /* sent #request editor */
+    bool ideditor_utf8;         /* and announced UTF-8 support in it */
     char state;
     char old_state;
     unsigned char cs_flags;	/* CHARSET option state */

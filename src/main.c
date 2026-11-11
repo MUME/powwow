@@ -1530,13 +1530,13 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
     }
 #endif
 
-    if (!(current_connection->flags & ACTIVE))
+    if (!current_connection->active)
 	return; /* process only active connections */
 
     got += (buf - buffer);
     buf = buffer;
 
-    if (current_connection->flags & SPAWN) {
+    if (current_connection->spawn) {
 	/* this is data from a spawned child or an attached program.
 	 * execute as if typed */
         connsess *old_connection = current_connection;
@@ -2173,7 +2173,7 @@ static void run_instruction(char *line, bool silent, bool subs,
         }
         arg = skipspace(line);
         if (*arg == '\0') {
-            if (current_connection->flags & SPAWN) {
+            if (current_connection->spawn) {
                 error = OUT_RANGE_ERROR;
                 wrap_printf("#only MUD connections can be default ones!");
             } else {

@@ -213,8 +213,7 @@ void tcp_set_charset(connsess *conn, enum charset cs, const char *why)
     }
 
     /* keep the MPI charset in sync with the connection */
-    if ((conn->flags & IDEDITOR)
-        && !(conn->flags & IDEDITOR_UTF8) != (cs == CS_LATIN1))
+    if (conn->ideditor && !conn->ideditor_utf8 != (cs == CS_LATIN1))
         mpi_identify(conn);
 }
 
@@ -551,7 +550,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 
 		/* check for MUME MPI messages: */
 		if (p - linestart == MPILEN && !memcmp(linestart, MPI, MPILEN)) {
-		    if (!(conn->flags & IDEDITOR)) {
+                    if (!conn->ideditor) {
 			wrap_printf("#warning: MPI message received without "
                                     "#request editor!");
 		    } else if (state == ALTNORMAL) {
@@ -746,7 +745,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     conn->state = state;
     conn->old_state = old_state;
 
-    if (!(current_connection->flags & SPAWN)) {
+    if (!current_connection->spawn) {
         log_write(buffer, (char *)p - (char *)buffer, 0, conn->charset);
     }
 
@@ -871,7 +870,7 @@ void tcp_write(connsess *conn, const char *data)
     }
 
     /* must be AFTER reprint_writeline() */
-    if (current_connection->flags & SPAWN)
+    if (current_connection->spawn)
 	status(1);
     else
 	status(-1);
@@ -968,7 +967,7 @@ void tcp_flush(void)
 	output_len -= n;
     }
 
-    if (output_connection->flags & SPAWN)
+    if (output_connection->spawn)
 	status(1);
     else
 	/* sent stuff, so we expect a prompt */
@@ -1013,20 +1012,20 @@ void tcp_show(void)
     /* the MUDs, then the commands that #spawn runs */
     for (int i = 0; i < conn_max_index; ++i) {
         const connsess *c = &CONN_INDEX(i);
-        if (c->id == NULL || (c->flags & SPAWN) != 0)
+        if (c->id == NULL || c->spawn)
             continue;
         tty_printf("MUD %sactive %s ##%-*s (%s %d, %s)\n",
-                   (c->flags & ACTIVE) != 0 ? "   " : "non",
+                   c->active ? "   " : "non",
                    c == main_connection ? "(default)" : "         ",
                    id_width, c->id, c->host, c->port,
                    charset_name(c->charset));
     }
     for (int i = 0; i < conn_max_index; ++i) {
         const connsess *c = &CONN_INDEX(i);
-        if (c->id == NULL || (c->flags & SPAWN) == 0)
+        if (c->id == NULL || !c->spawn)
             continue;
         tty_printf("CMD %sactive %s ##%-*s (%s, %s)\n",
-                   (c->flags & ACTIVE) != 0 ? "   " : "non",
+                   c->active ? "   " : "non",
                    c == main_connection ? "(default)" : "         ",
                    id_width, c->id, c->host, charset_name(c->charset));
     }
@@ -1122,7 +1121,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
     CONN_INDEX(i) = (connsess){
         .host      = conn_host,
         .id        = conn_id,
-        .flags     = ACTIVE,
+        .active    = true,
         .state     = NORMAL,
         .old_state = NORMAL,
         .port      = port,
@@ -1201,7 +1200,7 @@ void tcp_close(const char *id)
 	    /* must find another connection and promote it to main */
 	    for (int i=0; i<conn_max_index; i++) {
 		if (!CONN_INDEX(i).id || &CONN_INDEX(i) == conn
-		    || (CONN_INDEX(i).flags & SPAWN))
+                    || CONN_INDEX(i).spawn)
 		    continue;
 		message_wrap(WRAP_CONT, "#default connection is now \"%s\"",
                              CONN_INDEX(i).id);
@@ -1222,11 +1221,12 @@ void tcp_close(const char *id)
     }
 
     FD_CLR(conn->fd, &fdset);
-    if (conn->flags & SPAWN)
+    if (conn->spawn)
 	tcp_attachcount--;
     else
 	tcp_count--;
-    conn->flags = 0;
+    conn->active = conn->spawn = false;
+    conn->ideditor = conn->ideditor_utf8 = false;
     conn->state = NORMAL;
     conn->old_state = NORMAL;
     conn->port = 0;
@@ -1257,10 +1257,10 @@ void tcp_togglesnoop(const char *id)
 {
     connsess *conn = tcp_find_connection(id);
     if (conn != NULL) {
-        conn->flags ^= ACTIVE;
+        conn->active = !conn->active;
 	if (opt_info) {
 	    PRINTF("#connection %s is now %sactive.\n",
-		      conn->id, conn->flags & ACTIVE ? "" : "non");
+                      conn->id, conn->active ? "" : "non");
 	}
     } else {
         PRINTF("#no such connection: %s\n", id);
@@ -1332,7 +1332,8 @@ void tcp_spawn(const char *id, char *cmd)
 	close(sockets[0]);
 	return;
     }
-    CONN_INDEX(i).flags = ACTIVE | SPAWN;
+    CONN_INDEX(i).active = CONN_INDEX(i).spawn = true;
+    CONN_INDEX(i).ideditor = CONN_INDEX(i).ideditor_utf8 = false;
     CONN_INDEX(i).state = NORMAL;
     CONN_INDEX(i).old_state = NORMAL;
     CONN_INDEX(i).port = 0;
