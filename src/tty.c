@@ -124,6 +124,7 @@ static struct {
     size_t    used;                 /* bytes used of data */
     int       fd;                   /* file descriptor to write to */
     bool      utf8;                 /* the locale uses UTF-8 */
+    bool      input;                /* drawing the input line */
     char      pend[UTF8_MAX];       /* incomplete UTF-8 character */
     int       npend, need;          /* bytes in pend, and expected */
 } tty_write_state = {
@@ -172,6 +173,13 @@ static void disable_special_keys(struct termios *ttyb)
  * Set the terminal to character-at-a-time-without-echo mode, and save the
  * original state in ttybsave
  */
+/* write UTF-8 to the terminal if the locale says it takes it, already
+ * before tty_bootstrap(), as for --version */
+void tty_use_locale(void)
+{
+    tty_write_state.utf8 = tty_locale_utf8();
+}
+
 /* does the terminal take UTF-8, as the locale says? */
 bool tty_locale_utf8(void)
 {
@@ -304,6 +312,8 @@ void tty_bootstrap(void)
 {
 #ifdef USE_LOCALE
     tty_read_stream = stdin;
+    /* already for the banner, before tty_start() */
+    tty_write_state.utf8 = tty_locale_utf8();
 #endif
 
 #ifndef USE_VT100
@@ -911,6 +921,7 @@ static void input_redraw_from(int from)
 {
     int line, col;
     input_layout_end(from, &line, &col);
+    tty_write_state.input = true;
 
     const char *s = edbuf + from, *end = edbuf + edlen;
     bool in_label = false;      /* drawing a label, as a message */
@@ -955,6 +966,7 @@ static void input_redraw_from(int from)
         if (resync && col < cols)
             tty_gotoxy(col, line);
     }
+    tty_write_state.input = false;
     if (in_label)
         tty_printf("%s%s", msgattrend, edattrbeg);
     if (col >= cols_1) {
@@ -1105,9 +1117,25 @@ void tty_puts(const char *s)
         tty_putc(*s++);
 }
 
-/* write character 'cp' in the locale's charset */
+/*
+ * write character 'cp' in the locale's charset, which is not UTF-8: the
+ * copyright sign as (c) and the dashes as -, whose bytes the charsets do
+ * not agree on, except in the input line, which counts one cell for each
+ */
 static void tty_put_wc(uint32_t cp)
 {
+    if (!tty_write_state.input) {
+        if (cp == U'©') {
+            tty_put_wc('(');
+            tty_put_wc('c');
+            tty_put_wc(')');
+            return;
+        }
+        /* U+2010 hyphen to U+2015 horizontal bar */
+        if (cp >= U'‐' && cp <= U'―')
+            cp = '-';
+    }
+
     size_t r;
     int ignore_error = 0;
     wchar_t wc = cp;

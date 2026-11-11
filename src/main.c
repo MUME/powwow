@@ -401,6 +401,7 @@ int main(int argc, char **argv)
     }
 
     if (nversion > 0) {
+        tty_use_locale();
         printver(nversion > 1 ? 2 : 0);
         tty_flush();
         exit(EXIT_SUCCESS);
