@@ -385,7 +385,7 @@ static void cmd_group(char *arg)
         } else if (strcmp(arg, "off") == 0) {
             active = false;
         } else if (strcmp(arg, "list") == 0) {
-            PRINTF("#not implemented\n");
+            show_group(group);
             return;
         } else {
             PRINTF("#unknown group command, use off/on/list\n");

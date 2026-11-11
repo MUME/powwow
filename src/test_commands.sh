@@ -237,6 +237,17 @@ run 'without UTF-8, the copyright sign is shown as (c) and dashes as -' \
     '#print ("x" + *169 + *8211 + *8212 + "y")'
 grep -Fq 'x(c)--y' "$tmp/out" || fail "expected x(c)--y"
 
+run '#group lists the aliases and actions of a group' '#alias hi@g1=#print hi
+#alias other=#print x
+#action >+auto@g1 ZBLAM!=stand
+#group g1 off
+#group g1 list
+#group nosuch list'
+has '#alias (disabled) hi@g1=#print hi'
+has '#action >-auto@g1 ZBLAM!=stand'
+lacks '#alias other@*=#print x'
+has '#no aliases or actions are in group nosuch.'
+
 run 'typing does not draw the character before the cursor again' '' \
     "xyz$(printf '\025')"
 grep -Fq 'xyz' "$tmp/out" || fail "xyz not shown"
