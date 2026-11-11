@@ -1235,8 +1235,10 @@ int tty_printf(const char *format, ...)
 static char tty_in_buf[BUFSIZE];
 static size_t tty_in_start = 0, tty_in_used = 0;
 
-/* UTF-8 of a character read, not yet returned by tty_read() */
-static char tty_out_buf[UTF8_MAX];
+/* UTF-8 of a character read, not yet returned by tty_read(): up to two,
+ * as a U+FFFD for an incomplete one before the next */
+static char tty_out_buf[CHARSET_DECODE_MAX > UTF8_MAX
+                        ? CHARSET_DECODE_MAX : UTF8_MAX];
 static size_t tty_out_start = 0, tty_out_used = 0;
 
 int tty_has_chars(void)
@@ -1292,7 +1294,8 @@ again:
 
 /*
  * read up to 'count' bytes of UTF-8 from the terminal, converting
- * from the locale's charset
+ * from the locale's charset; UTF-8 needs no conversion, only checking,
+ * with invalid bytes as U+FFFD
  */
 int tty_read(char *buf, size_t count)
 {
@@ -1307,6 +1310,14 @@ int tty_read(char *buf, size_t count)
         if (count == 0)
             break;
 
+        if (tty_in_used > tty_in_start && tty_write_state.utf8) {
+            static struct utf8_decoder dec;
+            unsigned char b = tty_in_buf[tty_in_start++];
+            tty_out_start = 0;
+            tty_out_used = charset_decode_byte(CS_UTF8, &dec, b,
+                                               tty_out_buf);
+            continue;
+        }
         if (tty_in_used > tty_in_start) {
             wchar_t wc;
             size_t avail = tty_in_used - tty_in_start;
