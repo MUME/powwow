@@ -88,9 +88,10 @@ WINDOWS INSTALLER
 	the Cygwin DLLs it needs, mintty to run it in, sh, less, nano, and
 	the CA certificates, which runs without Cygwin installed, and into a
 	Windows installer of that directory.  It needs the Cygwin packages
-	less, nano and ca-certificates:
+	less, nano and ca-certificates, and the prefix /usr or /usr/local,
+	the default:
 
-	./configure --prefix=/usr
+	./configure
 	make cygwin-bundle             (just the directory powwow-win)
 	make cygwin-installer          (also powwow-VERSION-setup.exe)
 

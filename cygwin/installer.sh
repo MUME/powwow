@@ -19,6 +19,9 @@ fi
 stage=$1
 version=$2
 here=$(dirname "$0")
+# the folder of the data in the bundle, by the prefix that bundle.sh took
+prefix=$(sed -n 's/^prefix = //p' Makefile 2> /dev/null)
+data=$(echo "${prefix:-/usr}/share/powwow" | sed 's|^/||; s|/|\\|g')
 
 # the folders where Inno Setup, newest version first, says it is
 # installed, for all users and for the current user only, and then those
@@ -66,4 +69,5 @@ fi
 
 # absolute paths: ISCC takes relative ones from the folder of the script
 "$iscc" /Q "/DStage=$(cygpath -aw "$stage")" "/DVersion=$version" \
+    "/DData=$data" \
     "/O$(cygpath -aw .)" "$(cygpath -aw "$here/powwow.iss")"

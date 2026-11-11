@@ -3,17 +3,17 @@
 # build a self-contained tree of powwow for Windows, with the Cygwin DLLs,
 # mintty and sh, for an installer (see powwow.iss) or a zip
 #
-# run in Cygwin, in a build directory configured with --prefix=/usr, after
-# make:
+# run in Cygwin, in a build directory configured with the prefix /usr or
+# /usr/local, the default, after make:
 #
 #     cygwin/bundle.sh [DIR]       (default: powwow-win)
 #
 # Cygwin takes the parent of the directory of cygwin1.dll as its root, so
 # DIR mirrors a Cygwin root: the programs and DLLs in DIR/bin, the data in
-# DIR/usr/share/powwow. The license files of the Cygwin packages bundled
-# come from cygwin-licenses in the build directory, which
-# update-licenses.sh makes; for those it lacks, it is run, which
-# downloads their source packages
+# DIR/PREFIX/share/powwow, where powwow looks for it. The license files
+# of the Cygwin packages bundled come from cygwin-licenses in the build
+# directory, which update-licenses.sh makes; for those it lacks, it is
+# run, which downloads their source packages
 
 set -e
 
@@ -27,11 +27,18 @@ if [ ! -f Makefile ]; then
          "make" >&2
     exit 1
 fi
+# the prefix that powwow looks for its data under, which must be in the
+# bundle: other prefixes may be mounted elsewhere, such as /tmp or
+# /cygdrive
 prefix=$(sed -n 's/^prefix = //p' Makefile)
-if [ "$prefix" != /usr ]; then
-    echo "$0: configure with --prefix=/usr, not $prefix" >&2
-    exit 1
-fi
+case $prefix in
+    /usr|/usr/local) ;;
+    *)
+        echo "$0: configure with the prefix /usr or /usr/local, not" \
+             "$prefix" >&2
+        exit 1
+        ;;
+esac
 
 stage=$(realpath -m "${1:-powwow-win}")
 rm -rf "$stage"
@@ -40,9 +47,9 @@ make install-strip DESTDIR="$stage"
 # the programs go in /bin, which Cygwin also mounts as /usr/bin; nothing on
 # Windows reads the headers or the man page
 mkdir -p "$stage/bin"
-mv "$stage"/usr/bin/* "$stage/bin/"
-rmdir "$stage/usr/bin"
-rm -rf "$stage/usr/include" "$stage/usr/share/man"
+mv "$stage$prefix"/bin/* "$stage/bin/"
+rmdir "$stage$prefix/bin"
+rm -rf "$stage$prefix/include" "$stage$prefix/share/man"
 
 # mintty to run powwow in, sh for #!, #var $x=!... and the editor,
 # cygpath for powwow-start to find the Documents folder, and
@@ -247,10 +254,8 @@ The license files above, with the full texts of the licenses, are in the
 folder usr\share\doc\powwow\licenses\<source package> of the installation
 folder, such as usr\share\doc\powwow\licenses\gnutls\COPYING.LESSERv2.
 END
-} > "$stage/usr/share/powwow/LICENSES.txt"
+} > "$stage$prefix/share/powwow/LICENSES.txt"
 
 echo
 echo "created $stage"
-echo "build the installer on Windows with Inno Setup:"
-echo "    ISCC /DStage=$(cygpath -w "$stage")" \
-     "$(cygpath -w "$(dirname "$0")")\\powwow.iss"
+echo "build the installer on Windows with Inno Setup: make cygwin-installer"
