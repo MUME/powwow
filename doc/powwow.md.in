@@ -1768,8 +1768,8 @@ Example:
 #var $test=    long sentence	(all the spaces but the first following
 				 the = are placed in the variable)
 #var $(2+4) = <myfile		(put the whole file in $6. Remember
-				 that string variables cannot be longer
-				 than 1024 characters...)
+				 that only its first 4095 bytes are
+				 read...)
 #alias calc=#var @-1 = !echo '$0' | bc -l
 		(place result from bc calculator into @-1)
 

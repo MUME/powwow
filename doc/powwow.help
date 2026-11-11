@@ -511,8 +511,8 @@ You can also use an expression instead of 'number'. Examples:
 #var $test = this is a very very very long text    (you do not need quotes)
 #var $-6 = ("a short text")            (since there are parentheses, you must
                                         also use quotes as in calculator)
-#var $-1 = <myfile                     (if myfile is longer than 1024 bytes,
-                                        powwow will read only the first 1024)
+#var $-1 = <myfile                     (if myfile is longer than 4095 bytes,
+                                        powwow will read only the first 4095)
 
 #var variable
 will let you edit the current value of the variable

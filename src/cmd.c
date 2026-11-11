@@ -2159,16 +2159,16 @@ static void cmd_var(char *arg)
             ptrdel(&pbuf);
             return;
         }
+        /* as much as fits in buf2: fgets reads nothing into a full one,
+         * which would never end */
         int len = 0;
         long i = 1;
-        while (error == 0 && (start == 0 || i <= end)
+        while (error == 0 && (start == 0 || i <= end) && len < BUFSIZE - 1
                && utf8_fgets(buf2 + len, BUFSIZE - len, fp) != NULL)
             if (start == 0 || i++ >= start)
                 len += strlen(buf2 + len);
 
         if (from == '!') pclose(fp); else fclose(fp);
-        if (len > PARAMLEN)
-            len = PARAMLEN;
         buf2[len] = '\0';
         arg = buf2;
     }
