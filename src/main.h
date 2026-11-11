@@ -20,7 +20,6 @@ void status(int s);
 void process_remote_input(char *buf, int size);
 void push_params(void);
 void pop_params(void);
-void prompt_set_iac(char *p);
 char *parse_instruction(char *line, bool silent, bool subs,
                         bool jit_subs);
 char *get_next_instr(char *p);

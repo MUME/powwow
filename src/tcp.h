@@ -35,12 +35,10 @@ extern int conn_max_index;	/* 1 + highest used conn_list[] index */
 /* ACTIVE:	display remote output	*/
 /* SPAWN:	spawned cmd, not a mud	*/
 /* IDEDITOR:	sent #request editor	*/
-/* IDPROMPT:	sent #request prompt	*/
 /* IDEDITOR_UTF8: last #request editor announced UTF-8 support */
 #define ACTIVE	 1
 #define SPAWN	 2
 #define IDEDITOR 4
-#define IDPROMPT 8
 #define IDEDITOR_UTF8 16
 
 /* telnet CHARSET option state (RFC 2066): */

@@ -83,7 +83,6 @@ static void printmotd(void);
 #endif
 static noreturn void mainloop(void);
 static void exec_delays(void);
-static void prompt_reset_iac(void);
 static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds);
 static void get_user_input(void);
 
@@ -806,9 +805,6 @@ static noreturn void mainloop(void)
             readfds = fdset;
             int max_fd = edit_output_fds(&readfds, tcp_max_fd);
             err = select(max_fd + 1, &readfds, NULL, NULL, timeout);
-
-	    prompt_reset_iac();
-
 	} while (err < 0 && errno == EINTR);
 
 	if (err < 0)
@@ -937,30 +933,6 @@ static void exec_delays(void)
 	}
     }
     ptrdel(&buf);
-}
-
-
-#define IAC_N 1024
-static char *iac_v[IAC_N];
-static int iac_f, iac_l;
-
-static void prompt_reset_iac(void)
-{
-	iac_f = iac_l = 0;
-}
-
-void prompt_set_iac(char *p)
-{
-    if (iac_f == iac_l)
-	iac_f = iac_l = 0;
-
-    if (iac_l < IAC_N)
-	iac_v[iac_l++] = p;
-}
-
-static char *prompt_get_iac(void)
-{
-    return iac_l > iac_f ? iac_v[iac_f] : NULL;
 }
 
 
@@ -1226,27 +1198,17 @@ static void effective_prompt(void)
 
 static int grab_prompt(char *linestart, int len, int islast)
 {
-    char *p;
-    int is_iac_prompt = isprompt_len = 0;
+    isprompt_len = 0;
 
     sgr_prompt_start();
-
-    /* recognize IAC GA as end-of-prompt marker */
-    if (current_connection != NULL && (current_connection->flags & IDPROMPT)) {
-	if ((p = prompt_get_iac()) && p > linestart && p <= linestart+len)
-	    iac_f++, is_iac_prompt = len = p - linestart;
-	else if (!islast)
-	    return 0;
-    }
 
     /*
      * We may get a prompt in the middle of a bunch of lines, so
      * match #prompts. They usually have no #print, so we print manually
      * if islast is not set and a #prompt matches.
      */
-    if ((is_iac_prompt || islast || printstrlen(linestart) < cols) &&
-	((search_prompt(linestart, 1) != 0 && isprompt_len != 0)
-	 || is_iac_prompt != 0)) {
+    if ((islast || printstrlen(linestart) < cols)
+        && search_prompt(linestart, 1) != 0 && isprompt_len != 0) {
 
 	char *reprint;
 	/*
@@ -1256,12 +1218,6 @@ static int grab_prompt(char *linestart, int len, int islast)
 	 */
 	if (isprompt_len > 0 && isprompt_len <= len) {
 	    len = isprompt_len;
-	    prompt_status = 1;
-	} else if (isprompt_len == 0 && is_iac_prompt != 0) {
-            len = isprompt_len = is_iac_prompt;
-	    prompt->str = ptrmcpy(prompt->str, linestart, len);
-            effective_prompt();
-	    if (MEM_ERROR) { promptzero(); out_of_memory(); return 0; }
 	    prompt_status = 1;
 	}
 
