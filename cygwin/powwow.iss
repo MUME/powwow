@@ -35,6 +35,8 @@ ChangesAssociations=yes
 ; mintty and its options: the title, and the icon of its window, by
 ; its path in the Cygwin of the bundle, whose root is {app}
 #define Mintty "-t powwow -i /powwow.ico"
+; what runs in it: powwow, in the Documents folder unless given a file
+#define Start "/bin/sh /bin/powwow-start"
 
 [Tasks]
 Name: desktopicon; Description: "{cm:CreateDesktopIcon}"; \
@@ -51,10 +53,10 @@ Source: "powwow.ico"; DestDir: "{app}"; Flags: ignoreversion
 ; powwow runs in mintty, which handles colors, resizing and Unicode
 ; better than the Windows console
 Name: "{group}\powwow"; Filename: "{app}\bin\mintty.exe"; \
-    Parameters: "{#Mintty} -e /bin/powwow"; WorkingDir: "{%USERPROFILE}"; \
+    Parameters: "{#Mintty} -e {#Start}"; WorkingDir: "{%USERPROFILE}"; \
     IconFilename: "{app}\powwow.ico"
 Name: "{autodesktop}\powwow"; Filename: "{app}\bin\mintty.exe"; \
-    Parameters: "{#Mintty} -e /bin/powwow"; WorkingDir: "{%USERPROFILE}"; \
+    Parameters: "{#Mintty} -e {#Start}"; WorkingDir: "{%USERPROFILE}"; \
     IconFilename: "{app}\powwow.ico"; Tasks: desktopicon
 Name: "{group}\Uninstall powwow"; Filename: "{uninstallexe}"
 
@@ -72,5 +74,5 @@ Root: HKA; Subkey: "Software\Classes\powwow.definitions\DefaultIcon"; \
 Root: HKA; \
     Subkey: "Software\Classes\powwow.definitions\shell\open\command"; \
     ValueType: string; ValueName: ""; \
-    ValueData: """{app}\bin\mintty.exe"" {#Mintty} -e /bin/powwow ""%1"""; \
+    ValueData: """{app}\bin\mintty.exe"" {#Mintty} -e {#Start} ""%1"""; \
     Tasks: associate

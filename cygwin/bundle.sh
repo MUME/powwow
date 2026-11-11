@@ -41,13 +41,38 @@ mv "$stage"/usr/bin/* "$stage/bin/"
 rmdir "$stage/usr/bin"
 rm -rf "$stage/usr/include" "$stage/usr/share/man"
 
-# mintty to run powwow in, sh for #!, #var $x=!... and the editor, and
+# mintty to run powwow in, sh for #!, #var $x=!... and the editor,
+# cygpath for powwow-start to find the Documents folder, and
 # cygwin-console-helper, which Cygwin runs to give a pseudo terminal the
 # hidden console that Windows needs: without it, Windows shows powwow in a
 # console window of its own besides mintty
-for p in mintty sh cygwin-console-helper; do
+for p in mintty sh cygpath cygwin-console-helper; do
     cp -L "/usr/bin/$p.exe" "$stage/bin/"
 done
+
+# what the shortcuts and .powwow files run in mintty, and the shell and
+# editor it sets
+cp "$(dirname "$0")/powwow-start" "$(dirname "$0")/powwow-cmd" \
+    "$(dirname "$0")/powwow-notepad" "$stage/bin/"
+
+# less, the pager of #help and of the texts that the MUD shows, which
+# powwow-start sets in POWWOWPAGER; without one, the more.com of Windows
+# is found, which cannot page in mintty
+if [ ! -e /usr/bin/less.exe ]; then
+    echo "$0: no /usr/bin/less.exe; install the Cygwin package less" >&2
+    exit 1
+fi
+cp -L /usr/bin/less.exe "$stage/bin/"
+# nano, the editor that powwow-start sets in an ssh session, where Notepad
+# would not be seen
+if [ ! -e /usr/bin/nano.exe ]; then
+    echo "$0: no /usr/bin/nano.exe; install the Cygwin package nano" >&2
+    exit 1
+fi
+cp -L /usr/bin/nano.exe "$stage/bin/"
+# and more, powwow's default pager, as less, for when powwow-start did not
+# set POWWOWPAGER, such as when powwow.exe is run itself
+cp "$(dirname "$0")/more" "$stage/bin/"
 
 # the DLLs of all the programs, of their DLLs too, and cygwin1.dll
 for exe in "$stage"/bin/*.exe; do

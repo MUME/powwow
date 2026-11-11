@@ -85,9 +85,10 @@ COMPILING
 WINDOWS INSTALLER
 
 	On Cygwin, powwow can be built into a directory, powwow-win, with
-	the Cygwin DLLs it needs, mintty to run it in, sh, and the CA
-	certificates, which runs without Cygwin installed, and into a
-	Windows installer of that directory:
+	the Cygwin DLLs it needs, mintty to run it in, sh, less, nano, and
+	the CA certificates, which runs without Cygwin installed, and into a
+	Windows installer of that directory.  It needs the Cygwin packages
+	less, nano and ca-certificates:
 
 	./configure --prefix=/usr
 	make cygwin-bundle             (just the directory powwow-win)
@@ -99,13 +100,20 @@ WINDOWS INSTALLER
 	its path.
 
 	The installer is written to the build directory.  It installs powwow
-	with a Start menu shortcut that runs it in mintty; the definition
-	files go in the Windows profile directory, such as C:\Users\name.
+	with a Start menu shortcut that runs it in mintty, through
+	cygwin/powwow-start, in the folder powwow of the Documents folder,
+	such as C:\Users\name\Documents\powwow, where the definition files
+	then go.
 	Unless unchecked, opening a .powwow file runs powwow with it as the
 	definition file.  The icon, cygwin/powwow.ico, is a placeholder made
 	by cygwin/make-icon.sh.
-	Shell commands other than those built into sh, such as date, are
-	not included.
+
+	The shortcuts run cygwin/powwow-start, which, unless they are set
+	already, sets POWWOWSHELL to cygwin/powwow-cmd, which runs cmd.exe
+	in UTF-8, so that #! dir and #var $x=!dir run Windows commands, as
+	lines of a batch file, where %NAME% is expanded and a % is written
+	%%, POWWOWEDITOR to Notepad, in another window, or to nano in an ssh
+	session, and POWWOWPAGER to less.
 
 INSTALLING
 

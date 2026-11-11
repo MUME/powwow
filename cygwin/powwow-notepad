@@ -1,0 +1,6 @@
+#! /bin/sh
+#
+# edit the file $1 with the Notepad of Windows, which needs its Windows
+# path: the editor that powwow-start sets for the bundle
+
+exec "$(cygpath -S)/notepad.exe" "$(cygpath -w "$1")"

@@ -1,0 +1,60 @@
+#! /bin/sh
+#
+# start powwow on Windows: the shortcuts and .powwow files of the
+# installer run this in mintty, as /bin/powwow-start of the bundle
+#
+#     powwow-start [ARGUMENT...]
+#
+# Without arguments, powwow starts in the folder powwow of the Documents
+# folder of the user, which is created if needed; with a file, such as a
+# .powwow file opened in Explorer, in its folder
+
+# the programs of the bundle first: started from Windows, PATH has only
+# the folders of Windows, as no /etc/profile adds /usr/bin
+PATH=/usr/bin:/bin:$PATH
+export PATH
+
+# less pages #help and the texts that the MUD shows, unless the user
+# chose another pager
+if [ -z "${POWWOWPAGER:-}" ] && command -v less > /dev/null; then
+    POWWOWPAGER=less
+    export POWWOWPAGER
+fi
+
+# the programs of Windows for #! and for editing, unless the user chose
+# others: cmd, through powwow-cmd, in UTF-8, so that #! dir and
+# #var $x=!dir work, and Notepad, through powwow-notepad,
+# in another window, so that powwow goes on; but nano in the terminal in
+# an ssh session, which has no desktop to show Notepad on
+sys=$(cygpath -S 2> /dev/null)
+if [ -z "${POWWOWSHELL:-}" ] && [ -x "$sys/cmd.exe" ]; then
+    POWWOWSHELL=powwow-cmd
+    export POWWOWSHELL
+fi
+if [ -z "${POWWOWEDITOR:-}${EDITOR:-}" ]; then
+    if [ -n "${SSH_CONNECTION:-}" ] && command -v nano > /dev/null; then
+        POWWOWEDITOR=nano
+        export POWWOWEDITOR
+    elif [ -x "$sys/notepad.exe" ]; then
+        POWWOWEDITOR='&powwow-notepad'
+        export POWWOWEDITOR
+    fi
+fi
+
+if [ $# -eq 0 ]; then
+    docs=$(cygpath -O 2> /dev/null)
+    # the bundle has no mkdir, but cmd has
+    if [ -n "$docs" ] && [ ! -d "$docs/powwow" ]; then
+        "$sys/cmd.exe" /c mkdir "$(cygpath -w "$docs/powwow")" \
+            > /dev/null 2>&1
+    fi
+    cd "$docs/powwow" 2> /dev/null || true
+elif [ -f "$1" ]; then
+    # a file opened, such as a .powwow file from Explorer, which may start
+    # this elsewhere, such as in System32: its folder
+    file=$(cygpath -u "$1")
+    case $file in
+        */*) cd "${file%/*}" 2> /dev/null || true ;;
+    esac
+fi
+exec /bin/powwow "$@"

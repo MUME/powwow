@@ -3,7 +3,9 @@ SUBDIRS=src doc man
 pkgdata_DATA = COPYING
 
 EXTRA_DIST = .clang-tidy AGENTS.md cygwin/bundle.sh cygwin/installer.sh \
-             cygwin/make-icon.sh cygwin/powwow.ico cygwin/powwow.iss
+             cygwin/make-icon.sh cygwin/powwow.ico cygwin/powwow.iss \
+             cygwin/more cygwin/powwow-cmd cygwin/powwow-notepad \
+             cygwin/powwow-start
 
 # check the markup of the man page (needs mandoc)
 lint:

@@ -1,0 +1,7 @@
+#! /bin/sh
+#
+# more, the default pager of powwow, as less, which the bundle for Windows
+# has instead of the more of util-linux, whose GPL-2.0-only needs its
+# source offered with it
+
+exec less "$@"
