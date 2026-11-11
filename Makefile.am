@@ -2,7 +2,8 @@ SUBDIRS=src doc man
 
 pkgdata_DATA = COPYING
 
-EXTRA_DIST = .clang-tidy AGENTS.md
+EXTRA_DIST = .clang-tidy AGENTS.md cygwin/bundle.sh cygwin/installer.sh \
+	cygwin/powwow.iss
 
 # check the markup of the man page (needs mandoc)
 lint:
@@ -11,6 +12,15 @@ lint:
 # check the sources (needs clang-tidy)
 tidy:
 	cd src && $(MAKE) $(AM_MAKEFLAGS) tidy
+
+# on Cygwin: a tree of powwow with what it needs from Cygwin, and an
+# installer of it for Windows (needs Inno Setup); see README
+cygwin-bundle: all
+	rm -rf powwow-win
+	$(srcdir)/cygwin/bundle.sh powwow-win
+
+cygwin-installer: cygwin-bundle
+	$(srcdir)/cygwin/installer.sh powwow-win $(VERSION)
 
 help:
 	@echo 'Usage: make [TARGET]'
@@ -25,6 +35,10 @@ help:
 	@echo '  check             build and run the tests'
 	@echo '  lint              check the markup of the man page (needs mandoc)'
 	@echo '  tidy              check the sources (needs clang-tidy)'
+if CYGWIN
+	@echo '  cygwin-bundle     build powwow-win: powwow with what it needs'
+	@echo '  cygwin-installer  also make a Windows installer of it'
+endif
 	@echo '  install           install the programs and data files'
 	@echo '  install-strip     like install, but strip the programs'
 	@echo '  uninstall         remove the installed files'
@@ -32,4 +46,4 @@ help:
 	@echo '  distclean         also remove the files created by configure'
 	@echo '  help              show this list'
 
-.PHONY: lint tidy help
+.PHONY: lint tidy cygwin-bundle cygwin-installer help

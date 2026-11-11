@@ -82,6 +82,28 @@ COMPILING
 	forced using configure.	 Try "configure --help" to see the full
 	list of compile-time configuration options.
 
+WINDOWS INSTALLER
+
+	On Cygwin, powwow can be built into a directory, powwow-win, with
+	the Cygwin DLLs it needs, mintty to run it in, sh, and the CA
+	certificates, which runs without Cygwin installed, and into a
+	Windows installer of that directory:
+
+	./configure --prefix=/usr
+	make cygwin-bundle             (just the directory powwow-win)
+	make cygwin-installer          (also powwow-VERSION-setup.exe)
+
+	The installer needs Inno Setup 6.3 or later
+	(https://jrsoftware.org/isinfo.php); cygwin/installer.sh finds its
+	compiler, ISCC.exe, where Inno Setup is installed, or set ISCC to
+	its path.
+
+	The installer is written to the build directory.  It installs powwow
+	with a Start menu shortcut that runs it in mintty; the definition
+	files go in the Windows profile directory, such as C:\Users\name.
+	Shell commands other than those built into sh, such as date, are
+	not included.
+
 INSTALLING
 
 	If you want powwow's definition files to go in a specific directory,

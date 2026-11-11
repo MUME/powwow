@@ -44,6 +44,8 @@ case "${host_os}" in
     netbsd*) feature_cppflags=-D_NETBSD_SOURCE ;;
 esac
 AC_SUBST(feature_cppflags)
+# make help lists the cygwin targets only on Cygwin
+AM_CONDITIONAL([CYGWIN], [test -n "${is_cygwin}"])
 
 AC_ARG_ENABLE(tls,
     AS_HELP_STRING([--disable-tls],[disables TLS support]),

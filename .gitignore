@@ -19,3 +19,7 @@ Makefile.in
 /stamp-h1
 /test-driver
 /powwow-*.tar.gz
+# what make cygwin-installer makes, and Inno Setup when run by hand
+/powwow-win/
+/powwow-*-setup.exe
+/cygwin/Output/
