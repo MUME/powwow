@@ -590,10 +590,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 		state = old_state;
 		break;
 	     case GA:
-		/* I should handle GA as end-of-prompt marker one day */
-		/* one day has come ;) - Max */
 		p = flush_data(conn, p);
-		prompt_set_iac((char*)p);
 		state = old_state;
 		break;
 	     default:
