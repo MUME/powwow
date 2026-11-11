@@ -94,6 +94,12 @@ WINDOWS INSTALLER
 	make cygwin-bundle             (just the directory powwow-win)
 	make cygwin-installer          (also powwow-VERSION-setup.exe)
 
+	The bundle needs the license files of the Cygwin packages that it
+	has, which are only in their source packages: so the first build of
+	it downloads those, about 200 MB, which needs an internet connection,
+	and extracts their licenses.  Later builds in the same build
+	directory download only those of packages that are new.
+
 	The installer needs Inno Setup 6.3 or later
 	(https://jrsoftware.org/isinfo.php); cygwin/installer.sh finds its
 	compiler, ISCC.exe, where Inno Setup is installed, or set ISCC to
@@ -107,6 +113,14 @@ WINDOWS INSTALLER
 	Unless unchecked, opening a .powwow file runs powwow with it as the
 	definition file.  The icon, cygwin/powwow.ico, is a placeholder made
 	by cygwin/make-icon.sh.
+
+	The programs and libraries of Cygwin bundled are under their own
+	licenses.  The bundle has their license files, which LICENSES.txt
+	lists with where Cygwin has their source; the installer and #help
+	copyright show it.  cygwin/update-licenses.sh downloads the source
+	packages to cygwin-sources in the build directory, and keeps the
+	licenses in cygwin-licenses there.  make update-cygwin-licenses
+	updates them all.
 
 	The shortcuts run cygwin/powwow-start, which, unless they are set
 	already, sets POWWOWSHELL to cygwin/powwow-cmd, which runs cmd.exe

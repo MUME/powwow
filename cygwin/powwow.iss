@@ -21,7 +21,10 @@ AppPublisherURL=https://github.com/MUME/powwow
 DefaultDirName={autopf}\powwow
 DefaultGroupName=powwow
 DisableProgramGroupPage=yes
+; the license of powwow, and those of the programs and libraries of
+; Cygwin bundled with it
 LicenseFile={#Stage}\usr\share\powwow\COPYING
+InfoBeforeFile={#Stage}\usr\share\powwow\LICENSES.txt
 OutputBaseFilename=powwow-{#Version}-setup
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -58,6 +61,7 @@ Name: "{group}\powwow"; Filename: "{app}\bin\mintty.exe"; \
 Name: "{autodesktop}\powwow"; Filename: "{app}\bin\mintty.exe"; \
     Parameters: "{#Mintty} -e {#Start}"; WorkingDir: "{%USERPROFILE}"; \
     IconFilename: "{app}\powwow.ico"; Tasks: desktopicon
+Name: "{group}\Licenses"; Filename: "{app}\usr\share\powwow\LICENSES.txt"
 Name: "{group}\Uninstall powwow"; Filename: "{uninstallexe}"
 
 [Registry]

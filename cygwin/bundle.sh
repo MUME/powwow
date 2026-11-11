@@ -10,7 +10,10 @@
 #
 # Cygwin takes the parent of the directory of cygwin1.dll as its root, so
 # DIR mirrors a Cygwin root: the programs and DLLs in DIR/bin, the data in
-# DIR/usr/share/powwow
+# DIR/usr/share/powwow. The license files of the Cygwin packages bundled
+# come from cygwin-licenses in the build directory, which
+# update-licenses.sh makes; for those it lacks, it is run, which
+# downloads their source packages
 
 set -e
 
@@ -134,23 +137,117 @@ Font2=Segoe UI Emoji
 FontChoice=PictoSymbols:2
 EOF
 
-# the Cygwin packages of the files bundled, for their licenses and sources
-doc=$stage/usr/share/doc/powwow
-mkdir -p "$doc"
+# the packages of the files bundled, as "PACKAGE VERSION FILE"; the files
+# that no package installed are powwow's own
+# the lists below go in files, which awk reads, rather than in variables,
+# whose text set -x, as by make V=1, would show at every use
+lists=$(mktemp -d)
+trap 'rm -rf "$lists"' EXIT
+awk 'NR > 1 { v = $2; sub(/\.tar\.[a-z0-9]+$/, "", v);
+              print v, $1, substr(v, length($1) + 2) }' \
+    /etc/setup/installed.db > "$lists/installed"
+find "$stage" -type f | sort | while read -r f; do
+    file=${f#"$stage"}
+    case $file in
+        (/bin/*) path=/usr$file ;;
+        (*) path=$file ;;
+    esac
+    full=$(cygcheck -f "$path" 2> /dev/null | head -n 1)
+    if [ -n "$full" ]; then
+        awk -v full="$full" -v file="$file" \
+            '$1 == full { print $2, $3, file; exit }' "$lists/installed"
+        continue
+    fi
+    # the files that the postinstall scripts of packages make
+    case $file in
+        (/etc/pki/*) pkg=ca-certificates ;;
+        (/etc/crypto-policies/*) pkg=crypto-policies ;;
+        (*) continue ;;
+    esac
+    awk -v pkg="$pkg" -v file="$file" \
+        '$2 == pkg { print $2, $3, file; exit }' "$lists/installed"
+done > "$lists/files"
+
+# their license files, from cygwin-licenses, which update-licenses.sh
+# makes, by the lines "PACKAGE SOURCE LICENSE" of its table; for the
+# packages that it lacks, update-licenses.sh downloads their source
+# packages to add them
+here=$(dirname "$0")
+got=$(pwd)/cygwin-licenses
+table=$got/PACKAGES
+mkdir -p "$got"
+[ -f "$table" ] || : > "$table"
+packages=$(cut -d ' ' -f 1 "$lists/files" | sort -u)
+missing=$(for pkg in $packages; do
+              awk -v p="$pkg" '$1 == p { found = 1; exit }
+                               END { if (!found) print p }' "$table"
+          done)
+if [ -n "$missing" ]; then
+    echo "getting the licenses of" $missing "from their Cygwin source" \
+         "packages"
+    if ! "$here/update-licenses.sh" $missing; then
+        echo "$0: cannot get the licenses of" $missing >&2
+        exit 1
+    fi
+fi
+licenses=$stage/usr/share/doc/powwow/licenses
+mkdir -p "$licenses"
+for pkg in $packages; do
+    awk -v p="$pkg" '$1 == p { print; exit }' "$table"
+done > "$lists/sources"
+names=$(cut -d ' ' -f 2 "$lists/sources" | sort -u)
+for name in $names; do
+    cp -R "$got/$name" "$licenses/"
+done
+
+# the list of them, which the installer and #help copyright show
 {
-    echo "Cygwin packages of the programs, DLLs and data bundled with"
-    echo "powwow; their sources are at https://cygwin.com/packages/"
-    echo
-    for f in "$stage"/bin/* "$stage"/usr/share/terminfo/*/* \
-             "$stage$trust" ${policy:+"$stage$policy"}; do
-        [ -e "$f" ] || continue
-        case $f in
-            "$stage"/bin/*) f=/usr/bin/${f##*/} ;;
-            *) f=${f#"$stage"} ;;
-        esac
-        cygcheck -f "$f"
-    done | sort -u
-} > "$doc/PACKAGES"
+    cat <<'END'
+Licenses of powwow for Windows
+==============================
+
+powwow itself is free software under the GNU General Public License,
+version 2 or later: see COPYING, which #help copyright shows. Its source
+is at https://github.com/MUME/powwow.
+
+unicode-names.txt and emoji-names.txt are made from the Unicode
+Character Database and the emoji data of Unicode, under the Unicode
+License v3: see unicode-license.txt.
+
+The other programs and libraries here are those of Cygwin, each under
+its own license. Below are their Cygwin source packages, with the
+license that the package names, where to get their source, the files
+bundled from them, and their license files, which are in the folder
+usr\share\doc\powwow\licenses\<source package> of the installation
+folder.
+
+The CA certificates, etc\pki\tls\certs\ca-bundle.crt, are those of
+Mozilla, under the Mozilla Public License 2.0, as the header of
+certdata.txt in the licenses of ca-certificates says; the license that
+the package names is that of its scripts.
+END
+    for name in $names; do
+        license=$(awk -v n="$name" '$2 == n {
+                          $1 = $2 = ""; sub(/^ +/, ""); print; exit }' \
+                      "$lists/sources")
+        echo
+        echo "$name${license:+: $license}"
+        echo "    source: https://cygwin.com/packages/summary/$name-src.html"
+        awk -v n="$name" '$2 == n { print $1 }' "$lists/sources" \
+            | while read -r pkg; do
+            awk -v p="$pkg" '$1 == p {
+                print "    " $1 " " $2 ": " substr($3, 2) }' "$lists/files"
+        done
+        (cd "$licenses/$name" && find . -type f | sed 's|^\./||' | sort \
+             | sed 's|^|    license: |')
+    done
+    cat <<'END'
+
+The license files above, with the full texts of the licenses, are in the
+folder usr\share\doc\powwow\licenses\<source package> of the installation
+folder, such as usr\share\doc\powwow\licenses\gnutls\COPYING.LESSERv2.
+END
+} > "$stage/usr/share/powwow/LICENSES.txt"
 
 echo
 echo "created $stage"
