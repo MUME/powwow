@@ -2,7 +2,8 @@ SUBDIRS=src doc man
 
 pkgdata_DATA = COPYING
 
-EXTRA_DIST = .clang-tidy AGENTS.md
+EXTRA_DIST = .clang-tidy AGENTS.md cygwin/bundle.sh cygwin/installer.sh \
+	cygwin/powwow.iss
 
 # what autogen.sh makes, so that make maintainer-clean leaves the tree as
 # git has it
@@ -28,6 +29,15 @@ lint:
 tidy:
 	cd src && $(MAKE) $(AM_MAKEFLAGS) tidy
 
+# on Cygwin: a tree of powwow with what it needs from Cygwin, and an
+# installer of it for Windows (needs Inno Setup); see README; with +, as
+# the script runs make, which then shares the jobs of make -j
+windows-bundle: all
+	+$(srcdir)/cygwin/bundle.sh powwow-win
+
+windows-installer: windows-bundle
+	$(srcdir)/cygwin/installer.sh powwow-win $(VERSION)
+
 help:
 	@echo 'Usage: make [TARGET]'
 	@echo ''
@@ -41,6 +51,10 @@ help:
 	@echo '  check             build and run the tests'
 	@echo '  lint              check the markup of the man page and markdown'
 	@echo '  tidy              check the sources (needs clang-tidy)'
+if CYGWIN
+	@echo '  windows-bundle    build powwow-win: powwow with what it needs'
+	@echo '  windows-installer also make a Windows installer of it'
+endif
 	@echo '  install           install the programs and data files'
 	@echo '  install-strip     like install, but strip the programs'
 	@echo '  uninstall         remove the installed files'
@@ -49,4 +63,4 @@ help:
 	@echo '  maintainer-clean  also remove the files that autogen.sh makes'
 	@echo '  help              show this list'
 
-.PHONY: lint tidy help
+.PHONY: lint tidy windows-bundle windows-installer help
