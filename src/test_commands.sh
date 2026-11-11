@@ -178,6 +178,14 @@ has '#no connection named "nosuch"'
 has '#error: missing right parenthesis.'
 has 'alive'
 
+run 'help copyright shows all of COPYING, with and without the pager' \
+    '#help copyright
+#help -P copyright'
+[ "$(grep -c 'is copyrighted by the$' "$tmp/out")" -eq 2 ] \
+    || fail "missing the first line of COPYING"
+[ "$(grep -c '^Public License instead of this License\.$' "$tmp/out")" \
+      -eq 2 ] || fail "missing the last line of COPYING"
+
 run 'typing does not draw the character before the cursor again' '' \
     "xyz$(printf '\025')"
 grep -Fq 'xyz' "$tmp/out" || fail "xyz not shown"
