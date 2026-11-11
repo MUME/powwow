@@ -38,6 +38,7 @@
 #include "charset.h"
 #include "charname.h"
 #include "width.h"
+#include "tls.h"
 
 #ifdef USE_LOCALE
 #  include <wctype.h>
@@ -834,6 +835,7 @@ static void complete_help(struct word_list *l, int arg, const char *args,
     }
     if (arg != 0)
         return;
+    word_list_add(l, "copyright");      /* not in the help file */
     FILE *f = fopen(helpfile, "r");
     if (f == NULL)
         return;
@@ -844,6 +846,96 @@ static void complete_help(struct word_list *l, int arg, const char *args,
             word_list_add(l, line + 1);
     }
     fclose(f);
+}
+
+/* add the words of 'list', which ends with NULL */
+static void add_words(struct word_list *l, const char *const *list)
+{
+    for (; *list != NULL; ++list)
+        word_list_add(l, *list);
+}
+
+/* on or off, for #quote */
+static void complete_on_off(struct word_list *l, int arg, const char *args,
+                            const char *word)
+{
+    static const char *const names[] = { "on", "off", NULL };
+    if (arg == 0)
+        add_words(l, names);
+}
+
+/* the flag of #ver */
+static void complete_ver(struct word_list *l, int arg, const char *args,
+                         const char *word)
+{
+    static const char *const names[] = { "-v", NULL };
+    if (arg == 0)
+        add_words(l, names);
+}
+
+/* what #request sends, any number of them */
+static void complete_request(struct word_list *l, int arg, const char *args,
+                             const char *word)
+{
+    static const char *const names[] = { "all", "editor", NULL };
+    add_words(l, names);
+}
+
+/* the variables of #setvar */
+static void complete_setvar(struct word_list *l, int arg, const char *args,
+                            const char *word)
+{
+    static const char *const names[] = {
+        "buffer", "lines", "mem", "timer", NULL
+    };
+    if (arg == 0)
+        add_words(l, names);
+}
+
+/* the line-editing functions, for #keyedit */
+static void complete_keyedit(struct word_list *l, int arg, const char *args,
+                             const char *word)
+{
+    if (arg != 0)
+        return;
+    for (int i = 1; internal_functions[i].name != NULL; ++i)
+        word_list_add(l, internal_functions[i].name);
+}
+
+/* the labels of the delayed commands, active or not, for #in and #at */
+static void complete_delay(struct word_list *l, int arg, const char *args,
+                           const char *word)
+{
+    if (arg != 0)
+        return;
+    for (const delaynode *p = delays; p != NULL; p = p->next)
+        word_list_add(l, p->name);
+    for (const delaynode *p = dead_delays; p != NULL; p = p->next)
+        word_list_add(l, p->name);
+}
+
+/* the ids of the open connections, for #snoop and #zap */
+static void complete_session(struct word_list *l, int arg, const char *args,
+                             const char *word)
+{
+    if (arg != 0)
+        return;
+    for (int i = 0; i < MAX_CONNECTS; ++i) {
+        if (CONN_INDEX(i).id != NULL)
+            word_list_add(l, CONN_INDEX(i).id);
+    }
+}
+
+/* the flags of #connect and #host, wherever a word starts with - */
+static void complete_connect(struct word_list *l, int arg, const char *args,
+                             const char *word)
+{
+    static const char *const names[] = {
+        "--tls", "--tls=no-verify", NO_TLS_FLAG, UTF8_FLAG, LATIN1_FLAG,
+        NULL
+    };
+    if (word[0] == '-')
+        add_words(l, names);
 }
 
 /* the names of the keys bound */
@@ -974,6 +1066,18 @@ static void complete_action(struct word_list *l, int arg, const char *args,
     }
 }
 
+/* the labels of the prompts, for #prompt as for #action */
+static void complete_prompt(struct word_list *l, int arg, const char *args,
+                            const char *word)
+{
+    if (arg != 0)
+        return;
+    for (const promptnode *p = prompts; p != NULL; p = p->next) {
+        if (p->label != NULL && p->label[0] != '\0')
+            word_list_add(l, p->label);
+    }
+}
+
 /* the patterns of the marks without spaces, for #mark */
 static void complete_mark(struct word_list *l, int arg, const char *args,
                           const char *word)
@@ -1055,23 +1159,35 @@ static const struct {
 } arg_completions[] = {
     { "action", complete_action, "<=>%+-" },
     { "alias", complete_alias, "" },
+    { "at", complete_delay, "" },
     { "bind", complete_bind, "" },
     { "capture", complete_file, ">" },
+    { "connect", complete_connect, "" },
     { "delim", complete_delim, "" },
     { "file", complete_file, "=" },
     { "group", complete_group, "" },
     { "help", complete_help, "" },
     { "hilite", complete_hilite, "" },
+    { "host", complete_connect, "" },
+    { "in", complete_delay, "" },
     { "key", complete_key, "" },
+    { "keyedit", complete_keyedit, "" },
     { "load", complete_file, "" },
     { "mark", complete_mark, "" },
     { "movie", complete_file, "" },
     { "option", complete_option, "+-=" },
+    { "prompt", complete_prompt, "<=>%+-" },
+    { "quote", complete_on_off, "" },
     { "rebind", complete_key, "" },
     { "record", complete_file, "" },
+    { "request", complete_request, "" },
     { "reset", complete_reset, "" },
     { "save", complete_file, "" },
+    { "setvar", complete_setvar, "" },
+    { "snoop", complete_session, "" },
     { "var", complete_var, "" },
+    { "ver", complete_ver, "" },
+    { "zap", complete_session, "" },
 };
 
 /* the command that 'name' runs, as its start, or NULL */
