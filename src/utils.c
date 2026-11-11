@@ -372,6 +372,29 @@ int memunescape(char *p, int lenp, bool raw)
 }
 
 /*
+ * does 'c' separate the folders of a path: '/', and on Cygwin also '\\', of
+ * the Windows paths that Explorer gives, such as of a .powwow file opened
+ */
+bool is_path_sep(char c)
+{
+#ifdef __CYGWIN__
+    if (c == '\\')
+        return true;
+#endif
+    return c == '/';
+}
+
+/* does 'path' have a folder in it, such as dir/file? */
+bool has_path_sep(const char *path)
+{
+    for (; *path != '\0'; ++path) {
+        if (is_path_sep(*path))
+            return true;
+    }
+    return false;
+}
+
+/*
  * remove the spaces at the end of 's', such as after a word completed with
  * Tab; return 's'
  */
@@ -1720,7 +1743,7 @@ int save_settings(void)
      */
     strcpy(tmpname, deffile);
     int dirlen = strlen(tmpname) - 1;
-    while (dirlen != 0 && tmpname[dirlen] != '/')
+    while (dirlen != 0 && !is_path_sep(tmpname[dirlen]))
         --dirlen;
     if (dirlen != 0)
         ++dirlen;

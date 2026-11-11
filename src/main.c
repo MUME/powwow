@@ -2739,11 +2739,11 @@ static bool jit_subst_vars(ptr **buf, char *src)
  * set definition file:
  * rules: if powwow_dir is set it is searched first.
  *        if file doesn't exist, it is created there.
- * If a slash appears in the name, the powwow_dir isn't used.
+ * If a folder is in the name, the powwow_dir isn't used.
  */
 void set_deffile(char *arg)
 {
-    if (strchr(arg, '/') == NULL && *powwow_dir != '\0') {
+    if (!has_path_sep(arg) && *powwow_dir != '\0') {
         strcpy(deffile, powwow_dir);
         strcat(deffile, arg);
         if ((access(deffile, R_OK) == -1 || access(deffile, W_OK) == -1)
