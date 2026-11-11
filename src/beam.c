@@ -61,12 +61,12 @@ void mpi_identify(connsess *conn)
 
     if (conn->charset == CS_LATIN1) {
         tcp_raw_write(conn, latin1, sizeof latin1 - 1);
-        conn->flags &= ~IDEDITOR_UTF8;
+        conn->ideditor_utf8 = false;
     } else {
         tcp_raw_write(conn, utf8, sizeof utf8 - 1);
-        conn->flags |= IDEDITOR_UTF8;
+        conn->ideditor_utf8 = true;
     }
-    conn->flags |= IDEDITOR;
+    conn->ideditor = true;
 }
 
 /*
@@ -388,7 +388,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
         s->descr = malloc(3 * dlen + 1);
         if (s->descr != NULL) {
             if (current_connection != NULL
-                && (current_connection->flags & IDEDITOR_UTF8))
+                && current_connection->ideditor_utf8)
                 dlen = utf8_sanitize(descr, dlen, s->descr);
             else
                 dlen = latin1_to_utf8(descr, dlen, s->descr);
