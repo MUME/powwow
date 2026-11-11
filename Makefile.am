@@ -5,7 +5,7 @@ pkgdata_DATA = COPYING
 EXTRA_DIST = .clang-tidy AGENTS.md cygwin/bundle.sh cygwin/installer.sh \
              icons/make-icon.sh icons/powwow.ico cygwin/powwow.iss \
              cygwin/powwow-cmd cygwin/powwow-notepad \
-             cygwin/powwow-start
+             cygwin/powwow-start cygwin/update-licenses.sh
 
 # what autogen.sh makes, so that make maintainer-clean leaves the tree as
 # git has it
@@ -40,6 +40,11 @@ windows-bundle: all
 windows-installer: windows-bundle
 	$(srcdir)/cygwin/installer.sh powwow-win $(VERSION)
 
+# download the Cygwin source packages of the bundle again, and update
+# their license files in cygwin-licenses
+update-cygwin-licenses:
+	$(srcdir)/cygwin/update-licenses.sh
+
 help:
 	@echo 'Usage: make [TARGET]'
 	@echo ''
@@ -56,6 +61,8 @@ help:
 if CYGWIN
 	@echo '  windows-bundle    build powwow-win: powwow with what it needs'
 	@echo '  windows-installer also make a Windows installer of it'
+	@echo '  update-cygwin-licenses'
+	@echo '                    update cygwin-licenses from the Cygwin sources'
 endif
 	@echo '  install           install the programs and data files'
 	@echo '  install-strip     like install, but strip the programs'
@@ -65,4 +72,5 @@ endif
 	@echo '  maintainer-clean  also remove the files that autogen.sh makes'
 	@echo '  help              show this list'
 
-.PHONY: lint tidy windows-bundle windows-installer help
+.PHONY: lint tidy windows-bundle windows-installer update-cygwin-licenses \
+        help
