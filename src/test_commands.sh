@@ -248,6 +248,14 @@ has '#action >-auto@g1 ZBLAM!=stand'
 lacks '#alias other@*=#print x'
 has '#no aliases or actions are in group nosuch.'
 
+run '#var takes an expression for the number, and spaces around =' \
+    '#var @(-1*4) = 27
+#print (@-4)
+#var $test = a long text
+#print ($test)'
+has '27'
+has 'a long text'
+
 run 'typing does not draw the character before the cursor again' '' \
     "xyz$(printf '\025')"
 grep -Fq 'xyz' "$tmp/out" || fail "xyz not shown"

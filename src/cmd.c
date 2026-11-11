@@ -1924,6 +1924,7 @@ static void cmd_var(char *arg)
     bool right = false, deleting = false;
     if (*expr != '\0') {
         *expr++ = '\0';     /* skip the = */
+        strip_end(arg);     /* the spaces before it, as in @n = 5 */
         if (*expr == '\0')
             deleting = true;
         else {
@@ -1983,11 +1984,10 @@ static void cmd_var(char *arg)
          * an unnamed variable or an expression */
         char *tmp = skipspace(arg);
         if (*tmp == '(') {
-            /* an expression */
+            /* an expression: its text, or a number, which evalp() writes
+             * as text, is the name or the number of the variable */
             arg = tmp + 1;
             idx = evalp(&pbuf, &arg);
-            if (!REAL_ERROR && idx != TYPE_TXT)
-                error = NO_STRING_ERROR;
             if (REAL_ERROR) {
                 PRINTF("#var: ");
                 print_error(error);
