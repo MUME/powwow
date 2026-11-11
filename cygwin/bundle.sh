@@ -1,7 +1,7 @@
 #! /bin/sh
 #
 # build a self-contained tree of powwow for Windows, with the Cygwin DLLs,
-# mintty and sh, for an installer (see powwow.iss) or a zip
+# sh, for an installer (see powwow.iss) or a zip
 #
 # run in Cygwin, in a build directory configured with the prefix /usr or
 # /usr/local, the default, after make:
@@ -53,23 +53,21 @@ mv "$stage$prefix"/bin/* "$stage/bin/"
 rmdir "$stage$prefix/bin"
 rm -rf "$stage$prefix/include" "$stage$prefix/share/man"
 
-# mintty to run powwow in, sh for #!, #var $x=!... and the editor,
-# cygpath for powwow-start to find the Documents folder, and
-# cygwin-console-helper, which Cygwin runs to give a pseudo terminal the
-# hidden console that Windows needs: without it, Windows shows powwow in a
-# console window of its own besides mintty
-for p in mintty sh cygpath cygwin-console-helper; do
+# sh for #!, #var $x=!... and the editor, and cygpath for powwow-start to
+# find the Documents folder; powwow runs in Windows Terminal, which the
+# installer requires
+for p in sh cygpath; do
     cp -L "/usr/bin/$p.exe" "$stage/bin/"
 done
 
-# what the shortcuts and .powwow files run in mintty, and the shell and
-# editor it sets
+# what the shortcuts and .powwow files run in Windows Terminal, and the
+# shell and editor it sets
 cp "$(dirname "$0")/powwow-start" "$(dirname "$0")/powwow-cmd" \
     "$(dirname "$0")/powwow-notepad" "$stage/bin/"
 
 # less, the pager of #help and of the texts that the MUD shows, which
 # powwow-start sets in POWWOWPAGER; without one, the more.com of Windows
-# is found, which cannot page in mintty
+# is found, which cannot page in a Cygwin program
 if [ ! -e /usr/bin/less.exe ]; then
     echo "$0: no /usr/bin/less.exe; install the Cygwin package less" >&2
     exit 1
@@ -94,7 +92,7 @@ done | sed -n 's|.* => \(/[^ ]*\.dll\) .*|\1|p' | grep -v '^/cygdrive/' \
     cp -L "$dll" "$stage/bin/"
 done
 
-# the terminals that mintty and the Windows console set in TERM
+# the terminals that Cygwin may set in TERM in Windows Terminal
 for t in xterm xterm-256color cygwin; do
     for f in /usr/share/terminfo/*/"$t"; do
         [ -e "$f" ] || continue
@@ -138,12 +136,6 @@ cat > "$stage/etc/fstab" <<'EOF'
 # directory may not be writable
 none /tmp usertemp binary,posix=0 0 0
 none /cygdrive cygdrive binary,posix=0,user 0 0
-EOF
-# mintty draws the pictographic symbols, such as emoji, which most fonts
-# lack, with the emoji font of Windows
-cat > "$stage/etc/minttyrc" <<'EOF'
-Font2=Segoe UI Emoji
-FontChoice=PictoSymbols:2
 EOF
 
 # the packages of the files bundled, as "PACKAGE VERSION FILE"; the files

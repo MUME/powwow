@@ -1,7 +1,8 @@
 #! /bin/sh
 #
 # start powwow on Windows: the shortcuts and .powwow files of the
-# installer run this in mintty, as /bin/powwow-start of the bundle
+# installer run this in Windows Terminal, as /bin/powwow-start of the
+# bundle
 #
 #     powwow-start [ARGUMENT...]
 #

@@ -85,10 +85,9 @@ COMPILING
 WINDOWS INSTALLER
 
 	On Cygwin, powwow can be built into a directory, powwow-win, with
-	the Cygwin DLLs it needs, mintty to run it in, sh, less, nano, and
-	the CA certificates, which runs without Cygwin installed, and into a
-	Windows installer of that directory, with the prefix /usr or
-	/usr/local, the default:
+	the Cygwin DLLs it needs, sh, less, nano, and the CA certificates,
+	which runs without Cygwin installed, and into a Windows installer of
+	that directory, with the prefix /usr or /usr/local, the default:
 
 	./configure
 	make cygwin-bundle             (just the directory powwow-win)
@@ -114,13 +113,12 @@ WINDOWS INSTALLER
 	its path.
 
 	The installer is written to the build directory.  It installs powwow
-	with a Start menu shortcut that runs it in mintty, through
-	cygwin/powwow-start, in the folder powwow of the Documents folder,
-	such as C:\Users\name\Documents\powwow, where the definition files
-	then go.
-	Unless unchecked, opening a .powwow file runs powwow with it as the
-	definition file.  The icon, cygwin/powwow.ico, is a placeholder made
-	by cygwin/make-icon.sh.
+	with a Start menu shortcut that runs it in Windows Terminal, which
+	the installer requires, through cygwin/powwow-start, in the folder
+	powwow of the Documents folder, such as C:\Users\name\Documents\powwow,
+	where the definition files then go.  Unless unchecked, opening a
+	.powwow file runs powwow with it as the definition file.  The icon,
+	cygwin/powwow.ico, is a placeholder made by cygwin/make-icon.sh.
 
 	The programs and libraries of Cygwin bundled are under their own
 	licenses.  The bundle has their license files, which LICENSES.txt
