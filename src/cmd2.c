@@ -39,6 +39,17 @@
 #include "eval.h"
 #include "cmd2.h"
 
+/* show the alias 'p' as #alias defines it */
+static void show_alias(const aliasnode *p)
+{
+    char buf[BUFSIZE];
+    escape_specials(buf, p->name);
+    tty_message("#alias %s%s%s%s=%s\n",
+                p->active ? "" : "(disabled) ",
+                buf, group_delim, p->group == NULL ? "*" : p->group,
+                p->subst);
+}
+
 /*
  * show defined aliases
  */
@@ -50,14 +61,8 @@ void show_aliases(void)
             ? " is"
             : "es are"),
            sortedaliases != NULL ? ':' : '.');
-    for (aliasnode *p = sortedaliases; p != NULL; p = p->snext) {
-        char buf[BUFSIZE];
-        escape_specials(buf, p->name);
-        tty_message("#alias %s%s%s%s=%s\n",
-                    p->active ? "" : "(disabled) ",
-                    buf, group_delim, p->group == NULL ? "*" : p->group,
-                    p->subst);
-    }
+    for (aliasnode *p = sortedaliases; p != NULL; p = p->snext)
+        show_alias(p);
 }
 
 /*
@@ -329,6 +334,18 @@ static void change_actionorprompt(actionnode *node, char *pattern,
     }
 }
 
+/* show the action 'p' as #action defines it */
+static void show_action(const actionnode *p)
+{
+    tty_message("#action %c%c%s%s%s %s=%s\n",
+                action_chars[p->type],
+                p->active ? '+' : '-', p->label,
+                group_delim,
+                p->group == NULL ? "*" : p->group,
+                p->pattern,
+                p->command);
+}
+
 /*
  * show defined actions
  */
@@ -338,14 +355,41 @@ void show_actions(void)
            actions != NULL ? "the following" : "no",
            (actions != NULL && actions->next == NULL) ? " is" : "s are",
            actions != NULL ? ':' : '.');
-    for (actionnode *p = actions; p != NULL; p = p->next)
-        tty_message("#action %c%c%s%s%s %s=%s\n",
-                    action_chars[p->type],
-                    p->active ? '+' : '-', p->label,
-                    group_delim,
-                    p->group == NULL ? "*" : p->group,
-                    p->pattern,
-                    p->command);
+    for (const actionnode *p = actions; p != NULL; p = p->next)
+        show_action(p);
+}
+
+/* is 'g', the group of an alias or action, the group 'group'? */
+static bool in_group(const char *g, const char *group)
+{
+    return g != NULL && strcmp(g, group) == 0;
+}
+
+/*
+ * show the aliases and actions of the group 'group', those that
+ * #group <group> on and off turn on and off
+ */
+void show_group(const char *group)
+{
+    int count = 0;
+    for (const aliasnode *p = sortedaliases; p != NULL; p = p->snext)
+        count += in_group(p->group, group) ? 1 : 0;
+    for (const actionnode *p = actions; p != NULL; p = p->next)
+        count += in_group(p->group, group) ? 1 : 0;
+    if (count == 0) {
+        PRINTF("#no aliases or actions are in group %s.\n", group);
+        return;
+    }
+    PRINTF("#the following %s in group %s:\n",
+           count == 1 ? "is" : "are", group);
+    for (const aliasnode *p = sortedaliases; p != NULL; p = p->snext) {
+        if (in_group(p->group, group))
+            show_alias(p);
+    }
+    for (const actionnode *p = actions; p != NULL; p = p->next) {
+        if (in_group(p->group, group))
+            show_action(p);
+    }
 }
 
 /*
