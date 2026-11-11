@@ -94,6 +94,13 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  expression action crashing powwow when the action was matched.
 	* Fixed `#bind <name> <sequence>=<command>' calling a new key a
 	  redefined one, and the other way around.
+	* Fixed #connect with TLS ending powwow when the CA certificates of
+	  the system cannot be loaded: it warns, and verifying the server
+	  then fails. Likewise, when the default priorities of GnuTLS
+	  cannot be set, it warns and uses those that GnuTLS calls NORMAL.
+	  When GnuTLS finds no CA certificates of the system, powwow reads
+	  /etc/pki/tls/certs/ca-bundle.crt or
+	  /etc/ssl/certs/ca-certificates.crt.
 	* Fixed the first alias, action, #for or #while losing the values
 	  that $0..$9 and @0..@9 had outside of any of them.
 	* Fixed @(<expr>) and $(<expr>) with the name of a variable, such
