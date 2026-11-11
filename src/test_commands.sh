@@ -227,6 +227,10 @@ has '#option editor is now: vi'
 run '#! runs the command with sh without POWWOWSHELL' "#! echo it\\'s a | tr a b"
 grep -Fq ">it's b" "$tmp/out" || fail "expected it's b"
 
+run 'without UTF-8, the copyright sign is shown as (c) and dashes as -' \
+    '#print ("x" + *169 + *8211 + *8212 + "y")'
+grep -Fq 'x(c)--y' "$tmp/out" || fail "expected x(c)--y"
+
 run 'typing does not draw the character before the cursor again' '' \
     "xyz$(printf '\025')"
 grep -Fq 'xyz' "$tmp/out" || fail "xyz not shown"
@@ -998,6 +1002,21 @@ run 'Tab lists the words down and then across' '' \
 "
 has 'autoclear  debug      exit       keyecho    reprint    speedwalk'
 has 'compact    editor=    info       pager=     shell=     wrap'
+
+# the texts that #help shows must be ASCII, except for what tty_put_wc()
+# writes as ASCII where the locale is not UTF-8: the copyright sign, and
+# the dashes U+2010 to U+2015
+name='the texts of #help have no other non-ASCII characters'
+copyright=$(printf '\302\251')
+dash=$(printf '\342\200[\220-\225]')
+high=$(printf '[\200-\377]')
+: > "$tmp/out"
+for f in "${srcdir:-.}/../COPYING" "${srcdir:-.}/../doc/unicode-license.txt" \
+         "${srcdir:-.}/../doc/powwow.help"; do
+    LC_ALL=C sed -e "s/$copyright//g" -e "s/$dash//g" "$f" \
+        | LC_ALL=C grep -n "$high" | sed "s|^|${f##*/}:|" >> "$tmp/out"
+done
+[ -s "$tmp/out" ] && fail "replace these, or write them as ASCII in tty_put_wc()"
 
 # powwow-movieplay -a converts a movie to text, without its pauses
 name='powwow-movieplay -a'
