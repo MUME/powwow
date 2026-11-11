@@ -895,6 +895,15 @@ run 'Tab completes the flags of #help and the topic after them' '' \
 [ "$(grep -c 'Execute a speedwalk sequence' "$tmp/out")" -eq 2 ] \
     || fail "expected the help on #speedwalk twice"
 
+run 'Tab completes copyright, and the arguments of #quote and #ver' '' \
+    "#help -P cop	
+#quote of	
+#ver -	
+"
+has 'Public License instead of this License.'
+has '#normal mode.'
+grep -q '^Options: ' "$tmp/out" || fail "expected the options of #ver -v"
+
 run 'Tab completes the arguments of #delim, #option and #group' '' \
     "#del	pr	
 #delim
