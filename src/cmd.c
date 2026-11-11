@@ -504,6 +504,38 @@ static void show_help_text(char *text, bool use_pager)
     free(text);
 }
 
+/* show the file of the license, with a title as the help texts have */
+static void show_copyright(bool use_pager)
+{
+    static const char title[] = "Help on 'copyright'\n";
+    size_t title_len = sizeof title - 1;
+    FILE *f = fopen(copyfile, "r");
+    struct stat st;
+    if (f == NULL || fstat(fileno(f), &st) < 0) {
+        wrap_printf("#cannot open \"%s\": %s", copyfile, strerror(errno));
+        if (f != NULL)
+            fclose(f);
+        return;
+    }
+    char *text = malloc(title_len + st.st_size + 1);
+    if (text == NULL) {
+        out_of_memory();
+        fclose(f);
+        return;
+    }
+    memcpy(text, title, title_len);
+    size_t len = fread(text + title_len, 1, st.st_size, f);
+    if (ferror(f) != 0) {
+        wrap_printf("#cannot read \"%s\"", copyfile);
+        free(text);
+        fclose(f);
+        return;
+    }
+    fclose(f);
+    text[title_len + len] = '\0';
+    show_help_text(text, use_pager);
+}
+
 static void cmd_help(char *arg)
 {
     arg = skipspace(arg);
@@ -548,43 +580,7 @@ static void cmd_help(char *arg)
     }
 
     if (strncmp(arg, "copyright", strlen(arg)) == 0) {
-        struct stat stbuf;
-
-        if (stat(copyfile, &stbuf) < 0) {
-            errmsg("cannot read %s", copyfile);
-            return;
-        }
-
-        int left = stbuf.st_size;
-        char *text = malloc(left);
-        if (text == NULL) {
-            out_of_memory();
-            return;
-        }
-        int fd = open(copyfile, O_RDONLY);
-        if (fd < 0) {
-            errmsg("cannot open %s", copyfile);
-            free(text);
-            return;
-        }
-        int got = 0;
-        while (left > 0) {
-            int i;
-            while ((i = read(fd, text + got, left)) < 0 && errno == EINTR)
-              ;
-            if (i < 0 && errno == EINTR) {
-                errmsg("cannot read %s", copyfile);
-                free(text);
-                close(fd);
-                return;
-            }
-            if (i == 0)
-                break;
-            left -= i;
-            got += i;
-        }
-        close(fd);
-        show_help_text(text, use_pager);
+        show_copyright(use_pager);
         return;
     }
 
