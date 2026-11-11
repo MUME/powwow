@@ -22,6 +22,7 @@
 
 #ifdef USE_TLS
 
+#include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
 
@@ -108,14 +109,27 @@ static void tls_log(int level, const char *msg)
     PRINTF("#TLS log %d: %s", level, msg);
 }
 
+/* the name of the server that the certificate must be for */
+static const char *tls_host(const connsess *conn)
+{
+    const char *host = conn->tls->tlsopt.hostname;
+    return host != NULL ? host : conn->host;
+}
+
+/* is 'host' an IPv4 or IPv6 address, not a name? */
+static bool is_address(const char *host)
+{
+    unsigned char addr[sizeof(struct in6_addr)];
+    return (inet_pton(AF_INET, host, addr) == 1
+            || inet_pton(AF_INET6, host, addr) == 1);
+}
+
 static int cert_verify_callback(gnutls_session_t session)
 {
     if (current_connection->tls->tlsopt.no_verify_ca)
         return 0;
 
-    const char *host = current_connection->tls->tlsopt.hostname;
-    if (host == NULL)
-        host = current_connection->host;
+    const char *host = tls_host(current_connection);
 
     gnutls_typed_vdata_st data[] = {
         { .type = GNUTLS_DT_DNS_HOSTNAME, .data = (void *)host }
@@ -193,6 +207,13 @@ bool tls_upgrade(struct connsess *conn, const struct tls_options *tlsopt)
                    &tls->anon_cred));
 
     tls_nofail(gnutls_init(&tls->session, GNUTLS_CLIENT));
+    /* the name of the server, which servers of several names need to
+     * choose their certificate; an address is not one */
+    const char *host = tls_host(conn);
+    if (!is_address(host)) {
+        tls_nofail(gnutls_server_name_set(tls->session, GNUTLS_NAME_DNS,
+                                          host, strlen(host)));
+    }
     /* the default priorities may come from a configuration file of the
        system, which can be missing */
     int prio = gnutls_set_default_priority(tls->session);
