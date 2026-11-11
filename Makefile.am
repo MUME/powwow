@@ -3,7 +3,7 @@ SUBDIRS=src doc man
 pkgdata_DATA = COPYING
 
 EXTRA_DIST = .clang-tidy AGENTS.md cygwin/bundle.sh cygwin/installer.sh \
-	cygwin/powwow.iss
+             icons/make-icon.sh icons/powwow.ico cygwin/powwow.iss
 
 # what autogen.sh makes, so that make maintainer-clean leaves the tree as
 # git has it
