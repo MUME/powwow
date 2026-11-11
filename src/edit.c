@@ -1037,7 +1037,7 @@ static void add_group_names(struct word_list *l)
     }
 }
 
-/* the arguments of #group: the name of a group, and on or off */
+/* the arguments of #group: the name of a group, and on, off or list */
 static void complete_group(struct word_list *l, int arg, const char *args,
                            const char *word)
 {
@@ -1046,6 +1046,7 @@ static void complete_group(struct word_list *l, int arg, const char *args,
     } else if (arg == 1) {
         word_list_add(l, "on");
         word_list_add(l, "off");
+        word_list_add(l, "list");
     }
 }
 

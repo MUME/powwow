@@ -4,6 +4,7 @@ void show_aliases(void);
 void parse_alias(char *str);
 
 void show_actions(void);
+void show_group(const char *group);
 void show_prompts(void);
 void parse_action(char *str, bool onprompt);
 
