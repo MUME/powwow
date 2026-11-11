@@ -55,7 +55,24 @@ is searched, then
 .B PAGER
 and
 .BR more (1)
-is used by default.
+is used by default.  The command
+.B #!
+runs its command with
+.BR sh (1),
+or gives it to the shell in
+.BR POWWOWSHELL ,
+such as
+.RB \(lq "zsh -c" \(rq,
+as its last argument, as do the commands after
+.B !
+of
+.B #var
+and others.  The options
+.BR "#option editor=" ,
+.B pager=
+and
+.B shell=
+come before these variables.
 .PP
 If the first character of the editor is \[oq]&\[cq] (which is then
 skipped), the editor is assumed to run in another window and

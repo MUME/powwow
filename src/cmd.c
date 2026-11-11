@@ -94,7 +94,8 @@ static cmdstruct default_commands[] =
       "<command>\trepeat <command> 17 times"),
 #ifdef USE_SHELL
     C("!",          cmd_shell,
-      "<shell-command>\texecute a shell command using /bin/sh"),
+      "<shell-command>\texecute a shell command using /bin/sh, or"
+      " #option shell"),
 #endif
     C("action",     cmd_action,
       "[[<|=|>|%][+|-]<label>] [{<pattern>|(<expr>)}=[<command>]]\t"
@@ -183,7 +184,8 @@ static cmdstruct default_commands[] =
       "[{<number>|(<expr>)} [<command>]]\tset/show priority of new"
       " actions/marks"),
     C("option",     cmd_option,
-      "[[+|-|=]<option>|list]...\tlist or view various options"),
+      "[[+|-|=]<option>|list]...\tlist or view various options, or set"
+      " <option>=<command>"),
     C("prefix",     cmd_prefix,
       "[<string>]\tprefix all lines with string"),
     C("",           cmd_eval,
@@ -701,6 +703,53 @@ static void cmd_clear(char *arg)
 }
 
 #ifdef USE_SHELL
+/*
+ * the command for /bin/sh that #!, and the ! of #var and others, run
+ * 'arg' with: 'arg' itself, or, if POWWOWSHELL is set, such as to
+ * "zsh -c", that shell with 'arg' as its last argument; NULL if out of
+ * memory, else to be freed
+ */
+static char *shell_command(const char *arg)
+{
+    const char *shell = opt_shell != NULL ? opt_shell : getenv("POWWOWSHELL");
+    if (shell == NULL || *shell == '\0')
+        return my_strdup(arg);
+
+    /* exec $POWWOWSHELL 'arg', with each ' of 'arg' as '\'' */
+    static const char quote[] = "'\\''";
+    size_t len = strlen("exec  ''") + strlen(shell);
+    for (const char *p = arg; *p != '\0'; ++p)
+        len += *p == '\'' ? sizeof quote - 1 : 1;
+    char *command = malloc(len + 1);
+    if (command == NULL)
+        return NULL;
+    char *q = command + sprintf(command, "exec %s '", shell);
+    for (const char *p = arg; *p != '\0'; ++p) {
+        if (*p == '\'') {
+            memcpy(q, quote, sizeof quote - 1);
+            q += sizeof quote - 1;
+        } else {
+            *q++ = *p;
+        }
+    }
+    strcpy(q, "'");
+    return command;
+}
+
+/*
+ * popen() the command 'command', as #! runs it: with #option shell or
+ * POWWOWSHELL if set; NULL on errors
+ */
+static FILE *shell_popen(const char *command, const char *mode)
+{
+    char *line = shell_command(command);
+    if (line == NULL)
+        return NULL;
+    FILE *fp = popen(line, mode);
+    free(line);
+    return fp;
+}
+
 static void cmd_shell(char *arg)
 {
     if (*arg == '\0') {
@@ -708,8 +757,14 @@ static void cmd_shell(char *arg)
             PRINTF("#that's easy.\n");
         }
     } else {
+        char *command = shell_command(arg);
+        if (command == NULL) {
+            out_of_memory();
+            return;
+        }
         tty_quit();
-        int wstatus = system(arg);
+        int wstatus = system(command);
+        free(command);
         tty_start();
         col0 = 0;
         line0 = lines - 1;
@@ -1577,7 +1632,7 @@ static void cmd_emulate(char *arg)
     if (kind != 0) {
         char buf[BUFSIZE];
 
-        FILE *fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        FILE *fp = (kind == '!') ? shell_popen(arg, "r") : fopen(arg, "r");
         if (fp == NULL) {
             wrap_printf("#emulate: #error opening \"%s\"", arg);
             error = SYNTAX_ERROR;
@@ -1635,7 +1690,7 @@ static void cmd_exe(char *arg)
     if (kind != 0) {
         char buf[BUFSIZE];
 
-        FILE *fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        FILE *fp = (kind == '!') ? shell_popen(arg, "r") : fopen(arg, "r");
         if (fp == NULL) {
             wrap_printf("#exe: #error opening \"%s\"", arg);
             error = SYNTAX_ERROR;
@@ -1689,7 +1744,7 @@ static void cmd_print(char *arg)
 
     if (kind != 0) {
         char buf[BUFSIZE];
-        FILE *fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        FILE *fp = (kind == '!') ? shell_popen(arg, "r") : fopen(arg, "r");
         if (fp == NULL) {
             wrap_printf("#print: #error opening \"%s\"", arg);
             error = SYNTAX_ERROR;
@@ -1721,7 +1776,7 @@ static void cmd_send(char *arg)
 
     if (kind != 0) {
         char buf[BUFSIZE];
-        FILE *fp = (kind == '!') ? popen(arg, "r") : fopen(arg, "r");
+        FILE *fp = (kind == '!') ? shell_popen(arg, "r") : fopen(arg, "r");
         if (fp == NULL) {
             wrap_printf("#send: #error opening \"%s\"", arg);
             error = SYNTAX_ERROR;
@@ -1834,7 +1889,7 @@ static void cmd_write(char *arg)
         arg = ptrdata(p2);
 
         FILE *fp = (kind == '!'
-                    ? popen(arg, "w")
+                    ? shell_popen(arg, "w")
                     : fopen(arg, kind != 0 ? "w" : "a"));
         if (fp == NULL) {
             wrap_printf("#write: #error opening \"%s\"", arg);
@@ -2093,7 +2148,7 @@ static void cmd_var(char *arg)
 
     if (from != 0) {
         char buf2[BUFSIZE];
-        FILE *fp = (from == '!') ? popen(arg, "r") : fopen(arg, "r");
+        FILE *fp = (from == '!') ? shell_popen(arg, "r") : fopen(arg, "r");
         if (fp == NULL) {
             wrap_printf("#var: #error opening \"%s\"", arg);
             error = SYNTAX_ERROR;
@@ -2741,6 +2796,43 @@ static const struct {
     { 0 }
 };
 
+char *opt_editor, *opt_pager, *opt_shell;
+
+/* the options that are commands, set as #option <name>=<command> */
+static const struct {
+    const char *name;
+    char **value;
+    const char *doc;
+} command_options[] = {
+    { .name = "editor", .value = &opt_editor,
+      .doc = "edit texts of the MUD with this, not $POWWOWEDITOR" },
+    { .name = "pager", .value = &opt_pager,
+      .doc = "show texts, such as #help, with this, not $POWWOWPAGER" },
+    { .name = "shell", .value = &opt_shell,
+      .doc = "run #! and ! commands with this, not $POWWOWSHELL" },
+    { 0 }
+};
+
+/* write "#option <name>=<command>" for the command options set to 'file',
+ * or the tty if it is NULL: as typed, with its escapes, which #option
+ * keeps; return -1 on error */
+static int print_command_options(FILE *file)
+{
+    for (int i = 0; command_options[i].name != NULL; ++i) {
+        const char *value = *command_options[i].value;
+        if (value == NULL)
+            continue;
+        int res = (file != NULL
+                   ? fprintf(file, "#option %s=%s\n",
+                             command_options[i].name, value)
+                   : tty_printf("#option %s=%s\n",
+                                command_options[i].name, value));
+        if (res < 0)
+            return -1;
+    }
+    return 1;
+}
+
 /* print all options to 'file', or tty if file is NULL; return -1 on
  * error, 1 on success */
 int print_all_options(FILE *file)
@@ -2769,18 +2861,77 @@ int print_all_options(FILE *file)
             prefix = "";
         }
     }
-    if (file != NULL) {
+    if (file != NULL)
         fputc('\n', file);
-    } else {
+    else
         tty_putc('\n');
+    if (print_command_options(file) < 0)
+        return -1;
+    if (file == NULL)
         status(1);
-    }
     return 1;
 }
 
 const char *option_name(int i)
 {
     return options[i].name;
+}
+
+/* the name of command option 'i', or NULL after the last */
+const char *command_option_name(int i)
+{
+    return command_options[i].name;
+}
+
+/*
+ * #option <name>=[<command>] and #option =<name>, if 'word', of 'len'
+ * bytes, names a command option: set it to 'rest', the text after the
+ * '=' to the end of the line, or clear it if that is empty; or put it in
+ * the input line to edit; return false if 'word' is not one
+ */
+static bool command_option(const char *word, int len, const char *rest)
+{
+    bool edit = word[0] == '=';
+    if (edit) {
+        ++word;
+        --len;
+    }
+    /* =editor= too, as Tab completes =ed */
+    if (edit && len > 0 && word[len - 1] == '=')
+        --len;
+    const char *eq = memchr(word, '=', len);
+    int name_len = eq != NULL ? (int)(eq - word) : len;
+    if (edit == (eq != NULL) || name_len <= 0)
+        return false;
+    int i = 0;
+    while (command_options[i].name != NULL
+           && (strncmp(command_options[i].name, word, name_len) != 0
+               || command_options[i].name[name_len] != '\0'))
+        ++i;
+    if (command_options[i].name == NULL)
+        return false;
+
+    char **value = command_options[i].value;
+    if (edit) {
+        fmt_next_edit("#option %s=%s", command_options[i].name,
+                      *value != NULL ? *value : "");
+        return true;
+    }
+    free(*value);
+    *value = NULL;
+    if (*rest != '\0') {
+        *value = my_strdup(rest);
+        if (*value == NULL)
+            out_of_memory();
+    }
+    if (opt_info) {
+        if (*value != NULL)
+            PRINTF("#option %s is now: %s\n", command_options[i].name,
+                   *value);
+        else
+            PRINTF("#option %s is now not set.\n", command_options[i].name);
+    }
+    return true;
 }
 
 static void cmd_option(char *arg)
@@ -2793,8 +2944,19 @@ static void cmd_option(char *arg)
 
     char buf[BUFSIZE];
     int count = 0;
-    while ((arg = skipspace(split_first_word(buf, BUFSIZE, arg)),
-            *buf != '\0')) {
+    for (;;) {
+        /* the command of a command option is the rest of the line */
+        const char *word = arg;
+        int word_len = (int)strcspn(word, " ");
+        const char *eq = memchr(word, '=', word_len);
+        if (eq != NULL
+            && command_option(word, word_len,
+                              word[0] == '=' ? "" : eq + 1)) {
+            return;
+        }
+        arg = skipspace(split_first_word(buf, BUFSIZE, arg));
+        if (*buf == '\0')
+            break;
         enum { MODE_ON, MODE_OFF, MODE_TOGGLE, MODE_REP } mode;
         char *p = buf;
         char c = *p;
@@ -2825,8 +2987,17 @@ static void cmd_option(char *arg)
                                options[i].name,
                                options[i].doc);
                 }
+                for (i = 0; command_options[i].name != NULL; ++i) {
+                    const char *value = *command_options[i].value;
+                    tty_message("#option %s=%-*s %s\n",
+                                command_options[i].name,
+                                (int)(12 - strlen(command_options[i].name)),
+                                value != NULL ? value : "",
+                                command_options[i].doc);
+                }
             } else {
-                tty_message("#syntax: #option [[+|-|=]<option>|list]...\n");
+                tty_message("#syntax: #option [[+|-|=]<option>|list]..."
+                            " | <option>=[<command>]\n");
             }
             status(1);
             return;
