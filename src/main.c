@@ -55,6 +55,7 @@
 #include "edit.h"
 #include "eval.h"
 #include "feature/regex.h"
+#include "gitversion.h"
 #include "list.h"
 #include "log.h"
 #include "main.h"
@@ -594,11 +595,20 @@ int main(int argc, char **argv)
  */
 void printver(int level)
 {
+    /* a -dev version with the commit it was built from, if from git */
+    static const char dev[] = "-dev";
+    const char *version = VERSION;
+    size_t len = strlen(version);
+    bool commit = (GIT_COMMIT[0] != '\0' && len >= sizeof dev - 1
+                   && strcmp(version + len - (sizeof dev - 1), dev) == 0);
+
     /* the authors are in README; a copyright sign and an en dash if the
      * terminal can show them */
     bool utf8 = tty_locale_utf8();
-    message_wrap(VER_CONT, "Powwow version %s, %s 1998%s2026 by the powwow "
-                 "authors", VERSION, utf8 ? "\302\251" : "Copyright",
+    message_wrap(VER_CONT, "Powwow version %s%s%s%s, %s 1998%s2026 by the "
+                 "powwow authors", VERSION, commit ? " (" : "",
+                 commit ? GIT_COMMIT : "", commit ? ")" : "",
+                 utf8 ? "\302\251" : "Copyright",
                  utf8 ? "\342\200\223" : "-");
     if (level < 1)
         return;

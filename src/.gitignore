@@ -9,3 +9,4 @@
 /test_attr
 *.log
 *.trs
+/gitversion.h

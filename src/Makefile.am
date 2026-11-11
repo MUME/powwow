@@ -11,6 +11,7 @@ endif
 powwow_SOURCES = beam.c cmd.c log.c edit.c cmd2.c eval.c \
 		 utils.c main.c tcp.c list.c map.c tty.c \
 		 ptr.c tls.c charset.c width.c sgr.c attr.c charname.c
+nodist_powwow_SOURCES = gitversion.h
 powwow_LDFLAGS = @dl_ldflags@
 powwowdir = $(pkgincludedir)
 powwow_HEADERS = beam.h cmd.h log.h edit.h cmd2.h eval.h \
@@ -40,7 +41,29 @@ plugtest.so: plugtest.c
 	$(CC) -shared $(CFLAGS) $(plugin_ldflags) $(LDFLAGS) \
 		-o plugtest.so plugtest.o
 
-CLEANFILES = plugtest.so
+CLEANFILES = plugtest.so gitversion.h
+
+# the commit that a build from a git checkout is of, which #ver shows for
+# a -dev version, with -dirty if files are changed; empty in a tarball.
+# Made on each make, but written only when it changes
+BUILT_SOURCES = gitversion.h
+gitversion.h: FORCE
+	@commit=; \
+	if test -e $(top_srcdir)/.git; then \
+	    commit=`git -C $(top_srcdir) rev-parse --short=8 HEAD 2>/dev/null`; \
+	    if test -n "$$commit" \
+	       && ! git -C $(top_srcdir) diff --quiet HEAD -- 2>/dev/null; then \
+	        commit=$$commit-dirty; \
+	    fi; \
+	fi; \
+	echo "#define GIT_COMMIT \"$$commit\"" > gitversion.h.new; \
+	if cmp -s gitversion.h.new gitversion.h; then \
+	    rm -f gitversion.h.new; \
+	else \
+	    mv gitversion.h.new gitversion.h; \
+	fi
+FORCE:
+.PHONY: FORCE
 
 SUFFIXES = .tidy
 .c.tidy:
