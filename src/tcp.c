@@ -1000,31 +1000,39 @@ connsess *tcp_find_connection(const char *id)
  */
 void tcp_show(void)
 {
-    int i = tcp_count + tcp_attachcount;
+    int count = tcp_count + tcp_attachcount;
+    PRINTF("#%s connection%s opened%c\n",
+           count != 0 ? "The following" : "No",
+           count == 1 ? " is" : "s are", count != 0 ? ':' : '.');
 
-    PRINTF("#%s connection%s opened%c\n", i ? "The following" : "No",
-	       i==1 ? " is" : "s are", i ? ':' : '.');
+    /* the ids padded with spaces to the longest, to align what follows */
+    int id_width = 0;
+    for (int i = 0; i < conn_max_index; ++i) {
+        const connsess *c = &CONN_INDEX(i);
+        if (c->id != NULL && (int)strlen(c->id) > id_width)
+            id_width = (int)strlen(c->id);
+    }
 
-
-    for (i=0; i<conn_max_index; i++)
-	if (CONN_INDEX(i).id && !(CONN_INDEX(i).flags & SPAWN)) {
-	    tty_printf("MUD %sactive %s ##%s\t (%s %d, %s)\n",
-		       CONN_INDEX(i).flags & ACTIVE ? "   " : "non",
-                       (&CONN_INDEX(i) == main_connection
-                        ? "(default)" : "         "),
-		       CONN_INDEX(i).id,
-		       CONN_INDEX(i).host, CONN_INDEX(i).port,
-		       charset_name(CONN_INDEX(i).charset));
-	}
-    for (i=0; i<conn_max_index; i++)
-	if (CONN_INDEX(i).id && (CONN_INDEX(i).flags & SPAWN)) {
-	    tty_printf("CMD %sactive %s ##%s\t (%s, %s)\n",
-		       CONN_INDEX(i).flags & ACTIVE ? "   " : "non",
-		       (&CONN_INDEX(i) == main_connection
-                        ? "(default)" : "         "),
-		       CONN_INDEX(i).id, CONN_INDEX(i).host,
-		       charset_name(CONN_INDEX(i).charset));
-	}
+    /* the MUDs, then the commands that #spawn runs */
+    for (int i = 0; i < conn_max_index; ++i) {
+        const connsess *c = &CONN_INDEX(i);
+        if (c->id == NULL || (c->flags & SPAWN) != 0)
+            continue;
+        tty_printf("MUD %sactive %s ##%-*s (%s %d, %s)\n",
+                   (c->flags & ACTIVE) != 0 ? "   " : "non",
+                   c == main_connection ? "(default)" : "         ",
+                   id_width, c->id, c->host, c->port,
+                   charset_name(c->charset));
+    }
+    for (int i = 0; i < conn_max_index; ++i) {
+        const connsess *c = &CONN_INDEX(i);
+        if (c->id == NULL || (c->flags & SPAWN) == 0)
+            continue;
+        tty_printf("CMD %sactive %s ##%-*s (%s, %s)\n",
+                   (c->flags & ACTIVE) != 0 ? "   " : "non",
+                   c == main_connection ? "(default)" : "         ",
+                   id_width, c->id, c->host, charset_name(c->charset));
+    }
 }
 
 /*
