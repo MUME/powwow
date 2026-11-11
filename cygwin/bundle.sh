@@ -66,19 +66,28 @@ for t in xterm xterm-256color cygwin; do
     done
 done
 
-# the CA certificates, at the path that GnuTLS was built to read them from
-gnutls=$(ls "$stage"/bin/cyggnutls-*.dll 2>/dev/null | head -n 1)
-trust=
-if [ -n "$gnutls" ]; then
-    trust=$(grep -aoE '/etc/[[:graph:]]+\.(crt|pem)' "$gnutls" | head -n 1)
-fi
-trust=${trust:-/etc/pki/tls/certs/ca-bundle.crt}
+# the CA certificates, which powwow reads from this file, as GnuTLS loads
+# those of the system through the trust module of p11-kit, not bundled
+trust=/etc/pki/tls/certs/ca-bundle.crt
 if [ -e "$trust" ]; then
     mkdir -p "$stage${trust%/*}"
     cp -L "$trust" "$stage$trust"
 else
     echo "$0: warning: no CA certificates at $trust;" \
          "install ca-certificates, or TLS cannot check servers" >&2
+fi
+
+# the policy of the system that GnuTLS takes its default priorities from;
+# without it, powwow falls back to the priorities that GnuTLS calls NORMAL
+gnutls=$(ls "$stage"/bin/cyggnutls-*.dll 2>/dev/null | head -n 1)
+policy=
+if [ -n "$gnutls" ]; then
+    policy=$(grep -aoE '/etc/[[:graph:]]+/gnutls\.config' "$gnutls" \
+                 | head -n 1)
+fi
+if [ -n "$policy" ] && [ -e "$policy" ]; then
+    mkdir -p "$stage${policy%/*}"
+    cp -L "$policy" "$stage$policy"
 fi
 
 mkdir -p "$stage/etc"
@@ -108,7 +117,7 @@ mkdir -p "$doc"
     echo "powwow; their sources are at https://cygwin.com/packages/"
     echo
     for f in "$stage"/bin/* "$stage"/usr/share/terminfo/*/* \
-             "$stage$trust"; do
+             "$stage$trust" ${policy:+"$stage$policy"}; do
         [ -e "$f" ] || continue
         case $f in
             "$stage"/bin/*) f=/usr/bin/${f##*/} ;;
