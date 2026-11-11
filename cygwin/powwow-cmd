@@ -1,0 +1,17 @@
+#! /bin/sh
+#
+# run the command $1 with the cmd of Windows, in UTF-8: the shell of #!
+# and #var $x=!... that powwow-start sets for the bundle. The command is
+# a line of a batch file, so that cmd reads it as written, with %NAME%
+# expanded and a % written %%: as an argument, Cygwin would quote it as
+# C programs read arguments, with \" for each ", which cmd does not. The
+# line deletes the file before the command, as the bundle has no rm.
+# Not written to the console, cmd writes in the code page that the
+# console has when it starts, such as 850, so a cmd of its own makes that
+# UTF-8 first
+
+cmd=$(cygpath -S)/cmd.exe
+"$cmd" /c "chcp 65001 >nul"
+file=/tmp/powwow-cmd-$$.cmd
+printf '@(goto) 2>nul & del "%%~f0" & %s\r\n' "$1" > "$file" || exit 1
+exec "$cmd" /c "$(cygpath -w "$file")"
