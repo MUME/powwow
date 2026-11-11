@@ -1,4 +1,6 @@
-pkgdata_DATA = powwow.md powwow.help
+# the license of the Unicode data that the names are made from goes with
+# them
+pkgdata_DATA = powwow.md powwow.help unicode-license.txt
 if HAVE_ZLIB
 # powwow reads them through zlib
 pkgdata_DATA += unicode-names.txt.gz emoji-names.txt.gz
@@ -9,7 +11,8 @@ endif
 EXTRA_DIST = README.follow README.modules \
 		Hacking Config.demo \
 		powwow.md powwow.help unicode-names.txt unicode-names.sh \
-		emoji-names.txt emoji-names.sh update-unicode.sh
+		emoji-names.txt emoji-names.sh update-unicode.sh \
+                unicode-license.txt
 
 
 unicode-names.txt.gz: unicode-names.txt

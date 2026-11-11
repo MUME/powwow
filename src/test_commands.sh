@@ -185,6 +185,8 @@ run 'help copyright shows all of COPYING, with and without the pager' \
     || fail "missing the first line of COPYING"
 [ "$(grep -c '^Public License instead of this License\.$' "$tmp/out")" \
       -eq 2 ] || fail "missing the last line of COPYING"
+[ "$(grep -c '^UNICODE LICENSE V3$' "$tmp/out")" -eq 2 ] \
+    || fail "missing the license of the Unicode data"
 
 run 'typing does not draw the character before the cursor again' '' \
     "xyz$(printf '\025')"
