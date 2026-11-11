@@ -18,6 +18,8 @@
 # source package, near the top of its source tree.
 
 set -e
+# V=1, such as from make V=1, shows the commands as they run
+[ "${V:-0}" = 0 ] || set -x
 
 licenses=$(pwd)/cygwin-licenses
 cache=$(pwd)/cygwin-sources
