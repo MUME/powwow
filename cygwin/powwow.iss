@@ -28,22 +28,49 @@ ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequiredOverridesAllowed=dialog
 Compression=lzma2
 SolidCompression=yes
-UninstallDisplayIcon={app}\bin\mintty.exe
+SetupIconFile=powwow.ico
+UninstallDisplayIcon={app}\powwow.ico
+ChangesAssociations=yes
+
+; mintty and its options: the title, and the icon of its window, by
+; its path in the Cygwin of the bundle, whose root is {app}
+#define Mintty "-t powwow -i /powwow.ico"
 
 [Tasks]
 Name: desktopicon; Description: "{cm:CreateDesktopIcon}"; \
     GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: associate; Description: "Open .powwow definition files with powwow"; \
+    GroupDescription: "File associations:"
 
 [Files]
 Source: "{#Stage}\*"; DestDir: "{app}"; \
     Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "powwow.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; powwow runs in mintty, which handles colors, resizing and Unicode
 ; better than the Windows console
 Name: "{group}\powwow"; Filename: "{app}\bin\mintty.exe"; \
-    Parameters: "-t powwow -e /bin/powwow"; WorkingDir: "{%USERPROFILE}"
+    Parameters: "{#Mintty} -e /bin/powwow"; WorkingDir: "{%USERPROFILE}"; \
+    IconFilename: "{app}\powwow.ico"
 Name: "{autodesktop}\powwow"; Filename: "{app}\bin\mintty.exe"; \
-    Parameters: "-t powwow -e /bin/powwow"; WorkingDir: "{%USERPROFILE}"; \
-    Tasks: desktopicon
+    Parameters: "{#Mintty} -e /bin/powwow"; WorkingDir: "{%USERPROFILE}"; \
+    IconFilename: "{app}\powwow.ico"; Tasks: desktopicon
 Name: "{group}\Uninstall powwow"; Filename: "{uninstallexe}"
+
+[Registry]
+; opening a .powwow file runs powwow with it as the definition file
+Root: HKA; Subkey: "Software\Classes\.powwow"; ValueType: string; \
+    ValueName: ""; ValueData: "powwow.definitions"; \
+    Flags: uninsdeletevalue; Tasks: associate
+Root: HKA; Subkey: "Software\Classes\powwow.definitions"; \
+    ValueType: string; ValueName: ""; ValueData: "powwow definitions"; \
+    Flags: uninsdeletekey; Tasks: associate
+Root: HKA; Subkey: "Software\Classes\powwow.definitions\DefaultIcon"; \
+    ValueType: string; ValueName: ""; ValueData: "{app}\powwow.ico"; \
+    Tasks: associate
+Root: HKA; \
+    Subkey: "Software\Classes\powwow.definitions\shell\open\command"; \
+    ValueType: string; ValueName: ""; \
+    ValueData: """{app}\bin\mintty.exe"" {#Mintty} -e /bin/powwow ""%1"""; \
+    Tasks: associate

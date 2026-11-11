@@ -101,6 +101,9 @@ WINDOWS INSTALLER
 	The installer is written to the build directory.  It installs powwow
 	with a Start menu shortcut that runs it in mintty; the definition
 	files go in the Windows profile directory, such as C:\Users\name.
+	Unless unchecked, opening a .powwow file runs powwow with it as the
+	definition file.  The icon, cygwin/powwow.ico, is a placeholder made
+	by cygwin/make-icon.sh.
 	Shell commands other than those built into sh, such as date, are
 	not included.
 
