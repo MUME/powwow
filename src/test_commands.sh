@@ -224,6 +224,12 @@ run 'Tab completes #option editor= without a space' '' "#option ed	vi
 "
 has '#option editor is now: vi'
 
+run '#! needs no space before its command, but # ! is a comment' \
+    '#!echo it works
+# !echo not a command'
+grep -Fq ">it works" "$tmp/out" || fail "expected it works"
+grep -Fq '>not a command' "$tmp/out" && fail "ran the comment"
+
 run '#! runs the command with sh without POWWOWSHELL' "#! echo it\\'s a | tr a b"
 grep -Fq ">it's b" "$tmp/out" || fail "expected it's b"
 
@@ -1091,6 +1097,9 @@ while IFS='	' read -r command args; do
     command=${command#@}                    # "@" keeps an empty name
     [ "$command" != 17 ] || continue        # an example of #<number>
     syntax="#$command${args:+ $args}"
+    case $command in
+        [[:punct:]]) syntax="#$command$args" ;;   # no space, as #!ls
+    esac
     if ! grep -Fxq -e "@${command:-()}" "$POWWOWHELP/powwow.help"; then
         echo "FAIL $name: no help entry for #$command"
         failed=1

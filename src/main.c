@@ -2270,13 +2270,20 @@ static void run_instruction(char *line, bool silent, bool subs,
             pop_params();
     } else if (*end == '#') {
         /* a command of powwow; after aliases, so they can start with # */
-        end = skipspace(end + 1);
+        char *name = end + 1;
+        end = skipspace(name);
+        unsigned char first = *name;
         if (*end == '(') {
             /* #(expression) */
             ++end;
             evaln(&end);
             if (REAL_ERROR)
                 print_error(error);
+        } else if (first < 0x80 && ispunct(first)) {
+            /* a command named by punctuation right after the #, as #!,
+             * needs no space before what follows: #!ls */
+            char punct[] = { (char)first, '\0' };
+            parse_commands(punct, skipspace(name + 1));
         } else {
             parse_commands(buf + 1, arg);
         }

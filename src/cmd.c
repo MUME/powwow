@@ -452,9 +452,13 @@ static char *format_command_help(char *dst, const cmdstruct *c)
         return dst + strlen(dst);
     }
 
+    /* a command named by punctuation, as #!, needs no space: #!ls */
     int args_len = (int)(tab - c->help);
-    sprintf(dst, "#%s%s%.*s", c->name, args_len > 0 ? " " : "",
-            args_len, c->help);
+    unsigned char first = c->name[0];
+    bool punct = (first < 0x80 && ispunct(first) && c->name[1] == '\0');
+    bool space = args_len > 0 && !punct;
+    sprintf(dst, "#%s%s%.*s", c->name, space ? " " : "", args_len,
+            c->help);
     size_t col = strlen(dst);
     dst += col;
     if (col >= HELP_COLUMN) {

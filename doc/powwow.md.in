@@ -945,15 +945,15 @@ It is possible to capture in the `#movie` file even text that you have
 ### Execute a shell command
 
 ```
-#! <shell-command>
+#!<shell-command>
 ```
 
 Executes a command using /bin/sh. Powwow waits until your shell
 finishes, but you can put jobs in the background with `&` as usual.
 If `#option shell` or the environment variable `POWWOWSHELL` is set,
-such as to `zsh -c`, the command is given to that shell
-instead, as its last argument; so are the commands after `!` of `#var`,
-`#exe`, `#send`, `#print`, `#emulate` and `#write`.
+the command is given to that shell instead, as its last argument; so
+are the commands after `!` of `#var`, `#exe`, `#send`, `#print`,
+`#emulate` and `#write`.
 Example:
 
 ```
