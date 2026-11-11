@@ -61,6 +61,8 @@ committed, understand it, and take responsibility for it as its author.
 - **The name:** write "powwow" in lowercase, also in documentation and
   messages, except "Powwow" at the start of a sentence. The program and file
   names are always lowercase.
+- **Messages:** what powwow prints has no tabs; align columns with spaces.
+  Wrapping measures a tab as 0 columns, where the terminal moves up to 8.
 
 ## Layout
 
