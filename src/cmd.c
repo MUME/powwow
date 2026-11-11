@@ -374,7 +374,7 @@ static void cmd_group(char *arg)
         char *group = arg;
         arg = first_regular(group, ' ');
         *arg = '\0';
-        arg = skipspace(arg + 1);
+        arg = strip_end(skipspace(arg + 1));
 
         bool active;
         if (strcmp(arg, "on") == 0) {
@@ -1323,7 +1323,7 @@ static void cmd_prefix(char *arg)
 
 static void cmd_quote(char *arg)
 {
-    arg = skipspace(arg);
+    arg = strip_end(skipspace(arg));
     if (*arg == '\0')
         verbatim = !verbatim;
     else if (strcmp(arg, "on") == 0)
@@ -1512,7 +1512,7 @@ static void cmd_time(char *arg)
 
 static void cmd_ver(char *arg)
 {
-    arg = skipspace(arg);
+    arg = strip_end(skipspace(arg));
     if (*arg == '\0')
         printver(0);
     else if (strcmp(arg, "-v") == 0)
@@ -2128,6 +2128,7 @@ static void cmd_setvar(char *arg)
         }
     }
 
+    strip_end(name);
     int i = strlen(name);
     if (i != 0 && strncmp(name, "timer", i) == 0) {
         update_now();
