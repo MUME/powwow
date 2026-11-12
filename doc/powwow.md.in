@@ -2532,7 +2532,8 @@ Step (b) : `JUST IN TIME SUBSTITUTION` or `jit` in short
      with the contents of the corresponding variable. Again,
      if one or more \ are preceding a #{expr}, ${name} or @{name},
      it will NOT be substituted. This substitution works also
-     for numbered variables ${number} and @{number}.
+     for numbered variables ${number} and @{number}. A ${name} or
+     @{name} without the closing } is left as it is.
 ```
 
 Step (c) : `UNESCAPING`

@@ -2620,7 +2620,10 @@ static bool jit_subst_vars(ptr **buf, char *src)
                     }
                 }
                 tmp = skipspace(tmp);
-                if (done) {
+                if (*tmp != '}') {
+                    /* syntax error, leave it as it is */
+                    done = false;
+                } else if (done) {
                     int max = 0;
                     char *data = NULL, buf2[LONGLEN];
 
@@ -2646,12 +2649,10 @@ static bool jit_subst_vars(ptr **buf, char *src)
                         memcpy(dst, data, max);
                         dst += max;
                     }
-                } else if (*tmp == '}') {
+                } else {
                     /* met an undefined variable, consider empty */
                     src = tmp + 1;
                 }
-
-                /* else syntax error, do nothing */
             }
         } else if (src[0] == '#' && src[1] == '{') {
             ptr *pbuf = NULL;

@@ -1183,6 +1183,14 @@ has 'Authors: Massimiliano Ghilardi (Cosmos), Steve Slaven (bpk), Fror, Dain and
 has 'https://github.com/MUME/powwow'
 lacks '#syntax: #ver [-v]'
 
+run 'jit substitution without a closing brace' '#var $v=V
+#alias t1=#print [${v x}] [${v}]
+#alias t2=#print [@{9 x}] [${v
+t1
+t2'
+has '[${v x}] [V]'
+has '[@{9 x}] [${v'
+
 # a line longer than the memory limit is still processed as a line, not
 # again as a prompt
 awk 'BEGIN { s = sprintf("%150s", ""); gsub(/ /, "x", s); print s
