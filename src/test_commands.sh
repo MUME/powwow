@@ -882,6 +882,14 @@ has 'b -1'
 [ "$(grep -c '#error: operand or index out of range\.$' "$tmp/out")" = 3 ] \
     || fail 'expected 3 errors for negative shifts'
 
+if [ "$(getconf LONG_BIT)" -eq 64 ]; then
+    run 'the smallest number divided by -1 wraps around' \
+        '#(@m = -9223372036854775807 - 1, @a = @m, @b = @m)
+#(@a /= -1, @b %= -1)
+#print ("m " + %(@m / -1) + " " + %(@m % -1) + " " + %@a + " " + %@b)'
+    has 'm -9223372036854775808 0 -9223372036854775808 0'
+fi
+
 run 'an expression assigns to a variable that it reads' \
     '#(@foo = 5)
 #(@foo = @foo + 1)

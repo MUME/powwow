@@ -522,6 +522,26 @@ static void shift(long *num, long count, bool left)
         *num = count >= bits ? -1 : ~(~*num >> count);
 }
 
+/*
+ * divide *num by divisor, or else take the remainder, which is never
+ * negative; dividing by zero is an error
+ */
+static void divide(long *num, long divisor, bool remainder)
+{
+    if (divisor == 0) {
+        error = DIV_BY_ZERO_ERROR;
+    } else if (divisor == -1) {
+        /* LONG_MIN / -1 overflows, and wraps around to LONG_MIN */
+        *num = remainder ? 0 : (long)(0UL - (unsigned long)*num);
+    } else if (!remainder) {
+        *num /= divisor;
+    } else {
+        *num %= divisor;
+        if (*num < 0)
+            *num += divisor;
+    }
+}
+
 static bool exe_op(operator *op)
 {
     object o1 = { 0 };
@@ -592,11 +612,6 @@ static bool exe_op(operator *op)
         if (o1.type == TYPE_NUM_VAR && o2.type == TYPE_NUM) {
             long *l = o1.num_ref;
 
-            if (o2.num == 0 && (*op == op_div_eq || *op == op_ampersand_eq)) {
-                error = DIV_BY_ZERO_ERROR;
-                break;
-            }
-
             switch (*op) {
             case op_or_or_eq:
                 if (o2.num != 0)
@@ -639,12 +654,8 @@ static bool exe_op(operator *op)
                 *l *= o2.num;
                 break;
             case op_div_eq:
-                *l /= o2.num;
-                break;
             case op_ampersand_eq:
-                *l %= o2.num;
-                if (*l < 0)
-                    *l += o2.num;
+                divide(l, o2.num, *op == op_ampersand_eq);
                 break;
             default:
                 break;
@@ -733,11 +744,6 @@ static bool exe_op(operator *op)
         }
 
         if (o1.type == TYPE_NUM && o2.type == TYPE_NUM) {
-            if (o2.num == 0 && (*op == op_division || *op == op_ampersand)) {
-                error = DIV_BY_ZERO_ERROR;
-                break;
-            }
-
             switch (*op) {
             case op_less:
                 o1.num = o1.num < o2.num ? 1 : 0;
@@ -789,12 +795,8 @@ static bool exe_op(operator *op)
                 o1.num *= o2.num;
                 break;
             case op_division:
-                o1.num /= o2.num;
-                break;
             case op_ampersand:
-                o1.num %= o2.num;
-                if (o1.num < 0)
-                    o1.num += o2.num;
+                divide(&o1.num, o2.num, *op == op_ampersand);
                 break;
             default:
                 break;
