@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "defines.h"
 #include "sgr.h"
 
 void sgr_reset(struct sgr_state *st)
@@ -41,7 +42,7 @@ static void sgr_append(struct sgr_state *st, const char *params, size_t plen)
         st->len -= drop;
     }
     char *p = st->seq + st->len;
-    *p++ = '\033';
+    *p++ = ASCII_ESC;
     *p++ = '[';
     memcpy(p, params, plen);
     p += plen;
@@ -101,7 +102,7 @@ void sgr_apply(struct sgr_state *st, const char *s, size_t len)
     const char *end = s + len;
 
     while (s < end) {
-        const char *esc = memchr(s, '\033', end - s);
+        const char *esc = memchr(s, ASCII_ESC, end - s);
         if (esc == NULL || end - esc < 2)
             return;
         s = esc + 1;
