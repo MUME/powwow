@@ -467,6 +467,10 @@ void message_edit(char *text, int msglen, bool view, bool builtin)
         break;
     }
     case -1:
+        if (waitforeditor) {
+            signal_start();
+            tty_start();
+        }
         errmsg("cannot start the editor");
         if (out_pipe[0] >= 0) {
             close(out_pipe[0]);
