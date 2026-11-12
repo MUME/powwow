@@ -846,6 +846,10 @@ lacks '4'
 [ "$(grep -c '^#print: #error: math stack overflow\.$' "$tmp/out")" = 2 ] \
     || fail 'expected 2 stack overflow errors'
 
+run '^^ gives 0 or 1' \
+    '#print ("xor " + %(5 ^^ 0) + %(0 ^^ 7) + %(5 ^^ 3) + %(0 ^^ 0))'
+has 'xor 1100'
+
 run 'an expression assigns to a variable that it reads' \
     '#(@foo = 5)
 #(@foo = @foo + 1)

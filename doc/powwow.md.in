@@ -2028,6 +2028,8 @@ operators between numbers:
 (% and %= always return non-negative values)
 (no help on these operators, see a C-language manual)
 (note: unlike C, operators &&, ^^ and || always eval both arguments)
+(^^ is the logical exclusive or: 1 if exactly one argument is non-zero,
+ otherwise 0)
 
 random number generator:
 

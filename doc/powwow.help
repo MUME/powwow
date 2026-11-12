@@ -606,7 +606,9 @@ operators between numbers:
    ,
    (  )
 (no help on these operators, see a C-language manual)
-(note: unlike C, operators && and || always eval both arguments)
+(note: unlike C, operators &&, ^^ and || always eval both arguments)
+(^^ is the logical exclusive or: 1 if exactly one argument is non-zero,
+ otherwise 0)
 (also, % and %= always return non-negative values)
 
 random number generator:
