@@ -1395,6 +1395,25 @@ run --until '#connection on "n" closed.' \
 ##n #identify z"
 has '#connection on "n" closed.'
 
+# the temporary file of an editing session is in $TMPDIR, which may have
+# a space
+mkdir "$tmp/t d"
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE14\nM5\ndescr\ntext\n'
+cat > /dev/null
+EOF
+TMPDIR="$tmp/t d"
+export TMPDIR
+run --until '#editor: text' 'temporary file in TMPDIR' \
+    "#option editor=&sh -c '[ \"\${0%/*}\" = \"\$TMPDIR\" ] \
+&& echo \"in TMPDIR \${0##*/}\" && cat \"\$0\"'
+#spawn n sh $tmp/server
+##n #request editor"
+unset TMPDIR
+grep -Eq '^#editor: in TMPDIR powwow\.5\.[^/]{6}$' "$tmp/out" \
+    || fail "the file is not in TMPDIR"
+
 # every command must have a help entry with the syntax shown by #help, and
 # the manual must have it too, except for the commands it does not show
 name='every command has the same syntax in the help'

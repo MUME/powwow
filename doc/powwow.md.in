@@ -1231,6 +1231,10 @@ variable, `POWWOWEDITOR`, `POWWOWPAGER` and `POWWOWSHELL`, and they are
 saved with the other options. An empty command clears one, and
 `#option =name` puts it in the input line to edit.
 
+The editor and the pager get the text in a temporary file, whose name
+is their last argument, in the directory `TMPDIR`, or `/tmp` if it is
+not set.
+
 ```
 #option editor=&emacsclient
 #option shell=zsh -c
