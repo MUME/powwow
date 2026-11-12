@@ -38,7 +38,7 @@ void edit_bootstrap(void);
 int  lookup_edit_name(char *name, char **arg);
 int  lookup_edit_function(function_str funct);
 void draw_prompt(void);
-void clear_input_line(int deleteprompt);
+void clear_input_line(bool deleteprompt);
 void draw_input_line(void);
 void redraw_line(char *dummy);
 void redraw_line_noprompt(char *dummy);

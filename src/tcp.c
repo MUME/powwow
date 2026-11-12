@@ -943,7 +943,7 @@ void tcp_flush(void)
     char *p = output_buffer;
 
     if (output_len && output_connection == NULL) {
-	clear_input_line(1);
+	clear_input_line(true);
         warn_no_output();
 	output_len = 0;
 	return;

@@ -1437,7 +1437,7 @@ static int process_first_fragment(char *buf, int got)
 	    dummy = ptrdata(p);
 	    dummyint = ptrlen(p);
 	    /* this also sets last_line or prompt->str : */
-	    clear_input_line(1);
+	    clear_input_line(true);
 	    process_singleline(&dummy, &dummyint);
 	    ptrdel(&p);
 
@@ -1595,7 +1595,7 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
 
     if (linemode & LM_CHAR) {
 	/* char-by-char mode: just display output, no fuss */
-	clear_input_line(0);
+	clear_input_line(false);
 	sgr_output_sync();
 	sgr_output(buf, got);
 	tty_puts(buf);
@@ -1811,7 +1811,7 @@ static int search_action_or_prompt(char *line, char clearline, char onprompt)
 		if (MEM_ERROR) { promptzero(); out_of_memory(); return 0; }
 	    }
 	    if (clearline)
-		clear_input_line(1);
+		clear_input_line(true);
 	    parse_instruction(p->command, false, true, true);
 	    history_done = 0;
 	    if (error!=DYN_STACK_UND_ERROR && error!=DYN_STACK_OV_ERROR)
@@ -1956,7 +1956,7 @@ static void get_user_input(void)
 		     */
 		    if (nchars >= 2 && typed[nchars - 1] == '\b') {
 			/* a key sequence and C-h: list how it can go on */
-			clear_input_line(0);
+			clear_input_line(false);
 			tty_putc('\n');
 			char names[64];
 			key_names(typed, nchars - 1, names, sizeof(names));
