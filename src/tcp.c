@@ -46,7 +46,11 @@
 #include "log.h"
 
 #ifdef TELOPTS
-#  define TELOPTSTR(n) ((n) > NTELOPTS ? "unknown" : telopts[n])
+/* the name of the telnet option 'n' */
+static const char *telopt_name(int n)
+{
+    return n >= 0 && n < NTELOPTS ? telopts[n] : "unknown";
+}
 #endif
 
 connsess *main_connection;
@@ -274,7 +278,7 @@ static void sendopt(byte what, byte opt)
                 : what == DO ? "DO"
                 : what == DONT ? "DONT"
                 : "error"),
-               TELOPTSTR(opt));
+               telopt_name(opt));
 #endif
 }
 
@@ -590,7 +594,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 
         case GOTWILL:
 #ifdef TELOPTS
-            tty_printf("[got WILL %s]\n", TELOPTSTR(*s));
+            tty_printf("[got WILL %s]\n", telopt_name(*s));
 #endif
             switch (*s) {
             case TELOPT_ECHO:
@@ -630,7 +634,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 
         case GOTWONT:
 #ifdef TELOPTS
-            tty_printf("[got WONT %s]\n", TELOPTSTR(*s));
+            tty_printf("[got WONT %s]\n", telopt_name(*s));
 #endif
             if (*s == TELOPT_ECHO) {
                 /* host no longer echoes, we do it instead */
@@ -651,7 +655,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 
         case GOTDO:
 #ifdef TELOPTS
-            tty_printf("[got DO %s]\n", TELOPTSTR(*s));
+            tty_printf("[got DO %s]\n", telopt_name(*s));
 #endif
             switch (*s) {
             case TELOPT_SGA:
@@ -681,7 +685,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 
         case GOTDONT:
 #ifdef TELOPTS
-            tty_printf("[got DONT %s]\n", TELOPTSTR(*s));
+            tty_printf("[got DONT %s]\n", telopt_name(*s));
 #endif
             if (*s == TELOPT_SGA) {
                 linemode &= ~LM_CHAR;
