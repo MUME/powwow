@@ -1260,6 +1260,21 @@ run --until '#connection on "n" closed.' \
 joined | grep -Eqx 'got 255 251 31 255 250 31( [0-9]+){4} 255 240' \
     || fail "missing the window size"
 
+# a suboption that fills the buffer, overflowing it without the fix when
+# built with -fsanitize=address
+cat > "$tmp/server" <<'EOF'
+printf '\377\372\052\001;ISO-8859-1'
+i=0
+while [ $i -lt 150 ]; do
+    printf ';x'
+    i=$((i + 1))
+done
+printf '\377\360'
+EOF
+run --until '#connection on "n" closed.' 'suboption longer than the buffer' \
+    "#spawn n sh $tmp/server"
+has '#charset: iso-8859-1 (negotiated)'
+
 # every command must have a help entry with the syntax shown by #help, and
 # the manual must have it too, except for the commands it does not show
 name='every command has the same syntax in the help'

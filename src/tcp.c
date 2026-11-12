@@ -221,6 +221,10 @@ void tcp_set_charset(connsess *conn, enum charset cs, const char *why)
  */
 static void dosubopt(connsess *conn, byte *str, size_t len)
 {
+    /* both the options we know have a subcommand */
+    if (len < 2)
+        return;
+
     if (str[0] == TELOPT_TTYPE) {
         if (str[1] == 1) {
             /* 1 == SEND */
@@ -245,7 +249,7 @@ static void dosubopt(connsess *conn, byte *str, size_t len)
             tty_printf("[sent SB TERMINAL TYPE IS %s]\n", term);
 #endif
         }
-    } else if (str[0] == TELOPT_CHARSET && len >= 2) {
+    } else if (str[0] == TELOPT_CHARSET) {
         if (str[1] == CHARSET_REQUEST)
             charset_request_subopt(conn, (char *)str + 2, len - 2);
         else
@@ -718,7 +722,6 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                     subopt[subchars++] = IAC;
                 state = GOTSB;
             } else if (*s == SE) {
-                subopt[subchars] = '\0';
                 dosubopt(conn, subopt, subchars);
                 state = old_state;
             } else {
