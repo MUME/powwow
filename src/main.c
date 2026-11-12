@@ -2652,6 +2652,7 @@ static bool jit_subst_vars(ptr **buf, char *src)
                 } else {
                     /* met an undefined variable, consider empty */
                     src = tmp + 1;
+                    done = true;
                 }
             }
         } else if (src[0] == '#' && src[1] == '{') {

@@ -1191,6 +1191,11 @@ t2'
 has '[${v x}] [V]'
 has '[@{9 x}] [${v'
 
+run 'jit substitution after an undefined variable' '#var $v=V
+#alias t=#print [${undef}${v}] [${undef}@{9}]
+t'
+has '[V] [0]'
+
 # a line longer than the memory limit is still processed as a line, not
 # again as a prompt
 awk 'BEGIN { s = sprintf("%150s", ""); gsub(/ /, "x", s); print s
