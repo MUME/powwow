@@ -1895,7 +1895,9 @@ Known internal variables are:
   from an older version is 1Megabyte, which won't give any problem (like
   increased memory usage) as powwow allocates memory only when it *has*
   to. The limit also applies to the texts that the MUD sends to edit or
-  view: powwow rejects a longer one, and shows it as text.
+  view, as powwow rejects a longer one and shows it as text, and to the
+  texts edited, as powwow cancels the editing session instead of sending
+  a longer one.
 
 - `timer`: the number of milliseconds since program start. It can be
   changed to synchronize with an external clock like MUD ticks.

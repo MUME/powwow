@@ -276,21 +276,22 @@ static void finish_edit(editsess *sp)
         goto cleanup_fd;
     }
 
-    int txtlen = sbuf.st_size;
+    bool changed = (!sp->cancel
+                    && (sbuf.st_mtime > sp->ctime
+                        || sbuf.st_size != sp->oldsize));
+    /* +1 is for a possible LF, +64 for the header */
+    if (changed
+        && (sbuf.st_size > INT_MAX - 65
+            || (limit_mem != 0 && sbuf.st_size > limit_mem))) {
+        wrap_printf("#edited text too long, not sent");
+        changed = false;
+    }
 
-    if (!sp->cancel
-        && (sbuf.st_mtime > sp->ctime || txtlen != sp->oldsize)) {
+    if (changed) {
         /* file was changed by editor: send back result to server */
-
-        realtext = malloc(txtlen + 65);
-        /* +1 is for possible LF, +64 for header */
-        if (realtext == NULL) {
-            out_of_memory();
-            goto cleanup_fd;
-        }
-
+        realtext = xmalloc(sbuf.st_size + 65);
         char *text = realtext + 64;
-        txtlen = read_file(fd, text, txtlen);
+        int txtlen = read_file(fd, text, sbuf.st_size);
         if (txtlen < 0)
             goto cleanup_text;
 

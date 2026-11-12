@@ -194,6 +194,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* MPI messages longer than `#setvar mem' are rejected as text, and
 	  the others take memory as their text arrives, instead of all
 	  that their header claims at once.
+	* Edited texts longer than `#setvar mem', or than 2 GB, cancel
+	  the editing session instead of being sent.
 	* Fixed the command that #identify runs when an editing session
 	  starts crashing powwow if it closes the connection of the
 	  session, or, if it runs #connect, making powwow process the

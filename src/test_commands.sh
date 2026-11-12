@@ -1441,6 +1441,27 @@ done
 [ "$(grep -c '^C5$' "$tmp/got")" -eq 1 ] \
     || fail "expected one cancel message, got: $(od -c "$tmp/got")"
 
+# an edited text longer than #setvar mem cancels the session
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE14\nM5\ndescr\ntext\n'
+cat > "$1/got"
+touch "$1/done"
+EOF
+run --until '#cancelled session' 'edited text longer than #setvar mem' \
+    "#setvar mem=1000
+#option editor=&awk 'BEGIN { for (i = 0; i < 1001; ++i) print }' >
+#spawn n sh $tmp/server $tmp
+##n #request editor"
+i=0
+until [ -e "$tmp/done" ] || [ $i -ge 500 ]; do
+    sleep 0.01
+    i=$((i + 1))
+done
+has '#edited text too long, not sent'
+[ "$(grep -c '^C5$' "$tmp/got")" -eq 1 ] \
+    || fail "expected a cancel message, got: $(od -c "$tmp/got")"
+
 # cancelling a view, which has no connection to tell
 run --until '#killed' 'cancelling a view' \
     "#option pager=&sh -c 'sleep 5'
