@@ -148,11 +148,11 @@ int main(int argc, char *argv[])
         timeout(sleep);
 
         /* Update status line */
+        long percent = file_size > 0 ? curr_pos * 100 / file_size : 100;
         mvwprintw(status, 1, 0,
                   "%7ld/%7ld/%2ld%% Speed: %d (5=normal,0=pause)"
                   " Cmd: %-6s (%d/%d)\n",
-                  curr_pos, file_size, curr_pos * 100 / file_size,
-                  speed, action, sleep, orig);
+                  curr_pos, file_size, percent, speed, action, sleep, orig);
         wrefresh(status);
 
         /* Disp if we found an offset to do */
