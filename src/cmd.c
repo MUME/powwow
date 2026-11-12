@@ -1105,8 +1105,8 @@ static void cmd_in(char *arg)
 
     unescape(name);
 
-    delaynode **p = lookup_delay(name, 0);
-    if (*p == NULL)  p = lookup_delay(name, 1);
+    delaynode **p = lookup_delay(name, false);
+    if (*p == NULL)  p = lookup_delay(name, true);
 
     if (*arg == '\0' && *p == NULL) {
         wrap_printf("#unknown delay label, cannot show: \"%s\"", name);
@@ -1173,8 +1173,8 @@ static void cmd_at(char *arg)
 
     unescape(name);
 
-    delaynode **p = lookup_delay(name, 0);
-    if (*p == NULL)  p = lookup_delay(name, 1);
+    delaynode **p = lookup_delay(name, false);
+    if (*p == NULL)  p = lookup_delay(name, true);
 
     if (*arg == '\0' && *p == NULL) {
         wrap_printf("#unknown delay label, cannot show: \"%s\"", name);
