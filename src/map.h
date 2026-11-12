@@ -5,8 +5,6 @@
 
 #include <stdbool.h>
 
-void map_bootstrap(void);
-
 void map_retrace(int steps, bool walk_back);
 void map_show(void);
 void map_sprintf(char *buf);
