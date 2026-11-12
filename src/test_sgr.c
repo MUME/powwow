@@ -22,7 +22,7 @@ static void check(const char *what, const char *text, const char *expect)
     sgr_apply(&st, text, strlen(text));
     if (strcmp(st.seq, expect) != 0 || st.len != strlen(expect)) {
         printf("FAIL %s: got \"", what);
-        for (const char *p = st.seq; *p; ++p)
+        for (const char *p = st.seq; *p != '\0'; ++p)
             printf(*p == '\033' ? "\\e" : "%c", *p);
         printf("\"\n");
         ++failures;
@@ -40,7 +40,9 @@ int main(void)
     check("accumulate", E "[1m" E "[32mx", E "[1m" E "[32m");
     check("reset inside", E "[1m" E "[0;32mx", E "[32m");
     check("reset at end", E "[1;32;0m", "");
-    check("bug0 prompt", E "[1m002_" E "[0m \xe2\x94\x82 " E "[32m!" E "[0m \xe2\x94\x82 " E "[32m",
+    check("bug0 prompt",
+          E "[1m002_" E "[0m \xe2\x94\x82 " E "[32m!"
+          E "[0m \xe2\x94\x82 " E "[32m",
           E "[32m");
     check("256 color with 0 index", E "[38;5;0m", E "[38;5;0m");
     check("truecolor with 0", E "[38;2;0;0;0m", E "[38;2;0;0;0m");
