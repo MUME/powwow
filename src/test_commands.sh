@@ -865,6 +865,23 @@ has 'chained 25'
 [ "$(grep -c '^#print: #error: operand or index out of range\.$' \
     "$tmp/out")" = 2 ] || fail 'expected 2 errors for too large numbers'
 
+run 'shifts lose the bits shifted out and keep the sign' \
+    '#print ("l " + %(3 << 2) + " " + %(1 << 64) + " " + %(1 << 1000))
+#print ("r " + %(-8 >> 1) + " " + %(-1 >> 64) + " " + %(5 >> 64))
+#(@a = 3, @b = -5)
+#(@a <<= 70, @b >>= 70)
+#print ("v " + %@a + " " + %@b)
+#print (1 << -1)
+#print (1 >> -1)
+#(@b <<= -1)
+#print ("b " + %@b)'
+has 'l 12 0 0'
+has 'r -4 -1 0'
+has 'v 0 -1'
+has 'b -1'
+[ "$(grep -c '#error: operand or index out of range\.$' "$tmp/out")" = 3 ] \
+    || fail 'expected 3 errors for negative shifts'
+
 run 'an expression assigns to a variable that it reads' \
     '#(@foo = 5)
 #(@foo = @foo + 1)

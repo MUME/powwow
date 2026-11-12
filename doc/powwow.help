@@ -614,6 +614,8 @@ operators between numbers:
 (^^ is the logical exclusive or: 1 if exactly one argument is non-zero,
  otherwise 0)
 (also, % and %= always return non-negative values)
+(<< and >> shift by 0 or more bits: the bits shifted out are lost,
+ and >> keeps the sign, so -8 >> 1 is -4)
 
 random number generator:
 
