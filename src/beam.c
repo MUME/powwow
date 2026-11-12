@@ -96,15 +96,19 @@ int process_message(connsess *conn, char *buf, int len)
         write_message("#warning: bad MPI message header\n");
         return 0;
     }
+    if (limit_mem != 0 && msglen > limit_mem) {
+        write_message("#warning: MPI message longer than #setvar mem\n");
+        return 0;
+    }
 
     ++i;
     int l = len - i;
 
-    char *text = malloc(msglen);
-    if (text == NULL) {
-        out_of_memory();
-        return i;
-    }
+    /* the text grows as it arrives, whatever length the header claims */
+    int size = l > BUFSIZE ? l : BUFSIZE;
+    if (size > msglen)
+        size = msglen;
+    char *text = xmalloc(size);
 
     /* only doing trivial (IAC IAC) processing; this should all be
      * rewritten */
@@ -128,11 +132,15 @@ int process_message(connsess *conn, char *buf, int len)
     int used = from - buf;
 
     while (i < msglen) {
+        if (i == size) {
+            size = size > msglen / 2 ? msglen : 2 * size;
+            text = xrealloc(text, size);
+        }
         /*
          * read() might block here, but it shouldn't be long; a TLS record
          * without data, such as a key update, fails with EAGAIN
          */
-        while ((l = conn->fns->read(conn, text + i, msglen - i)) < 0
+        while ((l = conn->fns->read(conn, text + i, size - i)) < 0
                && (errno == EINTR || errno == EAGAIN
                    || errno == EWOULDBLOCK))
             ;

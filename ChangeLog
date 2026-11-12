@@ -191,6 +191,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  as running out of memory.
 	* MPI messages cut short by the connection closing no longer make
 	  powwow print `got N chars out of M' forever.
+	* MPI messages longer than `#setvar mem' are rejected as text, and
+	  the others take memory as their text arrives, instead of all
+	  that their header claims at once.
 	* Fixed the command that #identify runs when an editing session
 	  starts crashing powwow if it closes the connection of the
 	  session, or, if it runs #connect, making powwow process the
