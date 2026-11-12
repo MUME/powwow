@@ -1232,7 +1232,7 @@ void tty_putc(char c)
 
 int tty_printf(const char *format, ...)
 {
-    char *old_locale = strdup(setlocale(LC_ALL, NULL));
+    char *old_locale = xstrdup(setlocale(LC_ALL, NULL));
 
     setlocale(LC_ALL, "C");
 

@@ -952,15 +952,7 @@ static void buf_add(char **buf, size_t *used, size_t *size,
 {
     if (*used + len + 1 > *size) {
         *size = 2 * (*used + len + 1);
-        char *new_buf = realloc(*buf, *size);
-        if (new_buf == NULL) {
-            free(*buf);
-            *buf = NULL;
-            *used = 0;
-            *size = 0;
-            return;
-        }
-        *buf = new_buf;
+        *buf = xrealloc(*buf, *size);
     }
     assert(*buf != NULL);
     memcpy(*buf + *used, s, len);
@@ -1034,19 +1026,14 @@ static void effective_prompt(void)
         return;                 /* nothing to emulate */
 
     const size_t maxcells = 2 * len + 2;
-    struct cell *cells = calloc(maxcells, sizeof *cells);
-    struct sgr_state *attrs = malloc((len + 1) * sizeof *attrs);
+    struct cell *cells = xcalloc(maxcells, sizeof *cells);
+    struct sgr_state *attrs = xmalloc((len + 1) * sizeof *attrs);
     char *pend = NULL;          /* other escapes and controls, pending */
     size_t npend = 0, pendsize = 0;
     size_t at = 0, ncells = 0, nattrs = 0;
     struct sgr_state cur;
     int cur_attr = -1;          /* index of cur in attrs, if any */
 
-    if (cells == NULL || attrs == NULL) {
-        free(cells);
-        free(attrs);
-        return;
-    }
     sgr_reset(&cur);
 
 /* overwriting half of a wide character blanks the other half */

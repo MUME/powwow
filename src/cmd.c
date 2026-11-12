@@ -527,11 +527,7 @@ static bool append_file(char **text, size_t *len, const char *path,
         return false;
     }
     size_t gap = sep ? 1 : 0;
-    char *new_text = realloc(*text, *len + gap + st.st_size + 1);
-    if (new_text == NULL) {
-        fclose(f);
-        return false;
-    }
+    char *new_text = xrealloc(*text, *len + gap + st.st_size + 1);
     *text = new_text;
     if (sep)
         new_text[*len] = '\n';
@@ -567,11 +563,7 @@ static void show_copyright(bool use_pager)
 {
     static const char title[] = "Help on 'copyright'\n";
     size_t len = sizeof title - 1;
-    char *text = my_strdup(title);
-    if (text == NULL) {
-        out_of_memory();
-        return;
-    }
+    char *text = xstrdup(title);
     if (!append_file(&text, &len, copyfile, false)) {
         wrap_printf("#cannot read \"%s\": %s", copyfile, strerror(errno));
         free(text);
@@ -609,12 +601,8 @@ static void cmd_help(char *arg)
             size += HELP_COLUMN + 1;
         }
 
-        char *text = malloc(size);
+        char *text = xmalloc(size);
         char *tmp = text;
-        if (text == NULL) {
-            out_of_memory();
-            return;
-        }
 
         /* do not use the return value of sprintf(), almost every OS returns
          * a different thing */
@@ -652,12 +640,7 @@ static void cmd_help(char *arg)
     }
 
     int size = BUFSIZE + 32;
-    char *text = malloc(size);
-    if (text == NULL) {
-        out_of_memory();
-        fclose(f);
-        return;
-    }
+    char *text = xmalloc(size);
 
     /* the first line becomes $TITLE */
     char *tmp = strchr(line, '\n');
@@ -673,17 +656,7 @@ static void cmd_help(char *arg)
             /* Not enough space in current buffer */
 
             size += BUFSIZE;
-            tmp = malloc(size);
-            if (tmp == NULL) {
-                out_of_memory();
-                free(text);
-                fclose(f);
-                return;
-            } else {
-                memcpy(tmp, text, i);
-                free(text);
-                text = tmp;
-            }
+            text = xrealloc(text, size);
         }
         memcpy(text + i, line, len);
         i += len;
@@ -710,23 +683,20 @@ static void cmd_clear(char *arg)
 /*
  * the command for /bin/sh that #!, and the ! of #var and others, run
  * 'arg' with: 'arg' itself, or, if POWWOWSHELL is set, such as to
- * "zsh -c", that shell with 'arg' as its last argument; NULL if out of
- * memory, else to be freed
+ * "zsh -c", that shell with 'arg' as its last argument, to be freed
  */
 static char *shell_command(const char *arg)
 {
     const char *shell = opt_shell != NULL ? opt_shell : getenv("POWWOWSHELL");
     if (shell == NULL || *shell == '\0')
-        return my_strdup(arg);
+        return xstrdup(arg);
 
     /* exec $POWWOWSHELL 'arg', with each ' of 'arg' as '\'' */
     static const char quote[] = "'\\''";
     size_t len = strlen("exec  ''") + strlen(shell);
     for (const char *p = arg; *p != '\0'; ++p)
         len += *p == '\'' ? sizeof quote - 1 : 1;
-    char *command = malloc(len + 1);
-    if (command == NULL)
-        return NULL;
+    char *command = xmalloc(len + 1);
     char *q = command + sprintf(command, "exec %s '", shell);
     for (const char *p = arg; *p != '\0'; ++p) {
         if (*p == '\'') {
@@ -747,8 +717,6 @@ static char *shell_command(const char *arg)
 static FILE *shell_popen(const char *command, const char *mode)
 {
     char *line = shell_command(command);
-    if (line == NULL)
-        return NULL;
     FILE *fp = popen(line, mode);
     free(line);
     return fp;
@@ -762,10 +730,6 @@ static void cmd_shell(char *arg)
         }
     } else {
         char *command = shell_command(arg);
-        if (command == NULL) {
-            out_of_memory();
-            return;
-        }
         tty_quit();
         int wstatus = system(command);
         free(command);
@@ -1969,10 +1933,6 @@ static void cmd_var(char *arg)
             /* it doesn't (yet) exist */
             if (!deleting) {
                 named_var = add_varnode(arg, kind);
-                if (named_var == NULL) {
-                    print_error(error);
-                    return;
-                }
                 if (opt_info) {
                     wrap_printf("#new variable: \"%s\"", arg - 1);
                 }
@@ -2040,11 +2000,6 @@ static void cmd_var(char *arg)
                 if (named_var == NULL) {
                     if (!deleting) {
                         named_var = add_varnode(buf, kind);
-                        if (named_var == NULL) {
-                            print_error(error);
-                            ptrdel(&pbuf);
-                            return;
-                        }
                         if (opt_info) {
                             message_printf("#new variable: %c%s\n",
                                            kind == VAR_TEXT ? '$' : '@', buf);
@@ -2919,9 +2874,7 @@ static bool command_option(const char *word, int len, const char *rest)
     free(*value);
     *value = NULL;
     if (*rest != '\0') {
-        *value = my_strdup(rest);
-        if (*value == NULL)
-            out_of_memory();
+        *value = xstrdup(rest);
     }
     if (opt_info) {
         if (*value != NULL)

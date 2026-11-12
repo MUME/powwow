@@ -246,7 +246,7 @@ void draw_prompt(void)
         marked_prompt = ptraddsubst_and_marks(marked_prompt, prompt->str);
         if (MEM_ERROR) {
             promptzero();
-            out_of_memory();
+            print_error(error);
             return;
         }
 
@@ -461,9 +461,7 @@ static struct {
 
 static void undo_push(struct undo_list *list, const char *line, int cursor)
 {
-    char *copy = my_strdup(line);
-    if (copy == NULL)
-        return;
+    char *copy = xstrdup(line);
     if (list->count == UNDO_MAX) {
         free(list->steps[0].line);
         memmove(list->steps, list->steps + 1,
@@ -592,11 +590,7 @@ static void kill_text(const char *p, int len, bool before)
     char *old = kill_ring[kill_last];
     const char *old_text = old != NULL ? old : "";  /* not NULL for memcpy */
     size_t old_len = strlen(old_text);
-    char *s = malloc(old_len + len + 1);
-    if (s == NULL) {
-        out_of_memory();
-        return;
-    }
+    char *s = xmalloc(old_len + len + 1);
     if (before) {
         memcpy(s, p, len);
         memcpy(s + len, old_text, old_len);
@@ -743,11 +737,7 @@ void put_history(char *str)
 {
     if (hist[curline] != NULL)
         free(hist[curline]);
-    hist[curline] = my_strdup(str);
-    if (hist[curline] == NULL) {
-        out_of_memory();
-        return;
-    }
+    hist[curline] = xstrdup(str);
 
     if (++curline == MAX_HIST)
         curline = 0;
@@ -819,15 +809,10 @@ static void word_list_add(struct word_list *l, const char *word)
     }
     if (l->count == l->size) {
         int size = l->size > 0 ? 2 * l->size : 32;
-        char **new_words = realloc(l->words, size * sizeof(*new_words));
-        if (new_words == NULL)
-            return;
-        l->words = new_words;
+        l->words = xrealloc(l->words, size * sizeof(*l->words));
         l->size = size;
     }
-    char *copy = my_strdup(word);
-    if (copy != NULL)
-        l->words[l->count++] = copy;
+    l->words[l->count++] = xstrdup(word);
 }
 
 static void word_list_free(struct word_list *l)
@@ -1577,22 +1562,11 @@ void put_static_word(char *s)
         do {
             size = size != 0 ? size * 2 : 16;
         } while (static_words.used >= size);
-        char **new_words = realloc(static_words.words,
-                                   sizeof(new_words[0]) * size);
-        if (new_words == NULL) {
-            out_of_memory();
-            return;
-        }
-        static_words.words = new_words;
+        static_words.words = xrealloc(static_words.words,
+                                      sizeof(static_words.words[0]) * size);
         static_words.size = size;
     }
-
-    char *copy = my_strdup(s);
-    if (copy == NULL) {
-        out_of_memory();
-        return;
-    }
-    static_words.words[static_words.used++] = copy;
+    static_words.words[static_words.used++] = xstrdup(s);
 }
 
 /*
@@ -1601,11 +1575,7 @@ void put_static_word(char *s)
 void put_word(char *s)
 {
     int r = wordindex;
-    words[r].word = my_strdup(s);
-    if (words[r].word == NULL) {
-        out_of_memory();
-        return;
-    }
+    words[r].word = xstrdup(s);
     words[r].flags = 0;
     r = words[r].prev;
     demote_word(r);
@@ -1622,13 +1592,8 @@ void put_word(char *s)
 void set_custom_delimeters(char *s)
 {
     static char *custom;
-    char *new = my_strdup(s);
-    if (new == NULL) {
-        out_of_memory();
-        return;
-    }
     free(custom);
-    custom = new;
+    custom = xstrdup(s);
     delim_list[DELIM_CUSTOM] = custom;
     delim_len[DELIM_CUSTOM] = strlen(s);
     delim_mode = DELIM_CUSTOM;
@@ -1922,13 +1887,8 @@ static void goto_history_line(int i)
         free(hist[pickline]);
         hist[pickline] = NULL;
     }
-    if (hist[pickline] == NULL) {
-        hist[pickline] = my_strdup(edbuf);
-        if (hist[pickline] == NULL) {
-            out_of_memory();
-            return;
-        }
-    }
+    if (hist[pickline] == NULL)
+        hist[pickline] = xstrdup(edbuf);
     pickline = i;
     clear_input_line(false);
     strcpy(edbuf, hist[pickline]);
@@ -2134,13 +2094,8 @@ static void isearch_end(bool accept)
             /* keep the line edited before in the history, like C-p */
             int o = isearch.origin;
             if (hist[o] == NULL || strcmp(hist[o], isearch.saved) != 0) {
-                char *s = my_strdup(isearch.saved);
-                if (s == NULL) {
-                    out_of_memory();
-                    return;
-                }
                 free(hist[o]);
-                hist[o] = s;
+                hist[o] = xstrdup(isearch.saved);
             }
             pickline = isearch.index;
             line = hist[pickline];
@@ -2503,10 +2458,7 @@ static void charin_list_add(const char *name, const uint32_t *cps, int ncps,
     struct charin_listing *l = data;
     if (l->count == l->size) {
         int size = l->size > 0 ? 2 * l->size : 64;
-        struct listed_name *names = realloc(l->names, size * sizeof(*names));
-        if (names == NULL)
-            return;
-        l->names = names;
+        l->names = xrealloc(l->names, size * sizeof(*l->names));
         l->size = size;
     }
     char shown[256], chars[CHARNAME_MAX * UTF8_MAX + 1];
@@ -2516,22 +2468,14 @@ static void charin_list_add(const char *name, const uint32_t *cps, int ncps,
     for (int i = 0; i < ncps; ++i)
         n += utf8_put(cps[i], chars + n);
     chars[n] = '\0';
-    char *copy = my_strdup(name), *shown_copy = my_strdup(shown);
-    char *chars_copy = my_strdup(chars);
     /* an emoji that matches with its group, by the words of its name */
     const char *pattern = (group != NULL
                            ? charin.name + charname_name_start(charin.name,
                                                                name)
                            : charin.name);
-    if (copy == NULL || shown_copy == NULL || chars_copy == NULL) {
-        free(copy);
-        free(shown_copy);
-        free(chars_copy);
-        return;
-    }
     l->names[l->count++] = (struct listed_name){
-        .tier = charin_tier(pattern, name), .name = copy, .shown = shown_copy,
-        .chars = chars_copy
+        .tier = charin_tier(pattern, name), .name = xstrdup(name),
+        .shown = xstrdup(shown), .chars = xstrdup(chars)
     };
 }
 
@@ -2694,11 +2638,7 @@ static void charin_complete(void)
         charin_complete_group();
         return;
     }
-    struct charin_matches *m = calloc(1, sizeof(*m));
-    if (m == NULL) {
-        out_of_memory();
-        return;
-    }
+    struct charin_matches *m = xcalloc(1, sizeof(*m));
     if (charin_find(charin_match, m) <= 0) {
         free(m);
         tty_putc(ASCII_BEL);

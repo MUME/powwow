@@ -452,12 +452,10 @@ static bool check_object(object *obj)
         varnode *named_var = *lookup_varnode(line, kind);
         if (named_var == NULL) {
             named_var = add_varnode(line, kind);
-            if (named_var != NULL && opt_info)
+            if (opt_info)
                 message_printf("#new variable: %s\n", line - 1);
         }
         *end = c;
-        if (named_var == NULL)
-            return false;
         line = end;
         if (kind == VAR_TEXT)
             obj->txt_ref = &named_var->str;
@@ -1472,8 +1470,6 @@ static bool exe_op(operator *op)
             varnode *named_var = *lookup_varnode(ptrdata(o1.txt), kind);
             if (named_var == NULL) {
                 named_var = add_varnode(ptrdata(o1.txt), kind);
-                if (named_var == NULL)
-                    break;
                 if (opt_info) {
                     message_printf("#new variable: %c%s\n",
                                    kind == VAR_TEXT ? '$' : '@',

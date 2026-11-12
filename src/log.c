@@ -178,17 +178,16 @@ void log_resize(int newsize)
     log_flush();
     log_reset();
     if (newsize != 0) {
+        /* the size comes from the user: running out of memory is not
+         * fatal */
         datalist = malloc(newsize);
-        if (datalist == NULL) {
-            log_reset();
-            out_of_memory();
-            return;
-        }
-
         loglist = malloc(newsize / 16 * sizeof(logentry));
-        if (loglist == NULL) {
-            log_reset();
-            out_of_memory();
+        if (datalist == NULL || loglist == NULL) {
+            errmsg("cannot allocate a buffer of %d bytes", newsize);
+            free(datalist);
+            free(loglist);
+            datalist = NULL;
+            loglist = NULL;
             return;
         }
 

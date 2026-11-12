@@ -104,23 +104,11 @@ void insert_delaynode(delaynode *node, bool dead)
  */
 void add_aliasnode(char *name, char *subst)
 {
-    aliasnode *new = malloc(sizeof(aliasnode));
-    if (new == NULL) {
-        out_of_memory();
-        return;
-    }
-
+    aliasnode *new = xmalloc(sizeof(aliasnode));
     new->group = NULL;
     new->active = true;
-    new->name = my_strdup(name);
+    new->name = xstrdup(name);
     new->subst = my_strdup(subst);
-    if (new->name == NULL || (subst != NULL && new->subst == NULL)) {
-        out_of_memory();
-        free(new->name);
-        free(new->subst);
-        free(new);
-        return;
-    }
     aliasnode **bucket = &aliases[hash_bucket(name)];
     new->next = *bucket;
     *bucket = new;
@@ -137,23 +125,14 @@ void add_aliasnode(char *name, char *subst)
  */
 void add_marknode(char *pattern, const struct attr *attr, bool mbeg, bool wild)
 {
-    marknode *new = malloc(sizeof(marknode));
-    if (new == NULL) {
-        out_of_memory();
-        return;
-    }
+    marknode *new = xmalloc(sizeof(marknode));
     new->next = NULL;
-    new->b.pattern = my_strdup(pattern);
+    new->b.pattern = xstrdup(pattern);
     new->b.start = NULL;
     new->b.end = NULL;
     new->b.mbeg = mbeg;
     new->b.wild = wild;
     new->attr = *attr;
-    if (new->b.pattern == NULL) {
-        out_of_memory();
-        free(new);
-        return;
-    }
     marknode **p = &markers;
     for (int i = 1; *p != NULL && (a_nice == 0 || i < a_nice); ++i)
         p = &(*p)->next;
@@ -166,20 +145,11 @@ void add_marknode(char *pattern, const struct attr *attr, bool mbeg, bool wild)
  */
 void add_substnode(char *pattern, char *replacement, bool mbeg, bool wild)
 {
-    substnode *new = malloc(sizeof(*new));
-    if (new == NULL) {
-        out_of_memory();
-        return;
-    }
+    substnode *new = xmalloc(sizeof(*new));
     *new = (substnode){
-        .b = { .pattern = my_strdup(pattern), .mbeg = mbeg, .wild = wild },
-        .replacement = my_strdup(replacement)
+        .b = { .pattern = xstrdup(pattern), .mbeg = mbeg, .wild = wild },
+        .replacement = xstrdup(replacement)
     };
-    if (new->b.pattern == NULL || new->replacement == NULL) {
-        out_of_memory();
-        delete_substnode(&new);
-        return;
-    }
     substnode **p = &substitutions;
     for (int i = 1; *p != NULL && (a_nice == 0 || i < a_nice); ++i)
         p = &(*p)->next;
@@ -193,13 +163,9 @@ void add_substnode(char *pattern, char *replacement, bool mbeg, bool wild)
 void add_actionnode(char *pattern, char *command, char *label, bool active,
                     int type, void *vregexp)
 {
-    actionnode *new = malloc(sizeof(actionnode));
-    if (new == NULL) {
-        out_of_memory();
-        return;
-    }
+    actionnode *new = xmalloc(sizeof(actionnode));
     *new = (actionnode){
-        .pattern = my_strdup(pattern),
+        .pattern = xstrdup(pattern),
         .command = my_strdup(command),
         .label = my_strdup(label),
         .active = active,
@@ -208,16 +174,6 @@ void add_actionnode(char *pattern, char *command, char *label, bool active,
         .regexp = vregexp,
 #endif
     };
-    if (new->pattern == NULL
-        || (command != NULL && new->command == NULL)
-        || (label != NULL && new->label == NULL)) {
-        out_of_memory();
-        free(new->pattern);
-        free(new->command);
-        free(new->label);
-        free(new);
-        return;
-    }
     actionnode **p = &actions;
     for (int i = 1; *p != NULL && (a_nice == 0 || i < a_nice); ++i)
         p = &(*p)->next;
@@ -231,13 +187,9 @@ void add_actionnode(char *pattern, char *command, char *label, bool active,
 void add_promptnode(char *pattern, char *command, char *label, bool active,
                     int type, void *vregexp)
 {
-    promptnode *new = malloc(sizeof(promptnode));
-    if (new == NULL) {
-        out_of_memory();
-        return;
-    }
+    promptnode *new = xmalloc(sizeof(promptnode));
     *new = (promptnode){
-        .pattern = my_strdup(pattern),
+        .pattern = xstrdup(pattern),
         .command = my_strdup(command),
         .label = my_strdup(label),
         .active = active,
@@ -246,16 +198,6 @@ void add_promptnode(char *pattern, char *command, char *label, bool active,
         .regexp = vregexp,
 #endif
     };
-    if (new->pattern == NULL
-        || (command != NULL && new->command == NULL)
-        || (label != NULL && new->label == NULL)) {
-        out_of_memory();
-        free(new->pattern);
-        free(new->command);
-        free(new->label);
-        free(new);
-        return;
-    }
     promptnode **p = &prompts;
     for (int i = 1; *p != NULL && (a_nice == 0 || i < a_nice); ++i)
         p = &(*p)->next;
@@ -269,29 +211,15 @@ void add_promptnode(char *pattern, char *command, char *label, bool active,
 void add_keynode(const char *name, const char *sequence, int seqlen,
                  function_str funct, const char *call_data)
 {
-    keynode *new = malloc(sizeof(keynode));
-    if (new == NULL) {
-        out_of_memory();
-        return;
-    }
-    new->name = my_strdup(name);
+    keynode *new = xmalloc(sizeof(keynode));
+    new->name = xstrdup(name);
     if (seqlen == 0)
         seqlen = strlen(sequence);
-    new->sequence = malloc(seqlen + 1);
-    if (new->sequence != NULL)
-        memmove(new->sequence, sequence, seqlen);
+    new->sequence = xmalloc(seqlen + 1);
+    memmove(new->sequence, sequence, seqlen);
     new->seqlen = seqlen;
     new->funct = funct;
     new->call_data = my_strdup(call_data);
-    if (new->name == NULL || new->sequence == NULL
-        || (call_data != NULL && new->call_data == NULL)) {
-        out_of_memory();
-        free(new->name);
-        free(new->sequence);
-        free(new->call_data);
-        free(new);
-        return;
-    }
     /* in ASCII order of their names */
     keynode **base = &keydefs;
     while (*base != NULL && strcmp(new->name, (*base)->name) > 0)
@@ -306,21 +234,9 @@ void add_keynode(const char *name, const char *sequence, int seqlen,
  */
 delaynode *add_delaynode(char *name, char *command, vtime *when, bool is_dead)
 {
-    delaynode *new = malloc(sizeof(delaynode));
-    if (new == NULL) {
-        out_of_memory();
-        return NULL;
-    }
-    new->name = my_strdup(name);
+    delaynode *new = xmalloc(sizeof(delaynode));
+    new->name = xstrdup(name);
     new->command = my_strdup(command);
-    if (new->name == NULL || (command != NULL && new->command == NULL)) {
-        out_of_memory();
-        free(new->name);
-        free(new->command);
-        free(new);
-        return NULL;
-    }
-
     new->when.tv_sec = when->tv_sec;
     new->when.tv_usec = when->tv_usec;
     insert_delaynode(new, is_dead);
@@ -329,23 +245,14 @@ delaynode *add_delaynode(char *name, char *command, vtime *when, bool is_dead)
 }
 
 /*
- * add a node to named variables list, or set error to NO_MEM_ERROR and
- * return NULL, leaving the message to print_error()
+ * add a node to named variables list
  *
  * do NOT allocate a ptr!
  */
 varnode *add_varnode(const char *name, enum var_kind kind)
 {
-    varnode *new = malloc(sizeof(varnode));
-    if (new == NULL) {
-        error = NO_MEM_ERROR;
-        return NULL;
-    }
-    new->name = my_strdup(name);
-    if (new->name == NULL) {
-        free(new);
-        return NULL;
-    }
+    varnode *new = xmalloc(sizeof(varnode));
+    new->name = xstrdup(name);
     new->num = 0;
     new->str = NULL;
     varnode **bucket = &named_vars[kind].buckets[hash_bucket(name)];

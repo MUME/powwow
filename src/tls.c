@@ -178,11 +178,7 @@ bool tls_upgrade(struct connsess *conn, const struct tls_options *tlsopt)
         did_init = true;
     }
 
-    struct tls *tls = malloc(sizeof *tls);
-    if (tls == NULL) {
-        out_of_memory();
-        return false;
-    }
+    struct tls *tls = xmalloc(sizeof *tls);
     *tls = (struct tls){
         .old_fns = conn->fns,
         .fnp     = &conn->fns,
@@ -296,11 +292,7 @@ bool parse_tls_flag(struct tls_options *dst, const char **argp,
                 ++end;
             size_t len = end - arg;
             free(dst->hostname);
-            dst->hostname = malloc(len + 1);
-            if (dst->hostname == NULL) {
-                out_of_memory();
-                return false;
-            }
+            dst->hostname = xmalloc(len + 1);
             memcpy(dst->hostname, arg, len);
             dst->hostname[len] = '\0';
             arg = end;
@@ -332,13 +324,9 @@ const char *tlsopt_str(const struct tls_options *tlsopt)
 
     static char *buf;
     free(buf);
-    buf = malloc(32 + (tlsopt->hostname != NULL
-                       ? strlen(tlsopt->hostname)
-                       : 0));
-    if (buf == NULL) {
-        out_of_memory();
-        return " --tls";        /* without the options */
-    }
+    buf = xmalloc(32 + (tlsopt->hostname != NULL
+                        ? strlen(tlsopt->hostname)
+                        : 0));
     char *p = buf;
     p += sprintf(p, " %s", f_tls);
     char prefix = '=';
