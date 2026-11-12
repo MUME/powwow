@@ -1759,10 +1759,18 @@ static bool match_weak_action(char *pat, char *line, int *match_s,
             npat = NULL;
 
         if (mlen != 0) {
+            /* the text without the escapes of its $ and & */
             char end = pat[mlen];
-            pat[mlen] = '\0';
+            size_t tlen = 0;
+            for (size_t i = 0; i < mlen; ++i) {
+                if (pat[i] != ESC || i + 1 == mlen
+                    || (pat[i + 1] != '$' && pat[i + 1] != '&'))
+                    pat[tlen++] = pat[i];
+            }
+            pat[tlen] = '\0';
             nsrc = strstr(src, pat);
             pat[mlen] = end;
+            mlen = tlen;
             if (nsrc == NULL) {
                 ptrdel(&buf);
                 return false;

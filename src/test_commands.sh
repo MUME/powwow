@@ -1269,6 +1269,14 @@ run 'matching an action keeps the escapes of its pattern' \
 has '#action >+a@* x\\\$y=#print ("m")'
 lacks '#missing digit after "$y"'
 
+run 'action pattern with an escaped $ and &' \
+    '#action >a ^$1 costs \\$5 \\& more=#print bought $1
+#action >b ^\\${target} leaves $1=#print follow $1
+#emulate bread costs $5 & more
+#emulate ${target} leaves north'
+has 'bought bread'
+has 'follow north'
+
 run 'action pattern longer than a buffer' '#($v = "x" * 5000)
 #action >a ${v}=#print ("matched")
 #emulate y

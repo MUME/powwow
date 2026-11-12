@@ -332,6 +332,11 @@ As in aliases, `$n` can be from `$1` to `$9`. *Note*: `$0` is a variable as well
 but `#action` automatically places in it the whole line from remote host.
 As well, `&n` can be from `&1` to `&9`.
 
+To match a `$` or `&` itself, write it after two backslashes: unescaping
+the pattern removes one, and the other makes the `$` or `&` part of the
+text to match, without the backslash. For example, `costs \\$5`
+matches `costs $5`.
+
 *Warning*: powwow does NOT print on screen lines from MUD that are
 intercepted with an `#action`. So if you want to print them, you
 must explicitly use a `#print` or set the `#option +autoprint`
@@ -2618,7 +2623,7 @@ fb				(effect: cast 'fireball' dragon)
 				(whenever 'dragon' leaves the room,
 				 the alias 'f' is set to follow it)
 
-#action >chase2 ^\${target} leaves $1={#print; #alias f=$1}
+#action >chase2 ^\\${target} leaves $1={#print; #alias f=$1}
 				(the text '${target}' will be matched
 				 literally)
 ```
