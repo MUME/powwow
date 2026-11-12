@@ -37,7 +37,7 @@ const default_bind *tty_default_bind(const char *label);
 enum { READLINE_KEYS_SAVEFILEVER = 9 };
 void tty_gotoxy(int col, int line);
 void tty_gotoxy_opt(int fromcol, int fromline, int tocol, int toline);
-int  tty_cell_fits(int col, const char *s, size_t n, int w);
+bool tty_cell_fits(int col, const char *s, size_t n, int w);
 
 void input_delete_nofollow_chars(int n);
 void input_insert_follow_chars(char *str, int n);
@@ -58,7 +58,7 @@ int  input_col(int p);
 #define tty_gets(s, size)       fgets((s), (size), stdin)
 #define tty_flush()             fflush(stdout)
 #define tty_raw_write(s,size)   do { tty_flush(); write(1, (s), (size)); } while (0)
-#define tty_has_chars()         0
+#define tty_has_chars()         false
 
 #else /* USE_LOCALE */
 
@@ -69,7 +69,7 @@ int  tty_read(char *buf, size_t count);
 void tty_gets(char *s, int size);
 void tty_flush(void);
 void tty_raw_write(char *data, size_t len);
-int  tty_has_chars(void);
+bool tty_has_chars(void);
 
 #endif /* USE_LOCALE */
 

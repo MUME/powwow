@@ -811,7 +811,7 @@ static noreturn void mainloop(void)
 
             vtime *timeout;
             compute_sleeptime(&timeout,
-                              ncache_read_fds > 0 || tty_has_chars() != 0);
+                              ncache_read_fds > 0 || tty_has_chars());
 
             error = 0;
             now_updated = false;
@@ -825,7 +825,7 @@ static noreturn void mainloop(void)
             syserr("cannot wait for input");
         if (typed_hint_wait() == 0)
             show_typed_hint();
-        if (tty_has_chars() != 0 && !FD_ISSET(tty_read_fd, &readfds)) {
+        if (tty_has_chars() && !FD_ISSET(tty_read_fd, &readfds)) {
             /* keys already read from the terminal */
             FD_SET(tty_read_fd, &readfds);
             ++err;

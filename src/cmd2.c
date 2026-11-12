@@ -1041,7 +1041,7 @@ static char *unescape_seq(char *buf, char *seq, int *seqlen)
 static int get_one_char(int timeout)
 {
     /* tty_read() may hold characters that select() cannot see */
-    bool buffered = tty_has_chars() != 0;
+    bool buffered = tty_has_chars();
 
  again:
     if (!buffered) {

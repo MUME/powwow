@@ -42,7 +42,7 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 
-#ifdef USE_VT100	/* hard-coded vt100 features if no termcap: */
+#ifdef USE_VT100 /* hard-coded vt100 features if no termcap: */
 
 /* terminal escape sequences */
 static const char kpadstart[] = "";
@@ -100,7 +100,6 @@ static int extract(char *cap, char *buf);
 
 #endif /* USE_VT100 */
 
-
 const char *tty_modebold = modebold;
 const char *tty_modeblink = modeblink;
 const char *tty_modeinv = modeinv;
@@ -113,7 +112,7 @@ const char *tty_clreoln = clreoln;
 const char *tty_clreoscr = clreoscr;
 
 int tty_read_fd = 0;
-static int wrapglitch = 0;
+static bool wrapglitch = false;
 
 #ifdef USE_LOCALE
 static FILE *tty_read_stream;
@@ -169,10 +168,6 @@ static void disable_special_keys(struct termios *ttyb)
 #endif
 }
 
-/*
- * Set the terminal to character-at-a-time-without-echo mode, and save the
- * original state in ttybsave
- */
 /* does the terminal take UTF-8, as the locale says? */
 bool tty_locale_utf8(void)
 {
@@ -185,6 +180,10 @@ bool tty_locale_utf8(void)
 #endif
 }
 
+/*
+ * Set the terminal to character-at-a-time-without-echo mode, and save the
+ * original state in ttybsave
+ */
 void tty_start(void)
 {
     tcgetattr(tty_read_fd, &ttybsave);
@@ -277,24 +276,25 @@ void tty_sig_winch_bottomhalf(void)
     enum { MIN_COLS = 3 };
     int ws_cols = wsiz.ws_col < MIN_COLS ? MIN_COLS : wsiz.ws_col;
     if (lines != wsiz.ws_row || cols != ws_cols) {
-	lines = wsiz.ws_row;
-	cols_1 = cols = ws_cols;
-	if (!wrapglitch)
-	    cols_1--;
+        lines = wsiz.ws_row;
+        cols = ws_cols;
+        cols_1 = ws_cols;
+        if (!wrapglitch)
+            --cols_1;
 
-	if (main_connection != NULL)
-	    tcp_write_tty_size();
-	line0 += lines - olines;
+        if (main_connection != NULL)
+            tcp_write_tty_size();
+        line0 += lines - olines;
 
-	tty_gotoxy(0, line0);
-	/* so we know where the cursor is */
-	if (edattrbg)
-	    tty_printf("%s%s", edattrend, tty_clreoscr);
-	else
-	    tty_puts(tty_clreoscr);
+        tty_gotoxy(0, line0);
+        /* so we know where the cursor is */
+        if (edattrbg)
+            tty_printf("%s%s", edattrend, tty_clreoscr);
+        else
+            tty_puts(tty_clreoscr);
 
-	olines = lines;
-	status(1);
+        olines = lines;
+        status(1);
     }
 }
 
@@ -309,78 +309,84 @@ void tty_bootstrap(void)
     tty_write_state.utf8 = tty_locale_utf8();
 #endif
 
-#ifndef USE_VT100
-    struct tc_init_node {
-	char cap[4], *buf;
-	int *len, critic;
-    };
-    static struct tc_init_node tc_init[] = {
-	{ "cm", curgoto, 0, 1 },
-	{ "ce", clreoln, 0, 1 },
-	{ "cd", clreoscr, 0, 1 },
-	{ "le", leftcur, &len_leftcur, 0 },
-	{ "up", upcur,   &len_upcur,  0 },
-	{ "cr", begoln,  &len_begoln, 0 },
-	{ "me", modenorm, 0, 0 },
-	{ "md", modebold, 0, 0 },
-	{ "mb", modeblink, 0, 0 },
-	{ "mr", modeinv, 0, 0 },
-	{ "us", modeuline, 0, 0 },
-	{ "so", modestandon, 0, 0 },
-	{ "se", modestandoff, 0, 0 },
-	{ "ks", kpadstart, 0, 0 },
-	{ "ke", kpadend, 0, 0 },
-	{ "kl", cursor_left, 0, 0 },
-	{ "kr", cursor_right, 0, 0 },
-	{ "ku", cursor_up, 0, 0 },
-	{ "kd", cursor_down, 0, 0 },
-	{ "kD", cursor_delete, 0, 0 },
-	{ "kh", cursor_home, 0, 0 },
-	{ "@7", cursor_end, 0, 0 },
-	{ "", NULL, 0, 0 }
-    };
-    struct tc_init_node *np;
-    char tcbuf[2048];		/* by convention, this is enough */
-    int i;
-    char *term = getenv("TERM");
-    if (!term) {
-	fprintf(stderr, "$TERM not set\n");
-	exit(1);
-    }
-#endif /* not USE_VT100 */
 #ifdef USE_VT100
     cols = 80;
-#  ifdef LINES
+# ifdef LINES
     lines = LINES;
-#  else  /* not LINES */
+# else  /* not LINES */
     lines = 24;
-#  endif /* LINES */
+# endif /* LINES */
 #else   /* not USE_VT100 */
-    switch(tgetent(tcbuf, term)) {
-     case 1:
-	break;
-     case 0:
-	fprintf(stderr,
-		"There is no entry for \"%s\" in the terminal data base.\n", term);
-	fprintf(stderr,
-		"Please set your $TERM environment variable correctly.\n");
-	exit(1);
-     default:
-	syserr("cannot read the terminal database");
+    struct tc_init_node {
+        char cap[4];
+        char *buf;
+        int *len;
+        bool critic;
+    };
+    static struct tc_init_node tc_init[] = {
+        { .cap = "cm", .buf = curgoto, .critic = true },
+        { .cap = "ce", .buf = clreoln, .critic = true },
+        { .cap = "cd", .buf = clreoscr, .critic = true },
+        { .cap = "le", .buf = leftcur, .len = &len_leftcur },
+        { .cap = "up", .buf = upcur, .len = &len_upcur },
+        { .cap = "cr", .buf = begoln, .len = &len_begoln },
+        { .cap = "me", .buf = modenorm },
+        { .cap = "md", .buf = modebold },
+        { .cap = "mb", .buf = modeblink },
+        { .cap = "mr", .buf = modeinv },
+        { .cap = "us", .buf = modeuline },
+        { .cap = "so", .buf = modestandon },
+        { .cap = "se", .buf = modestandoff },
+        { .cap = "ks", .buf = kpadstart },
+        { .cap = "ke", .buf = kpadend },
+        { .cap = "kl", .buf = cursor_left },
+        { .cap = "kr", .buf = cursor_right },
+        { .cap = "ku", .buf = cursor_up },
+        { .cap = "kd", .buf = cursor_down },
+        { .cap = "kD", .buf = cursor_delete },
+        { .cap = "kh", .buf = cursor_home },
+        { .cap = "@7", .buf = cursor_end },
+        { .cap = "" }
+    };
+    char *term = getenv("TERM");
+    if (term == NULL) {
+        fprintf(stderr, "$TERM not set\n");
+        exit(1);
     }
-    for(np = tc_init; np->cap[0]; np++)
-	if ((i = extract(np->cap, np->buf))) {
-	    if (np->len) *np->len += i;
-	} else if (np->critic) {
-	    fprintf(stderr,
-		    "Your \"%s\" terminal is not powerful enough, missing \"%s\".\n",
-		    term, np->cap);
-	    exit(1);
-	}
-    if (!len_begoln)
-	strcpy(begoln, "\r"), len_begoln = 1;
-    if (!len_leftcur)
-	strcpy(leftcur, "\b"), len_leftcur = 1;
+    char tcbuf[2048];           /* by convention, this is enough */
+    switch (tgetent(tcbuf, term)) {
+    case 1:
+        break;
+    case 0:
+        fprintf(stderr,
+                "There is no entry for \"%s\" in the terminal data"
+                " base.\n", term);
+        fprintf(stderr,
+                "Please set your $TERM environment variable correctly.\n");
+        exit(1);
+    default:
+        syserr("cannot read the terminal database");
+    }
+    for (struct tc_init_node *np = tc_init; np->cap[0] != '\0'; ++np) {
+        int len = extract(np->cap, np->buf);
+        if (len != 0) {
+            if (np->len != NULL)
+                *np->len += len;
+        } else if (np->critic) {
+            fprintf(stderr,
+                    "Your \"%s\" terminal is not powerful enough, missing"
+                    " \"%s\".\n", term, np->cap);
+            exit(1);
+        }
+    }
+    if (len_begoln == 0) {
+        strcpy(begoln, "\r");
+        len_begoln = 1;
+    }
+    if (len_leftcur == 0) {
+        strcpy(leftcur, "\b");
+        len_leftcur = 1;
+    }
 
     gotocost = strlen(tgoto(curgoto, cols - 1, lines - 1));
 
@@ -388,7 +394,6 @@ void tty_bootstrap(void)
     wrapglitch = tgetflag("xn");
 
     tty_sig_winch_bottomhalf(); /* get window size */
-
 #endif  /* not USE_VT100 */
 }
 
@@ -616,24 +621,33 @@ const default_bind *tty_default_bind(const char *label)
 #ifndef USE_VT100
 /*
  * extract termcap 'cap' and strcat it to buf.
- * return the lenght of the extracted string.
+ * return the length of the extracted string.
  */
 static int extract(char *cap, char *buf)
 {
-    static char *bp;
     char *d = buf + strlen(buf);
-    char *s = tgetstr(cap, (bp = d, &bp));
-    int len;
-    if (!s) return (*bp = 0);
+    char *bp = d;
+    char *s = tgetstr(cap, &bp);
+    if (s == NULL) {
+        *bp = '\0';
+        return 0;
+    }
     /*
      * Remove the padding information. We assume that no terminals
      * need padding nowadays. At least it makes things much easier.
      */
     s += strspn(s, "0123456789*");
-    for(len = 0; *s; *d++ = *s++, len++)
-	if (*s == '$' && *(s + 1) == '<')
-	if (!(s = strchr(s, '>')) || !*++s) break;
-    *d = 0;
+    int len = 0;
+    while (*s != '\0') {
+        if (*s == '$' && s[1] == '<') {
+            s = strchr(s, '>');
+            if (s == NULL || *++s == '\0')
+                break;
+        }
+        *d++ = *s++;
+        ++len;
+    }
+    *d = '\0';
     return len;
 }
 #endif /* not USE_VT100 */
@@ -660,66 +674,74 @@ void tty_gotoxy_opt(int fromcol, int fromline, int tocol, int toline)
 {
     static char buf[BUFSIZE];
     char *cp = buf;
-    int cost, i, dist;
 
-    CLIP(fromline, 0, lines-1);
-    CLIP(toline  , 0, lines-1);
+    CLIP(fromline, 0, lines - 1);
+    CLIP(toline, 0, lines - 1);
 
     /* First, move vertically to the correct line, then horizontally
      * to the right column. If this turns out to be fewer characters
      * than a direct cursor positioning (tty_gotoxy), use that.
      */
-    for (;;) {	/* gotoless */
-	if ((i = toline - fromline) < 0) {
-	    if (!len_upcur || (cost = -i * len_upcur) >= gotocost)
-		break;
-	    do {
-		strcpy(cp, upcur);
-	        cp += len_upcur;
-	    } while(++i);
-	} else if ((cost = 2 * i)) {	/* lf is mapped to crlf on output */
-	    if (cost >= gotocost)
-		break;
-	    do
-	        *cp++ = '\n';
-	    while (--i);
-	    fromcol = 0;
-	}
-	if ((i = tocol - fromcol) < 0) {
-	    dist = -i * len_leftcur;
-	    if (dist <= len_begoln + tocol) {
-		if ((cost += dist) > gotocost)
-		    break;
-		do {
-		    strcpy(cp, leftcur);
-		    cp += len_leftcur;
-		} while(++i);
-	    } else {
-		if ((cost += len_begoln) > gotocost)
-		    break;
-		strcpy(cp, begoln);
-		cp += len_begoln;
-		fromcol = 0;  i = tocol;
-	    }
-	}
-	if (i) {
-	    /* moving right would mean reprinting text whose width is
-	     * not one column per byte; just use tty_gotoxy */
-	    break;
-	}
-	*cp = 0;
-	tty_puts(buf);
-	return;
+    for (;;) { /* gotoless */
+        int cost = 0;
+        int i = toline - fromline;
+        if (i < 0) {
+            if (len_upcur == 0)
+                break;
+            cost = -i * len_upcur;
+            if (cost >= gotocost)
+                break;
+            do {
+                strcpy(cp, upcur);
+                cp += len_upcur;
+            } while (++i != 0);
+        } else if (i > 0) {
+            cost = 2 * i;       /* lf is mapped to crlf on output */
+            if (cost >= gotocost)
+                break;
+            do {
+                *cp++ = '\n';
+            } while (--i != 0);
+            fromcol = 0;
+        }
+        i = tocol - fromcol;
+        if (i < 0) {
+            int dist = -i * len_leftcur;
+            if (dist <= len_begoln + tocol) {
+                cost += dist;
+                if (cost > gotocost)
+                    break;
+                do {
+                    strcpy(cp, leftcur);
+                    cp += len_leftcur;
+                } while (++i != 0);
+            } else {
+                cost += len_begoln;
+                if (cost > gotocost)
+                    break;
+                strcpy(cp, begoln);
+                cp += len_begoln;
+                fromcol = 0;
+                i = tocol;
+            }
+        }
+        if (i != 0) {
+            /* moving right would mean reprinting text whose width is
+             * not one column per byte; just use tty_gotoxy */
+            break;
+        }
+        *cp = '\0';
+        tty_puts(buf);
+        return;
     }
     tty_gotoxy(tocol, toline);
 }
-
 
 /*
  * does the cell of 'n' bytes at 's', 'w' columns wide, fit in a row
  * of the screen at column 'col'?
  */
-int tty_cell_fits(int col, const char *s, size_t n, int w)
+bool tty_cell_fits(int col, const char *s, size_t n, int w)
 {
     /*
      * Terminal.app draws only the first characters of a grapheme
@@ -727,7 +749,7 @@ int tty_cell_fits(int col, const char *s, size_t n, int w)
      * what follows a ZWJ) on the next row: keep those out of it
      */
     if (col > 0 && col + w == cols && n > (size_t)utf8_seqlen(*s))
-        return 0;
+        return false;
     return col + w <= cols_1;
 }
 
@@ -750,14 +772,14 @@ static void input_layout_end(int p, int *line, int *col)
         int w = utf8_cell_width(s, n);
         if (!tty_cell_fits(c, s, n, w)) {
             /* does not fit; drawn on the next row */
-            l++;
+            ++l;
             c = 0;
         }
         c += w;
         s += n;
     }
     if (c >= cols_1) {
-        l++;
+        ++l;
         c = 0;
     }
     *line = l + line0;
@@ -804,10 +826,13 @@ int input_col(int p)
 static void input_cursor_to(int toline, int tocol, bool absolute)
 {
     int fromline = CURLINE(pos);
-    if (toline < 0)
-	line0 -= toline, toline = 0;
-    else if (toline > lines - 1)
-	line0 -= toline - lines + 1, toline = lines - 1;
+    if (toline < 0) {
+        line0 -= toline;
+        toline = 0;
+    } else if (toline > lines - 1) {
+        line0 -= toline - lines + 1;
+        toline = lines - 1;
+    }
     if (absolute)
         tty_gotoxy(tocol, toline);
     else
@@ -848,23 +873,23 @@ void input_hide_hint(void)
     tty_gotoxy_opt(col, line, pcol, pline);
 }
 
-
 void input_moveto(int new_pos)
 {
     /*
      * FEATURE: the line we are moving to might be less than 0, or greater
-     * than lines - 1, if the display is too small to hold the whole editline.
-     * In that case, the input line should be (partially) redrawn.
+     * than lines - 1, if the display is too small to hold the whole
+     * editline.  In that case, the input line should be (partially)
+     * redrawn.
      */
     if (new_pos < edstart)
-	new_pos = edstart;
+        new_pos = edstart;
     else if (new_pos > edlen)
-	new_pos = edlen;
+        new_pos = edlen;
     if (new_pos == pos)
-	return;
+        return;
 
     if (line_status == 0)
-	input_cursor_to(CURLINE(new_pos), CURCOL(new_pos), false);
+        input_cursor_to(CURLINE(new_pos), CURCOL(new_pos), false);
     pos = new_pos;
 }
 
@@ -874,12 +899,12 @@ void input_moveto(int new_pos)
 static void input_newline(int *line)
 {
     if (edattrbg)
-	tty_printf("%s\n%s", edattrend, edattrbeg);
+        tty_printf("%s\n%s", edattrend, edattrbeg);
     else
-	tty_putc('\n');
+        tty_putc('\n');
     if (++*line > lines - 1) {
-	*line = lines - 1;
-	line0--;
+        *line = lines - 1;
+        --line0;
     }
 }
 
@@ -932,7 +957,7 @@ static void input_redraw_from(int from)
                  * spaces: see input_erase_below) */
                 if (edattrbg)
                     tty_puts(edattrend);
-                for (; col < cols_1; col++)
+                for (; col < cols_1; ++col)
                     tty_putc(' ');
                 if (edattrbg)
                     tty_puts(edattrbeg);
@@ -993,7 +1018,7 @@ static int input_fit(const char *str, int n, int max)
         return n;
     n = max;
     while (n > 0 && utf8_is_continuation(str[n]))
-        n--;
+        --n;
     return n;
 }
 
@@ -1037,9 +1062,9 @@ void input_delete_nofollow_chars(int n)
     int p = pos;
 
     if (n > edlen - pos)
-	n = edlen - pos;
+        n = edlen - pos;
     if (n <= 0)
-	return;
+        return;
 
     memmove(edbuf + p, edbuf + p + n, edlen - p - n + 1);
     edlen -= n;
@@ -1061,11 +1086,12 @@ void input_insert_follow_chars(char *str, int n)
 
     n = input_fit(str, n, BUFSIZE - edlen - 1);
     if (n <= 0)
-	return;
+        return;
 
     memmove(edbuf + p + n, edbuf + p, edlen + 1 - p);
     memmove(edbuf + p, str, n);
-    edlen += n; pos = p + n;
+    edlen += n;
+    pos = p + n;
     int from = input_redraw_start(p);
     input_redraw_goto(from);
 
@@ -1086,10 +1112,8 @@ void input_replace(int from, int len, const char *str, int n)
     while (same < len && same < n && edbuf[from + same] == str[same])
         ++same;
     /* back to the start of the character that differs */
-    while (same > 0 && same < n
-           && utf8_is_continuation(str[same])) {
+    while (same > 0 && same < n && utf8_is_continuation(str[same]))
         --same;
-    }
     memmove(edbuf + from + n, edbuf + from + len, edlen - from - len + 1);
     memcpy(edbuf + from, str, n);
     edlen += n - len;
@@ -1106,7 +1130,7 @@ void input_replace(int from, int len, const char *str, int n)
 
 void tty_puts(const char *s)
 {
-    while (*s)
+    while (*s != '\0')
         tty_putc(*s++);
 }
 
@@ -1130,11 +1154,11 @@ static void tty_put_wc(uint32_t cp)
     }
 
     size_t r;
-    int ignore_error = 0;
+    bool ignore_error = false;
     /* a wchar_t of 16 bits, as on Cygwin, cannot hold it; no charset but
      * UTF-8, which does not come here, has it */
     wchar_t wc = cp <= WCHAR_MAX ? (wchar_t)cp : '?';
-    if (tty_write_state.used + MB_LEN_MAX > sizeof tty_write_state.data)
+    if (tty_write_state.used + MB_LEN_MAX > sizeof(tty_write_state.data))
         tty_flush();
 again:
     r = wcrtomb(tty_write_state.data + tty_write_state.used, wc,
@@ -1148,7 +1172,7 @@ again:
         }
         /* character cannot be represented; try to write a question
          * mark instead, but ignore any errors */
-        ignore_error = 1;
+        ignore_error = true;
         wc = '?';
         goto again;
     }
@@ -1162,7 +1186,7 @@ void tty_putc(char c)
     unsigned char b = c;
 
     if (tty_write_state.utf8) {
-        if (tty_write_state.used >= sizeof tty_write_state.data)
+        if (tty_write_state.used >= sizeof(tty_write_state.data))
             tty_flush();
         tty_write_state.data[tty_write_state.used++] = b;
         return;
@@ -1199,21 +1223,20 @@ void tty_putc(char c)
 
 int tty_printf(const char *format, ...)
 {
-    char buf[1024], *bufp = buf;
-    va_list va;
-    int res;
-
     char *old_locale = strdup(setlocale(LC_ALL, NULL));
 
     setlocale(LC_ALL, "C");
 
+    char buf[1024];
+    va_list va;
     va_start(va, format);
-    res = vsnprintf(buf, sizeof buf, format, va);
+    int res = vsnprintf(buf, sizeof(buf), format, va);
     va_end(va);
 
     /* a longer text is formatted again into big */
-    bool too_long = (res >= 0 && (size_t)res >= sizeof(buf));
+    bool too_long = res >= 0 && (size_t)res >= sizeof(buf);
     char big[too_long ? res + 1 : 1];
+    char *bufp = buf;
     if (too_long) {
         bufp = big;
         va_start(va, format);
@@ -1237,11 +1260,12 @@ static size_t tty_in_start = 0, tty_in_used = 0;
 
 /* UTF-8 of a character read, not yet returned by tty_read(): up to two,
  * as a U+FFFD for an incomplete one before the next */
-static char tty_out_buf[CHARSET_DECODE_MAX > UTF8_MAX
-                        ? CHARSET_DECODE_MAX : UTF8_MAX];
+static char tty_out_buf[(CHARSET_DECODE_MAX > UTF8_MAX
+                         ? CHARSET_DECODE_MAX
+                         : UTF8_MAX)];
 static size_t tty_out_start = 0, tty_out_used = 0;
 
-int tty_has_chars(void)
+bool tty_has_chars(void)
 {
     return tty_in_used != tty_in_start || tty_out_used != tty_out_start;
 }
@@ -1269,7 +1293,6 @@ static uint32_t wc_char(wchar_t wc, uint32_t *high)
 static int safe_mbtowc(wchar_t *pwc, char *s, size_t *n)
 {
     static mbstate_t ps;
-
     size_t r;
 
 again:
@@ -1346,7 +1369,7 @@ int tty_read(char *buf, size_t count)
         tty_in_used -= tty_in_start;
         tty_in_start = 0;
         int did_read = read(tty_read_fd, tty_in_buf + tty_in_used,
-                            sizeof tty_in_buf - tty_in_used);
+                            sizeof(tty_in_buf) - tty_in_used);
         if (did_read < 0 && errno == EINTR)
             continue;
         if (did_read <= 0)
@@ -1357,14 +1380,13 @@ int tty_read(char *buf, size_t count)
     return result;
 }
 
-
 void tty_gets(char *s, int size)
 {
     wchar_t ws[size];
     char *end = s + size - 1;
 
-    if (!fgetws(ws, size, stdin))
-	return;
+    if (fgetws(ws, size, stdin) == NULL)
+        return;
 
     uint32_t high = 0;
     for (const wchar_t *w = ws; *w != L'\0'; ++w) {
@@ -1421,11 +1443,13 @@ void tty_flush(void)
 
 void tty_raw_write(char *data, size_t len)
 {
-    if (len == 0) return;
+    if (len == 0)
+        return;
 
     for (;;) {
-        size_t s = sizeof tty_write_state.data - tty_write_state.used;
-        if (s > len) s = len;
+        size_t s = sizeof(tty_write_state.data) - tty_write_state.used;
+        if (s > len)
+            s = len;
         memcpy(tty_write_state.data + tty_write_state.used, data, s);
         len -= s;
         tty_write_state.used += s;
