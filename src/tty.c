@@ -992,7 +992,7 @@ static int input_fit(const char *str, int n, int max)
     if (n <= max)
         return n;
     n = max;
-    while (n > 0 && ((unsigned char)str[n] & 0xc0) == 0x80)
+    while (n > 0 && utf8_is_continuation(str[n]))
         n--;
     return n;
 }
@@ -1087,7 +1087,7 @@ void input_replace(int from, int len, const char *str, int n)
         ++same;
     /* back to the start of the character that differs */
     while (same > 0 && same < n
-           && ((unsigned char)str[same] & 0xc0) == 0x80) {
+           && utf8_is_continuation(str[same])) {
         --same;
     }
     memmove(edbuf + from + n, edbuf + from + len, edlen - from - len + 1);
@@ -1169,7 +1169,7 @@ void tty_putc(char c)
     }
 
     if (tty_write_state.npend > 0) {
-        if ((b & 0xc0) == 0x80) {
+        if (utf8_is_continuation(b)) {
             tty_write_state.pend[tty_write_state.npend++] = b;
             if (tty_write_state.npend < tty_write_state.need)
                 return;
@@ -1184,7 +1184,7 @@ void tty_putc(char c)
         tty_put_wc(UNICODE_REPLACEMENT);
     }
 
-    if (b < 0x80) {
+    if (b <= ASCII_MAX) {
         tty_put_wc(b);
         return;
     }
@@ -1260,7 +1260,7 @@ static uint32_t wc_char(wchar_t wc, uint32_t *high)
         return 0;
     }
     if (unicode_is_low_surrogate(cp) && *high != 0)
-        cp = 0x10000 + ((*high - 0xd800) << 10) + (cp - 0xdc00);
+        cp = utf16_join(*high, cp);
     *high = 0;
 #endif
     return cp;

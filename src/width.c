@@ -26,6 +26,8 @@
 
 /* the characters that join or widen a grapheme cluster */
 enum {
+    UNICODE_COMBINING_FIRST = 0x300,    /* COMBINING DIACRITICAL MARKS */
+    UNICODE_COMBINING_LAST = 0x36f,
     UNICODE_ZWJ = 0x200d,               /* ZERO WIDTH JOINER */
     UNICODE_VS16 = 0xfe0f,              /* VARIATION SELECTOR-16 */
     UNICODE_REGIONAL_A = 0x1f1e6,       /* REGIONAL INDICATOR SYMBOL */
@@ -34,7 +36,7 @@ enum {
 
 int cp_width(uint32_t cp)
 {
-    if (cp < 0x20 || cp == ASCII_DEL)
+    if (cp < ' ' || cp == ASCII_DEL)
         return 0;               /* control characters */
 #ifdef USE_LOCALE
 #if WCHAR_MAX < UNICODE_MAX
@@ -43,8 +45,7 @@ int cp_width(uint32_t cp)
      * UTF-16 surrogates */
     if (cp > WCHAR_MAX) {
         const wchar_t utf16[] = {
-            (wchar_t)(0xd800 + ((cp - 0x10000) >> 10)),
-            (wchar_t)(0xdc00 + ((cp - 0x10000) & 0x3ff))
+            (wchar_t)utf16_high(cp), (wchar_t)utf16_low(cp)
         };
         int w = wcswidth(utf16, 2);
         return w >= 0 ? w : 1;
@@ -53,13 +54,13 @@ int cp_width(uint32_t cp)
     int w = wcwidth((wchar_t)cp);
     if (w >= 0)
         return w;
-    if (cp >= 0x80 && cp < 0xa0)
+    if (unicode_is_c1(cp))
         return 0;               /* C1 control characters */
     return 1;                   /* shown as '?' by the tty layer */
 #else
-    if (cp >= 0x80 && cp < 0xa0)
+    if (unicode_is_c1(cp))
         return 0;
-    if (cp >= 0x300 && cp <= 0x36f)
+    if (cp >= UNICODE_COMBINING_FIRST && cp <= UNICODE_COMBINING_LAST)
         return 0;               /* combining diacritical marks */
     return 1;
 #endif
@@ -68,12 +69,12 @@ int cp_width(uint32_t cp)
 /* a combining character, or one not shown, as a zero width space */
 static bool is_zero_width(uint32_t cp)
 {
-    return cp >= 0x300 && cp_width(cp) == 0;
+    return cp >= UNICODE_COMBINING_FIRST && cp_width(cp) == 0;
 }
 
 static bool is_control(uint32_t cp)
 {
-    return cp < 0x20 || cp == ASCII_DEL;
+    return cp < ' ' || cp == ASCII_DEL;
 }
 
 static bool is_regional_indicator(uint32_t cp)
@@ -178,7 +179,7 @@ int utf8_width(const char *s, size_t len)
             state = cp == '[' ? BRACKET : NORM;
             break;
         case BRACKET:
-            if (cp < 0x80 && isalpha(cp))
+            if (cp <= ASCII_MAX && isalpha(cp))
                 state = NORM;
             break;
         }
@@ -204,9 +205,9 @@ const char *utf8_prev_cell(const char *start, const char *s)
      * ASCII character (or begins the text)
      */
     const char *p = s - 1;
-    while (p > start && !((unsigned char)p[-1] < 0x80
-                          && (unsigned char)*p >= 0x20
-                          && (unsigned char)*p < 0x80))
+    while (p > start && !((unsigned char)p[-1] <= ASCII_MAX
+                          && (unsigned char)*p >= ' '
+                          && (unsigned char)*p <= ASCII_MAX))
         --p;
     for (;;) {
         const char *q = p + utf8_cell_len(p, s - p);

@@ -1060,7 +1060,7 @@ static void effective_prompt(void)
             size_t q = p + 1;
             if (q < len && pstr[q] == '[') {
                 /* CSI: parameter bytes, then a final byte */
-                for (++q; q < len && pstr[q] >= 0x20 && pstr[q] <= 0x3f; ++q)
+                for (++q; q < len && is_csi_param(pstr[q]); ++q)
                     ;
                 if (q < len
                     && (pstr[q] == 'K'
@@ -1844,7 +1844,7 @@ static int unbound_key_len(const char *seq, int n)
     if (seq[1] == '[') {
         /* parameter and intermediate bytes, until a final byte */
         for (int i = 2; i < n; ++i) {
-            if (seq[i] >= 0x40 && seq[i] <= 0x7e)
+            if (is_csi_final(seq[i]))
                 return i + 1;
         }
         return -1;
@@ -1897,7 +1897,7 @@ static void get_user_input(void)
 	static int npend;
 	if (*c == '\r')
 	    *c = '\n';     /* send Ret as before ICRNL was turned off */
-	if (npend > 0 && ((unsigned char)*c & 0xc0) != 0x80)
+        if (npend > 0 && !utf8_is_continuation(*c))
 	    npend = 0;          /* incomplete character */
 	pend[npend++] = *c;
 	if (npend >= utf8_seqlen(pend[0])) {
@@ -2236,7 +2236,7 @@ static void run_instruction(char *line, bool silent, bool subs,
             evaln(&end);
             if (REAL_ERROR)
                 print_error(error);
-        } else if (first < 0x80 && ispunct(first)) {
+        } else if (first <= ASCII_MAX && ispunct(first)) {
             /* a command named by punctuation right after the #, as #!,
              * needs no space before what follows: #!ls */
             char punct[] = { (char)first, '\0' };

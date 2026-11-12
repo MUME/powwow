@@ -15,6 +15,12 @@ static inline bool is_csi_final(unsigned char c)
     return c >= 0x40 && c <= 0x7e;
 }
 
+/* is 'c' a parameter or intermediate byte of a control sequence? */
+static inline bool is_csi_param(unsigned char c)
+{
+    return c >= 0x20 && c <= 0x3f;
+}
+
 static inline bool is_odigit(char c)
 {
     return c >= '0' && c <= '7';

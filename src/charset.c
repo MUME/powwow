@@ -128,7 +128,7 @@ int charset_decode_byte(enum charset cs, struct utf8_decoder *d,
     case CS_UTF8:
         return utf8_check_byte(d, b, out);
     case CS_ASCII:
-        if (b < 0x80)
+        if (b <= ASCII_MAX)
             break;
         memcpy(out, UTF8_REPLACEMENT, UTF8_REPLACEMENT_LEN);
         return UTF8_REPLACEMENT_LEN;
@@ -174,7 +174,7 @@ size_t charset_encode(enum charset cs, const char *src, size_t len,
         return len;
     }
 
-    const uint32_t max = cs == CS_ASCII ? 0x7f : 0xff;
+    const uint32_t max = cs == CS_ASCII ? ASCII_MAX : LATIN1_MAX;
     char *to = dst;
     while (len > 0) {
         uint32_t cp;
@@ -262,7 +262,7 @@ const char *utf8_prev(const char *start, const char *s)
     const char *p = s - 1;
     /* back over at most three continuation bytes */
     for (int i = 0; i < UTF8_MAX - 1 && p > start
-             && ((unsigned char)*p & 0xc0) == 0x80; ++i)
+             && utf8_is_continuation(*p); ++i)
         --p;
     uint32_t cp;
     /* if that is not the start of a character ending at 's', step
