@@ -149,6 +149,10 @@ if ! cat < / > /dev/null 2>&1; then
         || fail 'no error for reading the input'
 fi
 
+run --eof '#bind gives up waiting for a key at the end of the input' \
+    '#bind foo=bar'
+has '#please press the key "foo" : #unable to get key. Giving up.'
+
 run 'var deletes an unnamed number variable' '#($3 = "text")
 #(@3 = 5)
 #var @3=
