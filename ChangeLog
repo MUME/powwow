@@ -230,6 +230,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  instead of reporting a syntax error.
 	* powwow-muc shows lines of a movie longer than 1000 bytes whole,
 	  instead of dropping the rest of them.
+	* powwow-muc shows the last character of a prompt that ends a
+	  movie without a newline, instead of cutting it.
 	* Commands piped into powwow, as in `printf '#print hi\n' |
 	  powwow', make it quit at the end of its input, instead of
 	  waiting forever while using all the processor time.
