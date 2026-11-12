@@ -486,13 +486,11 @@ int main(int argc, char **argv)
         strcpy(copyfile, copyname);
 
     /* allocate permanent variables */
-    if ((prompt = add_varnode("prompt", VAR_TEXT)) == NULL
-        || (prompt->str = ptrnew(PARAMLEN)) == NULL
-        || (marked_prompt = ptrnew(PARAMLEN)) == NULL
-        || (last_line = add_varnode("last_line", VAR_TEXT)) == NULL
-        || (last_line->str = ptrnew(PARAMLEN)) == NULL
-        || MEM_ERROR)
-        syserr("out of memory");
+    prompt = add_varnode("prompt", VAR_TEXT);
+    prompt->str = ptrnew(PARAMLEN);
+    marked_prompt = ptrnew(PARAMLEN);
+    last_line = add_varnode("last_line", VAR_TEXT);
+    last_line->str = ptrnew(PARAMLEN);
 
     edit_bootstrap();
     tty_bootstrap();

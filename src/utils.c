@@ -1367,9 +1367,6 @@ static void start_message(void)
 void errmsg(const char *format, ...)
 {
     int err = errno;
-    if (err == 0 && error == NO_MEM_ERROR)
-        err = ENOMEM;
-
     char msg[BUFSIZE];
     va_list ap;
     va_start(ap, format);

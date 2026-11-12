@@ -126,7 +126,7 @@ const char *const error_msg[] = {
     "internal error!",
     "operator not supported",
     "operation not completed (internal error)",
-    "out of memory",
+    "unknown error",
     "text/string longer than limit, discarded",
     "infinite loop",
     "numeric value expected",
@@ -258,10 +258,7 @@ static long random_below(long n)
 void print_error(int err_num)
 {
     clear_input_line(true);
-    if (err_num == NO_MEM_ERROR)
-        tty_message("#out of memory\n");
-    else
-        tty_message("#error: %s.\n", error_msg[err_num]);
+    tty_message("#error: %s.\n", error_msg[err_num]);
 }
 
 static bool push_op(operator *op)

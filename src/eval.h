@@ -17,7 +17,7 @@
 #define INTERNAL_ERROR	     12
 #define NOT_SUPPORTED_ERROR  13
 #define NOT_DONE_ERROR       14
-#define NO_MEM_ERROR         15
+/* 15 is unused, so that the numbers stay the same for plugins */
 #define MEM_LIMIT_ERROR      16
 #define MAX_LOOP_ERROR       17
 #define NO_NUM_VALUE_ERROR   18
@@ -52,7 +52,7 @@ extern const char *const error_msg[];
 extern int error;
 
 #define REAL_ERROR (error != 0 && error != USER_BREAK)
-#define MEM_ERROR  (error == NO_MEM_ERROR || error == MEM_LIMIT_ERROR)
+#define MEM_ERROR  (error == MEM_LIMIT_ERROR)
 
 #endif /* _EVAL_H_ */
 
