@@ -1584,7 +1584,8 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
 		if (line_status == 0) {
 		    common_clear(!opt_compact);
 		}
-		message_wrap(WRAP_CONT, "#warning: ##%s : unterminated [%s]",
+                message_wrap(WRAP_CONT,
+                             "#warning: ##%s: unterminated line [%s]",
                              old_connection->id, buf);
 	    }
 	}

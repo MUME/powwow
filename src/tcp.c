@@ -434,8 +434,8 @@ int tcp_unIAC(char *buffer, int len)
 	    if (len > 1 && buffer[1] == (char)(byte)IAC)
 		buffer++, len--;
 	    else if (warnIACs) {
-	        wrap_printf("#warning: received IAC inside MPI message, "
-                            "treating as IAC IAC.");
+                wrap_printf("#warning: unescaped IAC in MPI message, kept"
+                            " as is");
 		warnIACs = 0;
 	    }
 	}
@@ -551,11 +551,12 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 		/* check for MUME MPI messages: */
 		if (p - linestart == MPILEN && !memcmp(linestart, MPI, MPILEN)) {
                     if (!conn->ideditor) {
-			wrap_printf("#warning: MPI message received without "
-                                    "#request editor!");
+                        wrap_printf("#warning: ignored an MPI message without"
+                                    " #request editor");
 		    } else if (state == ALTNORMAL) {
 			/* no MPI messages after \n\r */
-			PRINTF("#warning: MPI attack?\n");
+                        wrap_printf("#warning: ignored an MPI message that"
+                                    " may be spoofed");
 		    } else {
 			subchars = process_message((char*)s+1, i-1);
 			/* no +MPILEN here, as it was already processed. */

@@ -1394,7 +1394,7 @@ int read_settings(void)
     ptr *ptrbuf;
 
     if (!*deffile) {
-	wrap_printf("#warning: no save-file defined!");
+        wrap_printf("#warning: no save-file defined");
 	return 0;
     }
 
@@ -1541,12 +1541,12 @@ int read_settings(void)
                     "limit");
 	failed = -1;
     } else if (savefilever > SAVEFILEVER) {
-	wrap_printf("#warning: this powwow version is too old!");
+        wrap_printf("#warning: save-file is from a newer version of powwow");
     } else if (savefilever < UTF8_SAVEFILEVER) {
         wrap_printf("#definition file converted from ISO-8859-1 to UTF-8");
 	load_missing_stuff(savefilever);
     } else if (savefilever < SAVEFILEVER) {
-	wrap_printf("\n#warning: config file is from an older version");
+        wrap_printf("#warning: save-file is from an older version of powwow");
 	load_missing_stuff(savefilever);
     }
 
@@ -1595,7 +1595,7 @@ int save_settings(void)
     error = 0;
 
     if (!*deffile) {
-	wrap_printf("#warning: no save-file defined!");
+        wrap_printf("#warning: no save-file defined");
 	return -1;
     }
 

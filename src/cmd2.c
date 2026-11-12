@@ -131,8 +131,8 @@ static bool check_alias(char *name)
     }
 
     if (quotes || paren != 0 || braces != 0) {
-        wrap_printf("#warning: unbalanced%s%s%s in alias name \"%s\" may"
-                    " cause problems", quotes ? " \"\"" : "",
+        wrap_printf("#warning: unbalanced%s%s%s in alias name \"%s\"",
+                    quotes ? " \"\"" : "",
                     paren != 0 ? " ()" : "", braces != 0 ? " {}" : "", name);
     }
 
