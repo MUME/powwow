@@ -1041,7 +1041,8 @@ static char *unescape_seq(char *buf, char *seq, int *seqlen)
 /*
  * read a single character from tty, with timeout in milliseconds.
  * timeout == 0 means wait indefinitely (no timeout).
- * return char or -1 if timeout was reached.
+ * return char, or -1 if timeout was reached, at the end of the input
+ * or on errors.
  */
 static int get_one_char(int timeout)
 {
@@ -1078,6 +1079,8 @@ static int get_one_char(int timeout)
             errmsg("cannot read from the terminal");
         return -1;
     }
+    if (tty_at_eof())
+        return -1;
     /* n == 0: at most an incomplete character is buffered, wait for more */
     if (timeout == 0 || buffered) {
         buffered = false;
