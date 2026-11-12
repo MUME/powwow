@@ -667,7 +667,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                 break;
             case TELOPT_NAWS:
                 sendopt(WILL, *s);
-                tcp_write_tty_size();
+                tcp_write_tty_size(conn);
                 break;
             case TELOPT_CHARSET:
                 if (!(conn->cs_flags & CS_WILL_SENT))
@@ -793,18 +793,18 @@ void tcp_write_chars(connsess *conn, const char *data, size_t len)
 }
 
 /*
- * Send current terminal size (RFC 1073)
+ * Send current terminal size to conn (RFC 1073)
  */
-void tcp_write_tty_size(void)
+void tcp_write_tty_size(connsess *conn)
 {
     static const char head[] = { IAC, SB, TELOPT_NAWS };
-    tcp_raw_write(current_connection, head, sizeof head);
+    tcp_raw_write(conn, head, sizeof head);
 
     char size[] = { cols >> 8, cols & 0xff, lines >> 8, lines & 0xff };
-    tcp_write_escape_iac(main_connection, size, sizeof size);
+    tcp_write_escape_iac(conn, size, sizeof size);
 
     static const char tail[] = { IAC, SE };
-    tcp_raw_write(main_connection, tail, sizeof tail);
+    tcp_raw_write(conn, tail, sizeof tail);
 
 #ifdef TELOPTS
     tty_printf("[sent term size %d %d]\n", cols, lines);
@@ -1136,7 +1136,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
     current_connection = &CONN_INDEX(i);
     tcp_set_main(current_connection);
     if (opt_sendsize)
-        tcp_write_tty_size();
+        tcp_write_tty_size(current_connection);
 
     if (initstring != NULL) {
         parse_instruction(initstring, false, false, true);

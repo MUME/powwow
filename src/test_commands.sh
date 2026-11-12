@@ -1248,6 +1248,18 @@ has '#error: text/string longer than limit, discarded.'
 has 'after'
 lacks '#out of memory'
 
+# a spawned command is a connection that uses the telnet protocol too:
+# what the command prints is received, and what is sent is its input
+cat > "$tmp/server" <<'EOF'
+printf '\377\375\037'
+od -An -tu1 -N12 | tr -s ' ' | sed -e 's/^/#print got/' -e 's/ *$//'
+EOF
+run --until '#connection on "n" closed.' \
+    'window size for a connection that is not the main one' \
+    "#spawn n sh $tmp/server"
+joined | grep -Eqx 'got 255 251 31 255 250 31( [0-9]+){4} 255 240' \
+    || fail "missing the window size"
+
 # every command must have a help entry with the syntax shown by #help, and
 # the manual must have it too, except for the commands it does not show
 name='every command has the same syntax in the help'

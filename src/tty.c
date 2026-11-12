@@ -283,7 +283,7 @@ void tty_sig_winch_bottomhalf(void)
             --cols_1;
 
         if (main_connection != NULL)
-            tcp_write_tty_size();
+            tcp_write_tty_size(main_connection);
         line0 += lines - olines;
 
         tty_gotoxy(0, line0);
