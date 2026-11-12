@@ -104,7 +104,7 @@ char *xstrdup(const char *s)
 }
 
 /* xstrdup(), or NULL for NULL */
-char *my_strdup(const char *s)
+char *xstrdup_or_null(const char *s)
 {
     return s != NULL ? xstrdup(s) : NULL;
 }

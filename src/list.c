@@ -108,7 +108,7 @@ void add_aliasnode(char *name, char *subst)
     new->group = NULL;
     new->active = true;
     new->name = xstrdup(name);
-    new->subst = my_strdup(subst);
+    new->subst = xstrdup(subst);
     aliasnode **bucket = &aliases[hash_bucket(name)];
     new->next = *bucket;
     *bucket = new;
@@ -166,8 +166,8 @@ void add_actionnode(char *pattern, char *command, char *label, bool active,
     actionnode *new = xmalloc(sizeof(actionnode));
     *new = (actionnode){
         .pattern = xstrdup(pattern),
-        .command = my_strdup(command),
-        .label = my_strdup(label),
+        .command = xstrdup(command),
+        .label = xstrdup(label),
         .active = active,
         .type = type,
 #ifdef USE_REGEXP
@@ -190,8 +190,8 @@ void add_promptnode(char *pattern, char *command, char *label, bool active,
     promptnode *new = xmalloc(sizeof(promptnode));
     *new = (promptnode){
         .pattern = xstrdup(pattern),
-        .command = my_strdup(command),
-        .label = my_strdup(label),
+        .command = xstrdup(command),
+        .label = xstrdup(label),
         .active = active,
         .type = type,
 #ifdef USE_REGEXP
@@ -219,7 +219,7 @@ void add_keynode(const char *name, const char *sequence, int seqlen,
     memmove(new->sequence, sequence, seqlen);
     new->seqlen = seqlen;
     new->funct = funct;
-    new->call_data = my_strdup(call_data);
+    new->call_data = xstrdup_or_null(call_data);
     /* in ASCII order of their names */
     keynode **base = &keydefs;
     while (*base != NULL && strcmp(new->name, (*base)->name) > 0)
@@ -236,7 +236,7 @@ delaynode *add_delaynode(char *name, char *command, vtime *when, bool is_dead)
 {
     delaynode *new = xmalloc(sizeof(delaynode));
     new->name = xstrdup(name);
-    new->command = my_strdup(command);
+    new->command = xstrdup(command);
     new->when.tv_sec = when->tv_sec;
     new->when.tv_usec = when->tv_usec;
     insert_delaynode(new, is_dead);
