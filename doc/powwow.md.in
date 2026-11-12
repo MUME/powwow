@@ -1878,7 +1878,8 @@ Known internal variables are:
   get written to the file.
 
   If `buffer` is zero (default), powwow starts logging text from the MUD
-  only at the moment you activate `#capture` or `#movie`.
+  only at the moment you activate `#capture` or `#movie`. Other values
+  must be from 1000 to 2147483647.
 
   To discard the text stored in memory by `buffer`, change its value
   (for example, set it to zero and then back to a non-zero value).

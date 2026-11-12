@@ -264,6 +264,12 @@ run '#save saves #option editor as typed' "#file =$tmp/options.pw
 grep -Fxq '#option editor=my ed\;it -x' "$tmp/options.pw" \
     || fail "expected #option editor in the file"
 
+run '#setvar buffer rejects sizes too large for powwow' \
+    '#setvar buffer=4294968296
+#setvar'
+has '#buffer size must be 0 (zero) or from 1000 to 2147483647'
+has '#setvar buffer=0'
+
 run 'texts are limited to 1 MB by default' '#setvar
 #($a = "x" * 1048576)
 #($a = "x" * 1048577)'

@@ -11,6 +11,7 @@
  *
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -165,10 +166,11 @@ static void log_reset(void)
     }
 }
 
-void log_resize(int newsize)
+void log_resize(long newsize)
 {
-    if (newsize != 0 && newsize < 1000) {
-        message_printf("#buffer size must be 0 (zero) or >= 1000\n");
+    if (newsize != 0 && (newsize < 1000 || newsize > INT_MAX)) {
+        message_printf("#buffer size must be 0 (zero) or from 1000 to %d\n",
+                       INT_MAX);
         return;
     }
 
@@ -183,7 +185,7 @@ void log_resize(int newsize)
         datalist = malloc(newsize);
         loglist = malloc(newsize / 16 * sizeof(logentry));
         if (datalist == NULL || loglist == NULL) {
-            errmsg("cannot allocate a buffer of %d bytes", newsize);
+            errmsg("cannot allocate a buffer of %ld bytes", newsize);
             free(datalist);
             free(loglist);
             datalist = NULL;
@@ -195,7 +197,7 @@ void log_resize(int newsize)
         logsize = newsize / 16;
     }
     if (opt_info) {
-        message_printf("#buffer resized to %d bytes%s\n", newsize,
+        message_printf("#buffer resized to %ld bytes%s\n", newsize,
                        newsize != 0 ? "" : " (disabled)");
     }
 }
