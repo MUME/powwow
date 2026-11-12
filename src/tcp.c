@@ -462,15 +462,16 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
            && errno == EINTR)
         ;
 
-    if (i == 0 || (i < 0 && errno == EINVAL)) {
+    /* e.g., a TLS record without data, such as a session ticket */
+    if (i < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+        return 0;
+    /* the end, or an error such as a reset connection, which Cygwin
+     * also reports when a #spawn command exits: close the connection */
+    if (i <= 0) {
+        if (i < 0 && errno != EINVAL)
+            errmsg("cannot read from connection \"%s\"", conn->id);
         conn->state = NORMAL;
         tcp_close(NULL);
-        return 0;
-    }
-    if (i < 0) {
-        /* e.g., a TLS record without data, such as a session ticket */
-        if (errno != EAGAIN && errno != EWOULDBLOCK)
-            errmsg("cannot read from connection \"%s\"", conn->id);
         return 0;
     }
 
