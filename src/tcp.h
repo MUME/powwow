@@ -87,7 +87,7 @@ int  tcp_read(connsess *conn, void *buffer, size_t maxsize);
 void tcp_raw_write(connsess *conn, const void *data, size_t len);
 void tcp_write_escape_iac(connsess *conn, const void *data, size_t len);
 void tcp_write_chars(connsess *conn, const char *data, size_t len);
-void tcp_write_tty_size(void);
+void tcp_write_tty_size(connsess *conn);
 void tcp_write(connsess *conn, const char *data);
 void tcp_main_write(const char *data);
 void tcp_flush(void);
