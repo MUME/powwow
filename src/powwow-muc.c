@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
         if (strncmp(line, "line", 4) == 0) {
             displine = &line[5];
             sleep = 0;
-        } else if (strncmp(line, "prompt", 5) == 0) {
+        } else if (strncmp(line, "prompt", 6) == 0) {
             displine = &line[7];
             /* Munch newline */
             line[strlen(line) - 1] = '\0';
