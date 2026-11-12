@@ -88,7 +88,7 @@ int process_message(char *buf, int len)
 
     if (i < len && buf[i] == '\r') i++;
     if (i >= len || buf[i] != '\n') {
-	write_message ("#warning: MPI protocol error\n");
+        write_message("#warning: bad MPI message header\n");
 	return 0;
     }
 
@@ -108,8 +108,8 @@ int process_message(char *buf, int len)
     for (i = 0; i < l && (to - text) < msglen; ++i) {
         if (got_iac) {
             if (*from != (char)IAC)
-                wrap_printf("#warning: got IAC in MPI message; treating as "
-                            "IAC IAC");
+                wrap_printf("#warning: unescaped IAC in MPI message, kept"
+                            " as is");
             else
                 ++from;
             got_iac = 0;
@@ -134,8 +134,8 @@ int process_message(char *buf, int len)
         for (i = 0; i < l; ++i) {
             if (got_iac) {
                 if (*from != (char)IAC)
-                    wrap_printf("#warning: got IAC in MPI message; treating "
-                                "as IAC IAC");
+                    wrap_printf("#warning: unescaped IAC in MPI message,"
+                                " kept as is");
                 else
                     ++from;
                 got_iac = 0;
@@ -157,7 +157,7 @@ int process_message(char *buf, int len)
         message_edit(text, msglen, 1, 0);
         break;
     default:
-        sprintf(msg, "#warning: received a funny message (0x%x)\n", *buf);
+        sprintf(msg, "#warning: unknown MPI message type 0x%02hhx\n", *buf);
         write_message(msg);
         free(text);
         break;
@@ -316,7 +316,7 @@ cleanup_file: if (unlink(sp->file) < 0)
 void message_edit(char *text, int msglen, char view, char builtin)
 {
     char tmpname[BUFSIZE], command_str[BUFSIZE];
-    const char *errdesc = "#warning: protocol error (message_edit, no %s)\n";
+    const char *errdesc = "#warning: bad MPI edit message\n";
     int tmpfd, i, childpid;
     unsigned int key;
     editsess *s;
@@ -331,14 +331,14 @@ void message_edit(char *text, int msglen, char view, char builtin)
 	i = 0;
     } else {
 	if (msglen < 1 || text[0] != 'M') {
-	    tty_printf(errdesc, "M");
+            tty_puts(errdesc);
 	    free(text);
 	    return;
 	}
 	for (i = 1; i < msglen && isdigit((unsigned char)text[i]); ++i)
 	    ;
 	if (i >= msglen || text[i++] != '\n' || i >= msglen) {
-	    tty_printf(errdesc, "\\n");
+            tty_puts(errdesc);
 	    free(text);
 	    return;
 	}
@@ -347,7 +347,7 @@ void message_edit(char *text, int msglen, char view, char builtin)
     descr = text + i;
     while (i < msglen && text[i] != '\n') i++;
     if (i >= msglen) {
-	tty_printf(errdesc, "desc");
+        tty_puts(errdesc);
 	free(text);
 	return;
     }
