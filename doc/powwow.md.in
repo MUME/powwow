@@ -1205,7 +1205,8 @@ description and their number.
 
 Without an argument, all editing sessions are cancelled;
 otherwise, only the given session is cancelled. The corresponding
-editor processes are brutally killed.
+editor processes are brutally killed. Sessions already cancelled, whose
+editor has not ended yet, are left alone.
 
 ### List/turn various options on/off
 

@@ -1556,6 +1556,16 @@ has '#unknown editing session 99999999999999999999'
 [ "$(grep -c '^#killed' "$tmp/out")" -eq 1 ] \
     || fail "expected the view to be killed once"
 
+# #cancel on an editing session already cancelled, before it ends
+run --until '#killed' 'cancelling an editing session twice' \
+    "#option pager=&sh -c 'sleep 5'
+#help mark
+#cancel 4294967295; #cancel 4294967295; #cancel"
+has '#editing session 4294967295 already cancelled'
+has '#no editing sessions to cancel.'
+[ "$(grep -c '^#killed' "$tmp/out")" -eq 1 ] \
+    || fail "expected the view to be killed once"
+
 # a suboption from one connection, split by a suboption from another one
 cat > "$tmp/server" <<'EOF'
 printf '\377\372\052\001;ISO-8859-1'
