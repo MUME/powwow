@@ -1322,6 +1322,8 @@ again:
     if (r == (size_t)-1 && errno == EILSEQ) {
         /* invalid character; the state is undefined after it */
         ps = (mbstate_t){ 0 };
+        if (*n == 0)
+            return -1;
         --*n;
         memmove(s, s + 1, *n);
         goto again;
