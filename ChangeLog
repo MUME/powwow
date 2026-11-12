@@ -168,6 +168,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  processed a second time as a prompt after the error.
 	* Prompts and delayed commands (#in and #at) longer than `#setvar
 	  mem' report the limit instead of `#out of memory'.
+	* Prompts that #mark makes longer than `#setvar mem' no longer
+	  keep the #prompts that match the rest of their line from
+	  running.
 	* ${name} and @{name} without the closing brace, such as `${1x}',
 	  are left as they are, instead of losing the character in place of
 	  the brace or reading past the end of the text.
