@@ -1312,6 +1312,20 @@ run --until '#connection on "n" closed.' \
 #spawn o sh $tmp/other $tmp"
 has '#charset: iso-8859-1 (negotiated)'
 
+# MPI messages with a length of 0 or one too large for an int
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE\n#print one\n'
+printf '~$#EE4294967295\n#print two\n'
+EOF
+run --until '#connection on "n" closed.' 'MPI messages with a bad length' \
+    "#spawn n sh $tmp/server
+##n #request editor"
+[ "$(grep -c '^#warning: bad MPI message header$' "$tmp/out")" -eq 2 ] \
+    || fail "expected two bad headers"
+lacks '#out of memory'
+has 'two'
+
 # every command must have a help entry with the syntax shown by #help, and
 # the manual must have it too, except for the commands it does not show
 name='every command has the same syntax in the help'
