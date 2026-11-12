@@ -83,10 +83,8 @@ extern volatile int sig_pending, sig_winch_got, sig_chld_got;
 
 extern long received, sent;
 
-#ifndef NO_CLOCK
 #include <time.h>
 extern clock_t start_clock, cpu_clock;
-#endif
 
 extern aliasnode *aliases[MAX_HASH];
 extern aliasnode *sortedaliases;

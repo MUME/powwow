@@ -34,9 +34,7 @@
 #  define TELOPT_CHARSET 42
 #endif
 #include <arpa/inet.h>
-#ifndef NEXT
-#  include <unistd.h>
-#endif
+#include <unistd.h>
 
 #include "main.h"
 #include "utils.h"
