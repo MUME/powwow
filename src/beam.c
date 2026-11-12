@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <limits.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -77,14 +78,21 @@ int process_message(char *buf, int len)
 {
     status(1);
 
-    int msglen = atoi(buf + 1);
+    /* the length must be positive and fit in an int */
+    int msglen = 0;
+    bool bad_len = false;
     int i = 1;
-    while (i < len && isdigit((unsigned char)buf[i]))
-        ++i;
+    for (; i < len && isdigit((unsigned char)buf[i]); ++i) {
+        int digit = buf[i] - '0';
+        if (msglen > (INT_MAX - digit) / 10)
+            bad_len = true;
+        else
+            msglen = msglen * 10 + digit;
+    }
 
     if (i < len && buf[i] == '\r')
         ++i;
-    if (i >= len || buf[i] != '\n') {
+    if (i >= len || buf[i] != '\n' || bad_len || msglen == 0) {
         write_message("#warning: bad MPI message header\n");
         return 0;
     }
