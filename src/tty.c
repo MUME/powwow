@@ -311,11 +311,7 @@ void tty_bootstrap(void)
 
 #ifdef USE_VT100
     cols = 80;
-# ifdef LINES
-    lines = LINES;
-# else  /* not LINES */
     lines = 24;
-# endif /* LINES */
 #else   /* not USE_VT100 */
     struct tc_init_node {
         char cap[4];

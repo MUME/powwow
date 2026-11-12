@@ -2584,11 +2584,6 @@ static void cmd_net(char *arg)
                 received, sent);
 }
 
-
-#ifndef CLOCKS_PER_SEC
-#  define CLOCKS_PER_SEC uSEC_PER_SEC
-#endif
-
 static void cmd_cpu(char *arg)
 {
     update_now();
