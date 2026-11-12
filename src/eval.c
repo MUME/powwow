@@ -541,6 +541,28 @@ static void divide(long *num, long divisor, bool remainder)
     }
 }
 
+/*
+ * repeat the text of dst n times, for n > 1; a result too long for a
+ * text is an error
+ */
+static ptr *repeat_text(ptr *dst, long n)
+{
+    long delta = ptrlen(dst);
+    if (delta == 0)
+        return dst;
+    if (n > INT_MAX / delta) {
+        error = limit_mem != 0 ? MEM_LIMIT_ERROR : OUT_RANGE_ERROR;
+        return dst;
+    }
+    dst = ptrsetlen(dst, (int)(delta * n));
+    if (REAL_ERROR)
+        return dst;
+    char *tmp = ptrdata(dst);
+    for (long i = 1; i < n; ++i)
+        memcpy(tmp + i * delta, tmp, delta);
+    return dst;
+}
+
 static bool exe_op(operator *op)
 {
     object o1 = { 0 };
@@ -689,13 +711,7 @@ static bool exe_op(operator *op)
             } else if (o2.num == 0) {
                 ptrzero(*o1.txt_ref);
             } else if (o2.num > 1 && *o1.txt_ref != NULL) {
-                long delta = ptrlen(*o1.txt_ref);
-                if (delta != 0) {
-                    *o1.txt_ref = ptrsetlen(*o1.txt_ref, delta * o2.num);
-                    char *tmp = ptrdata(*o1.txt_ref);
-                    for (long n = 1; error == 0 && n < o2.num; ++n)
-                        memcpy(tmp + n * delta, tmp, delta);
-                }
+                *o1.txt_ref = repeat_text(*o1.txt_ref, o2.num);
             }
 
             check_delete(&o2);
@@ -873,13 +889,7 @@ static bool exe_op(operator *op)
             } else if (o2.num == 0) {
                 ptrzero(dst);
             } else if (o2.num > 1 && dst != NULL) {
-                long delta = ptrlen(dst);
-                if (delta != 0) {
-                    dst = ptrsetlen(dst, delta * o2.num);
-                    char *tmp = ptrdata(dst);
-                    for (long n = 1; error == 0 && n < o2.num; ++n)
-                        memcpy(tmp + n * delta, tmp, delta);
-                }
+                dst = repeat_text(dst, o2.num);
             }
             check_delete(&o2);
             if (REAL_ERROR)

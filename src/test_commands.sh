@@ -873,6 +873,18 @@ has '1 cc'
 has '2 bc'
 has '3 '
 
+run 'repeating a text too many times is an error' \
+    '#print ("ab" * 2147483648)
+#($s = "ab")
+#($s *= 2147483648)
+#print ("s=" + $s)
+#setvar mem=100
+#print ("ab" * 4611686018427387904)'
+has '#print: #error: operand or index out of range.'
+has '#error: operand or index out of range.'
+has 's=ab'
+has '#print: #error: text/string longer than limit, discarded.'
+
 run 'dividing by zero is an error' \
     '#(@a = 7)
 #(@a /= 0)
