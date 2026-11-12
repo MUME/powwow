@@ -543,6 +543,9 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                                     " may be spoofed");
                     } else {
                         int used = process_message((char *)s + 1, i - 1);
+                        /* a command it ran may have closed conn */
+                        if (conn->id == NULL)
+                            return (char *)linestart - (char *)buffer;
                         /* no +MPILEN here, as it was already processed. */
                         s += used;
                         i -= used;
