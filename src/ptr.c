@@ -1,5 +1,5 @@
 /*
- *  data.c  --  basic data structures and functions to manipulate them
+ *  ptr.c  --  basic data structures and functions to manipulate them
  *
  *  Copyright (C) 1998 by Massimiliano Ghilardi
  *
@@ -24,8 +24,7 @@
 #include "eval.h"
 #include "ptr.h"
 
-enum
-{
+enum {
     /* the header, and the terminating '\0' */
     PTR_OVERHEAD = sizeof(ptr) + 1,
     /* the largest max that can be allocated */
@@ -38,19 +37,24 @@ enum
  */
 ptr *ptrnew(int max)
 {
-    ptr *p = (ptr *)0;
-
     if (max == 0)
-	;
-    else if (limit_mem && max > limit_mem)
-	error = MEM_LIMIT_ERROR;
-    else if (max < 0 || max > PTR_MAX) /* overflow! */
-	error = NO_MEM_ERROR;
-    else if ((p = (ptr *)malloc(max + PTR_OVERHEAD))) {
-	p->max = max;
-	ptrdata(p)[p->len = 0] = '\0';
-    } else
-	error = NO_MEM_ERROR;
+        return NULL;
+    if (limit_mem != 0 && max > limit_mem) {
+        error = MEM_LIMIT_ERROR;
+        return NULL;
+    }
+    if (max < 0 || max > PTR_MAX) {     /* overflow! */
+        error = NO_MEM_ERROR;
+        return NULL;
+    }
+    ptr *p = malloc(max + PTR_OVERHEAD);
+    if (p == NULL) {
+        error = NO_MEM_ERROR;
+        return NULL;
+    }
+    p->max = max;
+    p->len = 0;
+    ptrdata(p)[0] = '\0';
     return p;
 }
 
@@ -62,31 +66,36 @@ ptr *ptrnew(int max)
  */
 ptr *ptrdup2(const ptr *src, int newmax)
 {
-    ptr *p = (ptr *)0;
-
     if (newmax == 0)
-	;
-    else if (newmax < 0 || newmax > PTR_MAX)
-	error = NO_MEM_ERROR;
-    else if (limit_mem && newmax > limit_mem)
-	error = MEM_LIMIT_ERROR;
-    else if (!src)
-	p = ptrnew(newmax);
-    else if ((p = malloc(newmax + PTR_OVERHEAD))) {
-	p->max = newmax;
-	if (newmax > ptrlen(src))
-	    newmax = ptrlen(src);
-	memmove(ptrdata(p), ptrdata(src), p->len = newmax);
-	ptrdata(p)[newmax] = '\0';
-    } else
-	error = NO_MEM_ERROR;
+        return NULL;
+    if (newmax < 0 || newmax > PTR_MAX) {
+        error = NO_MEM_ERROR;
+        return NULL;
+    }
+    if (limit_mem != 0 && newmax > limit_mem) {
+        error = MEM_LIMIT_ERROR;
+        return NULL;
+    }
+    if (src == NULL)
+        return ptrnew(newmax);
+    ptr *p = malloc(newmax + PTR_OVERHEAD);
+    if (p == NULL) {
+        error = NO_MEM_ERROR;
+        return NULL;
+    }
+    p->max = newmax;
+    if (newmax > ptrlen(src))
+        newmax = ptrlen(src);
+    p->len = newmax;
+    memmove(ptrdata(p), ptrdata(src), newmax);
+    ptrdata(p)[newmax] = '\0';
     return p;
 }
 
 ptr *ptrdup(const ptr *src)
 {
-    if (!src)
-	return NULL;
+    if (src == NULL)
+        return NULL;
     return ptrdup2(src, ptrlen(src));
 }
 
@@ -100,29 +109,31 @@ void ptrdel(ptr **p)
 /* clear a ptr */
 void ptrzero(ptr *p)
 {
-    if (p) {
-	p->len = 0;
-	ptrdata(p)[0] = '\0';
+    if (p != NULL) {
+        p->len = 0;
+        ptrdata(p)[0] = '\0';
     }
 }
 
 /* truncate a ptr to len chars */
 void ptrtrunc(ptr *p, int len)
 {
-    if (p) {
-	if (len < 0 || len > ptrlen(p))
-	    return;
-	ptrdata(p)[p->len = len] = '\0';
+    if (p != NULL) {
+        if (len < 0 || len > ptrlen(p))
+            return;
+        p->len = len;
+        ptrdata(p)[len] = '\0';
     }
 }
 
 /* shrink a ptr by len chars */
 void ptrshrink(ptr *p, int len)
 {
-    if (p) {
-	if (len < 0 || len > ptrlen(p))
-	    return;
-	ptrdata(p)[p->len -= len] = '\0';
+    if (p != NULL) {
+        if (len < 0 || len > ptrlen(p))
+            return;
+        p->len -= len;
+        ptrdata(p)[p->len] = '\0';
     }
 }
 
@@ -136,82 +147,80 @@ void ptrshrink(ptr *p, int len)
  */
 ptr *ptrmcat(ptr *dst, const char *src, int len)
 {
-    int newmax, failmax, overlap;
-    char mustalloc;
-
-    if (!src || len <= 0)
-	return dst;
+    if (src == NULL || len <= 0)
+        return dst;
     if (len > PTR_MAX - (dst != NULL ? ptrlen(dst) : 0)) {
-	/* overflow! */
-	error = NO_MEM_ERROR;
-	return dst;
+        /* overflow! */
+        error = NO_MEM_ERROR;
+        return dst;
     }
 
-    if (!dst) {
-	failmax = len;
-	mustalloc = 1;
+    int failmax;
+    bool mustalloc;
+    if (dst == NULL) {
+        failmax = len;
+        mustalloc = true;
     } else {
-	failmax = ptrlen(dst) + len;
-	mustalloc = ptrmax(dst) < ptrlen(dst) + len;
+        failmax = ptrlen(dst) + len;
+        mustalloc = ptrmax(dst) < ptrlen(dst) + len;
 
-	if (ptrmax(dst) > PARAMLEN && ptrmax(dst)/4 > ptrlen(dst) + len)
-	    /* we're wasting space, shrink dst */
-	    mustalloc = 1;
+        if (ptrmax(dst) > PARAMLEN && ptrmax(dst) / 4 > ptrlen(dst) + len) {
+            /* we're wasting space, shrink dst */
+            mustalloc = true;
+        }
     }
 
     if (mustalloc) {
-	/* dst must be (re)allocated */
-	ptr *p;
+        /* dst must be (re)allocated */
 
-	/* ugly but working: check for overlapping dst and src */
-	if (dst && src >= ptrdata(dst) && src < ptrdata(dst) + ptrmax(dst))
-	    overlap = 1;
-	else
-	    overlap = 0;
+        /* ugly but working: check for overlapping dst and src */
+        bool overlap = (dst != NULL && src >= ptrdata(dst)
+                        && src < ptrdata(dst) + ptrmax(dst));
 
-	/* find a suitable new size */
-	if (limit_mem && failmax > limit_mem) {
-	    error = MEM_LIMIT_ERROR;
-	    return dst;
-	}
-	if (failmax < PARAMLEN / 2)
-	    newmax = PARAMLEN;
-	else if (failmax / 1024 < PARAMLEN && failmax <= PTR_MAX - PARAMLEN)
-	    newmax = failmax + PARAMLEN;
-	else
-	    newmax = failmax;
-	if (limit_mem && newmax > limit_mem) {
-	    if (len + (dst ? ptrlen(dst) : 0) > limit_mem)
-		len = limit_mem - (dst ? ptrlen(dst) : 0);
-	    if (len < 0)
-		len = 0;
-	    newmax = limit_mem;
-	}
-	if (overlap != 0 && newmax < ptrmax(dst)) {
+        /* find a suitable new size */
+        if (limit_mem != 0 && failmax > limit_mem) {
+            error = MEM_LIMIT_ERROR;
+            return dst;
+        }
+        int newmax;
+        if (failmax < PARAMLEN / 2)
+            newmax = PARAMLEN;
+        else if (failmax / 1024 < PARAMLEN && failmax <= PTR_MAX - PARAMLEN)
+            newmax = failmax + PARAMLEN;
+        else
+            newmax = failmax;
+        if (limit_mem != 0 && newmax > limit_mem) {
+            if (len + (dst != NULL ? ptrlen(dst) : 0) > limit_mem)
+                len = limit_mem - (dst != NULL ? ptrlen(dst) : 0);
+            if (len < 0)
+                len = 0;
+            newmax = limit_mem;
+        }
+        if (overlap && newmax < ptrmax(dst)) {
             /* src may not survive shrinking dst */
             memmove(ptrdata(dst) + ptrlen(dst), src, len);
             src = ptrdata(dst) + ptrlen(dst);
-	}
-	const size_t src_offset = overlap != 0 ? src - ptrdata(dst) : 0;
-	if ((p = (ptr *)realloc((void *)dst, newmax + PTR_OVERHEAD))) {
-	    if (overlap)
-	        src = ptrdata(p) + src_offset;
-	    if (!dst)
-		p->len = 0;
-	    p->max = newmax;
-	    dst = p;
-	} else if ((p = ptrdup2(dst, newmax))) {
-	    if (overlap)
-	        src = ptrdata(p) + src_offset;
-	    ptrdel(&dst);
-	    dst = p;
-	} else {
-	    error = NO_MEM_ERROR;
-	    return dst;
-	}
+        }
+        const size_t src_offset = overlap ? src - ptrdata(dst) : 0;
+        ptr *p = realloc(dst, newmax + PTR_OVERHEAD);
+        if (p != NULL) {
+            if (dst == NULL)
+                p->len = 0;
+            p->max = newmax;
+        } else {
+            p = ptrdup2(dst, newmax);
+            if (p == NULL) {
+                error = NO_MEM_ERROR;
+                return dst;
+            }
+            ptrdel(&dst);
+        }
+        if (overlap)
+            src = ptrdata(p) + src_offset;
+        dst = p;
     }
     if (ptrdata(dst) + ptrlen(dst) != src)
-	memmove(ptrdata(dst) + ptrlen(dst), src, len);
+        memmove(ptrdata(dst) + ptrlen(dst), src, len);
     dst->len += len;
     ptrdata(dst)[ptrlen(dst)] = '\0';
     return dst;
@@ -219,8 +228,8 @@ ptr *ptrmcat(ptr *dst, const char *src, int len)
 
 ptr *ptrcat(ptr *dst, const ptr *src)
 {
-    if (src)
-	return ptrmcat(dst, ptrdata(src), ptrlen(src));
+    if (src != NULL)
+        return ptrmcat(dst, ptrdata(src), ptrlen(src));
     return dst;
 }
 
@@ -230,83 +239,83 @@ ptr *ptrcat(ptr *dst, const ptr *src)
  */
 ptr *ptrmcpy(ptr *dst, const char *src, int len)
 {
-    int newmax, failmax = len, overlap;
-    char mustalloc;
-
-    if (!src || len<=0) {
-	if (len>=0)
-	    ptrzero(dst);
-	return dst;
+    if (src == NULL || len <= 0) {
+        if (len >= 0)
+            ptrzero(dst);
+        return dst;
     }
     if (len > PTR_MAX) {
-	/* overflow! */
-	error = NO_MEM_ERROR;
-	return dst;
+        /* overflow! */
+        error = NO_MEM_ERROR;
+        return dst;
     }
 
-    if (!dst) {
-	mustalloc = 1;
+    bool mustalloc;
+    if (dst == NULL) {
+        mustalloc = true;
     } else {
-	mustalloc = ptrmax(dst) < len;
+        mustalloc = ptrmax(dst) < len;
 
-	if (ptrmax(dst) > PARAMLEN && ptrmax(dst)/4 > len)
-	    /* we're wasting space, shrink dst */
-	    mustalloc = 1;
+        if (ptrmax(dst) > PARAMLEN && ptrmax(dst) / 4 > len) {
+            /* we're wasting space, shrink dst */
+            mustalloc = true;
+        }
     }
 
     if (mustalloc) {
-	/* dst must be (re)allocated */
-	ptr *p;
+        /* dst must be (re)allocated */
 
-	/* ugly but working: check for overlapping dst and src */
-	if (dst && src >= ptrdata(dst) && src < ptrdata(dst) + ptrmax(dst))
-	    overlap = 1;
-	else
-	    overlap = 0;
+        /* ugly but working: check for overlapping dst and src */
+        bool overlap = (dst != NULL && src >= ptrdata(dst)
+                        && src < ptrdata(dst) + ptrmax(dst));
 
-	/* find a suitable new size */
-	if (limit_mem && failmax > limit_mem) {
-	    error = MEM_LIMIT_ERROR;
-	    return dst;
-	}
-	if (failmax < PARAMLEN / 2)
-	    newmax = PARAMLEN;
-	else if (failmax / 1024 < PARAMLEN && failmax <= PTR_MAX - PARAMLEN)
-	    newmax = failmax + PARAMLEN;
-	else
-	    newmax = failmax;
-	if (limit_mem && newmax > limit_mem) {
-	    if (len > limit_mem)
-		len = limit_mem;
-	    newmax = limit_mem;
-	}
+        /* find a suitable new size */
+        int failmax = len;
+        if (limit_mem != 0 && failmax > limit_mem) {
+            error = MEM_LIMIT_ERROR;
+            return dst;
+        }
+        int newmax;
+        if (failmax < PARAMLEN / 2)
+            newmax = PARAMLEN;
+        else if (failmax / 1024 < PARAMLEN && failmax <= PTR_MAX - PARAMLEN)
+            newmax = failmax + PARAMLEN;
+        else
+            newmax = failmax;
+        if (limit_mem != 0 && newmax > limit_mem) {
+            if (len > limit_mem)
+                len = limit_mem;
+            newmax = limit_mem;
+        }
 
-	if (overlap != 0 && newmax < ptrmax(dst)) {
+        if (overlap && newmax < ptrmax(dst)) {
             /* src may not survive shrinking dst */
             memmove(ptrdata(dst), src, len);
             src = ptrdata(dst);
-	}
-	const size_t src_offset = overlap != 0 ? src - ptrdata(dst) : 0;
-	if ((p = (ptr *)realloc((void *)dst, newmax + PTR_OVERHEAD))) {
-	    if (overlap)
-	        src = ptrdata(p) + src_offset;
-	    if (!dst)
-		p->len = 0;
-	    p->max = newmax;
-	    dst = p;
-	} else if ((p = ptrdup2(dst, newmax))) {
-	    if (overlap)
-	        src = ptrdata(p) + src_offset;
-	    ptrdel(&dst);
-	    dst = p;
-	} else {
-	    error = NO_MEM_ERROR;
-	    return dst;
-	}
+        }
+        const size_t src_offset = overlap ? src - ptrdata(dst) : 0;
+        ptr *p = realloc(dst, newmax + PTR_OVERHEAD);
+        if (p != NULL) {
+            if (dst == NULL)
+                p->len = 0;
+            p->max = newmax;
+        } else {
+            p = ptrdup2(dst, newmax);
+            if (p == NULL) {
+                error = NO_MEM_ERROR;
+                return dst;
+            }
+            ptrdel(&dst);
+        }
+        if (overlap)
+            src = ptrdata(p) + src_offset;
+        dst = p;
     }
-    if (ptrdata(dst) != src)
-	/* src was moved along with dst above if it pointed inside dst */
-	memmove(ptrdata(dst), src, len); /* NOLINT(clang-analyzer-unix.Malloc) */
+    if (ptrdata(dst) != src) {
+        /* src was moved along with dst above if it pointed inside dst */
+        /* NOLINTNEXTLINE(clang-analyzer-unix.Malloc) */
+        memmove(ptrdata(dst), src, len);
+    }
     dst->len = len;
     ptrdata(dst)[ptrlen(dst)] = '\0';
     return dst;
@@ -314,8 +323,8 @@ ptr *ptrmcpy(ptr *dst, const char *src, int len)
 
 ptr *ptrcpy(ptr *dst, const ptr *src)
 {
-    if (src)
-	return ptrmcpy(dst, ptrdata(src), ptrlen(src));
+    if (src != NULL)
+        return ptrmcpy(dst, ptrdata(src), ptrlen(src));
     ptrzero(dst);
     return dst;
 }
@@ -323,32 +332,31 @@ ptr *ptrcpy(ptr *dst, const ptr *src)
 /* enlarge a ptr by len chars. create new if needed */
 ptr *ptrpad(ptr *p, int len)
 {
-    if (!p) {
-	if (len<=0)
-	    return p;
-	else
-	    return ptrnew(len);
+    if (p == NULL) {
+        if (len <= 0)
+            return NULL;
+        return ptrnew(len);
     }
     if (len < -ptrlen(p))
-	len = -ptrlen(p);
+        len = -ptrlen(p);
     if (len > ptrmax(p) - ptrlen(p)) {
-	/* must realloc the ptr */
-	if (len > PTR_MAX - ptrlen(p))  {
-	    /* overflow! */
-	    error = NO_MEM_ERROR;
-	    return p;
-	}
-	len += ptrlen(p);
-	/*
-	 * cheat: we use ptrmcpy with src==dst
-	 * and do an out-of-boud read of src.
-	 * works since dst (==src) gets enlarged
-	 * before doing the copy.
-	 */
-	p = ptrmcpy(p, ptrdata(p), len);
+        /* must realloc the ptr */
+        if (len > PTR_MAX - ptrlen(p)) {
+            /* overflow! */
+            error = NO_MEM_ERROR;
+            return p;
+        }
+        len += ptrlen(p);
+        /*
+         * cheat: we use ptrmcpy with src==dst
+         * and do an out-of-bound read of src.
+         * works since dst (==src) gets enlarged
+         * before doing the copy.
+         */
+        p = ptrmcpy(p, ptrdata(p), len);
     } else {
-	p->len += len;
-	ptrdata(p)[ptrlen(p)] = '\0';
+        p->len += len;
+        ptrdata(p)[ptrlen(p)] = '\0';
     }
     return p;
 }
@@ -356,14 +364,15 @@ ptr *ptrpad(ptr *p, int len)
 /* set a ptr to be len chars at minimum. create new if needed */
 ptr *ptrsetlen(ptr *p, int len)
 {
-    if (!p) {
-	if (len<=0)
-	    return p;
-	else {
-	    if ((p = ptrnew(len)))
-		ptrdata(p)[p->len = len] = '\0';
-	    return p;
-	}
+    if (p == NULL) {
+        if (len <= 0)
+            return NULL;
+        p = ptrnew(len);
+        if (p != NULL) {
+            p->len = len;
+            ptrdata(p)[len] = '\0';
+        }
+        return p;
     }
     return ptrpad(p, (len > 0 ? len : 0) - ptrlen(p));
 }
@@ -374,34 +383,32 @@ ptr *ptrsetlen(ptr *p, int len)
  */
 int ptrmcmp(const ptr *p, const char *q, int lenq)
 {
-    int res;
-    if (!p || !ptrlen(p)) {
-	if (!q || lenq<=0)
-	    /* both empty */
-	    res = 0;
-	else
-	    res = -1;
-    } else if (!q || lenq<=0)
-	res = 1;
-    else if ((res = memcmp(ptrdata(p), q, MIN2(ptrlen(p), lenq))))
-	;
-    else if (ptrlen(p) < lenq)
-	res = -1;
-    else if (ptrlen(p) > lenq)
-	res = 1;
-    else
-	res = 0;
-    return res;
+    if (p == NULL || ptrlen(p) == 0) {
+        if (q == NULL || lenq <= 0) {
+            /* both empty */
+            return 0;
+        }
+        return -1;
+    }
+    if (q == NULL || lenq <= 0)
+        return 1;
+    int res = memcmp(ptrdata(p), q, MIN2(ptrlen(p), lenq));
+    if (res != 0)
+        return res;
+    if (ptrlen(p) < lenq)
+        return -1;
+    if (ptrlen(p) > lenq)
+        return 1;
+    return 0;
 }
 
 int ptrcmp(const ptr *p, const ptr *q)
 {
-    if (q)
-	return ptrmcmp(p, ptrdata(q), ptrlen(q));
-    else if (p)
-	return 1;
-    else
-	return 0;
+    if (q != NULL)
+        return ptrmcmp(p, ptrdata(q), ptrlen(q));
+    if (p != NULL)
+        return 1;
+    return 0;
 }
 
 /*
@@ -410,9 +417,9 @@ int ptrcmp(const ptr *p, const ptr *q)
  */
 char *ptrchr(const ptr *p, char c)
 {
-    if (p)
-	return (char *)memchr(ptrdata(p), c, ptrlen(p));
-    return (char*)p; /* shortcut for NULL */
+    if (p != NULL)
+        return memchr(ptrdata(p), c, ptrlen(p));
+    return NULL;
 }
 
 /*
@@ -422,12 +429,12 @@ char *ptrchr(const ptr *p, char c)
 char *ptrrchr(const ptr *p, char c)
 {
     if (p != NULL) {
-        for (int i = ptrlen(p) - 1; i >= 0; --i)
+        for (int i = ptrlen(p) - 1; i >= 0; --i) {
             if (ptrdata(p)[i] == c)
                 return ptrdata(p) + i;
-        return NULL;
+        }
     }
-    return (char*)p; /* shortcut for NULL */
+    return NULL;
 }
 
 /*
@@ -435,28 +442,27 @@ char *ptrrchr(const ptr *p, char c)
  */
 char *(memfind)(const char *hay, int haylen, const char *needle, int needlelen)
 {
-    const char *tmp;
-
-    if (!hay || haylen<=0 || needlelen<0)
-	return NULL;
-    if (!needle || !needlelen)
-	return (char *)hay;
+    if (hay == NULL || haylen <= 0 || needlelen < 0)
+        return NULL;
+    if (needle == NULL || needlelen == 0)
+        return (char *)hay;
 
     while (haylen >= needlelen) {
-	/* find a matching first char */
-	if ((tmp = memchr(hay, *needle, haylen))) {
-	    if ((haylen -= (tmp-hay)) < needlelen)
-		return NULL;
-	    hay = tmp;
-	} else
-	    return NULL;
+        /* find a matching first char */
+        const char *tmp = memchr(hay, *needle, haylen);
+        if (tmp == NULL)
+            return NULL;
+        haylen -= tmp - hay;
+        if (haylen < needlelen)
+            return NULL;
+        hay = tmp;
 
-	/* got a matching first char,
-	 * check the rest */
-	if (!memcmp(needle, tmp, needlelen))
-	    return (char *)tmp;
+        /* got a matching first char, check the rest */
+        if (memcmp(needle, tmp, needlelen) == 0)
+            return (char *)tmp;
 
-	hay++, haylen --;
+        ++hay;
+        --haylen;
     }
 
     return NULL;
@@ -468,24 +474,23 @@ char *(memfind)(const char *hay, int haylen, const char *needle, int needlelen)
  */
 char *ptrmfind(const ptr *p, const char *q, int lenq)
 {
-    if (p) {
-	if (q && lenq>0)
-	    return memfind(ptrdata(p), ptrlen(p), q, lenq);
-	return ptrdata(p);
+    if (p != NULL) {
+        if (q != NULL && lenq > 0)
+            return memfind(ptrdata(p), ptrlen(p), q, lenq);
+        return ptrdata(p);
     }
-    return (char*)p; /* shortcut for NULL */
+    return NULL;
 }
 
 char *ptrfind(const ptr *p, const ptr *q)
 {
-    if (p) {
-	if (q)
-	    return memfind(ptrdata(p), ptrlen(p), ptrdata(q), ptrlen(q));
-	return ptrdata(p);
+    if (p != NULL) {
+        if (q != NULL)
+            return memfind(ptrdata(p), ptrlen(p), ptrdata(q), ptrlen(q));
+        return ptrdata(p);
     }
-    return (char*)p; /* shortcut for NULL */
+    return NULL;
 }
-
 
 /*
  * Scan p for the first occurrence of one of the characters in q,
@@ -493,40 +498,37 @@ char *ptrfind(const ptr *p, const ptr *q)
  */
 char *(memchrs)(const char *p, int lenp, const char *q, int lenq)
 {
-    const char *endp;
+    if (q == NULL || lenq <= 0)
+        return (char *)p;
+    if (p == NULL || lenp <= 0)
+        return NULL;
 
-    if (!q || lenq<=0)
-	return (char *)p;
-    if (!p || lenp<=0)
-	return NULL;
+    const char *endp = p + lenp;
 
-    endp = p + lenp;
-
-    while (p < endp && !memchr(q, *p, lenq))
-	p++;
+    while (p < endp && memchr(q, *p, lenq) == NULL)
+        ++p;
 
     if (p == endp)
-	return NULL;
+        return NULL;
     return (char *)p;
 }
 
 char *ptrmchrs(const ptr *p, const char *q, int lenq)
 {
-    if (p)
-	return memchrs(ptrdata(p), ptrlen(p), q, lenq);
-    return (char*)p; /* shortcut for NULL */
+    if (p != NULL)
+        return memchrs(ptrdata(p), ptrlen(p), q, lenq);
+    return NULL;
 }
 
 char *ptrchrs(const ptr *p, const ptr *q)
 {
-    if (p) {
-	if (q)
-	    return memchrs(ptrdata(p), ptrlen(p), ptrdata(q), ptrlen(q));
-	return ptrdata(p);
+    if (p != NULL) {
+        if (q != NULL)
+            return memchrs(ptrdata(p), ptrlen(p), ptrdata(q), ptrlen(q));
+        return ptrdata(p);
     }
-    return (char*)p; /* shortcut for NULL */
+    return NULL;
 }
-
 
 /*
  * Scan p for the last occurrence of one of the characters in q,
@@ -534,36 +536,35 @@ char *ptrchrs(const ptr *p, const ptr *q)
  */
 char *(memrchrs)(const char *p, int lenp, const char *q, int lenq)
 {
-    if (!p || lenp<=0) {
-	if (!q || lenq<=0)
-	    return (char *)p;
-	else
-	    return NULL;
+    if (p == NULL || lenp <= 0) {
+        if (q == NULL || lenq <= 0)
+            return (char *)p;
+        return NULL;
     }
 
     p += lenp;
-    if (!q || lenq<=0)
-	return (char *)p;
+    if (q == NULL || lenq <= 0)
+        return (char *)p;
     do {
-	lenp--, p--;
-    } while (lenp >= 0 && !memchr(q, *p, lenq));
+        --lenp;
+        --p;
+    } while (lenp >= 0 && memchr(q, *p, lenq) == NULL);
 
     if (lenp < 0)
-	return NULL;
+        return NULL;
     return (char *)p;
 }
 
 char *ptrmrchrs(const ptr *p, const char *q, int lenq)
 {
-    if (p)
-	return memrchrs(ptrdata(p), ptrlen(p), q, lenq);
-    return (char*)p; /* shortcut for NULL */
+    if (p != NULL)
+        return memrchrs(ptrdata(p), ptrlen(p), q, lenq);
+    return NULL;
 }
 
 char *ptrrchrs(const ptr *p, const ptr *q)
 {
-    if (p && q)
-	return memrchrs(ptrdata(p), ptrlen(p), ptrdata(q), ptrlen(q));
-    return p ? ptrdata(p) + ptrlen(p) : (char*)p; /* shortcut for NULL */
+    if (p != NULL && q != NULL)
+        return memrchrs(ptrdata(p), ptrlen(p), ptrdata(q), ptrlen(q));
+    return p != NULL ? ptrdata(p) + ptrlen(p) : NULL;
 }
-
