@@ -741,6 +741,21 @@ if [ -n "$gb18030" ]; then
     LC_ALL=C
 fi
 
+# padding such as $<2> is left out of the sequences of the terminal
+if command -v tic > /dev/null 2>&1; then
+    printf 'pwpad|xterm with padding,\n\tel=\\E[K$<1>$<2>, use=xterm,\n' \
+        > "$tmp/pwpad.ti"
+    if TERMINFO=$tmp/terminfo tic -x "$tmp/pwpad.ti" 2>/dev/null; then
+        TERM=pwpad TERMINFO=$tmp/terminfo
+        export TERMINFO
+        run 'padding is left out of terminal sequences' '#print hello'
+        has 'hello'
+        grep -Fq '$<' "$tmp/raw" && fail 'padding written to the terminal'
+        TERM=xterm
+        unset TERMINFO
+    fi
+fi
+
 run '#while needs a parenthesis' '#while 1
 #while (
 #print (

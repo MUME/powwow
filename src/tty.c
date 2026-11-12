@@ -645,8 +645,10 @@ static int extract(char *cap, char *buf)
     while (*s != '\0') {
         if (*s == '$' && s[1] == '<') {
             s = strchr(s, '>');
-            if (s == NULL || *++s == '\0')
+            if (s == NULL)
                 break;
+            ++s;
+            continue;
         }
         *d++ = *s++;
         ++len;
