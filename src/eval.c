@@ -266,7 +266,7 @@ void print_error(int err_num)
 
 static bool push_op(operator *op)
 {
-    if (stk.curr_op < MAX_STACK) {
+    if (stk.curr_op < MAX_STACK - 1) {
         stk.op[++stk.curr_op] = *op;
         return true;
     } else {
@@ -288,7 +288,7 @@ static bool pop_op(operator *op)
 
 static bool push_obj(object *obj)
 {
-    if (stk.curr_obj < MAX_STACK) {
+    if (stk.curr_obj < MAX_STACK - 1) {
         ++stk.curr_obj;
         memmove(stk.obj + stk.curr_obj, obj, sizeof(object));
         return true;
@@ -1523,9 +1523,12 @@ static bool _eval(int mindepth)
             if (*line == '\0' || *line == CMDSEP)
                 endreached = true;
         }
+        if (error != 0)
+            return false;
 
-        if (!(!endreached && check_object(&obj) && push_obj(&obj))
-            && error != 0)
+        if (!endreached && check_object(&obj) && !push_obj(&obj))
+            check_delete(&obj);
+        if (error != 0)
             return false;
 
         while (*line == ' ')
