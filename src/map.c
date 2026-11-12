@@ -31,8 +31,8 @@
  * mapping variables
  */
 static char mappath[MAX_MAPLEN]; /* circular path list */
-static int mapstart = 0;	/* index to first map entry */
-static int mapend = 0;		/* index one past last map entry */
+static int mapstart = 0;        /* index to first map entry */
+static int mapend = 0;          /* index one past last map entry */
 
 #define MAPINDEX(i) (((i) + MAX_MAPLEN) % MAX_MAPLEN)
 #define MAPENTRY(i) mappath[MAPINDEX(i)]
@@ -42,41 +42,37 @@ static int mapend = 0;		/* index one past last map entry */
  */
 static char reverse_dir(char dir)
 {
-    static char dirs[] = "nsewud";
-    char *p = strchr(dirs, dir);
-    return p ? dirs[(p - dirs) ^ 1] : 0;
+    static const char dirs[] = "nsewud";
+    const char *p = strchr(dirs, dir);
+    return p != NULL ? dirs[(p - dirs) ^ 1] : '\0';
 }
 
 /*
  * retrace steps on map, optionally walk them back
  */
-void map_retrace(int steps, int walk_back)
+void map_retrace(int steps, bool walk_back)
 {
-    char cmd[2];
+    if (steps == 0 && !walk_back) {
+        mapend = mapstart;
+    } else {
+        if (steps == 0)
+            steps = -1;
+        if (walk_back && opt_echo) {
+            status(1);
+            tty_putc('[');
+        }
 
-    cmd[1] = '\0';
-
-    if (!steps && !walk_back)
-	mapend = mapstart;
-    else {
-	if (!steps)
-	    steps = -1;
-	if (walk_back && opt_echo) {
-	    status(1);
-	    tty_putc('[');
-	}
-
-	while (mapstart != mapend && steps--) {
-	    mapend = MAPINDEX(mapend - 1);
-	    if (walk_back) {
-		cmd[0] = reverse_dir(mappath[mapend]);
-		if (opt_echo)
-		    tty_putc(cmd[0]);
-		tcp_write(current_connection, cmd);
-	    }
-	}
-	if (walk_back && opt_echo)
-	    tty_puts("]\n");
+        while (mapstart != mapend && steps-- != 0) {
+            mapend = MAPINDEX(mapend - 1);
+            if (walk_back) {
+                char cmd[2] = { reverse_dir(mappath[mapend]), '\0' };
+                if (opt_echo)
+                    tty_putc(cmd[0]);
+                tcp_write(current_connection, cmd);
+            }
+        }
+        if (walk_back && opt_echo)
+            tty_puts("]\n");
     }
 }
 
@@ -85,32 +81,30 @@ void map_retrace(int steps, int walk_back)
  */
 void map_show(void)
 {
-    char lastdir;
-    int count = 0;
-    int i;
-
     if (mapstart == mapend) {
         PRINTF("#map empty\n");
     } else {
         PRINTF("#map: ");
 
-	lastdir = mappath[mapstart];
-	for (i = mapstart; i != mapend; i = MAPINDEX(i + 1)) {
-	    if (mappath[i] != lastdir) {
-		if (count > 1)
-		    tty_printf("%d", count);
-		tty_putc(lastdir);
+        char lastdir = mappath[mapstart];
+        int count = 0;
+        for (int i = mapstart; i != mapend; i = MAPINDEX(i + 1)) {
+            if (mappath[i] != lastdir) {
+                if (count > 1)
+                    tty_printf("%d", count);
+                tty_putc(lastdir);
 
-		count = 1;
-		lastdir = mappath[i];
-	    } else
-		count++;
-	}
+                count = 1;
+                lastdir = mappath[i];
+            } else {
+                ++count;
+            }
+        }
 
-	if (count > 1)
-	    tty_printf("%d", count);
+        if (count > 1)
+            tty_printf("%d", count);
 
-	tty_printf("%c\n", lastdir);
+        tty_printf("%c\n", lastdir);
     }
 }
 
@@ -119,11 +113,10 @@ void map_show(void)
  */
 void map_sprintf(char *buf)
 {
-    int i;
-
-    if (mapstart != mapend)
-	for (i = mapstart; i != mapend; i = MAPINDEX(i + 1))
-	    *buf++ = mappath[i];
+    if (mapstart != mapend) {
+        for (int i = mapstart; i != mapend; i = MAPINDEX(i + 1))
+            *buf++ = mappath[i];
+    }
     *buf = '\0';
 }
 
@@ -134,14 +127,14 @@ void map_add_dir(char dir)
 {
 #ifdef NOMAZEMAPPING
     if (mapend != mapstart && dir == reverse_dir(MAPENTRY(mapend - 1))) {
-	mapend = MAPINDEX(mapend - 1); /* retrace one step */
+        mapend = MAPINDEX(mapend - 1); /* retrace one step */
     } else
 #endif
     {
-	MAPENTRY(mapend) = dir;
-	mapend = MAPINDEX(mapend + 1);
-	if(mapend == mapstart)
-	    mapstart = MAPINDEX(mapstart + 1);
+        MAPENTRY(mapend) = dir;
+        mapend = MAPINDEX(mapend + 1);
+        if (mapend == mapstart)
+            mapstart = MAPINDEX(mapstart + 1);
     }
 }
 
@@ -151,50 +144,52 @@ void map_add_dir(char dir)
  */
 bool map_walk(char *word, bool silent, bool maponly)
 {
-    char buf[16];
     int n = strlen(word);
     bool is_main = (current_connection == main_connection);
 
     if (!is_main && !maponly && !opt_speedwalk)
-	return false;
-    if (!n || (n > 1 && !opt_speedwalk && !maponly) ||
-	!strchr("neswud", word[n - 1]) ||
-	(int)strspn(word, "neswud0123456789") != n)
-	return false;
+        return false;
+    if (n == 0 || (n > 1 && !opt_speedwalk && !maponly)
+        || strchr("neswud", word[n - 1]) == NULL
+        || (int)strspn(word, "neswud0123456789") != n)
+        return false;
 
     if (maponly)
-	silent = true;
-    buf[1] = '\0';
-    while (*word) {
+        silent = true;
+    char buf[16] = { 0 };
+    while (*word != '\0') {
         if (!silent) {
-	    status(1);
-	    tty_putc('[');
-	}
+            status(1);
+            tty_putc('[');
+        }
 
         if (isdigit((unsigned char)*word)) {
             n = strtol(word, &word, 10);
-	    if (!silent)
-		tty_printf("%d", n);
-	} else
-	    n = 1;
+            if (!silent)
+                tty_printf("%d", n);
+        } else {
+            n = 1;
+        }
         if (!silent)
-	    tty_putc(*word);
-        while (n--) {
+            tty_putc(*word);
+        while (n-- != 0) {
             *buf = *word;
             if (!maponly) {
-                if (*lookup_alias(buf))
-                    parse_instruction(buf, true, false, false); /* we want to execute aliases n,e,s,w,u,d */
-                else tcp_write(current_connection, buf);
-	    }
+                if (*lookup_alias(buf) != NULL) {
+                    /* we want to execute aliases n,e,s,w,u,d */
+                    parse_instruction(buf, true, false, false);
+                } else {
+                    tcp_write(current_connection, buf);
+                }
+            }
             if (is_main || maponly)
-		map_add_dir(*word);
+                map_add_dir(*word);
         }
-	if (!silent)
-	    tty_puts("] ");
-        word++;
+        if (!silent)
+            tty_puts("] ");
+        ++word;
     }
     if (!silent)
-	tty_putc('\n');
+        tty_putc('\n');
     return !maponly;
 }
-

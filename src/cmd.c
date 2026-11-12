@@ -1360,14 +1360,14 @@ static void cmd_map(char *arg)
     if (*arg == '\0')  /* show map */
         map_show();
     else if (*arg == '-')  /* retrace steps without walking */
-        map_retrace(atoi(arg + 1), 0);
+        map_retrace(atoi(arg + 1), false);
     else
         map_walk(arg, true, true);
 }
 
 static void cmd_retrace(char *arg)
 {
-    map_retrace(atoi(arg), 1);
+    map_retrace(atoi(arg), true);
 }
 
 static void cmd_mark(char *arg)
