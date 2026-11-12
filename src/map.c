@@ -43,7 +43,7 @@ static int mapend = 0;          /* index one past last map entry */
 static char reverse_dir(char dir)
 {
     static const char dirs[] = "nsewud";
-    const char *p = strchr(dirs, dir);
+    const char *p = dir != '\0' ? strchr(dirs, dir) : NULL;
     return p != NULL ? dirs[(p - dirs) ^ 1] : '\0';
 }
 
