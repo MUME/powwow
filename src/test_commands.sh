@@ -820,6 +820,17 @@ has '1 cc'
 has '2 bc'
 has '3 '
 
+run 'dividing by zero is an error' \
+    '#(@a = 7)
+#(@a /= 0)
+#(@a %= 0)
+#print (7 / 0)
+#print (7 % 0)
+#print ("a=" + %@a)'
+[ "$(grep -c '#error: division by zero\.$' "$tmp/out")" = 4 ] \
+    || fail 'expected 4 errors for /=, %=, / and %'
+has 'a=7'
+
 run 'an expression assigns to a variable that it reads' \
     '#(@foo = 5)
 #(@foo = @foo + 1)
