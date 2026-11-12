@@ -105,7 +105,9 @@ static bool parse_color(const char *tok, size_t len, struct color *color)
     for (unsigned i = 0; i < 8; ++i) {
         if (len > 0 && token_is(tok, len, color_names[i], true)) {
             unsigned bright = isupper((unsigned char)tok[0]) ? 8 : 0;
-            *color = (struct color){ .kind = COLOR_NAMED, .value = i + bright };
+            *color = (struct color){
+                .kind = COLOR_NAMED, .value = i + bright
+            };
             return true;
         }
     }
@@ -243,9 +245,9 @@ void attr_next_words(const char *text, attr_word_fn fn, void *data)
 {
     /* what can come next: a style, a color or "on"; "on"; a color */
     enum { STYLES, AFTER_COLOR, AFTER_ON, DONE } state = STYLES;
-    struct color color;
     for (size_t len = next_token(&text); len > 0;
          text += len, len = next_token(&text)) {
+        struct color color = { 0 };
         bool on = token_is(text, len, "on", true);
         if (state == STYLES && style_flag(text, len) != 0) {
             continue;
@@ -328,15 +330,15 @@ static void append_color_params(char *buf, size_t size, size_t *len,
  */
 static void attr_sgr_params(const struct attr *attr, char *buf, size_t size)
 {
-    size_t len = 0;
-
     if (size == 0)
         return;
     buf[0] = '\0';
+    size_t len = 0;
     for (size_t i = 0; i < N_STYLES; ++i) {
-        if (attr->flags & styles[i].flag)
+        if (attr->flags & styles[i].flag) {
             append(buf, size, &len, "%s%d", len > 0 ? ";" : "",
                    styles[i].sgr);
+        }
     }
     append_color_params(buf, size, &len, &attr->fg, 30);
     append_color_params(buf, size, &len, &attr->bg, 40);
@@ -344,13 +346,12 @@ static void attr_sgr_params(const struct attr *attr, char *buf, size_t size)
 
 void attr_sgr(const struct attr *attr, char *buf, size_t size)
 {
-    char params[ATTR_SGR_MAX];
-
     if (size == 0)
         return;
     buf[0] = '\0';
     if (attr_is_none(attr))
         return;
+    char params[ATTR_SGR_MAX];
     attr_sgr_params(attr, params, sizeof(params));
     snprintf(buf, size, "\033[%sm", params);
 }
@@ -377,19 +378,19 @@ static void append_color(char *buf, size_t size, size_t *len,
 
 void attr_format(const struct attr *attr, char *buf, size_t size)
 {
-    size_t len = 0;
-
     if (size == 0)
         return;
     buf[0] = '\0';
+    size_t len = 0;
     if (attr_is_none(attr)) {
         append(buf, size, &len, "none");
         return;
     }
     for (size_t i = 0; i < N_STYLES; ++i) {
-        if (attr->flags & styles[i].flag)
+        if (attr->flags & styles[i].flag) {
             append(buf, size, &len, "%s%s", len > 0 ? " " : "",
                    styles[i].name);
+        }
     }
     if (attr->fg.kind != COLOR_NONE) {
         if (len > 0)
