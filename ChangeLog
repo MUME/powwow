@@ -209,6 +209,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  the editing session instead of being sent.
 	* Fixed editing sessions with a description longer than 230 bytes
 	  overflowing a buffer when they end, crashing powwow.
+	* MPI editing messages with a description longer than about
+	  1.4 GB are rejected as bad on 32-bit systems, instead of
+	  overflowing a buffer.
 	* Fixed the command that #identify runs when an editing session
 	  starts crashing powwow if it closes the connection of the
 	  session, or, if it runs #connect, making powwow process the

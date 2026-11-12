@@ -16,6 +16,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <limits.h>
+#include <stdint.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -378,6 +379,12 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
         return;
     }
     text[i++] = '\0';
+    /* the description, converted to UTF-8, takes up to 3 bytes per byte */
+    if (!builtin && strlen(descr) > (SIZE_MAX - 1) / 3) {
+        tty_puts(errdesc);
+        free(text);
+        return;
+    }
 
     const char *tmpdir = getenv("TMPDIR");
     if (tmpdir == NULL || *tmpdir == '\0')
