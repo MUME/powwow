@@ -297,6 +297,12 @@ static void show_help(const char *prog)
            "  " VER_ARG  "    " VER_DESC "\n",
            prog);
 #undef HELP_ARG
+#undef TLS_ARG
+#undef NTLS_ARG
+#undef UTF8_ARG
+#undef LAT1_ARG
+#undef VER_ARG
+#undef VER_DESC
 #undef TLS_DESC
 }
 
