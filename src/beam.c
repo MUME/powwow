@@ -128,9 +128,13 @@ int process_message(connsess *conn, char *buf, int len)
     int used = from - buf;
 
     while (i < msglen) {
-        /* read() might block here, but it should't be long */
-        while ((l = conn->fns->read(conn, text + i, msglen - i)) == -1
-               && errno == EINTR)
+        /*
+         * read() might block here, but it shouldn't be long; a TLS record
+         * without data, such as a key update, fails with EAGAIN
+         */
+        while ((l = conn->fns->read(conn, text + i, msglen - i)) < 0
+               && (errno == EINTR || errno == EAGAIN
+                   || errno == EWOULDBLOCK))
             ;
         if (l <= 0) {
             /* Cygwin reports the end of a #spawn command as a reset or
