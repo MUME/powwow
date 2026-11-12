@@ -21,7 +21,7 @@
 
 #include "defines.h"
 #include "main.h"
-#include "feature/regex.h"
+#include "regexlib.h"
 #include "utils.h"
 #include "cmd2.h"
 #include "list.h"
