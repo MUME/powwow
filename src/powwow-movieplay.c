@@ -18,9 +18,9 @@
 
 static void millisec_sleep(long msec)
 {
-    struct timeval t;
-    t.tv_sec = msec / 1000;
-    t.tv_usec = (msec % 1000) * 1000;
+    struct timeval t = {
+        .tv_sec = msec / 1000, .tv_usec = (msec % 1000) * 1000
+    };
     select(0, NULL, NULL, NULL, &t);
 }
 
@@ -31,11 +31,7 @@ static void millisec_sleep(long msec)
  */
 int main(int argc, char *argv[])
 {
-    FILE *infile = stdin, *outfile = stdout;
-    char buf[4096];
-    int i;
     bool play = true;
-
     int opt;
     while ((opt = getopt(argc, argv, "a")) != -1) {
         if (opt == 'a') {
@@ -49,6 +45,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Usage: %s [-a] [infile [outfile]]\n", argv[0]);
         return 1;
     }
+    FILE *infile = stdin;
     if (optind < argc) {
         infile = fopen(argv[optind], "rb");
         if (infile == NULL) {
@@ -57,6 +54,7 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
+    FILE *outfile = stdout;
     if (optind + 1 < argc) {
         outfile = fopen(argv[optind + 1], "wb");
         if (outfile == NULL) {
@@ -66,30 +64,29 @@ int main(int argc, char *argv[])
         }
     }
 
-    while (fgets(buf, 4096, infile) != NULL) {
-	i = strlen(buf);
-	if (i > 0 && buf[i-1] == '\n')
-	    buf[i-1] = '\0';
-	if (!strncmp(buf, "sleep ", 6)) {
-	    if (play)
-		millisec_sleep(atoi(buf + 6));
-	}
-	else if (!strncmp(buf, "line ", 5))
-	    fprintf(outfile, "%s\n", buf + 5);
-	else if (!strncmp(buf, "prompt ", 7))
-	    fprintf(outfile, "%s", buf + 7);
-	else {
-	    fprintf(stderr, "Syntax error in line:\n%s\n", buf);
-	    return 1;
-	}
-	fflush(outfile);
+    char buf[4096];
+    while (fgets(buf, sizeof(buf), infile) != NULL) {
+        size_t len = strlen(buf);
+        if (len > 0 && buf[len - 1] == '\n')
+            buf[len - 1] = '\0';
+        if (strncmp(buf, "sleep ", 6) == 0) {
+            if (play)
+                millisec_sleep(atoi(buf + 6));
+        } else if (strncmp(buf, "line ", 5) == 0) {
+            fprintf(outfile, "%s\n", buf + 5);
+        } else if (strncmp(buf, "prompt ", 7) == 0) {
+            fprintf(outfile, "%s", buf + 7);
+        } else {
+            fprintf(stderr, "Syntax error in line:\n%s\n", buf);
+            return 1;
+        }
+        fflush(outfile);
     }
     if (feof(infile)) {
-	fprintf(outfile, "\n");
-	return 0;
+        fprintf(outfile, "\n");
+        return 0;
     } else {
-	fprintf(stderr, "Error reading file\n");
-	return 1;
+        fprintf(stderr, "Error reading file\n");
+        return 1;
     }
 }
-
