@@ -44,7 +44,7 @@ enum {
     UTF8_SAVEFILEVER = 8,       /* version when files became UTF-8 */
 };
 
-static char can_suspend = 0; /* 1 if shell has job control */
+static bool can_suspend = false; /* true if shell has job control */
 
 char *my_strdup(const char *s)
 {
@@ -65,7 +65,7 @@ char *my_strncpy(char *dst, const char *src, int len)
 {
     int slen = strlen(src);
     if (slen < len)
-	return strcpy(dst, src);
+        return strcpy(dst, src);
     memcpy(dst, src, len);
     dst[len] = '\0';
     return dst;
@@ -79,35 +79,36 @@ char *my_strncpy(char *dst, const char *src, int len)
  */
 int printstrlen(char *s)
 {
-    int l;
+    int l = 0;
     enum { NORM, ESCAPE, BRACKET } state = NORM;
     const char *end = s + strlen(s);
-    for (l = 0; *s; ) {
+    while (*s != '\0') {
         uint32_t cp;
         size_t n = utf8_cell_len(s, end - s);
         utf8_get(s, n, &cp);
         int w = utf8_cell_width(s, n);
         s += n;
-        switch(state) {
-	 case NORM:
+        switch (state) {
+        case NORM:
             if (cp == ASCII_ESC) {
                 state = ESCAPE;
             } else if (cp == '\b') {
                 if (l > 0)
-                    l--;
+                    --l;
             } else if (cp == '\r') {
-		l = (l / cols) * cols;
-            } else
+                l = (l / cols) * cols;
+            } else {
                 l += w;
+            }
             break;
 
-	 case ESCAPE:
+        case ESCAPE:
             state = (cp == '[') ? BRACKET : NORM;
             break;
 
-	 case BRACKET:
+        case BRACKET:
             if (is_csi_final(cp))
-	      state = NORM;
+                state = NORM;
             break;
         }
     }
@@ -120,7 +121,7 @@ int printstrlen(char *s)
  */
 char *utf8_fgets(char *buf, int size, FILE *f)
 {
-    if (!fgets(buf, size, f))
+    if (fgets(buf, size, f) == NULL)
         return NULL;
 
     /* turn a CR LF line ending, as on Windows, into LF */
@@ -136,7 +137,7 @@ char *utf8_fgets(char *buf, int size, FILE *f)
     if (n >= (size_t)size) {
         n = (size_t)size - 1;
         while (n > 0 && utf8_is_continuation(tmp[n]))
-            n--;
+            --n;
     }
     memcpy(buf, tmp, n);
     buf[n] = '\0';
@@ -148,7 +149,8 @@ char *utf8_fgets(char *buf, int size, FILE *f)
  */
 char *(skipspace)(const char *p)
 {
-    while (*p == ' ' || *p == '\t') p++;
+    while (*p == ' ' || *p == '\t')
+        ++p;
     return (char *)p;
 }
 
@@ -158,12 +160,15 @@ char *(skipspace)(const char *p)
  */
 char *(first_valid)(const char *p, char ch)
 {
-    if (*p && *p != ch) {
-	p++;
-	if (ch == ESC2 || ch == ESC) while (*p && *p != ch)
-	    p++;
-	else while (*p && ((*p != ch) || p[-1] == ESC))
-	    p++;
+    if (*p != '\0' && *p != ch) {
+        ++p;
+        if (ch == ESC2 || ch == ESC) {
+            while (*p != '\0' && *p != ch)
+                ++p;
+        } else {
+            while (*p != '\0' && (*p != ch || p[-1] == ESC))
+                ++p;
+        }
     }
     return (char *)p;
 }
@@ -174,39 +179,40 @@ char *(first_valid)(const char *p, char ch)
  */
 char *(first_regular)(const char *p, char c)
 {
-    int escaped, quotes=0, paren=0, braces=0;
+    bool quotes = false;
+    int paren = 0, braces = 0;
 
-    while (*p && ((*p != c) || quotes || paren>0 || braces>0)) {
-	escaped = 0;
-	if (*p == ESC) {
-	    while (*p == ESC)
-		p++;
-	    escaped = 1;
-	}
-	if (*p == ESC2) {
-	    while (*p == ESC2)
-		p++;
-	    escaped = 0;
-	}
-	if (!*p)
-	    break;
-	if (!escaped) {
-	    if (quotes) {
-		if (*p == '\"')
-		    quotes = 0;
-	    }
-	    else if (*p == '\"')
-		quotes = 1;
-	    else if (*p == ')')
-		paren--;
-	    else if (*p == '(')
-		paren++;
-	    else if (*p == '}')
-		braces--;
-	    else if (*p == '{')
-		braces++;
-	}
-	p++;
+    while (*p != '\0' && (*p != c || quotes || paren > 0 || braces > 0)) {
+        bool escaped = false;
+        if (*p == ESC) {
+            while (*p == ESC)
+                ++p;
+            escaped = true;
+        }
+        if (*p == ESC2) {
+            while (*p == ESC2)
+                ++p;
+            escaped = false;
+        }
+        if (*p == '\0')
+            break;
+        if (!escaped) {
+            if (quotes) {
+                if (*p == '\"')
+                    quotes = false;
+            } else if (*p == '\"') {
+                quotes = true;
+            } else if (*p == ')') {
+                --paren;
+            } else if (*p == '(') {
+                ++paren;
+            } else if (*p == '}') {
+                --braces;
+            } else if (*p == '{') {
+                ++braces;
+            }
+        }
+        ++p;
     }
     return (char *)p;
 }
@@ -242,56 +248,69 @@ static int char_escape_len(const char *s, int len, uint32_t *cp)
  */
 int memunescape(char *p, int lenp, bool raw)
 {
-    char *start, *s;
+    if (p == NULL || *p == '\0')
+        return 0;
+
+    char *start = p;
+    char *s = p;
     enum { NORM, ESCSINGLE, ESCAPE } state = NORM;
 
-    if (!p || !*p)
-	return 0;
-
-    start = s = p;
-
-    while (lenp) switch (state) {
-      case NORM:
-	if (*s != ESC) {
-	    *p++ = *s++, lenp--;
-	    break;
-	}
-	state = ESCSINGLE, s++;
-	if (!--lenp)
-	    break;
-	/* fallthrough */
-      case ESCSINGLE:
-      case ESCAPE:
-	if (*s == ESC)
-	    state = ESCAPE, *p++ = *s++, lenp--;
-	else if (*s == ESC2)
-	    state = NORM, *p++ = ESC, s++, lenp--;
-	else {
-	    uint32_t cp;
-	    int n;
-	    if (state == ESCSINGLE && (n = char_escape_len(s, lenp, &cp)) > 0) {
-		/* a character by code point or name, never longer in UTF-8
-		 * than its escape */
-		p += utf8_put(cp, p);
-		s += n, lenp -= n;
-	    } else if (state == ESCSINGLE && lenp >= 3 &&
-		is_odigit(s[0]) && is_odigit(s[1]) && is_odigit(s[2])) {
-
-		int c = ((s[0]-'0') << 6) | ((s[1]-'0') << 3) | (s[2]-'0');
-		/* \ooo is an ISO 8859-1 character, unless raw; either
-		 * way, the output does not overtake the input */
-		if (raw)
-		    *p++ = c;
-		else
-		    p += utf8_put(c & 0xff, p);
-		s += 3, lenp -= 3;
-	    } else
-		*p++ = *s++, lenp--;
-	    state = NORM;
-	}
-	break;
-      default:
-	break;
+    while (lenp != 0) {
+        switch (state) {
+        case NORM:
+            if (*s != ESC) {
+                *p++ = *s++;
+                --lenp;
+                break;
+            }
+            state = ESCSINGLE;
+            ++s;
+            if (--lenp == 0)
+                break;
+            /* fallthrough */
+        case ESCSINGLE:
+        case ESCAPE:
+            if (*s == ESC) {
+                state = ESCAPE;
+                *p++ = *s++;
+                --lenp;
+            } else if (*s == ESC2) {
+                state = NORM;
+                *p++ = ESC;
+                ++s;
+                --lenp;
+            } else {
+                uint32_t cp;
+                int n = state == ESCSINGLE ? char_escape_len(s, lenp, &cp) : 0;
+                if (n > 0) {
+                    /* a character by code point or name, never longer in
+                     * UTF-8 than its escape */
+                    p += utf8_put(cp, p);
+                    s += n;
+                    lenp -= n;
+                } else if (state == ESCSINGLE && lenp >= 3
+                           && is_odigit(s[0]) && is_odigit(s[1])
+                           && is_odigit(s[2])) {
+                    int c = (((s[0] - '0') << 6) | ((s[1] - '0') << 3)
+                             | (s[2] - '0'));
+                    /* \ooo is an ISO 8859-1 character, unless raw; either
+                     * way, the output does not overtake the input */
+                    if (raw)
+                        *p++ = c;
+                    else
+                        p += utf8_put(c & 0xff, p);
+                    s += 3;
+                    lenp -= 3;
+                } else {
+                    *p++ = *s++;
+                    --lenp;
+                }
+                state = NORM;
+            }
+            break;
+        default:
+            break;
+        }
     }
     *p = '\0';
     return (int)(p - start);
@@ -314,13 +333,13 @@ bool raw_escapes = false;
 
 void unescape(char *s)
 {
-    (void)memunescape(s, strlen(s), raw_escapes);
+    memunescape(s, strlen(s), raw_escapes);
 }
 
 void ptrunescape(ptr *p)
 {
-    if (!p)
-	return;
+    if (p == NULL)
+        return;
     p->len = memunescape(ptrdata(p), ptrlen(p), raw_escapes);
 }
 
@@ -439,7 +458,8 @@ static char *wrap_text(const char *text, const char *cont)
     for (const char *p = text; *p != '\0'; ) {
         if (*p == '\n') {
             out[n++] = *p++;
-            col = line_start = 0;
+            col = 0;
+            line_start = 0;
             continue;
         }
         /* the spaces before a word, then the word */
@@ -452,7 +472,8 @@ static char *wrap_text(const char *text, const char *cont)
             out[n++] = '\n';
             memcpy(out + n, cont, cont_len);
             n += cont_len;
-            col = line_start = text_width(cont, cont_len);
+            line_start = text_width(cont, cont_len);
+            col = line_start;
         } else {
             memcpy(out + n, p, spaces);
             n += spaces;
@@ -510,65 +531,71 @@ int wrap_printf(const char *format, ...)
 /*
  * add escapes (backslashes) to src
  */
-ptr *ptrmescape(ptr *dst, const char *src, int srclen, int append)
+ptr *ptrmescape(ptr *dst, const char *src, int srclen, bool append)
 {
-    int len;
-    char *p;
-    enum { NORM, ESCAPE } state;
-
-    if (!src || srclen <= 0) {
-	if (!append)
-	    ptrzero(dst);
-	return dst;
+    if (src == NULL || srclen <= 0) {
+        if (!append)
+            ptrzero(dst);
+        return dst;
     }
 
-    if (dst && append)
-	len = ptrlen(dst);
-    else
-	len = 0;
+    int len = dst != NULL && append ? ptrlen(dst) : 0;
 
-    dst = ptrsetlen(dst, len + srclen*4); /* worst case */
-    if (MEM_ERROR) return dst;
+    dst = ptrsetlen(dst, len + srclen * 4); /* worst case */
+    if (MEM_ERROR)
+        return dst;
 
     dst->len = len;
-    p = ptrdata(dst) + len;
+    char *p = ptrdata(dst) + len;
 
-    while (srclen) {
-	state = NORM;
-	if (*src == ESC) {
-	    while (srclen && *src == ESC)
-		dst->len++, *p++ = *src++, srclen--;
+    while (srclen != 0) {
+        enum { NORM, ESCAPE } state = NORM;
+        if (*src == ESC) {
+            while (srclen != 0 && *src == ESC) {
+                ++dst->len;
+                *p++ = *src++;
+                --srclen;
+            }
 
-	    if (!srclen || *src == ESC2)
-		dst->len++, *p++ = ESC2;
-	    else
-		state = ESCAPE;
-	}
-	if (!srclen) break;
+            if (srclen == 0 || *src == ESC2) {
+                ++dst->len;
+                *p++ = ESC2;
+            } else {
+                state = ESCAPE;
+            }
+        }
+        if (srclen == 0)
+            break;
 
-	/* write control characters as \ooo, but non-ASCII UTF-8 as
-	 * is: \ooo reads back as an ISO 8859-1 character */
+        /* write control characters as \ooo, but non-ASCII UTF-8 as
+         * is: \ooo reads back as an ISO 8859-1 character */
         if ((byte)*src < ' ' || *src == ASCII_DEL) {
             sprintf(p, "\\%03hho", *src++);
-	    len = strlen(p);
-	    dst->len += len, p += len, srclen--;
-	} else {
-	    if (state == ESCAPE || strchr(SPECIAL_CHARS, *src))
-		dst->len++, *p++ = ESC;
+            int n = strlen(p);
+            dst->len += n;
+            p += n;
+            --srclen;
+        } else {
+            if (state == ESCAPE || strchr(SPECIAL_CHARS, *src) != NULL) {
+                ++dst->len;
+                *p++ = ESC;
+            }
 
-	    dst->len++, *p++ = *src++, srclen--;
-	}
+            ++dst->len;
+            *p++ = *src++;
+            --srclen;
+        }
     }
     *p = '\0';
     return dst;
 }
 
-ptr *ptrescape(ptr *dst, ptr *src, int append)
+ptr *ptrescape(ptr *dst, ptr *src, bool append)
 {
-    if (!src) {
-	if (!append)
-	    ptrzero(dst);
-	return dst;
+    if (src == NULL) {
+        if (!append)
+            ptrzero(dst);
+        return dst;
     }
     return ptrmescape(dst, ptrdata(src), ptrlen(src), append);
 }
@@ -578,146 +605,160 @@ ptr *ptrescape(ptr *dst, ptr *src, int append)
  */
 void escape_specials(char *dst, const char *src)
 {
-    enum { NORM, ESCAPE } state;
-    while (*src) {
-	state = NORM;
-	if (*src == ESC) {
-	    while (*src == ESC)
-		*dst++ = *src++;
+    while (*src != '\0') {
+        enum { NORM, ESCAPE } state = NORM;
+        if (*src == ESC) {
+            while (*src == ESC)
+                *dst++ = *src++;
 
-	    if (!*src || *src == ESC2)
-		*dst++ = ESC2;
-	    else
-		state = ESCAPE;
-	}
-	if (!*src) break;
+            if (*src == '\0' || *src == ESC2)
+                *dst++ = ESC2;
+            else
+                state = ESCAPE;
+        }
+        if (*src == '\0')
+            break;
 
-	if (*src < ' ' || *src > '~') {
+        if (*src < ' ' || *src > '~') {
             sprintf(dst, "\\%03hho", *src++);
-	    dst += strlen(dst);
-	} else {
-	    if (state == ESCAPE || strchr(SPECIAL_CHARS, *src))
-		*dst++ = ESC;
+            dst += strlen(dst);
+        } else {
+            if (state == ESCAPE || strchr(SPECIAL_CHARS, *src) != NULL)
+                *dst++ = ESC;
 
-	    *dst++ = *src++;
-	}
+            *dst++ = *src++;
+        }
     }
     *dst = '\0';
 }
 
 /*
- * match mark containing & and $ and return 1 if matched, 0 if not
- * if 1, start and end contain the match bounds
- * if 0, start and end are undefined on return
+ * match mark containing & and $ and return true if matched, false if not
+ * if true, start and end contain the match bounds
+ * if false, start and end are undefined on return
  */
-static int match_mark_or_subst(basenode *bp, const char *src)
+static bool match_mark_or_subst(basenode *bp, const char *src)
 {
     char *pat = bp->pattern;
-    char *npat = NULL, *npat2 = NULL, c;
-    const char *nsrc = NULL, *prm = NULL, *endprm = NULL, *tmp;
-    static char mpat[BUFSIZE];
-    int mbeg = bp->mbeg, mword = 0, p;
+    int mbeg = bp->mbeg;
 
     /* shortcut for #marks without wildcards */
     if (!bp->wild) {
-	if (mbeg != 0 && strncmp(src, pat, strlen(pat)) != 0)
-	    return 0;
-	if ((nsrc = strstr(src, pat))) {
-	    bp->start = nsrc;
-	    bp->end = nsrc + strlen(pat);
-	    return 1;
-	}
-	return 0;
+        if (mbeg != 0 && strncmp(src, pat, strlen(pat)) != 0)
+            return false;
+        const char *found = strstr(src, pat);
+        if (found != NULL) {
+            bp->start = found;
+            bp->end = found + strlen(pat);
+            return true;
+        }
+        return false;
     }
 
     bp->start = NULL;
 
     if (ISMARKWILDCARD(*pat))
-	mbeg = - mbeg - 1;  /* pattern starts with '&' or '$' */
+        mbeg = -mbeg - 1;  /* pattern starts with '&' or '$' */
 
-    while (pat && (c = *pat)) {
-	if (ISMARKWILDCARD(c)) {
-	    /* & matches a string */
-	    /* $ matches a single word */
-	    prm = src;
-	    if (c == '$')
-		mword = 1;
-	    else if (bp->start == NULL)
-		bp->start = src;
-	    ++pat;
-	}
+    static char mpat[BUFSIZE];
+    const char *nsrc = NULL, *prm = NULL, *endprm = NULL;
+    bool mword = false;
+    while (pat != NULL && *pat != '\0') {
+        char c = *pat;
+        if (ISMARKWILDCARD(c)) {
+            /* & matches a string */
+            /* $ matches a single word */
+            prm = src;
+            if (c == '$')
+                mword = true;
+            else if (bp->start == NULL)
+                bp->start = src;
+            ++pat;
+        }
 
-	npat  = first_valid(pat, '&');
-	npat2 = first_valid(pat, '$');
-	if (npat2 < npat) npat = npat2;
-	if (!*npat) npat = 0;
+        char *npat = first_valid(pat, '&');
+        char *npat2 = first_valid(pat, '$');
+        if (npat2 < npat)
+            npat = npat2;
+        if (*npat == '\0')
+            npat = NULL;
 
-	if (npat) {
-	    my_strncpy(mpat, pat, npat-pat);
-	    /* mpat[npat - pat] = 0; */
-	} else
-	    strcpy(mpat, pat);
+        if (npat != NULL) {
+            my_strncpy(mpat, pat, npat - pat);
+            /* mpat[npat - pat] = 0; */
+        } else {
+            strcpy(mpat, pat);
+        }
 
-	if (*mpat) {
-	    nsrc = strstr(src, mpat);
-	    if (!nsrc)
-		return 0;
-	    if (mbeg > 0) {
-		if (nsrc != src)
-		    return 0;
-		mbeg = 0;  /* reset mbeg to stop further start match */
-	    }
-	    endprm = nsrc;
-	    if (bp->start == NULL) {
-		if (prm)
-		    bp->start = src;
-		else
-		    bp->start = nsrc;
-	    }
-	    bp->end = nsrc + strlen(mpat);
-	} else if (prm)           /* end of pattern space */
-	    bp->end = endprm = prm + strlen(prm);
-	else
-	    bp->end = src;
+        if (*mpat != '\0') {
+            nsrc = strstr(src, mpat);
+            if (nsrc == NULL)
+                return false;
+            if (mbeg > 0) {
+                if (nsrc != src)
+                    return false;
+                mbeg = 0;  /* reset mbeg to stop further start match */
+            }
+            endprm = nsrc;
+            if (bp->start == NULL) {
+                if (prm != NULL)
+                    bp->start = src;
+                else
+                    bp->start = nsrc;
+            }
+            bp->end = nsrc + strlen(mpat);
+        } else if (prm != NULL) {           /* end of pattern space */
+            endprm = prm + strlen(prm);
+            bp->end = endprm;
+        } else {
+            bp->end = src;
+        }
 
-
-	/* post-processing of param */
-	if (mword) {
-	    if (prm) {
-		if (mbeg == -1) {
-		    if (!*pat) {
-			/* the pattern is "$", take first word */
-			p = - 1;
-		    } else {
-			/* unanchored '$' start, take last word */
-			tmp = memrchrs(prm, endprm - prm - 1, DELIM, DELIM_LEN);
-			if (tmp)
-			    p = tmp - prm;
-			else
-			    p = -1;
-		    }
-		    bp->start = prm += p + 1;
-		} else if (!*pat) {
-		    /* '$' at end of pattern, take first word */
-		    if ((tmp = memchrs(prm, strlen(prm), DELIM, DELIM_LEN)))
-			bp->end = endprm = tmp;
-		    if (bp->start == NULL)
-			bp->start = prm;
-		} else {
-			/* match only if param is single-worded */
-		    if (memchrs(prm, endprm - prm, DELIM, DELIM_LEN))
-			return 0;
-		}
-	    } else
-		return 0;
-	}
-	if (prm)
-	    mbeg = mword = 0;  /* reset match flags */
-	if (nsrc != NULL)
-	    src = nsrc + strlen(mpat);
-	pat = npat;
+        /* post-processing of param */
+        if (mword) {
+            if (prm == NULL)
+                return false;
+            if (mbeg == -1) {
+                int p;
+                if (*pat == '\0') {
+                    /* the pattern is "$", take first word */
+                    p = -1;
+                } else {
+                    /* unanchored '$' start, take last word */
+                    const char *tmp = memrchrs(prm, endprm - prm - 1,
+                                               DELIM, DELIM_LEN);
+                    if (tmp != NULL)
+                        p = tmp - prm;
+                    else
+                        p = -1;
+                }
+                prm += p + 1;
+                bp->start = prm;
+            } else if (*pat == '\0') {
+                /* '$' at end of pattern, take first word */
+                const char *tmp = memchrs(prm, strlen(prm), DELIM, DELIM_LEN);
+                if (tmp != NULL) {
+                    endprm = tmp;
+                    bp->end = tmp;
+                }
+                if (bp->start == NULL)
+                    bp->start = prm;
+            } else {
+                /* match only if param is single-worded */
+                if (memchrs(prm, endprm - prm, DELIM, DELIM_LEN) != NULL)
+                    return false;
+            }
+        }
+        if (prm != NULL) {
+            /* reset match flags */
+            mbeg = 0;
+            mword = false;
+        }
+        if (nsrc != NULL)
+            src = nsrc + strlen(mpat);
+        pat = npat;
     }
-    return 1;
+    return true;
 }
 
 /*
@@ -725,60 +766,66 @@ static int match_mark_or_subst(basenode *bp, const char *src)
  */
 static ptr *ptrmaddmarks(ptr *dst, const char *line, int len)
 {
-    marknode *mp, *mfirst;
-    char begin[ATTR_SGR_MAX], end[ATTR_SGR_MAX];
-    const char *lineend = line + len;
-    int start = 1, matchlen, matched = 0;
-
     ptrzero(dst);
 
-    if (!line || len <= 0)
-	return dst;
+    if (line == NULL || len <= 0)
+        return dst;
 
-    for (mp = markers; mp; mp = mp->next)
-	mp->b.start = NULL;
+    for (marknode *mp = markers; mp != NULL; mp = mp->next)
+        mp->b.start = NULL;
 
+    const char *lineend = line + len;
+    bool start = true;
+    marknode *mfirst;
     do {
-	mfirst = NULL;
-	for (mp = markers; mp; mp = mp->next) {
-	    if (mp->b.start != NULL && mp->b.start >= line)
-		matched = 1;
-	    else {
-		matched = ((!mp->b.mbeg || start != 0)
-			   && match_mark_or_subst(&mp->b, line) != 0);
-		if (matched == 0)
-		    mp->b.start = lineend;
-	    }
-	    if (matched != 0 && mp->b.start < lineend &&
-		(mfirst == NULL || mp->b.start < mfirst->b.start))
-		mfirst = mp;
-	}
+        mfirst = NULL;
+        for (marknode *mp = markers; mp != NULL; mp = mp->next) {
+            bool matched;
+            if (mp->b.start != NULL && mp->b.start >= line) {
+                matched = true;
+            } else {
+                matched = ((!mp->b.mbeg || start)
+                           && match_mark_or_subst(&mp->b, line));
+                if (!matched)
+                    mp->b.start = lineend;
+            }
+            if (matched && mp->b.start < lineend
+                && (mfirst == NULL || mp->b.start < mfirst->b.start))
+                mfirst = mp;
+        }
 
-	if (mfirst) {
-	    start = 0;
-	    attr_string(&mfirst->attr, begin, end);
+        if (mfirst != NULL) {
+            start = false;
+            char begin[ATTR_SGR_MAX], end[ATTR_SGR_MAX];
+            attr_string(&mfirst->attr, begin, end);
 
-	    assert(mfirst->b.start != NULL);
-	    dst = ptrmcat(dst, line, matchlen = mfirst->b.start - line);
-	    if (MEM_ERROR) break;
-	    line += matchlen;
-	    len -= matchlen;
+            assert(mfirst->b.start != NULL);
+            int matchlen = mfirst->b.start - line;
+            dst = ptrmcat(dst, line, matchlen);
+            if (MEM_ERROR)
+                break;
+            line += matchlen;
+            len -= matchlen;
 
-	    dst = ptrmcat(dst, begin, strlen(begin));
-	    if (MEM_ERROR) break;
+            dst = ptrmcat(dst, begin, strlen(begin));
+            if (MEM_ERROR)
+                break;
 
-	    dst = ptrmcat(dst, line, matchlen = mfirst->b.end - mfirst->b.start);
-	    if (MEM_ERROR) break;
-	    line += matchlen;
-	    len -= matchlen;
+            matchlen = mfirst->b.end - mfirst->b.start;
+            dst = ptrmcat(dst, line, matchlen);
+            if (MEM_ERROR)
+                break;
+            line += matchlen;
+            len -= matchlen;
 
-	    dst = ptrmcat(dst, end, strlen(end));
-	    if (MEM_ERROR) break;
-	}
-    } while (mfirst);
+            dst = ptrmcat(dst, end, strlen(end));
+            if (MEM_ERROR)
+                break;
+        }
+    } while (mfirst != NULL);
 
     if (!MEM_ERROR)
-	dst = ptrmcat(dst, line, len);
+        dst = ptrmcat(dst, line, len);
 
     return dst;
 }
@@ -791,10 +838,10 @@ static ptr *ptrmaddsubst(ptr *dst, const char *line, int len)
     ptrzero(dst);
 
     if (line == NULL || len <= 0)
-      return dst;
+        return dst;
 
     for (substnode *sp = substitutions; sp != NULL; sp = sp->next)
-      sp->b.start = NULL;
+        sp->b.start = NULL;
 
     const char *lineend = line + len;
     bool start = true;
@@ -805,38 +852,38 @@ static ptr *ptrmaddsubst(ptr *dst, const char *line, int len)
             bool matched = sp->b.start != NULL && sp->b.start >= line;
             if (!matched) {
                 matched = ((!sp->b.mbeg || start)
-                           && match_mark_or_subst(&sp->b, line) != 0);
+                           && match_mark_or_subst(&sp->b, line));
                 if (!matched)
-                  sp->b.start = lineend;
+                    sp->b.start = lineend;
             }
             /* an empty match would never advance through the line */
             if (matched && sp->b.start < lineend && sp->b.end > sp->b.start
                 && (sfirst == NULL || sp->b.start < sfirst->b.start))
-              sfirst = sp;
+                sfirst = sp;
         }
 
         if (sfirst == NULL)
-          break;
+            break;
         start = false;
 
         assert(sfirst->b.start != NULL);
         int matchlen = sfirst->b.start - line;
         dst = ptrmcat(dst, line, matchlen);
         if (MEM_ERROR)
-          break;
+            break;
         line += matchlen;
         len -= matchlen;
 
         dst = ptrmcat(dst, sfirst->replacement, strlen(sfirst->replacement));
         if (MEM_ERROR)
-          break;
+            break;
         matchlen = sfirst->b.end - sfirst->b.start;
         line += matchlen;
         len -= matchlen;
     }
 
     if (!MEM_ERROR)
-      dst = ptrmcat(dst, line, len);
+        dst = ptrmcat(dst, line, len);
 
     return dst;
 }
@@ -847,9 +894,9 @@ static ptr *ptrmaddsubst(ptr *dst, const char *line, int len)
 ptr *ptrmaddsubst_and_marks(ptr *dst, const char *line, int len)
 {
     if (substitutions == NULL)
-      return ptrmaddmarks(dst, line, len);
+        return ptrmaddmarks(dst, line, len);
     if (markers == NULL)
-      return ptrmaddsubst(dst, line, len);
+        return ptrmaddsubst(dst, line, len);
 
     static ptr *ptrbuf = NULL;
     ptrbuf = ptrmaddsubst(ptrbuf, line, len);
@@ -866,27 +913,27 @@ ptr *ptrmaddsubst_and_marks(ptr *dst, const char *line, int len)
 ptr *ptrsubstdef(ptr *dst, bool mbeg, char *pattern, char *replacement)
 {
     if (mbeg)
-      dst = ptrmcpy(dst, "^", 1);
+        dst = ptrmcpy(dst, "^", 1);
     else if (*pattern == '^') /* so it does not read back as an anchor */
-      dst = ptrmcpy(dst, "\\", 1);
+        dst = ptrmcpy(dst, "\\", 1);
     else
-      ptrzero(dst);
+        ptrzero(dst);
     if (MEM_ERROR)
-      return dst;
+        return dst;
 
-    dst = ptrmescape(dst, pattern, strlen(pattern), 1);
+    dst = ptrmescape(dst, pattern, strlen(pattern), true);
     if (MEM_ERROR)
-      return dst;
+        return dst;
     dst = ptrmcat(dst, "=", 1);
     if (MEM_ERROR)
-      return dst;
-    return ptrmescape(dst, replacement, strlen(replacement), 1);
+        return dst;
+    return ptrmescape(dst, replacement, strlen(replacement), true);
 }
 
 ptr *ptraddsubst_and_marks(ptr *dst, ptr *line)
 {
-    if (line)
-	return ptrmaddsubst_and_marks(dst, ptrdata(line), ptrlen(line));
+    if (line != NULL)
+        return ptrmaddsubst_and_marks(dst, ptrdata(line), ptrlen(line));
     ptrzero(dst);
     return dst;
 }
@@ -920,26 +967,26 @@ static void sgr_reset_to_eol(void)
  */
 static void wrap_print(char *s)
 {
-    /* ls = last space in *s, lp = last space in *p */
-    char *ls, *lp, *p, follow = 1;
     char buf[BUFSIZE]; /* ASSERT(cols<BUFSIZE) */
     const char *end = s + strlen(s);
 
     /* l = left, m = current offset */
-    int l, m;
-    enum { NORM, ESCAPE, BRACKET } state;
-
-    l = printstrlen(s);
+    int l = printstrlen(s);
     bool reset = l > cols_1 && l < (int)strlen(s);
+    bool follow = true;
 
-    while (l >= cols_1 - col0 && *s) {
-        p = buf; m = 0; state = NORM;
-        lp = ls = NULL;
+    while (l >= cols_1 - col0 && *s != '\0') {
+        char *p = buf;
+        int m = 0;
+        enum { NORM, ESCAPE, BRACKET } state = NORM;
+        /* ls = last space in *s, lp = last space in *p */
+        char *ls = NULL;
+        char *lp = NULL;
 
         /* this scans over the remaining part of the line adding stuff to
          * print to the buffer and tallying the length of displayed
          * characters */
-        while (m < cols_1 - col0 && *s && *s != '\n') {
+        while (m < cols_1 - col0 && *s != '\0' && *s != '\n') {
             uint32_t cp;
             size_t n = utf8_cell_len(s, end - s);
             utf8_get(s, n, &cp);
@@ -951,46 +998,50 @@ static void wrap_print(char *s)
             p += n;
             s += n;
             switch (state) {
-                case NORM:
-                    if (cp == ' ') {
-                        ls = s;
-                        lp = p;
+            case NORM:
+                if (cp == ' ') {
+                    ls = s;
+                    lp = p;
+                }
+
+                if (cp == ASCII_ESC) {
+                    state = ESCAPE;
+                } else if (cp == '\b') {
+                    if (m > 0) {
+                        --m;
+                        ++l;
                     }
+                } else if (cp == '\r') {
+                    ls = NULL;
+                    lp = NULL;
+                    m = 0;
+                } else {
+                    m += w;
+                    l -= w;
+                }
 
-                    if (cp == ASCII_ESC) {
-                        state = ESCAPE;
-                    } else if (cp == '\b') {
-                        if (m > 0)
-                            m--, l++;
-                    } else if (cp == '\r') {
-                        ls = lp = NULL;
-                        m = 0;
-                    } else {
-                        m += w, l -= w;
-                    }
+                break;
 
-                    break;
+            case ESCAPE:
+                state = (cp == '[') ? BRACKET : NORM;
+                break;
 
-                case ESCAPE:
-                    state = (cp == '[') ? BRACKET : NORM;
-                    break;
-
-                case BRACKET:
-                    if (is_csi_final(cp))
-                        state = NORM;
-                    break;
+            case BRACKET:
+                if (is_csi_final(cp))
+                    state = NORM;
+                break;
             }
         }
 
         /* Adjust offsets and stuff to last space */
-        if( ls != NULL && ls != s ) {
+        if (ls != NULL && ls != s) {
             /* move s back to the last space */
             s = ls;
             /* null term buf[] at last space */
-            lp[ 0 ] = 0;
+            lp[0] = '\0';
         }
 
-        follow = *s;
+        follow = *s != '\0';
 
         *p = '\0';
         tty_printf("%s%s", buf, follow ? "\n" : "");
@@ -1052,37 +1103,40 @@ void sgr_prompt_commit(const char *text, size_t len)
  * add substitutions and marks to line and print.
  * if newline, also print a final \n
  */
-void smart_print(const char *line, char newline)
+void smart_print(const char *line, bool newline)
 {
     static ptr *ptrbuf = NULL;
-    static char *buf;
 
     do {
-	if (!ptrbuf) {
-	    ptrbuf = ptrnew(PARAMLEN);
-	    if (MEM_ERROR) break;
-	}
-	ptrbuf = ptrmaddsubst_and_marks(ptrbuf, line, strlen(line));
-	if (MEM_ERROR || !ptrbuf) break;
+        if (ptrbuf == NULL) {
+            ptrbuf = ptrnew(PARAMLEN);
+            if (MEM_ERROR)
+                break;
+        }
+        ptrbuf = ptrmaddsubst_and_marks(ptrbuf, line, strlen(line));
+        if (MEM_ERROR || ptrbuf == NULL)
+            break;
 
-	buf = ptrdata(ptrbuf);
+        char *buf = ptrdata(ptrbuf);
 
-	sgr_output_sync();
-	sgr_output(buf, ptrlen(ptrbuf));
-	if (opt_wrap)
-	    wrap_print(buf);
-	else {
-	    tty_puts(buf);
-	    int l = printstrlen(buf);
-	    if (l > cols_1 && l < ptrlen(ptrbuf))
-		sgr_reset_to_eol();
-	}
-    } while(0);
+        sgr_output_sync();
+        sgr_output(buf, ptrlen(ptrbuf));
+        if (opt_wrap) {
+            wrap_print(buf);
+        } else {
+            tty_puts(buf);
+            int l = printstrlen(buf);
+            if (l > cols_1 && l < ptrlen(ptrbuf))
+                sgr_reset_to_eol();
+        }
+    } while (false);
 
-    if (MEM_ERROR)
-	print_error(error);
-    else if (newline)
-	col0 = 0, tty_putc('\n');
+    if (MEM_ERROR) {
+        print_error(error);
+    } else if (newline) {
+        col0 = 0;
+        tty_putc('\n');
+    }
 }
 
 /*
@@ -1093,25 +1147,25 @@ void smart_print(const char *line, char newline)
 char *split_first_word(char *dst, int dstlen, char *src)
 {
     static const char seps[] = { ' ', CMDSEP };
-    char *tmp;
-    int len;
 
     src = skipspace(src);
-    if (!*src) {
-	*dst='\0';
-	return src;
+    if (*src == '\0') {
+        *dst = '\0';
+        return src;
     }
-    len = strlen(src);
+    int len = strlen(src);
 
-    tmp = memchrs(src, len, seps, sizeof(seps));
-    if (tmp) {
-	if (dstlen > tmp-src+1) dstlen = tmp-src+1;
-	my_strncpy(dst, src, dstlen-1);
+    char *tmp = memchrs(src, len, seps, sizeof(seps));
+    if (tmp != NULL) {
+        if (dstlen > tmp - src + 1)
+            dstlen = tmp - src + 1;
+        my_strncpy(dst, src, dstlen - 1);
     } else {
-	my_strncpy(dst, src, dstlen-1);
-	tmp = src + len;
+        my_strncpy(dst, src, dstlen - 1);
+        tmp = src + len;
     }
-    if (*tmp && *tmp != CMDSEP) tmp++;
+    if (*tmp != '\0' && *tmp != CMDSEP)
+        ++tmp;
     return tmp;
 }
 
@@ -1122,12 +1176,14 @@ static void sig_pipe_handler(int signum)
 
 static void sig_winch_handler(int signum)
 {
-    sig_pending = sig_winch_got = 1;
+    sig_winch_got = 1;
+    sig_pending = 1;
 }
 
 static void sig_chld_handler(int signum)
 {
-    sig_pending = sig_chld_got = 1;
+    sig_chld_got = 1;
+    sig_pending = 1;
 }
 
 static noreturn void sig_term_handler(int signum)
@@ -1139,8 +1195,8 @@ static noreturn void sig_term_handler(int signum)
 static void sig_intr_handler(int signum)
 {
     if (confirm) {
-	tty_printf("%s\n#interrupted.%s\n", edattrend, tty_clreoln);
-	exit_powwow();
+        tty_printf("%s\n#interrupted.%s\n", edattrend, tty_clreoln);
+        exit_powwow();
     }
 
     status(1);
@@ -1156,25 +1212,26 @@ static void sig_intr_handler(int signum)
 /*
  * suspend ourselves
  */
-void suspend_powwow(int  signum)
+void suspend_powwow(int signum)
 {
     if (can_suspend) {
         sig_permanent(SIGTSTP, SIG_DFL);
         sig_permanent(SIGTERM, SIG_IGN);
         sig_permanent(SIGINT, SIG_IGN);
-	tty_puts(edattrend);
+        tty_puts(edattrend);
         tty_quit();
 
-	if (kill(0, SIGTSTP) < 0) {
-	    errmsg("cannot suspend powwow");
-	    return;
-	}
+        if (kill(0, SIGTSTP) < 0) {
+            errmsg("cannot suspend powwow");
+            return;
+        }
 
         signal_start();
         tty_start();
         tty_sig_winch_bottomhalf();  /* in case size changed meanwhile */
-    } else
-	tty_puts("\n#I don't think your shell has job control.\n");
+    } else {
+        tty_puts("\n#I don't think your shell has job control.\n");
+    }
     status(1);
 }
 
@@ -1184,19 +1241,17 @@ void suspend_powwow(int  signum)
 function_signal sig_permanent(int signum, function_signal sighandler)
 {
     struct sigaction act;
-    function_signal oldhandler;
-
-    if (sigaction(signum, NULL, &act))
+    if (sigaction(signum, NULL, &act) != 0)
         return SIG_ERR;
-    oldhandler = act.sa_handler;
+    function_signal oldhandler = act.sa_handler;
     act.sa_handler = sighandler;
 #ifdef SA_RESTART
     act.sa_flags = SA_RESTART;
 #else
     act.sa_flags = 0;
 #endif
-    if (sigaction(signum, &act, NULL))
-	return SIG_ERR;
+    if (sigaction(signum, &act, NULL) != 0)
+        return SIG_ERR;
     return oldhandler;
 }
 
@@ -1207,19 +1262,16 @@ function_signal sig_permanent(int signum, function_signal sighandler)
 function_signal sig_oneshot(int signum, function_signal sighandler)
 {
     struct sigaction act;
-    function_signal oldhandler;
-
-    if (sigaction(signum, NULL, &act))
+    if (sigaction(signum, NULL, &act) != 0)
         return SIG_ERR;
-    oldhandler = act.sa_handler;
+    function_signal oldhandler = act.sa_handler;
     act.sa_handler = sighandler;
     act.sa_flags = SA_ONESHOT;
-    if (sigaction(signum, &act, NULL))
-	return SIG_ERR;
+    if (sigaction(signum, &act, NULL) != 0)
+        return SIG_ERR;
     return oldhandler;
 }
 #endif
-
 
 /*
  * set up our signal handlers
@@ -1227,8 +1279,8 @@ function_signal sig_oneshot(int signum, function_signal sighandler)
 void signal_start(void)
 {
     if (sig_permanent(SIGTSTP, SIG_IGN) == SIG_DFL) {
-	sig_permanent(SIGTSTP, suspend_powwow);
-	can_suspend = 1;
+        sig_permanent(SIGTSTP, suspend_powwow);
+        can_suspend = true;
     }
     sig_permanent(SIGCHLD,  sig_chld_handler);
     sig_permanent(SIGQUIT,  sig_intr_handler);
@@ -1244,12 +1296,14 @@ void signal_start(void)
 
 void sig_bottomhalf(void)
 {
-    if (sig_chld_got)
-	sig_chld_bottomhalf();
-    if (sig_winch_got)
-	tty_sig_winch_bottomhalf();
+    if (sig_chld_got != 0)
+        sig_chld_bottomhalf();
+    if (sig_winch_got != 0)
+        tty_sig_winch_bottomhalf();
 
-    sig_pending = sig_chld_got = sig_winch_got = 0;
+    sig_winch_got = 0;
+    sig_chld_got = 0;
+    sig_pending = 0;
 }
 
 /* start a message on a line of its own */
@@ -1257,8 +1311,8 @@ static void start_message(void)
 {
     clear_input_line(opt_compact);
     if (!opt_compact) {
-	tty_putc('\n');
-	status(1);
+        tty_putc('\n');
+        status(1);
     }
 }
 
@@ -1303,15 +1357,15 @@ void syserr(const char *msg)
 {
     int err = errno;
     if (msg != NULL && *msg != '\0') {
-	clear_input_line(opt_compact);
-	if (!opt_compact)
-	    tty_putc('\n');
-	tty_flush();
+        clear_input_line(opt_compact);
+        if (!opt_compact)
+            tty_putc('\n');
+        tty_flush();
 
-	if (err == 0)
-	    fprintf(stderr, "#fatal error: %s\n", msg);
-	else
-	    fprintf(stderr, "#fatal error: %s: %s\n", msg, strerror(err));
+        if (err == 0)
+            fprintf(stderr, "#fatal error: %s\n", msg);
+        else
+            fprintf(stderr, "#fatal error: %s: %s\n", msg, strerror(err));
     }
 
     message_wrap(WRAP_CONT, "#settings NOT saved to file.");
@@ -1334,8 +1388,6 @@ void exec_failed(const char *what)
 
 static void load_missing_stuff(int n)
 {
-    char buf[BUFSIZE];
-
     if (n < 1) {
         tty_add_walk_binds();
         tty_message("#default keypad settings loaded\n");
@@ -1345,32 +1397,35 @@ static void load_missing_stuff(int n)
         tty_message("#default editing keys settings loaded\n");
     }
     if (n < 5) {
-	static const char *const str[] = { "compact", "debug", "echo", "info",
-		"keyecho", "speedwalk", "wrap", 0 };
-	int i;
-	for (i=0; str[i]; i++) {
-	    sprintf(buf, "#%s={#if ($(1)==\"on\") #option +%s; #else"
+        static const char *const str[] = {
+            "compact", "debug", "echo", "info", "keyecho", "speedwalk", "wrap",
+            NULL
+        };
+        for (int i = 0; str[i] != NULL; ++i) {
+            char buf[BUFSIZE];
+            sprintf(buf, "#%s={#if ($(1)==\"on\") #option +%s; #else"
                     " #if ($(1)==\"off\") #option -%s; #else #option %s}",
-		    str[i], str[i], str[i], str[i]);
-	    parse_alias(buf);
-	}
-	message_wrap(WRAP_CONT, "#compatibility aliases loaded: #compact, "
+                    str[i], str[i], str[i], str[i]);
+            parse_alias(buf);
+        }
+        message_wrap(WRAP_CONT, "#compatibility aliases loaded: #compact, "
                      "#debug, #echo, #info, #keyecho, #speedwalk, #wrap");
     }
     if (n < 6) {
-	sprintf(buf, "#lines=#setvar lines=$0");
-	parse_alias(buf);
-	sprintf(buf, "#settimer=#setvar timer=$0");
-	parse_alias(buf);
-	limit_mem = 1048576;
-	message_wrap(WRAP_CONT,
+        char buf[BUFSIZE];
+        sprintf(buf, "#lines=#setvar lines=$0");
+        parse_alias(buf);
+        sprintf(buf, "#settimer=#setvar timer=$0");
+        parse_alias(buf);
+        limit_mem = 1048576;
+        message_wrap(WRAP_CONT,
                      "#compatibility aliases loaded: #lines, #settimer");
-	message_wrap(WRAP_CONT, "#max text/strings length set to 1048576 "
+        message_wrap(WRAP_CONT, "#max text/strings length set to 1048576 "
                      "bytes; use \"#setvar mem\" to change it");
-	tty_message("#wait...");
-	tty_flush();
-	sleep(1);
-	tty_puts("ok\n");
+        tty_message("#wait...");
+        tty_flush();
+        sleep(1);
+        tty_puts("ok\n");
     }
     if (n < READLINE_KEYS_SAVEFILEVER)
         tty_add_new_binds(n);
@@ -1385,113 +1440,113 @@ static void load_missing_stuff(int n)
  */
 int read_settings(void)
 {
-    FILE *f;
-    char *buf, *p, *cmd, old_nice = a_nice;
-    char *line = NULL;          /* current line, as UTF-8 */
-    size_t linesize = 0;
-    int failed = 1, n, savefilever = 0, left, len, limit_mem_hit = 0;
-    varnode **first;
-    ptr *ptrbuf;
-
-    if (!*deffile) {
+    if (*deffile == '\0') {
         wrap_printf("#warning: no save-file defined");
-	return 0;
+        return 0;
     }
 
-    f = fopen(deffile, "r");
-    if (!f) {
+    FILE *f = fopen(deffile, "r");
+    if (f == NULL) {
         wrap_printf("#error: cannot open file \"%s\": %s", deffile,
                     strerror(errno));
-	return 0;
+        return 0;
     }
 
-    ptrbuf = ptrnew(PARAMLEN);
+    ptr *ptrbuf = ptrnew(PARAMLEN);
     if (MEM_ERROR) {
-	print_error(error);
-	fclose(f);
-	return 0;
+        print_error(error);
+        fclose(f);
+        return 0;
     }
-    buf = ptrdata(ptrbuf);
-    left = ptrmax(ptrbuf);
-    len = 0;
+    char *buf = ptrdata(ptrbuf);
+    int left = ptrmax(ptrbuf);
+    int len = 0;
 
     opt_info = false;
+    char old_nice = a_nice;
     a_nice = 0;
 
-    for (n = 0; n < MAX_HASH; n++) {
-	while (aliases[n])
-	    delete_aliasnode(&aliases[n]);
+    for (int n = 0; n < MAX_HASH; ++n) {
+        while (aliases[n] != NULL)
+            delete_aliasnode(&aliases[n]);
     }
-    while (actions)
-	delete_actionnode(&actions);
-    while (prompts)
-	delete_promptnode(&prompts);
-    while (markers)
-	delete_marknode(&markers);
-    while (keydefs)
-	delete_keynode(&keydefs);
+    while (actions != NULL)
+        delete_actionnode(&actions);
+    while (prompts != NULL)
+        delete_promptnode(&prompts);
+    while (markers != NULL)
+        delete_marknode(&markers);
+    while (keydefs != NULL)
+        delete_keynode(&keydefs);
     while (substitutions != NULL)
-      delete_substnode(&substitutions);
-    for (n = 0; n < MAX_HASH; n++) {
+        delete_substnode(&substitutions);
+    for (int n = 0; n < MAX_HASH; ++n) {
         while (named_vars[VAR_NUM].buckets[n] != NULL)
             delete_varnode(&named_vars[VAR_NUM].buckets[n], VAR_NUM);
-        first = &named_vars[VAR_TEXT].buckets[n];
-	while (*first) {
-	    if (is_permanent_variable(*first))
-		first = &(*first)->next;
-	    else
+        varnode **first = &named_vars[VAR_TEXT].buckets[n];
+        while (*first != NULL) {
+            if (is_permanent_variable(*first))
+                first = &(*first)->next;
+            else
                 delete_varnode(first, VAR_TEXT);
-	}
+        }
     }
 
-    for (n = -GLOBAL_VAR_COUNT; n < 0; ++n) {
+    for (int n = -GLOBAL_VAR_COUNT; n < 0; ++n) {
         *num_var(n) = 0;
         ptrdel(text_var(n));
     }
 
-    while (left > 0 && fgets(buf+len, left+1, f)) {
-	/* WARNING: accessing private field ->len */
-	len += n = strlen(buf+len);
-	ptrbuf->len = len;
-	left -= n;
+    char *line = NULL;          /* current line, as UTF-8 */
+    size_t linesize = 0;
+    int savefilever = 0;
+    bool limit_mem_hit = false;
+    while (left > 0 && fgets(buf + len, left + 1, f) != NULL) {
+        /* WARNING: accessing private field ->len */
+        int n = strlen(buf + len);
+        len += n;
+        ptrbuf->len = len;
+        left -= n;
 
-	/* Clear all \n prefixed with a literal backslash '\\' */
-	while ((cmd = strstr(buf, "\\\n"))) {
-		cmd[ 0 ] = ' ';
-		cmd[ 1 ] = ' ';
-	}
+        /* Clear all \n prefixed with a literal backslash '\\' */
+        char *cmd;
+        while ((cmd = strstr(buf, "\\\n")) != NULL) {
+            cmd[0] = ' ';
+            cmd[1] = ' ';
+        }
 
-	cmd = strchr(buf, '\n');
+        cmd = strchr(buf, '\n');
 
-	if (!cmd) {
-	    if (feof(f)) {
-		wrap_printf("#error: missing newline at end of file \"%s\"",
+        if (cmd == NULL) {
+            if (feof(f)) {
+                wrap_printf("#error: missing newline at end of file \"%s\"",
                             deffile);
-		break;
-	    }
-	    /* no newline yet. increase line size and try again */
-	    ptrbuf = ptrpad(ptrbuf, ptrlen(ptrbuf) >> 1);
-	    if (MEM_ERROR) {
-		limit_mem_hit = 1;
-		print_error(error);
-		break;
-	    }
-	    ptrtrunc(ptrbuf,len);
-	    buf = ptrdata(ptrbuf);
-	    left = ptrmax(ptrbuf) - len;
-	    continue;
-	}
-	/* got a full line */
-	*cmd = '\0';
-	left += len;
-	len = 0;
+                break;
+            }
+            /* no newline yet. increase line size and try again */
+            ptrbuf = ptrpad(ptrbuf, ptrlen(ptrbuf) >> 1);
+            if (MEM_ERROR) {
+                limit_mem_hit = true;
+                print_error(error);
+                break;
+            }
+            ptrtrunc(ptrbuf, len);
+            buf = ptrdata(ptrbuf);
+            left = ptrmax(ptrbuf) - len;
+            continue;
+        }
+        /* got a full line */
+        *cmd = '\0';
+        left += len;
+        len = 0;
 
         /* convert it to UTF-8 */
         size_t llen = cmd - buf;
         if (3 * llen + 1 > linesize) {
             free(line);
             linesize = 3 * llen + 1;
-            if ((line = malloc(linesize)) == NULL) {
+            line = malloc(linesize);
+            if (line == NULL) {
                 linesize = 0;
                 out_of_memory();
                 break;
@@ -1502,27 +1557,27 @@ int read_settings(void)
         else
             llen = utf8_sanitize(buf, llen, line);
         line[llen] = '\0';
-        cmd = line;
 
-        cmd = skipspace(cmd);
-	if (!*cmd)
-	    continue;
+        cmd = skipspace(line);
+        if (*cmd == '\0')
+            continue;
 
         error = 0;
-        if (*(p = first_regular(cmd, ' '))) {
-            *p++ = '\0';
-            if (!strcmp(cmd, "#savefile-version")) {
-		savefilever = atoi(p);
-		continue;
+        char *p = first_regular(cmd, ' ');
+        if (*p != '\0') {
+            *p = '\0';
+            if (strcmp(cmd, "#savefile-version") == 0) {
+                savefilever = atoi(p + 1);
+                continue;
             }
-	    *--p = ' ';
-	}
+            *p = ' ';
+        }
         /* connections did not use TLS unless --tls was given (a #host
          * without it) when files were not UTF-8 yet */
         bool saved_default_tls = default_tls;
         if (savefilever < UTF8_SAVEFILEVER)
             default_tls = false;
-	parse_user_input(cmd, true);
+        parse_user_input(cmd, true);
         default_tls = saved_default_tls;
         if (error != 0) {
             wrap_printf("#error: loading save-file failed");
@@ -1530,32 +1585,33 @@ int read_settings(void)
         }
     }
 
-    if (error)
-	failed = -1;
-    else if (ferror(f) && !feof(f)) {
-	wrap_printf("#error: cannot read file \"%s\": %s", deffile,
+    int failed = 1;
+    if (error != 0) {
+        failed = -1;
+    } else if (ferror(f) && !feof(f)) {
+        wrap_printf("#error: cannot read file \"%s\": %s", deffile,
                     strerror(errno));
         failed = -1;
     } else if (limit_mem_hit) {
-	wrap_printf("#error: cannot load save-file: got a line longer than "
+        wrap_printf("#error: cannot load save-file: got a line longer than "
                     "limit");
-	failed = -1;
+        failed = -1;
     } else if (savefilever > SAVEFILEVER) {
         wrap_printf("#warning: save-file is from a newer version of powwow");
     } else if (savefilever < UTF8_SAVEFILEVER) {
         wrap_printf("#definition file converted from ISO-8859-1 to UTF-8");
-	load_missing_stuff(savefilever);
+        load_missing_stuff(savefilever);
     } else if (savefilever < SAVEFILEVER) {
         wrap_printf("#warning: save-file is from an older version of powwow");
-	load_missing_stuff(savefilever);
+        load_missing_stuff(savefilever);
     }
 
     free(line);
     fclose(f);
     a_nice = old_nice;
 
-    if (ptrbuf)
-	ptrdel(&ptrbuf);
+    if (ptrbuf != NULL)
+        ptrdel(&ptrbuf);
 
     tty_flush();
     return failed;
@@ -1577,26 +1633,15 @@ static void fail_msg(void)
  */
 int save_settings(void)
 {
-    FILE *f;
-    int l;
-    aliasnode *alp;
-    actionnode *acp;
-    promptnode *ptp;
-    marknode *mp;
-    keynode *kp;
-    varnode *vp;
-    ptr *pp = (ptr *)0;
-    int i, flag, failed = 1;
-
     if (REAL_ERROR) {
-	PRINTF("#will not save after an error!\n");
-	return -1;
+        PRINTF("#will not save after an error!\n");
+        return -1;
     }
     error = 0;
 
-    if (!*deffile) {
+    if (*deffile == '\0') {
         wrap_printf("#warning: no save-file defined");
-	return -1;
+        return -1;
     }
 
     /*
@@ -1604,35 +1649,41 @@ int save_settings(void)
      * and write settings there
      */
     strcpy(tmpname, deffile);
-    l = strlen(tmpname) - 1;
-    while (l && tmpname[l] != '/')
-	l--;
-    if (l)
-	l++;
+    int dirlen = strlen(tmpname) - 1;
+    while (dirlen != 0 && tmpname[dirlen] != '/')
+        --dirlen;
+    if (dirlen != 0)
+        ++dirlen;
 
-    sprintf(tmpname + l, "tmpsav%d%d", getpid(), rand() >> 8);
-    if (!(f = fopen(tmpname, "w"))) {
+    sprintf(tmpname + dirlen, "tmpsav%d%d", getpid(), rand() >> 8);
+    FILE *f = fopen(tmpname, "w");
+    if (f == NULL) {
         fail_msg();
         return -1;
     }
 
-    pp = ptrnew(PARAMLEN);
-    if (MEM_ERROR) failed = -1;
+    int failed = 1;
+    ptr *pp = ptrnew(PARAMLEN);
+    if (MEM_ERROR)
+        failed = -1;
 
     failed = fprintf(f, "#savefile-version %d\n", SAVEFILEVER);
-    if (failed > 0 && *hostinfo.name)
-	failed = fprintf(f, "#host %s %d%s%s\n", hostinfo.name, hostinfo.port,
+    if (failed > 0 && *hostinfo.name != '\0') {
+        failed = fprintf(f, "#host %s %d%s%s\n", hostinfo.name, hostinfo.port,
                          tlsopt_str(&hostinfo.tlsopt),
                          charset_flag_str(hostinfo.utf8));
+    }
 
     if (failed > 0) {
-	if (delim_mode == DELIM_CUSTOM) {
-	    pp = ptrmescape(pp, DELIM, strlen(DELIM), 0);
-	    if (MEM_ERROR) failed = -1;
-	}
-	if (failed > 0)
-	    failed = fprintf(f, "#delim %s%s\n", delim_name[delim_mode],
-			     delim_mode == DELIM_CUSTOM ? ptrdata(pp) : "" );
+        if (delim_mode == DELIM_CUSTOM) {
+            pp = ptrmescape(pp, DELIM, strlen(DELIM), false);
+            if (MEM_ERROR)
+                failed = -1;
+        }
+        if (failed > 0) {
+            failed = fprintf(f, "#delim %s%s\n", delim_name[delim_mode],
+                             delim_mode == DELIM_CUSTOM ? ptrdata(pp) : "");
+        }
     }
 
     char attr[ATTR_NAME_MAX];
@@ -1645,52 +1696,63 @@ int save_settings(void)
         failed = fprintf(f, "#hilite messages %s\n", attr);
     }
 
-	if (failed > 0)
-	    failed = fprintf(f, "#groupdelim %s\n", group_delim);
+    if (failed > 0)
+        failed = fprintf(f, "#groupdelim %s\n", group_delim);
 
-    if (failed > 0 && *initstr)
-	failed = fprintf(f, "#init =%s\n", initstr);
+    if (failed > 0 && *initstr != '\0')
+        failed = fprintf(f, "#init =%s\n", initstr);
 
-    if (failed > 0 && limit_mem)
-	failed = fprintf(f, "#setvar mem=%d\n", limit_mem);
-
-    if (failed > 0 && (i = log_getsize()))
-	failed = fprintf(f, "#setvar buffer=%d\n", i);
+    if (failed > 0 && limit_mem != 0)
+        failed = fprintf(f, "#setvar mem=%d\n", limit_mem);
 
     if (failed > 0) {
-	for (alp = sortedaliases; alp && failed > 0; alp = alp->snext) {
-	    pp = ptrmescape(pp, alp->name, strlen(alp->name), 0);
-	    if (MEM_ERROR) { failed = -1; break; }
-	    failed = fprintf(f, "#alias %s%s%s=%s\n", ptrdata(pp),
-		alp -> group == NULL ? "" : group_delim,
-		alp -> group == NULL ? "" : alp -> group,
-		alp->subst);
-	}
+        int size = log_getsize();
+        if (size != 0)
+            failed = fprintf(f, "#setvar buffer=%d\n", size);
     }
 
-    for (acp = actions; acp && failed > 0; acp = acp->next) {
-	failed = fprintf(f, "#action %c%c%s%s%s %s=%s\n",
-			 action_chars[acp->type], acp->active ? '+' : '-',
-			 acp->label,
-		acp -> group == NULL ? "" : group_delim,
-		acp -> group == NULL ? "" : acp -> group,
-			 acp->pattern, acp->command);
+    for (aliasnode *alp = sortedaliases; alp != NULL && failed > 0;
+         alp = alp->snext) {
+        pp = ptrmescape(pp, alp->name, strlen(alp->name), false);
+        if (MEM_ERROR) {
+            failed = -1;
+            break;
+        }
+        failed = fprintf(f, "#alias %s%s%s=%s\n", ptrdata(pp),
+                         alp->group == NULL ? "" : group_delim,
+                         alp->group == NULL ? "" : alp->group,
+                         alp->subst);
     }
 
-    for (ptp = prompts; ptp && failed > 0; ptp = ptp->next) {
-	failed = fprintf(f, "#prompt %c%c%s %s=%s\n",
-			 action_chars[ptp->type], ptp->active ? '+' : '-',
-			 ptp->label, ptp->pattern, ptp->command);
+    for (actionnode *acp = actions; acp != NULL && failed > 0;
+         acp = acp->next) {
+        failed = fprintf(f, "#action %c%c%s%s%s %s=%s\n",
+                         action_chars[acp->type], acp->active ? '+' : '-',
+                         acp->label,
+                         acp->group == NULL ? "" : group_delim,
+                         acp->group == NULL ? "" : acp->group,
+                         acp->pattern, acp->command);
     }
 
-    for (mp = markers; mp && failed > 0; mp = mp->next) {
-	pp = ptrmescape(pp, mp->b.pattern, strlen(mp->b.pattern), 0);
-	if (MEM_ERROR) { failed = -1; break; }
-	failed = fprintf(f, "#mark %s%s=%s\n", mp->b.mbeg ? "^" : "",
-			     ptrdata(pp), attr_name(&mp->attr));
+    for (promptnode *ptp = prompts; ptp != NULL && failed > 0;
+         ptp = ptp->next) {
+        failed = fprintf(f, "#prompt %c%c%s %s=%s\n",
+                         action_chars[ptp->type], ptp->active ? '+' : '-',
+                         ptp->label, ptp->pattern, ptp->command);
     }
 
-    for (substnode *sp = substitutions; sp != NULL && failed > 0; sp = sp->next) {
+    for (marknode *mp = markers; mp != NULL && failed > 0; mp = mp->next) {
+        pp = ptrmescape(pp, mp->b.pattern, strlen(mp->b.pattern), false);
+        if (MEM_ERROR) {
+            failed = -1;
+            break;
+        }
+        failed = fprintf(f, "#mark %s%s=%s\n", mp->b.mbeg ? "^" : "",
+                         ptrdata(pp), attr_name(&mp->attr));
+    }
+
+    for (substnode *sp = substitutions; sp != NULL && failed > 0;
+         sp = sp->next) {
         pp = ptrsubstdef(pp, sp->b.mbeg, sp->b.pattern, sp->replacement);
         if (MEM_ERROR) {
             failed = -1;
@@ -1700,19 +1762,20 @@ int save_settings(void)
     }
     /* save value of global variables */
 
-    flag = 0;
+    bool flag = false;
     for (int n = -GLOBAL_VAR_COUNT; n < 0 && failed > 0; ++n) {
         if (*num_var(n) != 0) {
-            failed = fprintf(f, "%s@%d = %ld", flag != 0 ? ", " : "#(",
+            failed = fprintf(f, "%s@%d = %ld", flag ? ", " : "#(",
                              n, *num_var(n));
-            flag = 1;
+            flag = true;
         }
     }
-    if (failed > 0 && flag) failed = fprintf(f, ")\n");
+    if (failed > 0 && flag)
+        failed = fprintf(f, ")\n");
 
     for (int n = -GLOBAL_VAR_COUNT; n < 0 && failed > 0; ++n) {
         if (*text_var(n) != NULL && ptrlen(*text_var(n)) != 0) {
-            pp = ptrescape(pp, *text_var(n), 0);
+            pp = ptrescape(pp, *text_var(n), false);
             if (MEM_ERROR) {
                 failed = -1;
                 break;
@@ -1721,75 +1784,84 @@ int save_settings(void)
         }
     }
 
-    if (failed > 0) {
-        for (flag = 0, vp = named_vars[VAR_NUM].sorted;
-             vp != NULL && failed > 0; vp = vp->snext) {
-	    if (vp->num) {
-		failed = fprintf(f, "%s@%s = %ld", flag ? ", " : "#(",
-				 vp->name, vp->num);
-		flag = 1;
-	    }
-	}
+    flag = false;
+    for (varnode *vp = named_vars[VAR_NUM].sorted; vp != NULL && failed > 0;
+         vp = vp->snext) {
+        if (vp->num != 0) {
+            failed = fprintf(f, "%s@%s = %ld", flag ? ", " : "#(",
+                             vp->name, vp->num);
+            flag = true;
+        }
     }
-    if (failed > 0 && flag) failed = fprintf(f, ")\n");
+    if (failed > 0 && flag)
+        failed = fprintf(f, ")\n");
 
-    if (failed > 0) {
-        for (vp = named_vars[VAR_TEXT].sorted; vp != NULL && failed > 0;
-             vp = vp->snext) {
-	    if (!is_permanent_variable(vp) && vp->str && ptrlen(vp->str)) {
-		pp = ptrescape(pp, vp->str, 0);
-		if (MEM_ERROR) { failed = -1; break; }
-		failed = fprintf(f, "#($%s = \"%s\")\n", vp->name, ptrdata(pp));
-	    }
-	}
+    for (varnode *vp = named_vars[VAR_TEXT].sorted; vp != NULL && failed > 0;
+         vp = vp->snext) {
+        if (!is_permanent_variable(vp) && vp->str != NULL
+            && ptrlen(vp->str) != 0) {
+            pp = ptrescape(pp, vp->str, false);
+            if (MEM_ERROR) {
+                failed = -1;
+                break;
+            }
+            failed = fprintf(f, "#($%s = \"%s\")\n", vp->name, ptrdata(pp));
+        }
     }
 
     if (failed > 0 && opt_history) {
-	l = (curline + 1) % MAX_HIST;
-	while (failed > 0 && l != curline) {
-	    if (hist[l] && *hist[l]) {
-		pp = ptrmescape(pp, hist[l], strlen(hist[l]), 0);
-		if (MEM_ERROR) { failed = -1; break; }
-		failed = fprintf(f, "#put %s\n", ptrdata(pp));
-	    }
-	    if (++l >= MAX_HIST)
-		l = 0;
-	}
+        int l = (curline + 1) % MAX_HIST;
+        while (failed > 0 && l != curline) {
+            if (hist[l] != NULL && *hist[l] != '\0') {
+                pp = ptrmescape(pp, hist[l], strlen(hist[l]), false);
+                if (MEM_ERROR) {
+                    failed = -1;
+                    break;
+                }
+                failed = fprintf(f, "#put %s\n", ptrdata(pp));
+            }
+            ++l;
+            if (l >= MAX_HIST)
+                l = 0;
+        }
     }
 
     if (failed > 0 && opt_words) {
-	int cl = 4, len;
-	l = wordindex;
-	flag = 0;
-	while (words[l = words[l].next].word)
-	    ;
-	while (words[l = words[l].prev].word && failed > 0) {
-            pp = ptrmescape(pp, words[l].word, strlen(words[l].word), 0);
-            len = ptrlen(pp) + 1;
+        int cl = 4;
+        int l = wordindex;
+        flag = false;
+        while (words[l = words[l].next].word != NULL)
+            ;
+        while (words[l = words[l].prev].word != NULL && failed > 0) {
+            pp = ptrmescape(pp, words[l].word, strlen(words[l].word), false);
+            int len = ptrlen(pp) + 1;
             if (cl > 4 && cl + len >= 80) {
                 cl = 4;
                 failed = fprintf(f, "\n");
-                flag = 0;
+                flag = false;
             }
             if (failed > 0)
                 failed = fprintf(f, "%s %s", flag ? "" : "#add", ptrdata(pp));
             cl += len;
-            flag = 1;
-	}
-	if (failed > 0 && flag)
-	    failed = fprintf(f, "\n");
+            flag = true;
+        }
+        if (failed > 0 && flag)
+            failed = fprintf(f, "\n");
     }
 
-    for (kp = keydefs; kp && failed > 0; kp = kp->next) {
-	if (kp->funct==key_run_command)
-	    failed = fprintf(f, "#bind %s %s=%s\n", kp->name,
-			     seq_name(kp->sequence, kp->seqlen), kp->call_data);
-	else
-	    failed = fprintf(f, "#bind %s %s=%s%s%s\n", kp->name,
-			     seq_name(kp->sequence, kp->seqlen),
-			     internal_functions[lookup_edit_function(kp->funct)].name,
-			     kp->call_data ? " " : "",
-			     kp->call_data ? kp->call_data : "");
+    for (keynode *kp = keydefs; kp != NULL && failed > 0; kp = kp->next) {
+        if (kp->funct == key_run_command) {
+            failed = fprintf(f, "#bind %s %s=%s\n", kp->name,
+                             seq_name(kp->sequence, kp->seqlen),
+                             kp->call_data);
+        } else {
+            const char *fname
+                = internal_functions[lookup_edit_function(kp->funct)].name;
+            failed = fprintf(f, "#bind %s %s=%s%s%s\n", kp->name,
+                             seq_name(kp->sequence, kp->seqlen), fname,
+                             kp->call_data != NULL ? " " : "",
+                             kp->call_data != NULL ? kp->call_data : "");
+        }
     }
 
     if (failed > 0)
@@ -1797,21 +1869,22 @@ int save_settings(void)
 
     fclose(f);
 
-    if (error)
-	print_error(error);
-    else if (failed <= 0)
-	fail_msg();
-    else {
-	failed = rename(tmpname, deffile);
-	if (failed == -1) {
-	    wrap_printf("#error: cannot move temporary file \"%s\" to "
+    if (error != 0) {
+        print_error(error);
+    } else if (failed <= 0) {
+        fail_msg();
+    } else {
+        failed = rename(tmpname, deffile);
+        if (failed == -1) {
+            wrap_printf("#error: cannot move temporary file \"%s\" to "
                         "\"%s\": %s", tmpname, deffile, strerror(errno));
-	} else
-	    failed = 1;
+        } else {
+            failed = 1;
+        }
     }
 
-    if (pp)
-	ptrdel(&pp);
+    if (pp != NULL)
+        ptrdel(&pp);
 
     return failed > 0 ? 1 : -1;
 }
@@ -1822,8 +1895,8 @@ int save_settings(void)
 void update_now(void)
 {
     if (!now_updated) {
-	gettimeofday(&now, NULL);
-	now_updated = true;
+        gettimeofday(&now, NULL);
+        now_updated = true;
     }
 }
 
@@ -1833,9 +1906,12 @@ void update_now(void)
 void exit_powwow(void)
 {
     log_flush();
-    if (capturefile) fclose(capturefile);
-    if (recordfile)  fclose(recordfile);
-    if (moviefile)   fclose(moviefile);
+    if (capturefile != NULL)
+        fclose(capturefile);
+    if (recordfile != NULL)
+        fclose(recordfile);
+    if (moviefile != NULL)
+        fclose(moviefile);
     save_settings();
     tty_quit();
     exit(0);

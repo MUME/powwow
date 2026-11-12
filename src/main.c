@@ -1245,11 +1245,11 @@ static int grab_prompt(char *linestart, int len, bool islast)
          */
         char *reprint = reprint_getline();
         if (reprint != NULL && *reprint != '\0') {
-            smart_print(promptstr, 0);
+            smart_print(promptstr, false);
             status(-1);
             tty_printf("(%s)\n", reprint);
         } else if (!islast) {
-            smart_print(promptstr, 1);
+            smart_print(promptstr, true);
         }
     } else if (islast) {
         prompt->str = ptrmcpy(prompt->str, linestart, len);
@@ -1360,7 +1360,7 @@ static void process_singleline(char **pbuf, int *psize)
             if (current_connection != main_connection) /* sub connection */
                 tty_message("##%s> ", current_connection->id);
 
-            smart_print(linestart, 1);
+            smart_print(linestart, true);
         }
     }
 
