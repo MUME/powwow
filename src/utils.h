@@ -31,7 +31,7 @@ void *xmalloc(size_t size);
 void *xcalloc(size_t count, size_t size);
 void *xrealloc(void *p, size_t size);
 char *xstrdup(const char *s);
-char *my_strdup(const char *s);
+char *xstrdup_or_null(const char *s);
 char *my_strncpy(char *dst, const char *src, int len);
 int  printstrlen(char *s);
 char *utf8_fgets(char *buf, int size, FILE *f);

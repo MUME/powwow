@@ -181,7 +181,7 @@ void parse_alias(char *str)
             /* an alias CAN be defined by itself (direct recursion) */
             if (p != NULL) {
                 free(p->subst);
-                p->subst = my_strdup(right);
+                p->subst = xstrdup(right);
             } else {
                 add_aliasnode(left, right);
             }
@@ -195,7 +195,7 @@ void parse_alias(char *str)
                 if (*group == '\0' || strcmp(group, "*") == 0)
                     group = NULL;
 
-                (*np)->group = my_strdup(group);
+                (*np)->group = xstrdup_or_null(group);
             }
 
             if (opt_info) {
@@ -315,12 +315,12 @@ static void change_actionorprompt(actionnode *node, char *pattern,
         node->regexp = q;
 #endif
         free(node->pattern);
-        node->pattern = my_strdup(pattern);
+        node->pattern = xstrdup(pattern);
         node->type = type;
     }
     if (command != NULL) {
         free(node->command);
-        node->command = my_strdup(command);
+        node->command = xstrdup(command);
     }
 
     if (opt_info) {
@@ -612,7 +612,7 @@ void parse_action(char *str, bool onprompt)
                     if (*group == '\0' || strcmp(group, "*") == 0)
                         group = NULL;
 
-                    (*np)->group = my_strdup(group);
+                    (*np)->group = xstrdup_or_null(group);
                 }
             }
         } else if (assign == '=') {
@@ -1386,10 +1386,10 @@ void parse_bind(char *arg)
                 char *params;
                 int function = lookup_edit_name(command, &params);
                 if (function != 0) {
-                    np->call_data = my_strdup(params);
+                    np->call_data = xstrdup_or_null(params);
                     np->funct = internal_functions[function].funct;
                 } else {
-                    np->call_data = my_strdup(command);
+                    np->call_data = xstrdup(command);
                     np->funct = key_run_command;
                 }
                 if (opt_info) {
@@ -1662,7 +1662,7 @@ void change_delaynode(delaynode **p, char *command, long millisec)
     if (*command != '\0') {
         if (strlen(command) > strlen(m->command)) {
             free(m->command);
-            m->command = my_strdup(command);
+            m->command = xstrdup(command);
         } else {
             strcpy(m->command, command);
         }

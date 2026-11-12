@@ -431,7 +431,7 @@ int main(int argc, char **argv)
     }
 
     /* initializations */
-    group_delim = my_strdup("@");
+    group_delim = xstrdup("@");
 
     update_now();
     ref_time = now;
@@ -1604,7 +1604,7 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
              * save last fragment for later, when spawned command will
              * (hopefully) send the rest of the text
              */
-            conn->fragment = my_strdup(buf);
+            conn->fragment = xstrdup(buf);
 
             if (opt_info) {
                 if (line_status == 0)
