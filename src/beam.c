@@ -136,6 +136,7 @@ int process_message(char *buf, int len)
         if (l == -1) {
             errmsg("cannot read from connection \"%s\"",
                    current_connection->id);
+            free(text);
             return used > len ? len : used;
         }
         from = text + i;
