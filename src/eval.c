@@ -537,8 +537,9 @@ static void divide(long *num, long divisor, bool remainder)
         *num /= divisor;
     } else {
         *num %= divisor;
+        /* |*num| < |divisor|, so this does not overflow */
         if (*num < 0)
-            *num += divisor;
+            *num = divisor < 0 ? *num - divisor : *num + divisor;
     }
 }
 

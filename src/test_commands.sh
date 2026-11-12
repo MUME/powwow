@@ -890,6 +890,12 @@ if [ "$(getconf LONG_BIT)" -eq 64 ]; then
     has 'm -9223372036854775808 0 -9223372036854775808 0'
 fi
 
+run '% gives a non-negative remainder' \
+    '#(@a = -7)
+#(@a %= -3)
+#print ("r " + %(-7 % -3) + " " + %(7 % -3) + " " + %(-7 % 3) + " " + %@a)'
+has 'r 2 1 2 2'
+
 run 'an expression assigns to a variable that it reads' \
     '#(@foo = 5)
 #(@foo = @foo + 1)
