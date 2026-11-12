@@ -207,7 +207,7 @@ void cancel_edit(editsess *sp)
     }
     wrap_printf("#killed \"%s\" (%u)", sp->descr, sp->key);
     sprintf(keystr, "C%u\n", sp->key);
-    sprintf(buf, "%sE%d\n%s", MPI, (int)strlen(keystr), keystr);
+    sprintf(buf, "%sE%zu\n%s", MPI, strlen(keystr), keystr);
     tcp_write(sp->conn, buf);
     sp->cancel = 1;
 }
@@ -282,7 +282,7 @@ static void finish_edit(editsess *sp)
 
 	sprintf(keystr, "E%u\n", sp->key);
 
-	sprintf(hdr, "%sE%d\n%s", MPI, (int)(txtlen + strlen(keystr)), keystr);
+        sprintf(hdr, "%sE%zu\n%s", MPI, txtlen + strlen(keystr), keystr);
 
 	text -= (hdrlen = strlen(hdr));
 	memcpy(text, hdr, hdrlen);
@@ -295,7 +295,7 @@ static void finish_edit(editsess *sp)
     } else {
 	/* file wasn't changed, cancel editing session */
 	sprintf(keystr, "C%u\n", sp->key);
-	sprintf(hdr, "%sE%d\n%s", MPI, (int) strlen(keystr), keystr);
+        sprintf(hdr, "%sE%zu\n%s", MPI, strlen(keystr), keystr);
 
 	tcp_raw_write(sp->conn, hdr, strlen(hdr));
 
