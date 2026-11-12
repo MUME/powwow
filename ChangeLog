@@ -122,6 +122,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  crashing powwow.
 	* Fixed /= and %= by zero crashing powwow instead of reporting
 	  division by zero, as / and % do.
+	* Fixed expressions nested more than 100 deep overwriting memory
+	  instead of reporting a stack overflow.
 
 	Removed:
 	* Removed the #color command.

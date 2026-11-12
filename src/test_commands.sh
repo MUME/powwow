@@ -831,6 +831,21 @@ run 'dividing by zero is an error' \
     || fail 'expected 4 errors for /=, %=, / and %'
 has 'a=7'
 
+# MAX_STACK is 100: 100 operators "(" or values "@a" fit on the stacks
+open=$(printf '%.0s(' $(seq 100)) close=$(printf '%.0s)' $(seq 100))
+assign=$(printf '%.0s@a=' $(seq 99))
+run 'an expression may fill the stacks but not overflow them' \
+    "#print ($open 1 $close)
+#print (($open 2 $close))
+#print (${assign}3)
+#print (${assign}@a=4)"
+has '1'
+lacks '2'
+has '3'
+lacks '4'
+[ "$(grep -c '^#print: #error: math stack overflow\.$' "$tmp/out")" = 2 ] \
+    || fail 'expected 2 stack overflow errors'
+
 run 'an expression assigns to a variable that it reads' \
     '#(@foo = 5)
 #(@foo = @foo + 1)
