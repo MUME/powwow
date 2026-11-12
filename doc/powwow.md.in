@@ -1888,13 +1888,13 @@ Known internal variables are:
   manually.
 
 - `mem`: the maximum length of a text or string, in bytes. The default
-  is 0 (zero) which means no limit. I added it only to prevent bringing
-  down the whole system with things like `#while (1) #($foo += $foo + "x")`.
-  Consider it an emergency setting, as powwow *discards* text and strings
-  longer than the limit. The failsafe limit set when loading a savefile
-  from an older version is 1Megabyte, which won't give any problem (like
+  is 1048576 (1 MB), and 0 (zero) means no limit. It prevents bringing
+  down the whole system with things like `#while (1) #($foo += $foo + "x")`:
+  powwow *discards* text and strings longer than the limit, reports an
+  error and stops the command. The limit won't give any problem (like
   increased memory usage) as powwow allocates memory only when it *has*
-  to. The limit also applies to the texts that the MUD sends to edit or
+  to; without a limit, running out of memory ends powwow, without
+  saving the definition file. The limit also applies to the texts that the MUD sends to edit or
   view, as powwow rejects a longer one and shows it as text, and to the
   texts edited, as powwow cancels the editing session instead of sending
   a longer one.
@@ -1909,7 +1909,7 @@ Example:
 | `#setvar timer=0` | reset internal timer to 0 |
 | `#setvar timer=20000` | make internal timer restart from 20000 milliseconds |
 | `#setvar timer` | show timer and let you edit it |
-| `#setvar mem=1048576` | max strings length is now 1Megabyte |
+| `#setvar mem=0` | strings have no maximum length |
 
 ### Send raw data to MUD
 
@@ -2458,9 +2458,11 @@ Powwow has the following limitations:
 Numeric variables are defined as 'long', that means 64-bit integers
 on most systems.
 
-String variables, text lines and commands by default have no length
-limits. If you want, you *can* set a max limit with `#setvar mem`.
-Powwow discards text and strings longer than such a limit.
+String variables, text lines and commands can be at most 1 MB long by
+default. You can change the limit with `#setvar mem`, or remove it with
+`#setvar mem=0`. Powwow discards text and strings longer than the
+limit. If memory runs out, powwow ends, without saving the definition
+file.
 
 Exceptions: the labels/patterns of `#aliases`, `#actions`, `#prompts`,
 `#marks`, `#in/#at` etc. cannot be longer than 4095 chars.

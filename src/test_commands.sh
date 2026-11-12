@@ -264,6 +264,19 @@ run '#save saves #option editor as typed' "#file =$tmp/options.pw
 grep -Fxq '#option editor=my ed\;it -x' "$tmp/options.pw" \
     || fail "expected #option editor in the file"
 
+run 'texts are limited to 1 MB by default' '#setvar
+#($a = "x" * 1048576)
+#($a = "x" * 1048577)'
+has '#setvar mem=1048576'
+[ "$(grep -c '^#error: text/string longer than limit, discarded\.$' \
+       "$tmp/out")" -eq 1 ] || fail 'expected one error for the limit'
+
+run '#save saves #setvar mem=0' "#file =$tmp/mem.pw
+#setvar mem=0
+#save"
+run --args "$tmp/mem.pw" 'loading #setvar mem=0' '#setvar'
+has '#setvar mem=0'
+
 run 'Tab completes #option editor= without a space' '' "#option ed	vi
 "
 has '#option editor is now: vi'
@@ -909,7 +922,8 @@ has '2 bc'
 has '3 '
 
 run 'repeating a text too many times is an error' \
-    '#print ("ab" * 2147483648)
+    '#setvar mem=0
+#print ("ab" * 2147483648)
 #($s = "ab")
 #($s *= 2147483648)
 #print ("s=" + $s)

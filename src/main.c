@@ -113,7 +113,7 @@ int line_status = 0;    /* input line status: 0 = ready -> nothing to do;
                          *  1 if printed something -> must redraw.
                          */
 
-int limit_mem = 0;      /* if != 0, max len of a string or text */
+int limit_mem = 1048576; /* if != 0, max len of a string or text */
 
 bool opt_echo = true;           /* true if text sent to MUD must be echoed */
 bool opt_keyecho = true;        /* true if binds must be echoed */
@@ -537,7 +537,6 @@ int main(int argc, char **argv)
             hostinfo.port = atoi(portnum);
             tty_add_initial_binds();
             tty_add_walk_binds();
-            limit_mem = 1048576;
             if (save_settings() < 0)
                 exit(0);
         } else if (read_settings() < 0) {

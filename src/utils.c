@@ -1732,7 +1732,7 @@ int save_settings(void)
     if (failed > 0 && *initstr != '\0')
         failed = fprintf(f, "#init =%s\n", initstr);
 
-    if (failed > 0 && limit_mem != 0)
+    if (failed > 0)
         failed = fprintf(f, "#setvar mem=%d\n", limit_mem);
 
     if (failed > 0) {
