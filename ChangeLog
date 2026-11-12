@@ -147,6 +147,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Fixed #action patterns longer than 4 KB after substituting
 	  ${name}, @{name} and #{expression} overwriting memory
 	  and crashing powwow.
+	* Fixed `powwow definition-file host port' failing with `too many
+	  arguments'.
 
 	Removed:
 	* Removed the #color command.
