@@ -1463,6 +1463,20 @@ run --until '#connection on "n" closed.' \
 ##n #identify z"
 lacks 'left'
 
+# the connection of an editing session closes while the editor runs
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE14\nM5\ndescr\ntext\n'
+EOF
+run --until 'ended' 'connection closing during an editing session' \
+    "#alias s=#print start
+#alias e=#print (\"end\" + \"ed\")
+#option editor=&sh -c 'sleep 5'
+#spawn n sh $tmp/server
+##n #identify s e"
+has '#aborted "descr" (5)'
+lacks '#cancelled session descr (5)'
+
 # the temporary file of an editing session is in $TMPDIR, which may have
 # a space
 mkdir "$tmp/t d"
