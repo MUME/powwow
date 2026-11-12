@@ -128,6 +128,20 @@ joined() {
 run --eof 'powwow quits at the end of its input' '#print ("at" + " end")'
 has 'at end'
 
+# reading a directory fails on most systems
+if ! cat < / > /dev/null 2>&1; then
+    name='powwow quits when reading its input fails'
+    "$POWWOW" < / > "$tmp/out" 2>&1 &
+    pid=$!
+    (sleep 5; kill -9 $pid) > /dev/null 2>&1 &
+    watchdog=$!
+    wait $pid
+    kill $watchdog 2>/dev/null
+    wait $watchdog 2>/dev/null
+    grep -q '^#fatal error: cannot read from the terminal' "$tmp/out" \
+        || fail 'no error for reading the input'
+fi
+
 run 'var deletes an unnamed number variable' '#($3 = "text")
 #(@3 = 5)
 #var @3=

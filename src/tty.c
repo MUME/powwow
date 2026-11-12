@@ -1336,7 +1336,8 @@ again:
 /*
  * read up to 'count' bytes of UTF-8 from the terminal, converting
  * from the locale's charset; UTF-8 needs no conversion, only checking,
- * with invalid bytes as U+FFFD
+ * with invalid bytes as U+FFFD; return the number of bytes stored, or -1
+ * if reading fails with an error other than EAGAIN
  */
 int tty_read(char *buf, size_t count)
 {
@@ -1390,6 +1391,8 @@ int tty_read(char *buf, size_t count)
                             sizeof(tty_in_buf) - tty_in_used);
         if (did_read < 0 && errno == EINTR)
             continue;
+        if (did_read < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+            return -1;
         if (did_read == 0)
             tty_eof = true;
         if (did_read <= 0)
