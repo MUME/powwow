@@ -565,6 +565,11 @@ static bool exe_op(operator *op)
         if (o1.type == TYPE_NUM_VAR && o2.type == TYPE_NUM) {
             long *l = o1.num_ref;
 
+            if (o2.num == 0 && (*op == op_div_eq || *op == op_ampersand_eq)) {
+                error = DIV_BY_ZERO_ERROR;
+                break;
+            }
+
             switch (*op) {
             case op_or_or_eq:
                 if (o2.num != 0)
