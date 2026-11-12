@@ -163,6 +163,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Fixed editing sessions that fail to start, such as when powwow
 	  cannot start a process for the editor, leaving their temporary
 	  file in /tmp.
+	* Fixed powwow leaving the terminal as the editor would get it,
+	  and ignoring C-c, when it cannot start a process for an editor
+	  or pager that it waits for.
 	* Fixed #cancel crashing powwow without a main connection, when
 	  the editing session came from a command started by #spawn.
 
