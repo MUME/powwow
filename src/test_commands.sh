@@ -940,6 +940,14 @@ has 'chained 25'
 [ "$(grep -c '^#print: #error: operand or index out of range\.$' \
     "$tmp/out")" = 2 ] || fail 'expected 2 errors for too large numbers'
 
+run 'percent of a text too large for a number is an error' \
+    '#print ("n " + %(%(" -12abc")))
+#print (%("99999999999999999999"))
+#print (%("-99999999999999999999"))'
+has 'n -12'
+[ "$(grep -c '^#print: #error: operand or index out of range\.$' \
+    "$tmp/out")" = 2 ] || fail 'expected 2 errors for too large numbers'
+
 run 'shifts lose the bits shifted out and keep the sign' \
     '#print ("l " + %(3 << 2) + " " + %(1 << 64) + " " + %(1 << 1000))
 #print ("r " + %(-8 >> 1) + " " + %(-1 >> 64) + " " + %(5 >> 64))

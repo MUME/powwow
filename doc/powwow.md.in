@@ -2065,7 +2065,8 @@ operators between strings:
    ? position of first occurrence of second string in the first
    * convert first char of a string into its Unicode code point
      or vice versa: *"\351" gives 233, *8364 gives the euro sign
-   % convert string into its numeric value or vice versa
+   % convert string into its numeric value or vice versa; a value
+     too large for powwow causes an error
 
 operators between a string and a number:
 	 (string is first argument)
