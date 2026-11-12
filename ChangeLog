@@ -175,6 +175,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  starts crashing powwow if it closes the connection of the
 	  session, or, if it runs #connect, making powwow process the
 	  text received with the session as if from the new connection.
+	* Temporary files of editing sessions get a name that other users
+	  cannot guess, and are in $TMPDIR if set, instead of /tmp; another
+	  user could make powwow write the text to any file of the user.
 	* Fixed #cancel crashing powwow without a main connection, when
 	  the editing session came from a command started by #spawn.
 	* Keys typed after an invalid character, in a multibyte locale
