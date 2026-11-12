@@ -1720,7 +1720,7 @@ static bool match_weak_action(char *pat, char *line, int *match_s,
     if (*pat == '&' || *pat == '$')
         mbeg = -mbeg - 1;  /* pattern starts with '&' or '$' */
 
-    char mpat[BUFSIZE], *src = line, *nsrc = NULL;
+    char *src = line, *nsrc = NULL;
     while (pat != NULL && *pat != '\0') {
         char c = *pat;
         if (c == '&' || c == '$') {
@@ -1753,18 +1753,16 @@ static bool match_weak_action(char *pat, char *line, int *match_s,
         char *npat2 = first_valid(pat, '$');
         if (npat2 < npat)
             npat = npat2;
+        /* the text to match, up to the next parameter */
+        size_t mlen = npat - pat;
         if (*npat == '\0')
             npat = NULL;
 
-        if (npat != NULL) {
-            my_strncpy(mpat, pat, npat - pat);
-            /* mpat[npat - pat] = 0; */
-        } else {
-            strcpy(mpat, pat);
-        }
-
-        if (*mpat != '\0') {
-            nsrc = strstr(src, mpat);
+        if (mlen != 0) {
+            char end = pat[mlen];
+            pat[mlen] = '\0';
+            nsrc = strstr(src, pat);
+            pat[mlen] = end;
             if (nsrc == NULL) {
                 ptrdel(&buf);
                 return false;
@@ -1817,7 +1815,7 @@ static bool match_weak_action(char *pat, char *line, int *match_s,
             mword = false;
         }
         if (nsrc != NULL)
-            src = nsrc + strlen(mpat);
+            src = nsrc + mlen;
         pat = npat;
     }
     ptrdel(&buf);

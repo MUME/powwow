@@ -144,6 +144,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Fixed ${name}, @{name} and #{expression} right after an
 	  undefined variable, as in `${undefined}${name}', being left as
 	  they were instead of substituted.
+	* Fixed #action patterns longer than 4 KB after substituting
+	  ${name}, @{name} and #{expression} overwriting memory
+	  and crashing powwow.
 
 	Removed:
 	* Removed the #color command.

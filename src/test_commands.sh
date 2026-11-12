@@ -1196,6 +1196,14 @@ run 'jit substitution after an undefined variable' '#var $v=V
 t'
 has '[V] [0]'
 
+run 'action pattern longer than a buffer' '#($v = "x" * 5000)
+#action >a ${v}=#print ("matched")
+#emulate y
+#print ("alive")'
+has 'y'
+lacks 'matched'
+has 'alive'
+
 # a line longer than the memory limit is still processed as a line, not
 # again as a prompt
 awk 'BEGIN { s = sprintf("%150s", ""); gsub(/ /, "x", s); print s
