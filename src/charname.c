@@ -198,7 +198,8 @@ static void part_set(struct charname_part *part, const char *text,
         len = sizeof(part->text) - 1;
     memcpy(part->text, text, len);
     part->text[len] = '\0';
-    part->prefix = part->suffix = len;
+    part->prefix = len;
+    part->suffix = len;
 }
 
 /*
@@ -240,17 +241,18 @@ void charname_align_add(struct charname_align *align, const char *pattern,
         align->failed = true;
         return;
     }
-    bool first = align->names++ == 0;
+    bool first = align->names == 0;
+    ++align->names;
     align->count = count;
     for (int i = 0; i <= count; ++i) {
         /* the gap before the word, or the end after the last one */
         size_t start = i > 0 ? spans[i - 1].end : 0;
         size_t end = i < count ? spans[i].start : strlen(name);
-        if (first)
+        if (first) {
             part_set(&align->gaps[i], name + start, end - start);
-        else if (i < count)
+        } else if (i < count) {
             gap_merge(&align->gaps[i], name + start, end - start);
-        else {
+        } else {
             /* the end: as far as they have it in common */
             struct charname_part *tail = &align->gaps[count];
             size_t j = 0;
@@ -265,11 +267,12 @@ void charname_align_add(struct charname_align *align, const char *pattern,
             break;
         struct charname_part *word = &align->words[i];
         size_t len = spans[i].end - spans[i].start;
-        if (first)
+        if (first) {
             part_set(word, name + spans[i].start, len);
-        else if (strlen(word->text) != len
-                 || !same_text(word->text, name + spans[i].start, len))
+        } else if (strlen(word->text) != len
+                   || !same_text(word->text, name + spans[i].start, len)) {
             word->differs = true;
+        }
     }
 }
 
@@ -292,7 +295,8 @@ bool charname_align_text(const struct charname_align *align,
         return false;
     /* where the cursor goes: the first gap or word where the names
      * differ, unless they also differ at the end */
-    int gap_at = -1, word_at = -1;
+    int gap_at = -1;
+    int word_at = -1;
     for (int i = 0; !align->gaps[align->count].differs && i < align->count;
          ++i) {
         if (i > 0 && align->gaps[i].differs) {
@@ -426,7 +430,8 @@ static bool parse_code_point(const char *text, size_t len, uint32_t *cp)
     if (len > 2 && (text[0] == 'U' || text[0] == 'u') && text[1] == '+') {
         text += 2;
         len -= 2;
-    } else if (len > 2 && text[0] == '#' && (text[1] == 'x' || text[1] == 'X')) {
+    } else if (len > 2 && text[0] == '#'
+               && (text[1] == 'x' || text[1] == 'X')) {
         text += 2;
         len -= 2;
     }
@@ -467,7 +472,8 @@ static bool read_entry(names_file f, struct name_entry *e)
         char *p = line;
         e->ncps = 0;
         while (e->ncps < CHARNAME_MAX && isxdigit((unsigned char)*p)) {
-            e->cps[e->ncps++] = strtoul(p, &p, 16);
+            e->cps[e->ncps] = strtoul(p, &p, 16);
+            ++e->ncps;
             while (*p == ' ')
                 ++p;
         }
