@@ -569,6 +569,10 @@ numbers (only integers are supported)
   if you use negative non-decimal numbers, you must put '-'
   before the base: -2#101 is -5, 2#-101 causes an error.
 
+  every digit must be less than the base: 2#102 and 8#9 cause an
+  error, and so does a number that is too large, which on 64-bit
+  systems means above 9223372036854775807.
+
 quoted-strings (i.e.: strings in " ").
 NOTE: powwow unescapes them when they are evaluated
 

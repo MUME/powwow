@@ -126,6 +126,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  instead of reporting a stack overflow.
 	* Fixed ^^ giving its left argument, such as 5 for `5 ^^ 0',
 	  instead of 1 or 0 like ^^=.
+	* Numbers with a digit too large for their base, such as 2#9 or
+	  8#9, and numbers too large for powwow are errors, instead of
+	  giving a wrong value.
 
 	Removed:
 	* Removed the #color command.
