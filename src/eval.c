@@ -258,7 +258,7 @@ static long random_below(long n)
 void print_error(int err_num)
 {
     clear_input_line(true);
-    if (error == NO_MEM_ERROR)
+    if (err_num == NO_MEM_ERROR)
         tty_message("#out of memory\n");
     else
         tty_message("#error: %s.\n", error_msg[err_num]);
