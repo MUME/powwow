@@ -1362,10 +1362,13 @@ static bool exe_op(operator *op)
             ret = true;
         } else if (o1.type == TYPE_TXT || o1.type == TYPE_TXT_VAR) {
             if (*op == op_print) {
-                if (o1.txt != NULL && ptrlen(o1.txt) != 0)
-                    o1.num = atol(ptrdata(o1.txt));
-                else
-                    o1.num = 0;
+                o1.num = 0;
+                if (o1.txt != NULL && ptrlen(o1.txt) != 0) {
+                    errno = 0;
+                    o1.num = strtol(ptrdata(o1.txt), NULL, 10);
+                    if (errno == ERANGE)
+                        error = OUT_RANGE_ERROR;
+                }
             } else {
                 if (o1.txt != NULL && ptrlen(o1.txt) != 0) {
                     /* code point of the first character */
@@ -1377,6 +1380,8 @@ static bool exe_op(operator *op)
                 }
             }
             check_delete(&o1);
+            if (REAL_ERROR)
+                break;
             o1.type = TYPE_NUM;
             p = &o1;
             ret = true;
