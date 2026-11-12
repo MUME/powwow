@@ -84,9 +84,9 @@ static bool is_regional_indicator(uint32_t cp)
 
 void cell_start(struct cell_state *c, uint32_t cp)
 {
-    c->first = c->prev = cp;
-    c->gstate = 0;
-    c->width = cp_width(cp);
+    *c = (struct cell_state){
+        .first = cp, .prev = cp, .gstate = 0, .width = cp_width(cp)
+    };
 }
 
 bool cell_add(struct cell_state *c, uint32_t cp)
@@ -98,8 +98,8 @@ bool cell_add(struct cell_state *c, uint32_t cp)
      * width space, joins the cell before it, or the one after it at the
      * start of a line, and is not a cell that the cursor stops at
      */
-    bool join = is_zero_width(cp) || (c->width == 0
-                                      && is_zero_width(c->first));
+    bool join = (is_zero_width(cp)
+                 || (c->width == 0 && is_zero_width(c->first)));
 #ifdef HAVE_LIBGRAPHEME
     uint_least16_t gstate = c->gstate;
     if (grapheme_is_character_break(c->prev, cp, &gstate) && !join)
@@ -129,11 +129,11 @@ bool cell_add(struct cell_state *c, uint32_t cp)
 /* read the cell at 's' into 'c'; returns its length */
 static size_t cell_read(struct cell_state *c, const char *s, size_t len)
 {
-    uint32_t cp;
     if (len == 0) {
         cell_start(c, 0);
         return 0;
     }
+    uint32_t cp;
     size_t n = utf8_get(s, len, &cp);
     cell_start(c, cp);
     while (n < len) {
@@ -205,9 +205,10 @@ const char *utf8_prev_cell(const char *start, const char *s)
      * ASCII character (or begins the text)
      */
     const char *p = s - 1;
-    while (p > start && !((unsigned char)p[-1] <= ASCII_MAX
-                          && (unsigned char)*p >= ' '
-                          && (unsigned char)*p <= ASCII_MAX))
+    while (p > start
+           && !((unsigned char)p[-1] <= ASCII_MAX
+                && (unsigned char)*p >= ' '
+                && (unsigned char)*p <= ASCII_MAX))
         --p;
     for (;;) {
         const char *q = p + utf8_cell_len(p, s - p);
