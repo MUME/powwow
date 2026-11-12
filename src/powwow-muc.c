@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     }
 
     /* Validate our file passed */
-    FILE *in = fopen(argv[1], "ro");
+    FILE *in = fopen(argv[1], "r");
     if (in == NULL) {
         perror("Unable to open file");
         exit(1);
