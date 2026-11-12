@@ -1969,8 +1969,10 @@ static void cmd_var(char *arg)
             /* it doesn't (yet) exist */
             if (!deleting) {
                 named_var = add_varnode(arg, kind);
-                if (REAL_ERROR)
+                if (named_var == NULL) {
+                    error = NO_MEM_ERROR;
                     return;
+                }
                 if (opt_info) {
                     wrap_printf("#new variable: \"%s\"", arg - 1);
                 }
@@ -2038,8 +2040,8 @@ static void cmd_var(char *arg)
                 if (named_var == NULL) {
                     if (!deleting) {
                         named_var = add_varnode(buf, kind);
-                        if (REAL_ERROR) {
-                            print_error(error);
+                        if (named_var == NULL) {
+                            error = NO_MEM_ERROR;
                             ptrdel(&pbuf);
                             return;
                         }
