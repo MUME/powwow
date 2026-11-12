@@ -25,34 +25,36 @@
 #include "list.h"
 #include "utils.h"
 
-vtime movie_last;		     /* time movie_file was last written */
-FILE *capturefile = (FILE *)NULL;    /* capture file or NULL */
-FILE *moviefile = (FILE *)NULL;	     /* movie file or NULL */
-FILE *recordfile = (FILE *)NULL;     /* record file or NULL */
+vtime movie_last;                   /* time movie_file was last written */
+FILE *capturefile = NULL;           /* capture file or NULL */
+FILE *moviefile = NULL;             /* movie file or NULL */
+FILE *recordfile = NULL;            /* record file or NULL */
 
+static char *datalist;          /* circular string list */
+static int datastart = 0;       /* index to first string start */
+static int dataend   = 0;       /* index one past last string end */
+static int datasize  = 0;       /* size of circular string list */
 
-static char *datalist;		/* circular string list */
-static int datastart = 0;	/* index to first string start */
-static int dataend   = 0;	/* index one past last string end */
-static int datasize  = 0;	/* size of circular string list */
-
-#define DATALEFT (datastart > dataend ? datastart - dataend - 2 : datastart ? \
-		MAX2(datastart - 1, datasize - dataend - 1) : datasize - dataend - 1)
+#define DATALEFT                                                        \
+    (datastart > dataend ? datastart - dataend - 2                      \
+     : datastart != 0 ? MAX2(datastart - 1, datasize - dataend - 1)     \
+     : datasize - dataend - 1)
 
 typedef struct logentry {
     enum linetype kind;
-    long msecs;			/* millisecs to sleep if kind == SLEEP */
-    char *line;			/* pointer to string in "datalist" circular buffer */
-    enum charset cs;		/* charset to write "line" in */
+    long msecs;                 /* millisecs to sleep if kind == SLEEP */
+    char *line;                 /* pointer to string in "datalist" circular
+                                   buffer */
+    enum charset cs;            /* charset to write "line" in */
 } logentry;
 
-static logentry *loglist;		/* circular (pointer to string) list */
+static logentry *loglist;       /* circular (pointer to string) list */
 
-static int logstart = 0;	/* index to first loglist used */
-static int logend   = 0;	/* index one past last loglist used */
-static int logsize  = 0;	/* size of circular (pointer to string) list */
+static int logstart = 0;        /* index to first loglist used */
+static int logend   = 0;        /* index one past last loglist used */
+static int logsize  = 0;        /* size of circular (pointer to string) list */
 
-#define LOGFULL (logend == (logstart ? logstart - 1 : logsize - 1))
+#define LOGFULL (logend == (logstart != 0 ? logstart - 1 : logsize - 1))
 
 static const char *const names[] = { NULL, "line", "prompt", "sleep" };
 
@@ -70,7 +72,7 @@ static void log_fwrite(const char *str, size_t len, enum charset cs, FILE *f)
         size_t n = MIN2(len, sizeof buf);
         /* do not split a character */
         while (n < len && n > 0 && utf8_is_continuation(str[n]))
-            n--;
+            --n;
         if (n == 0)
             n = MIN2(len, sizeof buf);
         fwrite(buf, 1, charset_encode(cs, str, n, buf), f);
@@ -85,16 +87,15 @@ static void log_fwrite(const char *str, size_t len, enum charset cs, FILE *f)
 static void log_flushline(int i)
 {
     const char *line = loglist[i].line;
-    if (capturefile) {
+    if (capturefile != NULL) {
         log_fwrite(line, strlen(line), loglist[i].cs, capturefile);
         if (loglist[i].kind == LINE)
             fputc('\n', capturefile);
     }
-    if (moviefile) {
-	if (loglist[i].msecs)
-	    fprintf(moviefile, "%s %ld\n",
-		    names[SLEEP], loglist[i].msecs);
-	fprintf(moviefile, "%s ", names[loglist[i].kind]);
+    if (moviefile != NULL) {
+        if (loglist[i].msecs != 0)
+            fprintf(moviefile, "%s %ld\n", names[SLEEP], loglist[i].msecs);
+        fprintf(moviefile, "%s ", names[loglist[i].kind]);
         log_fwrite(line, strlen(line), loglist[i].cs, moviefile);
         fputc('\n', moviefile);
     }
@@ -105,17 +106,20 @@ static void log_flushline(int i)
  */
 static void log_clearline(void)
 {
-    int next;
-
     if (logstart == logend)
-	return;
+        return;
     log_flushline(logstart);
 
-    next = (logstart + 1) % logsize;
-    if (next == logend)
-	datastart = dataend = logstart = logend = 0;
-    else
-	datastart = loglist[next].line - datalist, logstart = next;
+    int next = (logstart + 1) % logsize;
+    if (next == logend) {
+        datastart = 0;
+        dataend = 0;
+        logstart = 0;
+        logend = 0;
+    } else {
+        datastart = loglist[next].line - datalist;
+        logstart = next;
+    }
 }
 
 /*
@@ -124,7 +128,7 @@ static void log_clearline(void)
 void log_clearsleep(void)
 {
     if (logstart != logend)
-	loglist[logstart].msecs = 0;
+        loglist[logstart].msecs = 0;
 }
 
 /*
@@ -134,11 +138,14 @@ void log_flush(void)
 {
     int i = logstart;
     while (i != logend) {
-	log_flushline(i);
-	if (++i == logsize)
-	    i = 0;
+        log_flushline(i);
+        if (++i == logsize)
+            i = 0;
     }
-    datastart = dataend = logstart = logend = 0;
+    datastart = 0;
+    dataend = 0;
+    logstart = 0;
+    logend = 0;
 }
 
 int log_getsize(void)
@@ -148,40 +155,49 @@ int log_getsize(void)
 
 static void log_reset(void)
 {
-    if (datasize) {
-	if (datalist) free(datalist);
-	if (loglist)  free(loglist);
-	loglist = NULL;
-	datalist = NULL;
-	logsize = datasize = 0;
+    if (datasize != 0) {
+        free(datalist);
+        free(loglist);
+        loglist = NULL;
+        datalist = NULL;
+        logsize = 0;
+        datasize = 0;
     }
 }
 
-
 void log_resize(int newsize)
 {
-    if (newsize && newsize < 1000) {
-	PRINTF("#buffer size must be 0 (zero) or >= 1000\n");
-	return;
+    if (newsize != 0 && newsize < 1000) {
+        PRINTF("#buffer size must be 0 (zero) or >= 1000\n");
+        return;
     }
 
     if (newsize == datasize)
-	return;
+        return;
 
     log_flush();
     log_reset();
-    if (newsize) {
-	datalist = (char *)malloc(newsize);
-	if (!datalist) { log_reset(); out_of_memory(); return; }
+    if (newsize != 0) {
+        datalist = malloc(newsize);
+        if (datalist == NULL) {
+            log_reset();
+            out_of_memory();
+            return;
+        }
 
-	loglist = (logentry *)malloc(newsize/16*sizeof(logentry));
-	if (!loglist) { log_reset(); out_of_memory(); return; }
+        loglist = malloc(newsize / 16 * sizeof(logentry));
+        if (loglist == NULL) {
+            log_reset();
+            out_of_memory();
+            return;
+        }
 
-	datasize = newsize;
-	logsize = newsize / 16;
+        datasize = newsize;
+        logsize = newsize / 16;
     }
     if (opt_info) {
-	PRINTF("#buffer resized to %d bytes%s\n", newsize, newsize ? "" : " (disabled)");
+        PRINTF("#buffer resized to %d bytes%s\n", newsize,
+               newsize != 0 ? "" : " (disabled)");
     }
 }
 
@@ -191,87 +207,87 @@ void log_resize(int newsize)
 static void log_writeline(const char *line, int len, int kind, long msecs,
                           enum charset cs)
 {
-    int dst;
-
     if (++len >= datasize) {
-	wrap_printf("#line too long, discarded from movie/capture buffer");
-	return;
+        wrap_printf("#line too long, discarded from movie/capture buffer");
+        return;
     }
     while (LOGFULL || DATALEFT < len)
-	log_clearline();
+        log_clearline();
     /* ok, now we know there IS enough space */
 
+    int dst;
     if (datastart >= dataend /* is == iff loglist is empty */
-	|| datasize - dataend > len)
-	dst = dataend;
+        || datasize - dataend > len)
+        dst = dataend;
     else
-	dst = 0;
+        dst = 0;
 
-    memcpy(loglist[logend].line = datalist + dst, line, len - 1);
+    loglist[logend].line = datalist + dst;
+    memcpy(loglist[logend].line, line, len - 1);
     datalist[dst + len - 1] = '\0';
 
     loglist[logend].kind = kind;
     loglist[logend].msecs = msecs;
     loglist[logend].cs = cs;
 
-    if ((dataend = dst + len) == datasize)
-	dataend = 0;
+    dataend = dst + len;
+    if (dataend == datasize)
+        dataend = 0;
 
     if (++logend == logsize)
-	logend = 0;
+        logend = 0;
 }
 
 /*
  * write to #capture / #movie buffer
  */
-void log_write(const char *str, int len, int newline, enum charset cs)
+void log_write(const char *str, int len, bool newline, enum charset cs)
 {
-    const char *next;
-    long diff;
-    int i, last = 0;
-
-    if (!datasize && !moviefile && !capturefile)
-	return;
+    if (datasize == 0 && moviefile == NULL && capturefile == NULL)
+        return;
 
     update_now();
-    diff = diff_vtime(&now, &movie_last);
+    long diff = diff_vtime(&now, &movie_last);
     movie_last = now;
 
+    bool last = false;
+    const char *next;
     do {
-	if ((next = memchr(str, '\n', len))) {
-	    i = next - str;
-            newline = 1;
+        int i;
+        next = memchr(str, '\n', len);
+        if (next != NULL) {
+            i = next - str;
+            newline = true;
         } else {
-	    i = len;
-            last = 1;
-	}
+            i = len;
+            last = true;
+        }
 
-	if (datasize)
-	    log_writeline(str, i, last && !newline ? PROMPT : LINE, diff, cs);
-	else {
-	    if (moviefile) {
-		if (diff)
-		    fprintf(moviefile, "%s %ld\n",
-			names[SLEEP], diff);
-		fprintf(moviefile, "%s ",
-			names[last && !newline ? PROMPT : LINE]);
+        if (datasize != 0) {
+            log_writeline(str, i, last && !newline ? PROMPT : LINE, diff, cs);
+        } else {
+            if (moviefile != NULL) {
+                if (diff != 0)
+                    fprintf(moviefile, "%s %ld\n", names[SLEEP], diff);
+                fprintf(moviefile, "%s ",
+                        names[last && !newline ? PROMPT : LINE]);
                 log_fwrite(str, i, cs, moviefile);
                 fputc('\n', moviefile);
-	    }
-	    if (capturefile) {
+            }
+            if (capturefile != NULL) {
                 log_fwrite(str, i, cs, capturefile);
                 if (newline) {
                     fputc('\n', capturefile);
-                    newline = 0;
+                    newline = false;
                 }
             }
-	}
-	diff = 0;
-	if (next) {
-	    len -= next + 1 - str;
-	    str = next + 1;
-	}
-    } while (next && len > 0);
+        }
+        diff = 0;
+        if (next != NULL) {
+            len -= next + 1 - str;
+            str = next + 1;
+        }
+    } while (next != NULL && len > 0);
 }
 
 /*
@@ -279,50 +295,60 @@ void log_write(const char *str, int len, int newline, enum charset cs)
  */
 void log_record_line(const char *line)
 {
-    if (!recordfile)
+    if (recordfile == NULL)
         return;
     log_fwrite(line, strlen(line),
-               main_connection ? main_connection->charset : CS_LATIN1,
+               main_connection != NULL ? main_connection->charset : CS_LATIN1,
                recordfile);
     fputc('\n', recordfile);
 }
 
-static char reprintlist[BUFSIZE];	/* circular string list */
-static int  reprintstart = 0;		/* index to first string start */
-static int  reprintend   = 0;		/* index one past last string end */
-static int  reprintsize  = BUFSIZE;	/* size of circular string list */
+static char reprintlist[BUFSIZE];       /* circular string list */
+static int  reprintstart = 0;           /* index to first string start */
+static int  reprintend   = 0;           /* index one past last string end */
+static int  reprintsize  = BUFSIZE;     /* size of circular string list */
 
-#define REPRINTLEFT (reprintstart > reprintend ? reprintstart - reprintend - 1 : reprintstart ? \
-			MAX2(reprintstart - 1, reprintsize - reprintend - 1) : reprintsize - reprintend - 1)
+#define REPRINTLEFT                                                     \
+    (reprintstart > reprintend ? reprintstart - reprintend - 1          \
+     : reprintstart != 0                                                \
+     ? MAX2(reprintstart - 1, reprintsize - reprintend - 1)             \
+     : reprintsize - reprintend - 1)
 
-static char *replist[BUFSIZE/8];	/* circular (pointer to string) list */
+static char *replist[BUFSIZE / 8];      /* circular (pointer to string) list */
 
-static int repstart = 0;		/* index to first replist used */
-static int repend   = 0;		/* index one past last replist used */
-static int repsize  = BUFSIZE/8;	/* size of circular (pointer to string) list */
+static int repstart = 0;                /* index to first replist used */
+static int repend   = 0;                /* index one past last replist used */
+static int repsize  = BUFSIZE / 8;      /* size of circular (pointer to string)
+                                           list */
 
-#define REPFULL (repend == (repstart ? repstart - 1 : repsize - 1))
+#define REPFULL (repend == (repstart != 0 ? repstart - 1 : repsize - 1))
 
 /*
  * remove the oldest (first) line from reprintlist
  */
 static void reprint_clearline(void)
 {
-    int next;
-
     if (repstart == repend)
-	return;
+        return;
 
-    next = (repstart + 1) % repsize;
-    if (next == repend)
-	reprintstart = reprintend = repstart = repend = 0;
-    else
-	reprintstart = replist[next] - reprintlist, repstart = next;
+    int next = (repstart + 1) % repsize;
+    if (next == repend) {
+        reprintstart = 0;
+        reprintend = 0;
+        repstart = 0;
+        repend = 0;
+    } else {
+        reprintstart = replist[next] - reprintlist;
+        repstart = next;
+    }
 }
 
 void reprint_clear(void)
 {
-    reprintstart = reprintend = repstart = repend = 0;
+    reprintstart = 0;
+    reprintend = 0;
+    repstart = 0;
+    repend = 0;
 }
 
 /*
@@ -331,45 +357,47 @@ void reprint_clear(void)
 void reprint_writeline(const char *line)
 {
     int len = strlen(line) + 1;
-    int dst;
 
-    if (!opt_reprint || (promptlen && prompt_status != -1))
-	/*
-	 * if prompt is valid, we'll never have to reprint, as we
-	 * _already_ printed the command at the right moment
-	 */
-	return;
+    if (!opt_reprint || (promptlen != 0 && prompt_status != -1)) {
+        /*
+         * if prompt is valid, we'll never have to reprint, as we
+         * _already_ printed the command at the right moment
+         */
+        return;
+    }
 
     if (len >= reprintsize) {
-	wrap_printf("#line too long, discarded from prompt reprint buffer");
-	return;
+        wrap_printf("#line too long, discarded from prompt reprint buffer");
+        return;
     }
     while (REPFULL || REPRINTLEFT < len)
-	reprint_clearline();
+        reprint_clearline();
     /* ok, now we know there IS enough space */
 
+    int dst;
     if (reprintstart >= reprintend /* is == iff replist is empty */
-	|| reprintsize - reprintend > len)
-	dst = reprintend;
+        || reprintsize - reprintend > len)
+        dst = reprintend;
     else
-	dst = 0;
+        dst = 0;
 
-    memcpy(replist[repend] = reprintlist + dst, line, len - 1);
+    replist[repend] = reprintlist + dst;
+    memcpy(replist[repend], line, len - 1);
     reprintlist[dst + len - 1] = '\0';
 
-    if ((reprintend = dst + len) == reprintsize)
-	reprintend = 0;
+    reprintend = dst + len;
+    if (reprintend == reprintsize)
+        reprintend = 0;
 
     if (++repend == repsize)
-	repend = 0;
+        repend = 0;
 }
 
 char *reprint_getline(void)
 {
     char *line = NULL;
     if (opt_reprint && repend != repstart)
-	line = replist[repstart];
+        line = replist[repstart];
     reprint_clearline();
     return line;
 }
-
