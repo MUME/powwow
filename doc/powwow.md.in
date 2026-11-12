@@ -1894,7 +1894,8 @@ Known internal variables are:
   longer than the limit. The failsafe limit set when loading a savefile
   from an older version is 1Megabyte, which won't give any problem (like
   increased memory usage) as powwow allocates memory only when it *has*
-  to.
+  to. The limit also applies to the texts that the MUD sends to edit or
+  view: powwow rejects a longer one, and shows it as text.
 
 - `timer`: the number of milliseconds since program start. It can be
   changed to synchronize with an external clock like MUD ticks.

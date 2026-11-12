@@ -1487,6 +1487,24 @@ run --until '#connection on "n" closed.' 'MPI messages with a bad length' \
 lacks '#out of memory'
 has 'two'
 
+# an MPI message longer than the buffer it starts in, and one longer than
+# #setvar mem, which is shown as text
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE6000\nM5\ndescr\n'
+awk 'BEGIN { for (i = 0; i < 5991; ++i) printf "x" }'
+sleep 1
+printf '~$#EE8001\nM6\ndescr\n#print after\n'
+EOF
+run --until '#connection on "n" closed.' 'MPI messages and #setvar mem' \
+    "#setvar mem=8000
+#option editor=&wc -c <
+#spawn n sh $tmp/server
+##n #request editor"
+grep -q '^#editor: *5991$' "$tmp/out" || fail 'missing line: #editor: 5991'
+has '#warning: MPI message longer than #setvar mem'
+has 'after'
+
 # the connection closes before the end of an MPI message
 cat > "$tmp/server" <<'EOF'
 read -r identify
