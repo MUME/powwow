@@ -404,13 +404,7 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
     }
     close(tmpfd);
 
-    editsess *s = malloc(sizeof(editsess));
-    if (s == NULL) {
-        out_of_memory();
-        free(text);
-        unlink(tmpname);
-        return;
-    }
+    editsess *s = xmalloc(sizeof(editsess));
     s->ctime = time(NULL);
     s->oldsize = msglen - i;
     s->key = key;
@@ -419,21 +413,19 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
     s->out_fd = -1;
     s->out_len = 0;
     /* the editor gets the title as sent; we keep it as UTF-8 */
-    char *title = my_strdup(descr);
+    char *title = xstrdup(descr);
     if (builtin) {
-        s->descr = my_strdup(descr);
+        s->descr = xstrdup(descr);
     } else {
         size_t dlen = strlen(descr);
-        s->descr = malloc(3 * dlen + 1);
-        if (s->descr != NULL) {
-            if (conn != NULL && conn->ideditor_utf8)
-                dlen = utf8_sanitize(descr, dlen, s->descr);
-            else
-                dlen = latin1_to_utf8(descr, dlen, s->descr);
-            s->descr[dlen] = '\0';
-        }
+        s->descr = xmalloc(3 * dlen + 1);
+        if (conn != NULL && conn->ideditor_utf8)
+            dlen = utf8_sanitize(descr, dlen, s->descr);
+        else
+            dlen = latin1_to_utf8(descr, dlen, s->descr);
+        s->descr[dlen] = '\0';
     }
-    s->file = my_strdup(tmpname);
+    s->file = xstrdup(tmpname);
     free(text);
 
     /* send a edit_start message (if wanted) */
@@ -598,12 +590,7 @@ static void show_edit_output(editsess *sp, bool all)
         if (sp->out_buf[i] == '\n')
             ++nlines;
     }
-    char *msg = malloc(end + nlines * sizeof(prefix) + 1);
-    if (msg == NULL) {
-        out_of_memory();
-        sp->out_len = 0;
-        return;
-    }
+    char *msg = xmalloc(end + nlines * sizeof(prefix) + 1);
 
     char *d = msg;
     for (size_t i = 0; i < end; ) {

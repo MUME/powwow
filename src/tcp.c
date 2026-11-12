@@ -1090,13 +1090,8 @@ void tcp_open(const char *id, char *initstring, const char *host,
         return;
     }
 
-    char *conn_host = my_strdup(host);
-    char *conn_id = my_strdup(id);
-    if (conn_host == NULL || conn_id == NULL) {
-        free(conn_host);
-        out_of_memory();
-        return;
-    }
+    char *conn_host = xstrdup(host);
+    char *conn_id = xstrdup(id);
 
     /* dial the number by moving the right index in small circles */
     int newtcp_fd = tcp_connect(host, port, tlsopt->use_tls ? "TLS" : "TCP");
@@ -1319,19 +1314,8 @@ void tcp_spawn(const char *id, char *cmd)
         return;
     }
 
-    CONN_INDEX(i).host = my_strdup(cmd);
-    if (CONN_INDEX(i).host == NULL) {
-        out_of_memory();
-        close(sockets[0]);
-        return;
-    }
-    CONN_INDEX(i).id = my_strdup(id);
-    if (CONN_INDEX(i).id == NULL) {
-        out_of_memory();
-        free(CONN_INDEX(i).host);
-        close(sockets[0]);
-        return;
-    }
+    CONN_INDEX(i).host = xstrdup(cmd);
+    CONN_INDEX(i).id = xstrdup(id);
     CONN_INDEX(i).active = true;
     CONN_INDEX(i).spawn = true;
     CONN_INDEX(i).ideditor = false;
