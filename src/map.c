@@ -153,6 +153,10 @@ bool map_walk(char *word, bool silent, bool maponly)
         || strchr("neswud", word[n - 1]) == NULL
         || (int)strspn(word, "neswud0123456789") != n)
         return false;
+    for (char *s = word; *s != '\0'; ++s) {
+        if (isdigit((unsigned char)*s) && strtol(s, &s, 10) > MAX_MAPLEN)
+            return false;
+    }
 
     if (maponly)
         silent = true;

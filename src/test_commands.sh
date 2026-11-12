@@ -777,6 +777,12 @@ has '0'
 has '#var: #error: operand or index out of range.'
 lacks '99999999999999999999'
 
+run 'walk sequences repeat a direction at most 1000 times' '#map 99999999999n
+#map 1001s
+#map 3e
+#map'
+has '#map: 3e'
+
 run --bind 'rebind rejects an empty key sequence' \
     '#bind foo=bar' "$esc[20~" "#rebind foo =
 "

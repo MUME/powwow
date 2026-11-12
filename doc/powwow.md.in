@@ -1295,7 +1295,7 @@ commands are still sent to host, but not echoed on screen.
 With `speedwalk` on, a command consisting of only lowercase
 n, e, s, w, u, d and numeric digits is considered to be a
 walk sequence.  The numeric digits specify the number of
-times to repeat the direction immediately following.
+times, at most 1000, to repeat the direction immediately following.
 
 Example:
 
