@@ -1542,9 +1542,10 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
         conn->fragment = NULL;
     }
 
+    unsigned generation = conn->generation;
     int got = tcp_read(conn, buf, TCP_READ_EXPANSION * BUFSIZE - len);
     /* commands run by an MPI message may have closed the connection */
-    if (got == 0 || conn->id == NULL)
+    if (got == 0 || conn->generation != generation)
         return;
     if (!FD_ISSET(conn->fd, read_fds)
         && conn->fns->can_read(conn)) {

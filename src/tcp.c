@@ -541,10 +541,11 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                         wrap_printf("#warning: ignored an MPI message that"
                                     " may be spoofed");
                     } else {
+                        unsigned generation = conn->generation;
                         int used = process_message(conn, (char *)s + 1,
                                                    i - 1);
                         /* a command it ran may have closed conn */
-                        if (conn->id == NULL)
+                        if (conn->generation != generation)
                             return (char *)linestart - (char *)buffer;
                         /* no +MPILEN here, as it was already processed. */
                         s += used;
@@ -1223,6 +1224,7 @@ void tcp_close(const char *id)
     conn->host = NULL;
     free(conn->id);
     conn->id = NULL;
+    ++conn->generation;
     free(conn->fragment);
     conn->fragment = NULL;
 

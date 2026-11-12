@@ -1448,6 +1448,21 @@ run --until '#connection on "n" closed.' \
 ##n #identify z"
 has '#connection on "n" closed.'
 
+# the command run when an editing session starts closes the connection
+# that sent it, and opens a new one in its place
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE14\nM5\ndescr\ntext\n#print ("left")\n'
+cat > /dev/null
+EOF
+run --until '#connection on "n" closed.' \
+    'editing session start command replacing its connection' \
+    "#alias z={#zap n;#spawn n sleep 5}
+#option editor=&true
+#spawn n sh $tmp/server
+##n #identify z"
+lacks 'left'
+
 # the temporary file of an editing session is in $TMPDIR, which may have
 # a space
 mkdir "$tmp/t d"

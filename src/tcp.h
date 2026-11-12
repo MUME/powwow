@@ -52,6 +52,7 @@ struct io_fns {
 
 typedef struct connsess {
     char *id;			/* session id */
+    unsigned generation;        /* changes when the connection closes */
     char *host;			/* address of remote host */
     int fd;
     int port;			/* port number of remote host */
