@@ -1886,7 +1886,7 @@ Known internal variables are:
 
 - `lines`: the number of lines your terminal has. Powwow usually
   autodetects it correctly, but on few terminals you may have to set it
-  manually.
+  manually, from 1 to 2147483647.
 
 - `mem`: the maximum length of a text or string, in bytes. The default
   is 1048576 (1 MB), and 0 (zero) means no limit. It prevents bringing

@@ -270,6 +270,14 @@ run '#setvar buffer rejects sizes too large for powwow' \
 has '#buffer size must be 0 (zero) or from 1000 to 2147483647'
 has '#setvar buffer=0'
 
+run '#setvar lines rejects numbers out of range' \
+    '#setvar lines=30
+#setvar lines=4294967297
+#setvar lines=0
+#setvar'
+has '#lines must be from 1 to 2147483647'
+has '#setvar lines=30'
+
 run 'texts are limited to 1 MB by default' '#setvar
 #($a = "x" * 1048576)
 #($a = "x" * 1048577)'

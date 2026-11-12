@@ -2207,9 +2207,10 @@ static void cmd_setvar(char *arg)
     } else if (i != 0 && strncmp(name, "lines", i) == 0) {
         if (!set)
             fmt_next_edit("#setvar lines=%d", lines);
-        else {
-            if (buf > 0)
-                lines = (int)buf;
+        else if (buf < 1 || buf > INT_MAX) {
+            message_printf("#lines must be from 1 to %d\n", INT_MAX);
+        } else {
+            lines = buf;
             if (opt_info) {
                 message_printf("#setvar: lines=%d\n", lines);
             }
