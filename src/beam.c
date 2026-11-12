@@ -367,6 +367,7 @@ void message_edit(char *text, int msglen, bool view, bool builtin)
         errmsg("cannot write %s", tmpname);
         free(text);
         close(tmpfd);
+        unlink(tmpname);
         return;
     }
     close(tmpfd);
@@ -374,6 +375,8 @@ void message_edit(char *text, int msglen, bool view, bool builtin)
     editsess *s = malloc(sizeof(editsess));
     if (s == NULL) {
         out_of_memory();
+        free(text);
+        unlink(tmpname);
         return;
     }
     s->ctime = time(NULL);
@@ -469,6 +472,7 @@ void message_edit(char *text, int msglen, bool view, bool builtin)
             close(out_pipe[0]);
             close(out_pipe[1]);
         }
+        unlink(tmpname);
         free(title);
         free(s->descr);
         free(s->file);
