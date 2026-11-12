@@ -53,6 +53,11 @@ committed, understand it, and take responsibility for it as its author.
   be inferred from the first line. No line is wider than 75 columns.
 - **ChangeLog:** start each entry with a word that deserves to be highlighted,
   never with "A", "The" or similar.
+- **Release tags:** annotated, named `vX.Y.Z`, on the commit that bumps the
+  version. The message is plain text: `powwow X.Y.Z`, a blank line, and the
+  release's ChangeLog section without its indentation, in lines of at most
+  72 columns. Create them with `--cleanup=whitespace`, as the default
+  cleanup drops lines that start with `#`.
 
 ## User interface and documentation
 
