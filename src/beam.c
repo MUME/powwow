@@ -370,9 +370,17 @@ void message_edit(char *text, int msglen, bool view, bool builtin)
     }
     text[i++] = '\0';
 
+    const char *tmpdir = getenv("TMPDIR");
+    if (tmpdir == NULL || *tmpdir == '\0')
+        tmpdir = "/tmp";
     char tmpname[BUFSIZE];
-    sprintf(tmpname, "/tmp/powwow.%u.%d%d", key, getpid(), abs(rand()) >> 8);
-    int tmpfd = open(tmpname, O_WRONLY | O_CREAT, 0600);
+    int len = snprintf(tmpname, sizeof tmpname, "%s/powwow.%u.XXXXXX",
+                       tmpdir, key);
+    int tmpfd = -1;
+    if (len < 0 || len >= (int)sizeof tmpname)
+        errno = ENAMETOOLONG;
+    else
+        tmpfd = mkstemp(tmpname);
     if (tmpfd < 0) {
         errmsg("cannot create %s", tmpname);
         free(text);
@@ -474,10 +482,12 @@ void message_edit(char *text, int msglen, bool view, bool builtin)
             close(out_pipe[0]);
             close(out_pipe[1]);
         }
+        /* any character of $TMPDIR is safe in "$1" */
         char command_str[BUFSIZE];
-        sprintf(command_str, "%s %s", editor, s->file);
+        snprintf(command_str, sizeof command_str, "%s \"$1\"", editor);
         setenv("TITLE", title, 1);
-        execl("/bin/sh", "/bin/sh", "-c", command_str, (char *)NULL);
+        execl("/bin/sh", "/bin/sh", "-c", command_str, "/bin/sh", s->file,
+              (char *)NULL);
         exec_failed("the editor");
         break;
     }

@@ -153,6 +153,11 @@ Name of editor to use.
 .TP
 .BR POWWOWPAGER " or " PAGER
 Name of pager to use.
+.TP
+.B TMPDIR
+Where the editor and the pager get the temporary file of the text;
+.I /tmp
+if not set.
 .SH FILES
 .TP \w'$\[lC]POWWOWDIR\[rC]/*\ \ \ 'u
 powwow
