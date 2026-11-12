@@ -1946,6 +1946,10 @@ numbers (only integers are supported)
   it is possible to chain more than one '#':
     3#12#100 = (3#12)#100 = 5#100 = 25
 
+  every digit must be less than the base: 2#102 and 8#9 cause an
+  error, and so does a number that is too large, which on 64-bit
+  systems means above 9223372036854775807.
+
   both base and argument must be numbers, not variables:
     things like 7#@count or @count#7 are not allowed, you will
     have to use an #exe for that.

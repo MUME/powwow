@@ -850,6 +850,21 @@ run '^^ gives 0 or 1' \
     '#print ("xor " + %(5 ^^ 0) + %(0 ^^ 7) + %(5 ^^ 3) + %(0 ^^ 0))'
 has 'xor 1100'
 
+run 'digits of a number must be less than its base' \
+    '#print ("n " + %(2#101) + " " + %(36#Zz) + " " + %(#fF))
+#print ("chained " + %(3#12#100))
+#print (2#102)
+#print (8#9)
+#print (10#a)
+#print (99999999999999999999)
+#print (#fffffffffffffffff)'
+has 'n 5 1295 255'
+has 'chained 25'
+[ "$(grep -c '^#print: #error: invalid digit in numeric value\.$' \
+    "$tmp/out")" = 3 ] || fail 'expected 3 errors for invalid digits'
+[ "$(grep -c '^#print: #error: operand or index out of range\.$' \
+    "$tmp/out")" = 2 ] || fail 'expected 2 errors for too large numbers'
+
 run 'an expression assigns to a variable that it reads' \
     '#(@foo = 5)
 #(@foo = @foo + 1)

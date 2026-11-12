@@ -377,6 +377,18 @@ static bool check_operator(char side, operator *op, int mindepth)
     return false;
 }
 
+/* the value of a digit of a number, or LONG_MAX if c is not one */
+static long digit_value(char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'z')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'Z')
+        return c - 'A' + 10;
+    return LONG_MAX;
+}
+
 static bool check_object(object *obj)
 {
     bool found = false;
@@ -386,23 +398,19 @@ static bool check_object(object *obj)
         long num = 0, base = 10;
         while (c == '#' || isalnum((unsigned char)c)) {
             if (c == '#') {
-                base = num;
+                base = num == 0 ? 16 : num;
                 num = 0;
-                if (base == 0)
-                    base = 16;
             } else {
-                num *= base;
-                if (isdigit((unsigned char)c)) {
-                    num += c - '0';
-                } else {
-                    if (c >= 'a' && c <= 'z')
-                        c = (c - 'a') + 'A';
-                    if (c - 'A' + 10 >= base) {
-                        error = OUT_BASE_ERROR;
-                        return false;
-                    }
-                    num += c - 'A' + 10;
+                long digit = digit_value(c);
+                if (digit >= base) {
+                    error = OUT_BASE_ERROR;
+                    return false;
                 }
+                if (num > (LONG_MAX - digit) / base) {
+                    error = OUT_RANGE_ERROR;
+                    return false;
+                }
+                num = num * base + digit;
             }
             ++line;
             c = *line;
