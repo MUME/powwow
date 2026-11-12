@@ -63,10 +63,10 @@ int main(int argc, char *argv[]) {
     }
 
     set_terminal();
-    while(c!=0x1b) {
+    while(c!=ASCII_ESC) {
 	if (read(0, &c, 1) != 1)
 	    break;
-	if (c == 0x0a || c == 0x0d) {
+        if (c == '\n' || c == '\r') {
 	    if (fgets(buf, 512, f))
 		fputs(buf, stdout);
 	    else

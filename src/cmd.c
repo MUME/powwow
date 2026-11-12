@@ -815,7 +815,7 @@ static void cmd_prompt(char *arg)
 
 static void cmd_beep(char *arg)
 {
-    tty_putc('\007');
+    tty_putc(ASCII_BEL);
 }
 
 /*
@@ -1451,7 +1451,7 @@ static void cmd_rebindall(char *arg)
         char *seq = kp->sequence;
         if (kp->seqlen == 1 && seq[0] < ' ')
             ;
-        else if (kp->seqlen == 2 && seq[0] == '\033'
+        else if (kp->seqlen == 2 && seq[0] == ASCII_ESC
                  && isalnum((unsigned char)seq[1]))
             ;
         else {

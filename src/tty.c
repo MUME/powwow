@@ -146,7 +146,7 @@ const char *tty_intr_key(void)
         return "the interrupt key";
     if (c < ' ')
         snprintf(name, sizeof(name), "C-%c", c + '`');
-    else if (c == 0x7f)
+    else if (c == ASCII_DEL)
         return "Backspace";
     else
         snprintf(name, sizeof(name), "%c", c);

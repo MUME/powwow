@@ -59,6 +59,9 @@ int tty_message(const char *format, ...) PRINTF_FUNCTION(1, 2);
 #define ESC2		'`'	/* other special escape char;
 				 * update doc/powwow.md.in if changed */
 #define STRESC2		"`"
+#define ASCII_BEL       '\007'
+#define ASCII_ESC       '\033'
+#define ASCII_DEL       '\177'  /* which the Backspace key sends */
 #define CMDSEP		';'	/* command separator character;
 				 * update doc/powwow.md.in if changed */
 #define SPECIAL_CHARS	"{}();\"=" /* specials chars needing escape;

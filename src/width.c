@@ -21,6 +21,7 @@
 #endif
 
 #include "charset.h"
+#include "defines.h"
 #include "width.h"
 
 /* the characters that join or widen a grapheme cluster */
@@ -33,7 +34,7 @@ enum {
 
 int cp_width(uint32_t cp)
 {
-    if (cp < 0x20 || cp == 0x7f)
+    if (cp < 0x20 || cp == ASCII_DEL)
         return 0;               /* control characters */
 #ifdef USE_LOCALE
 #if WCHAR_MAX < 0x10ffff
@@ -72,7 +73,7 @@ static bool is_zero_width(uint32_t cp)
 
 static bool is_control(uint32_t cp)
 {
-    return cp < 0x20 || cp == 0x7f;
+    return cp < 0x20 || cp == ASCII_DEL;
 }
 
 static bool is_regional_indicator(uint32_t cp)
@@ -168,7 +169,7 @@ int utf8_width(const char *s, size_t len)
         uint32_t cp = c.first;
         switch (state) {
         case NORM:
-            if (cp == '\033')
+            if (cp == ASCII_ESC)
                 state = ESCAPE;
             else
                 w += c.width;

@@ -716,7 +716,7 @@ static void key_names(const char *seq, int len, char *buf, size_t size)
     for (int i = 0; i < len && n + 8 < size; ++i) {
         unsigned char c = seq[i];
         const char *sep = i > 0 ? " " : "";
-        if (c == '\033')
+        if (c == ASCII_ESC)
             n += snprintf(buf + n, size - n, "%sESC", sep);
         else if (c < ' ')
             n += snprintf(buf + n, size - n, "%sC-%c", sep, c + '`');
@@ -1015,7 +1015,7 @@ static void effective_prompt(void)
     size_t k;
     for (k = 0; k < len; ++k)
         if (pstr[k] == '\b' || pstr[k] == '\r'
-            || (pstr[k] == '\033' && len - k >= 3
+            || (pstr[k] == ASCII_ESC && len - k >= 3
                 && pstr[k + 1] == '[' && pstr[k + 2] == 'K'))
             break;
     if (k == len)
@@ -1056,7 +1056,7 @@ static void effective_prompt(void)
                 --at;
         } else if (c == '\r') {
             at = 0;
-        } else if (c == '\033') {
+        } else if (c == ASCII_ESC) {
             size_t q = p + 1;
             if (q < len && pstr[q] == '[') {
                 /* CSI: parameter bytes, then a final byte */
@@ -1086,7 +1086,7 @@ static void effective_prompt(void)
                 ++q;
             buf_add(&pend, &npend, &pendsize, pstr + p, q - p);
             p = q - 1;
-        } else if ((unsigned char)c < ' ' || c == '\177') {
+        } else if ((unsigned char)c < ' ' || c == ASCII_DEL) {
             buf_add(&pend, &npend, &pendsize, &c, 1);
         } else {
             uint32_t cp;
@@ -1835,9 +1835,9 @@ static int unbound_key_len(const char *seq, int n)
 {
     if (n < 2 || (unsigned char)seq[0] >= ' ')
         return 0;
-    if (seq[0] != '\033')
+    if (seq[0] != ASCII_ESC)
         return n;
-    if (seq[1] == '\033')
+    if (seq[1] == ASCII_ESC)
         return 1;
     if (seq[1] == 'O')
         return n >= 3 ? 3 : -1;
@@ -1972,7 +1972,7 @@ static void get_user_input(void)
 		    if (skip != 0) {
 			if (skip < 0)
 			    skip = nchars;
-			tty_putc('\007');
+                        tty_putc(ASCII_BEL);
 		    } else {
 			skip = 1;
 			insert_char(typed[0]);

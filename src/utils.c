@@ -90,7 +90,7 @@ int printstrlen(char *s)
         s += n;
         switch(state) {
 	 case NORM:
-            if (cp == '\033') {
+            if (cp == ASCII_ESC) {
                 state = ESCAPE;
             } else if (cp == '\b') {
                 if (l > 0)
@@ -396,7 +396,7 @@ static int text_width(const char *text, size_t len)
     int width = 0;
     size_t i = 0;
     while (i < len) {
-        if (text[i] == '\033' && i + 1 < len && text[i + 1] == '[') {
+        if (text[i] == ASCII_ESC && i + 1 < len && text[i + 1] == '[') {
             i += 2;
             while (i < len && !is_csi_final((unsigned char)text[i]))
                 ++i;
@@ -404,7 +404,7 @@ static int text_width(const char *text, size_t len)
             continue;
         }
         size_t start = i;
-        while (i < len && text[i] != '\033')
+        while (i < len && text[i] != ASCII_ESC)
             ++i;
         width += utf8_width(text + start, i - start);
         if (i == start)
@@ -548,7 +548,7 @@ ptr *ptrmescape(ptr *dst, const char *src, int srclen, int append)
 
 	/* write control characters as \ooo, but non-ASCII UTF-8 as
 	 * is: \ooo reads back as an ISO 8859-1 character */
-	if ((byte)*src < ' ' || *src == '\177') {
+        if ((byte)*src < ' ' || *src == ASCII_DEL) {
             sprintf(p, "\\%03hho", *src++);
 	    len = strlen(p);
 	    dst->len += len, p += len, srclen--;
@@ -957,7 +957,7 @@ static void wrap_print(char *s)
                         lp = p;
                     }
 
-                    if (cp == '\033') {
+                    if (cp == ASCII_ESC) {
                         state = ESCAPE;
                     } else if (cp == '\b') {
                         if (m > 0)

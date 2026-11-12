@@ -998,8 +998,8 @@ static char *unescape_seq(char *buf, char *seq, int *seqlen)
             if (c > 0x40 && c < 0x60) {
                 *(buf++) = c & 0x1f;
             } else if (c == '?') {
-                /* special case: ^? == 0x7f */
-                *(buf++) = 0x7f;
+                /* special case: ^? == DEL */
+                *(buf++) = ASCII_DEL;
             }
             state = NORM;
             break;
@@ -1090,7 +1090,7 @@ static void print_seq(char *seq, int len)
     int n = 0;
     for (; len > 0 && n < (int)sizeof(buf) - 6; --len) {
         unsigned char ch = *(seq++);
-        if (ch == '\033') {
+        if (ch == ASCII_ESC) {
             n += sprintf(buf + n, "esc ");
             continue;
         }
@@ -1100,7 +1100,7 @@ static void print_seq(char *seq, int len)
         }
         if (ch == ' ')
             n += sprintf(buf + n, "space ");
-        else if (ch == 0x7f)
+        else if (ch == ASCII_DEL)
             n += sprintf(buf + n, "del ");
         else if (ch & 0x80)
             n += sprintf(buf + n, "\\%03o ", ch);
@@ -1125,7 +1125,7 @@ char *seq_name(char *seq, int len)
      *
      * codes > 0x80  ==>  octal \012
      *
-     * special case: 0x7f is written ^?
+     * special case: DEL is written ^?
      */
     while (len-- != 0) {
         unsigned char c = *seq++;
@@ -1135,7 +1135,7 @@ char *seq_name(char *seq, int len)
         if (c < ' ') {
             *(p++) = '^';
             *(p++) = c | '@';
-        } else if (c == 0x7f) {
+        } else if (c == ASCII_DEL) {
             *(p++) = '^';
             *(p++) = '?';
         } else if (c & 0x80) {

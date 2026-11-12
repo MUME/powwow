@@ -412,7 +412,7 @@ static bool same_name(const char *a, size_t len, const char *b)
 /* is 'cp' a character that can be typed, not a control or a surrogate? */
 static bool is_typable(uint32_t cp)
 {
-    return (cp >= 0x20 && cp != 0x7f && (cp < 0x80 || cp >= 0xa0)
+    return (cp >= 0x20 && cp != ASCII_DEL && (cp < 0x80 || cp >= 0xa0)
             && (cp < 0xd800 || cp > 0xdfff) && cp <= 0x10ffff);
 }
 

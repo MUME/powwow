@@ -189,7 +189,7 @@ int lookup_edit_function(function_str funct)
 /* return pointer to any unterminated escape code at the end of s */
 static char *find_partial_esc(char *s)
 {
-    char *esc = strrchr(s, '\033');
+    char *esc = strrchr(s, ASCII_ESC);
     if (esc == NULL)
         return NULL;
 
@@ -250,7 +250,7 @@ void draw_prompt(void)
         tty_puts(pstr);
 	col0 = printstrlen(pstr);
         if (esc)
-            *esc = '\033';
+            *esc = ASCII_ESC;
 
 	error = e;
     }
@@ -371,7 +371,7 @@ void transpose_words(char *dummy)
     int start1 = word_start_before(start2);
     int end1 = word_end_after(start1);
     if (start1 == start2 || start2 < end1) {
-        tty_putc('\007');
+        tty_putc(ASCII_BEL);
         return;
     }
     char buf[BUFSIZE];
@@ -518,7 +518,7 @@ static void undo_typing(void)
 static void undo_move(struct undo_list *from, struct undo_list *to)
 {
     if (from->count == 0) {
-        tty_putc('\007');
+        tty_putc(ASCII_BEL);
         return;
     }
     struct undo_step step = from->steps[--from->count];
@@ -1405,7 +1405,7 @@ static bool complete_command(void)
         word_list_show(&l, edbuf + word, len, skip);
     } else {
         tabbed = true;
-        tty_putc('\007');
+        tty_putc(ASCII_BEL);
     }
     word_list_free(&l);
     return true;
@@ -1980,7 +1980,7 @@ void yank_last_word(char *dummy)
         yank_word.index = i;
         return;
     }
-    tty_putc('\007');
+    tty_putc(ASCII_BEL);
 }
 
 /*
@@ -2584,7 +2584,7 @@ static void charin_no_completion(void)
 {
     if (!charin.tabbed) {
         charin.tabbed = true;
-        tty_putc('\007');
+        tty_putc(ASCII_BEL);
     } else {
         charin_list();
     }
@@ -2611,7 +2611,7 @@ static void charin_complete_group(void)
     }
     if (groups.count != 1) {
         if (subgroups.count == 0)
-            tty_putc('\007');
+            tty_putc(ASCII_BEL);
         else
             charin_no_completion();
         return;
@@ -2647,7 +2647,7 @@ static void charin_complete(void)
     }
     if (charin_find(charin_match, m) <= 0) {
         free(m);
-        tty_putc('\007');
+        tty_putc(ASCII_BEL);
         return;
     }
     /* the words typed that match the group of the emoji stay, and the
@@ -2727,7 +2727,7 @@ static void charin_insert(void)
             n = charname_lookup(charin.file, name, strlen(name), cps);
     }
     if (n == 0) {
-        tty_putc('\007');
+        tty_putc(ASCII_BEL);
         return;
     }
     charin_end();
@@ -2775,7 +2775,7 @@ bool edit_mode_command(function_str funct)
     else if (charin_can_edit(funct))
         return false;
     else
-        tty_putc('\007');
+        tty_putc(ASCII_BEL);
     return true;
 }
 
