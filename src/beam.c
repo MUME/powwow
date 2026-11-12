@@ -133,9 +133,15 @@ int process_message(char *buf, int len)
                     current_connection, text + i, msglen - i)) == -1
                && errno == EINTR)
             ;
-        if (l == -1) {
-            errmsg("cannot read from connection \"%s\"",
-                   current_connection->id);
+        if (l <= 0) {
+            /* Cygwin reports the end of a #spawn command as a reset or
+             * aborted connection */
+            if (l == 0 || errno == ECONNRESET || errno == ECONNABORTED)
+                wrap_printf("#connection \"%s\" closed in the middle of"
+                            " an MPI message", current_connection->id);
+            else
+                errmsg("cannot read from connection \"%s\"",
+                       current_connection->id);
             free(text);
             return used > len ? len : used;
         }
