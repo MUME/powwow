@@ -1479,6 +1479,17 @@ run --until '#connection on "n" closed.' \
 ##n #identify z"
 lacks 'left'
 
+# a command started by #spawn closes its own connection with a line,
+# followed by more lines in the same read
+cat > "$tmp/server" <<'EOF'
+printf '#zap n\n#print ("left")\npart'
+sleep 5
+EOF
+run --until '#connection on "n" closed.' \
+    'command started by spawn closing its connection' \
+    "#spawn n sh $tmp/server"
+lacks 'left'
+
 # the connection of an editing session closes while the editor runs
 cat > "$tmp/server" <<'EOF'
 read -r identify

@@ -1579,7 +1579,6 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
     if (conn->spawn) {
         /* this is data from a spawned child or an attached program.
          * execute as if typed */
-        connsess *old_connection = current_connection;
         current_connection = main_connection;
 
         char *newline = strchr(buf, '\n');
@@ -1593,9 +1592,12 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
                 if (opt_info) {
                     if (line_status == 0)
                         common_clear(!opt_compact);
-                    tty_message("##%s [%s]\n", old_connection->id, buf);
+                    tty_message("##%s [%s]\n", conn->id, buf);
                 }
                 parse_user_input(buf, false);
+                /* the line may have closed the connection */
+                if (conn->generation != generation)
+                    return;
                 /*
                  * strtok() may have been used in parse_user_input()...
                  * cannot rely it refers on what we may have set above.
@@ -1618,17 +1620,17 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
              * save last fragment for later, when spawned command will
              * (hopefully) send the rest of the text
              */
-            old_connection->fragment = my_strdup(buf);
+            conn->fragment = my_strdup(buf);
 
             if (opt_info) {
                 if (line_status == 0)
                     common_clear(!opt_compact);
                 message_wrap(WRAP_CONT,
                              "#warning: ##%s: unterminated line [%s]",
-                             old_connection->id, buf);
+                             conn->id, buf);
             }
         }
-        current_connection = old_connection;
+        current_connection = conn;
         return;
     }
 
