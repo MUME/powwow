@@ -164,7 +164,8 @@ const edit_function internal_functions[] = {
 int lookup_edit_name(char *name, char **arg)
 {
     const char *space = strchr(name, ' ');
-    int len = space != NULL ? space - name : strlen(name);
+    const char *end = space != NULL ? space : name + strlen(name);
+    int len = end - name;
 
     for (int i = 1; internal_functions[i].name != NULL; ++i) {
         const char *fname = internal_functions[i].name;
