@@ -1183,6 +1183,16 @@ has 'Authors: Massimiliano Ghilardi (Cosmos), Steve Slaven (bpk), Fror, Dain and
 has 'https://github.com/MUME/powwow'
 lacks '#syntax: #ver [-v]'
 
+# a line longer than the memory limit is still processed as a line, not
+# again as a prompt
+awk 'BEGIN { s = sprintf("%150s", ""); gsub(/ /, "x", s); print s
+             print "after" }' > "$tmp/long"
+run 'line longer than the memory limit' "#setvar mem=120
+#emulate <$tmp/long"
+has '#error: text/string longer than limit, discarded.'
+has 'after'
+lacks '#out of memory'
+
 # every command must have a help entry with the syntax shown by #help, and
 # the manual must have it too, except for the commands it does not show
 name='every command has the same syntax in the help'
