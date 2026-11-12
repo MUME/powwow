@@ -120,6 +120,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Fixed repeating the text of a variable whose name is given by an
 	  expression, as in `$$s * 0', emptying another variable or
 	  crashing powwow.
+	* Fixed /= and %= by zero crashing powwow instead of reporting
+	  division by zero, as / and % do.
 
 	Removed:
 	* Removed the #color command.
