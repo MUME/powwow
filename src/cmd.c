@@ -2526,11 +2526,8 @@ static void cmd_cancel(char *arg)
                 message_printf("#unknown editing session %d\n", atoi(arg));
             }
         } else {
-            if (edit_sess->next != NULL) {
-                wrap_printf("#several editing sessions active, use #cancel"
-                            " <number>");
-            } else
-                cancel_edit(edit_sess);
+            for (editsess *sp = edit_sess; sp != NULL; sp = sp->next)
+                cancel_edit(sp);
         }
     }
 }

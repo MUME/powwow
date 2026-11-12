@@ -1499,6 +1499,15 @@ has "#killed \"Help on 'mark'\" (4294967295)"
 lacks "#no open connections. Use '#connect main <address> <port>'"\
 " to open a connection."
 
+# #cancel without an argument cancels all the editing sessions
+run --until "#killed \"Help on 'mark'\"" 'cancelling all editing sessions' \
+    "#option pager=&sh -c 'sleep 5'
+#help mark
+#help beep
+#cancel"
+has "#killed \"Help on 'mark'\" (4294967295)"
+has "#killed \"Help on 'beep'\" (4294967295)"
+
 # a suboption from one connection, split by a suboption from another one
 cat > "$tmp/server" <<'EOF'
 printf '\377\372\052\001;ISO-8859-1'
