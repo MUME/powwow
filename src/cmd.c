@@ -2513,19 +2513,32 @@ static void cmd_edit(char *arg)
 
 static void cmd_cancel(char *arg)
 {
-    if (edit_sess == NULL) {
+    arg = skipspace(arg);
+    char *end = arg;
+    unsigned long key = 0;
+    bool too_large = false;
+    if (isdigit((unsigned char)*arg)) {
+        errno = 0;
+        key = strtoul(arg, &end, 10);
+        too_large = errno == ERANGE;
+    }
+    if (*skipspace(end) != '\0') {
+        message_printf("#syntax: #cancel [<number>]\n");
+    } else if (edit_sess == NULL) {
         message_printf("#no editing sessions to cancel.\n");
     } else {
-        if (*arg != '\0') {
-            unsigned long key = strtoul(arg, NULL, 10);
-            editsess *sp;
-            for (sp = edit_sess; sp != NULL; sp = sp->next)
-                if (key == sp->key) {
-                    cancel_edit(sp);
-                    break;
-                }
+        if (end != arg) {
+            editsess *sp = NULL;
+            if (!too_large) {
+                for (sp = edit_sess; sp != NULL; sp = sp->next)
+                    if (key == sp->key) {
+                        cancel_edit(sp);
+                        break;
+                    }
+            }
             if (sp == NULL) {
-                message_printf("#unknown editing session %lu\n", key);
+                message_printf("#unknown editing session %.*s\n",
+                               (int)(end - arg), arg);
             }
         } else {
             for (editsess *sp = edit_sess; sp != NULL; sp = sp->next)

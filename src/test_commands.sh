@@ -1542,6 +1542,20 @@ run --until '#killed' 'cancelling an unknown editing session' \
 #cancel"
 has '#unknown editing session 4294967294'
 
+# #cancel with an argument that is not a number of an editing session
+run --until '#killed' 'cancelling with a wrong argument' \
+    "#option pager=&sh -c 'sleep 5'
+#help mark
+#cancel foo
+#cancel -1
+#cancel 4294967295x
+#cancel 99999999999999999999
+#cancel"
+has '#syntax: #cancel [<number>]'
+has '#unknown editing session 99999999999999999999'
+[ "$(grep -c '^#killed' "$tmp/out")" -eq 1 ] \
+    || fail "expected the view to be killed once"
+
 # a suboption from one connection, split by a suboption from another one
 cat > "$tmp/server" <<'EOF'
 printf '\377\372\052\001;ISO-8859-1'
