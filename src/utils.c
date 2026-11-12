@@ -1463,7 +1463,7 @@ int read_settings(void)
     int len = 0;
 
     opt_info = false;
-    char old_nice = a_nice;
+    int old_nice = a_nice;
     a_nice = 0;
 
     for (int n = 0; n < MAX_HASH; ++n) {
