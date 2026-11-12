@@ -124,6 +124,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  division by zero, as / and % do.
 	* Fixed dividing the smallest number by -1 crashing powwow on
 	  some processors, such as x86.
+	* Fixed % and %= giving a negative remainder when dividing a
+	  negative number by a negative one, such as -4 for `-7 % -3'.
 	* Fixed expressions nested more than 100 deep overwriting memory
 	  instead of reporting a stack overflow.
 	* Fixed ^^ giving its left argument, such as 5 for `5 ^^ 0',
