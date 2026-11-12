@@ -7,7 +7,7 @@ int process_message(char *buf, int len);
 void cancel_edit(editsess *sp);
 void abort_edit_fd(struct connsess *conn);
 void mpi_identify(struct connsess *conn);
-void message_edit(char *text, int msglen, char view, char builtin);
+void message_edit(char *text, int msglen, bool view, bool builtin);
 void sig_chld_bottomhalf(void);
 /* add the output fds of background editors to 'set'; return the new maximum fd */
 int edit_output_fds(fd_set *set, int max_fd);

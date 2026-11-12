@@ -255,7 +255,7 @@ typedef struct editsess {
     char *file;		/* name of temporary file */
     time_t ctime; 	/* time when temp file was created (upper bound) */
     long oldsize; 	/* original file size */
-    char cancel;	/* 1 if cancelled */
+    bool cancel;	/* true if cancelled */
     int out_fd;		/* output of a background editor, or -1 */
     size_t out_len;	/* characters in out_buf */
     char out_buf[1024];	/* output not shown yet */

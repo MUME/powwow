@@ -35,17 +35,17 @@
 #include "edit.h"
 #include "eval.h"
 
-editsess *edit_sess;	/* head of session list */
+editsess *edit_sess;            /* head of session list */
 
-char edit_start[BUFSIZE]; /* messages to send to host when starting */
-char edit_end[BUFSIZE];   /* or leaving editing sessions */
+char edit_start[BUFSIZE];       /* messages to send to host when starting */
+char edit_end[BUFSIZE];         /* or leaving editing sessions */
 
 static void write_message(const char *s)
 {
     clear_input_line(opt_compact);
     if (!opt_compact) {
-	tty_putc('\n');
-	status(1);
+        tty_putc('\n');
+        status(1);
     }
     tty_puts(s);
 }
@@ -75,36 +75,34 @@ void mpi_identify(connsess *conn)
  */
 int process_message(char *buf, int len)
 {
-    int msglen, i, l, used;
-    char *text, *from, *to;
-    char msg[BUFSIZE];
-    int got_iac;
-
     status(1);
 
-    msglen = atoi(buf + 1);
-    for (i = 1; i < len && isdigit((unsigned char)buf[i]); i++)
-      ;
+    int msglen = atoi(buf + 1);
+    int i = 1;
+    while (i < len && isdigit((unsigned char)buf[i]))
+        ++i;
 
-    if (i < len && buf[i] == '\r') i++;
+    if (i < len && buf[i] == '\r')
+        ++i;
     if (i >= len || buf[i] != '\n') {
         write_message("#warning: bad MPI message header\n");
-	return 0;
+        return 0;
     }
 
-    l = len - ++i;
+    ++i;
+    int l = len - i;
 
-    text = (char *)malloc(msglen);
-    if (!text) {
-	out_of_memory();
-	return i;
+    char *text = malloc(msglen);
+    if (text == NULL) {
+        out_of_memory();
+        return i;
     }
 
     /* only doing trivial (IAC IAC) processing; this should all be
      * rewritten */
-    got_iac = 0;
-    from = buf + i;
-    to = text;
+    bool got_iac = false;
+    char *from = buf + i;
+    char *to = text;
     for (i = 0; i < l && (to - text) < msglen; ++i) {
         if (got_iac) {
             if (*from != (char)IAC)
@@ -112,25 +110,28 @@ int process_message(char *buf, int len)
                             " as is");
             else
                 ++from;
-            got_iac = 0;
+            got_iac = false;
         } else {
-            got_iac = (*to++ = *from++) == (char)IAC;
+            got_iac = *from == (char)IAC;
+            *to++ = *from++;
         }
     }
     i = to - text;
-    used = from - buf;
+    int used = from - buf;
 
     while (i < msglen) {
-	/* read() might block here, but it should't be long */
-	while ((l = current_connection->fns->read(
+        /* read() might block here, but it should't be long */
+        while ((l = current_connection->fns->read(
                     current_connection, text + i, msglen - i)) == -1
                && errno == EINTR)
-	    ;
-	if (l == -1) {
-	    errmsg("cannot read from connection \"%s\"", current_connection->id);
-	    return used > len ? len : used;
-	}
-        from = to = text + i;
+            ;
+        if (l == -1) {
+            errmsg("cannot read from connection \"%s\"",
+                   current_connection->id);
+            return used > len ? len : used;
+        }
+        from = text + i;
+        to = text + i;
         for (i = 0; i < l; ++i) {
             if (got_iac) {
                 if (*from != (char)IAC)
@@ -138,29 +139,32 @@ int process_message(char *buf, int len)
                                 " kept as is");
                 else
                     ++from;
-                got_iac = 0;
+                got_iac = false;
             } else {
-                got_iac = (*to++ = *from++) == (char)IAC;
+                got_iac = *from == (char)IAC;
+                *to++ = *from++;
             }
         }
         i = to - text;
-	tty_printf("\rgot %d chars out of %d", i, msglen);
-	tty_flush();
+        tty_printf("\rgot %d chars out of %d", i, msglen);
+        tty_flush();
     }
     tty_printf("\rread all %d chars.%s\n", msglen, tty_clreoln);
 
-    switch(*buf) {
+    switch (*buf) {
     case 'E':
-        message_edit(text, msglen, 0, 0);
+        message_edit(text, msglen, false, false);
         break;
     case 'V':
-        message_edit(text, msglen, 1, 0);
+        message_edit(text, msglen, true, false);
         break;
-    default:
+    default: {
+        char msg[BUFSIZE];
         sprintf(msg, "#warning: unknown MPI message type 0x%02hhx\n", *buf);
         write_message(msg);
         free(text);
         break;
+    }
     }
 
     return used;
@@ -172,23 +176,20 @@ int process_message(char *buf, int len)
  */
 void abort_edit_fd(connsess *conn)
 {
-    editsess **sp, *p;
-
     if (conn == NULL)
-	return;
+        return;
 
-    for (sp = &edit_sess; *sp; sp = &(*sp)->next) {
-	p = *sp;
-	if (p->conn != conn)
-	    continue;
+    for (editsess *p = edit_sess; p != NULL; p = p->next) {
+        if (p->conn != conn)
+            continue;
 
-	if (kill(p->pid, SIGKILL) < 0) {       /* Editicide */
-	    errmsg("cannot stop the editor");
-	    continue;
-	}
+        if (kill(p->pid, SIGKILL) < 0) {        /* Editicide */
+            errmsg("cannot stop the editor");
+            continue;
+        }
 
-	wrap_printf("#aborted \"%s\" (%u)", p->descr, p->key);
-	p->cancel = 1;
+        wrap_printf("#aborted \"%s\" (%u)", p->descr, p->key);
+        p->cancel = true;
     }
 }
 
@@ -198,18 +199,17 @@ void abort_edit_fd(connsess *conn)
  */
 void cancel_edit(editsess *sp)
 {
-    char buf[BUFSIZE];
-    char keystr[16];
-
-    if (kill(sp->pid, SIGKILL) < 0) {       /* Editicide */
-	errmsg("cannot stop the editor");
-	return;
+    if (kill(sp->pid, SIGKILL) < 0) {           /* Editicide */
+        errmsg("cannot stop the editor");
+        return;
     }
     wrap_printf("#killed \"%s\" (%u)", sp->descr, sp->key);
+    char keystr[16];
     sprintf(keystr, "C%u\n", sp->key);
+    char buf[BUFSIZE];
     sprintf(buf, "%sE%zu\n%s", MPI, strlen(keystr), keystr);
     tcp_write(sp->conn, buf);
-    sp->cancel = 1;
+    sp->cancel = true;
 }
 
 static ssize_t read_file(int fd, void *buf, size_t count)
@@ -238,149 +238,153 @@ static ssize_t read_file(int fd, void *buf, size_t count)
  */
 static void finish_edit(editsess *sp)
 {
-    char *realtext = NULL, *text;
-    int fd, txtlen, hdrlen;
-    struct stat sbuf;
-    char keystr[16], buf[256], hdr[65];
+    char *realtext = NULL;
 
     if (sp->conn == NULL)
-	goto cleanup_file;
+        goto cleanup_file;
 
-    fd = open(sp->file, O_RDONLY);
+    int fd = open(sp->file, O_RDONLY);
     if (fd == -1) {
-	errmsg("cannot open %s", sp->file);
-	goto cleanup_file;
+        errmsg("cannot open %s", sp->file);
+        goto cleanup_file;
     }
+    struct stat sbuf;
     if (fstat(fd, &sbuf) == -1) {
-	errmsg("cannot read %s", sp->file);
-	goto cleanup_fd;
+        errmsg("cannot read %s", sp->file);
+        goto cleanup_fd;
     }
 
-    txtlen = sbuf.st_size;
+    int txtlen = sbuf.st_size;
 
-    if (!sp->cancel && (sbuf.st_mtime > sp->ctime || txtlen != sp->oldsize)) {
-	/* file was changed by editor: send back result to server */
+    if (!sp->cancel
+        && (sbuf.st_mtime > sp->ctime || txtlen != sp->oldsize)) {
+        /* file was changed by editor: send back result to server */
 
-	realtext = (char *)malloc(txtlen + 65);
-	/* +1 is for possible LF, +64 for header */
-	if (!realtext) {
-	    out_of_memory();
-	    goto cleanup_fd;
-	}
+        realtext = malloc(txtlen + 65);
+        /* +1 is for possible LF, +64 for header */
+        if (realtext == NULL) {
+            out_of_memory();
+            goto cleanup_fd;
+        }
 
-	text = realtext + 64;
+        char *text = realtext + 64;
         txtlen = read_file(fd, text, txtlen);
         if (txtlen < 0)
-	    goto cleanup_text;
+            goto cleanup_text;
 
-	if (txtlen && text[txtlen - 1] != '\n') {
-	    /* If the last line isn't LF-terminated, add an LF;
-	     * however, empty files must remain empty */
-	    text[txtlen] = '\n';
-	    txtlen++;
-	}
+        if (txtlen != 0 && text[txtlen - 1] != '\n') {
+            /* If the last line isn't LF-terminated, add an LF;
+             * however, empty files must remain empty */
+            text[txtlen] = '\n';
+            ++txtlen;
+        }
 
-	sprintf(keystr, "E%u\n", sp->key);
+        char keystr[16];
+        sprintf(keystr, "E%u\n", sp->key);
 
+        char hdr[65];
         sprintf(hdr, "%sE%zu\n%s", MPI, txtlen + strlen(keystr), keystr);
 
-	text -= (hdrlen = strlen(hdr));
-	memcpy(text, hdr, hdrlen);
+        int hdrlen = strlen(hdr);
+        text -= hdrlen;
+        memcpy(text, hdr, hdrlen);
 
-	/* text[hdrlen + txtlen] = '\0'; */
-	tcp_write_escape_iac(sp->conn, text, hdrlen + txtlen);
+        /* text[hdrlen + txtlen] = '\0'; */
+        tcp_write_escape_iac(sp->conn, text, hdrlen + txtlen);
 
-	sprintf(buf, "#completed session %s (%u)\n", sp->descr, sp->key);
-	write_message(buf);
+        char buf[256];
+        sprintf(buf, "#completed session %s (%u)\n", sp->descr, sp->key);
+        write_message(buf);
     } else {
-	/* file wasn't changed, cancel editing session */
-	sprintf(keystr, "C%u\n", sp->key);
+        /* file wasn't changed, cancel editing session */
+        char keystr[16];
+        sprintf(keystr, "C%u\n", sp->key);
+        char hdr[65];
         sprintf(hdr, "%sE%zu\n%s", MPI, strlen(keystr), keystr);
 
-	tcp_raw_write(sp->conn, hdr, strlen(hdr));
+        tcp_raw_write(sp->conn, hdr, strlen(hdr));
 
-	sprintf(buf, "#cancelled session %s (%u)\n", sp->descr, sp->key);
-	write_message(buf);
+        char buf[256];
+        sprintf(buf, "#cancelled session %s (%u)\n", sp->descr, sp->key);
+        write_message(buf);
     }
 
-cleanup_text: if (realtext) free(realtext);
-cleanup_fd:   close(fd);
-cleanup_file: if (unlink(sp->file) < 0)
-		errmsg("cannot delete %s", sp->file);
+ cleanup_text:
+    free(realtext);
+ cleanup_fd:
+    close(fd);
+ cleanup_file:
+    if (unlink(sp->file) < 0)
+        errmsg("cannot delete %s", sp->file);
 }
 
 /*
  * start an editing session: process the EDIT/VIEW message
- * if view == 1, text will be viewed, else edited
+ * if view is true, text will be viewed, else edited
  */
-void message_edit(char *text, int msglen, char view, char builtin)
+void message_edit(char *text, int msglen, bool view, bool builtin)
 {
-    char tmpname[BUFSIZE], command_str[BUFSIZE];
     const char *errdesc = "#warning: bad MPI edit message\n";
-    int tmpfd, i, childpid;
-    unsigned int key;
-    editsess *s;
-    const char *editor;
-    char *descr, *title;
-    int waitforeditor;
 
     status(1);
 
-    if (view) {
-	key = ~0U;
-	i = 0;
-    } else {
-	if (msglen < 1 || text[0] != 'M') {
+    unsigned int key = ~0U;
+    int i = 0;
+    if (!view) {
+        if (msglen < 1 || text[0] != 'M') {
             tty_puts(errdesc);
-	    free(text);
-	    return;
-	}
-	for (i = 1; i < msglen && isdigit((unsigned char)text[i]); ++i)
-	    ;
-	if (i >= msglen || text[i++] != '\n' || i >= msglen) {
+            free(text);
+            return;
+        }
+        for (i = 1; i < msglen && isdigit((unsigned char)text[i]); ++i)
+            ;
+        if (i >= msglen || text[i++] != '\n' || i >= msglen) {
             tty_puts(errdesc);
-	    free(text);
-	    return;
-	}
-	key = strtoul(text + 1, NULL, 10);
+            free(text);
+            return;
+        }
+        key = strtoul(text + 1, NULL, 10);
     }
-    descr = text + i;
-    while (i < msglen && text[i] != '\n') i++;
+    char *descr = text + i;
+    while (i < msglen && text[i] != '\n')
+        ++i;
     if (i >= msglen) {
         tty_puts(errdesc);
-	free(text);
-	return;
+        free(text);
+        return;
     }
     text[i++] = '\0';
 
+    char tmpname[BUFSIZE];
     sprintf(tmpname, "/tmp/powwow.%u.%d%d", key, getpid(), abs(rand()) >> 8);
-    if ((tmpfd = open(tmpname, O_WRONLY | O_CREAT, 0600)) < 0) {
-	errmsg("cannot create %s", tmpname);
-	free(text);
-	return;
+    int tmpfd = open(tmpname, O_WRONLY | O_CREAT, 0600);
+    if (tmpfd < 0) {
+        errmsg("cannot create %s", tmpname);
+        free(text);
+        return;
     }
     if (write(tmpfd, text + i, msglen - i) < msglen - i) {
-	errmsg("cannot write %s", tmpname);
-	free(text);
-	close(tmpfd);
-	return;
+        errmsg("cannot write %s", tmpname);
+        free(text);
+        close(tmpfd);
+        return;
     }
     close(tmpfd);
 
-    s = (editsess*)malloc(sizeof(editsess));
-    if (!s) {
-	out_of_memory();
-	return;
+    editsess *s = malloc(sizeof(editsess));
+    if (s == NULL) {
+        out_of_memory();
+        return;
     }
-    s->ctime = time((time_t*)NULL);
+    s->ctime = time(NULL);
     s->oldsize = msglen - i;
     s->key = key;
     s->conn = (view || builtin) ? NULL : current_connection;
-    s->cancel = 0;
+    s->cancel = false;
     s->out_fd = -1;
     s->out_len = 0;
     /* the editor gets the title as sent; we keep it as UTF-8 */
-    title = my_strdup(descr);
+    char *title = my_strdup(descr);
     if (builtin) {
         s->descr = my_strdup(descr);
     } else {
@@ -399,14 +403,14 @@ void message_edit(char *text, int msglen, char view, char builtin)
     free(text);
 
     /* send a edit_start message (if wanted) */
-    if ((!edit_sess) && (*edit_start)) {
-	error = 0;
-	parse_instruction(edit_start, false, false, true);
-	history_done = 0;
+    if (edit_sess == NULL && *edit_start != '\0') {
+        error = 0;
+        parse_instruction(edit_start, false, false, true);
+        history_done = 0;
     }
 
     /* #option pager and editor come first, then the environment */
-    editor = view ? opt_pager : opt_editor;
+    const char *editor = view ? opt_pager : opt_editor;
     if (editor == NULL)
         editor = getenv(view ? "POWWOWPAGER" : "POWWOWEDITOR");
     if (editor == NULL)
@@ -414,99 +418,105 @@ void message_edit(char *text, int msglen, char view, char builtin)
     if (editor == NULL)
         editor = view ? "more" : "vi";
 
+    bool waitforeditor = true;
     if (editor[0] == '&') {
-	waitforeditor = 0;
-	editor++;
-    } else
-	waitforeditor = 1;
+        waitforeditor = false;
+        ++editor;
+    }
 
     if (waitforeditor) {
-	tty_quit();
-	/* ignore SIGINT since interrupting the child would interrupt us too,
-	 if we are in the same tty group */
-	sig_permanent(SIGINT, SIG_IGN);
-	sig_permanent(SIGCHLD, SIG_DFL);
+        tty_quit();
+        /*
+         * ignore SIGINT since interrupting the child would interrupt us
+         * too, if we are in the same tty group
+         */
+        sig_permanent(SIGINT, SIG_IGN);
+        sig_permanent(SIGCHLD, SIG_DFL);
     }
 
     /* a background editor must not write over the screen */
     int out_pipe[2] = { -1, -1 };
     if (!waitforeditor && pipe(out_pipe) < 0) {
-	errmsg("cannot capture the output of the editor");
-	out_pipe[0] = out_pipe[1] = -1;
+        errmsg("cannot capture the output of the editor");
+        out_pipe[0] = -1;
+        out_pipe[1] = -1;
     }
 
-    switch(childpid = fork()) {		/* let's get schizophrenic */
-      case 0:
-	if (out_pipe[1] >= 0) {
-	    int null_fd = open("/dev/null", O_RDONLY);
-	    if (null_fd >= 0) {
-		dup2(null_fd, 0);
-		close(null_fd);
-	    }
-	    dup2(out_pipe[1], 1);
-	    dup2(out_pipe[1], 2);
-	    close(out_pipe[0]);
-	    close(out_pipe[1]);
-	}
-	sprintf(command_str, "%s %s", editor, s->file);
+    int childpid = fork();              /* let's get schizophrenic */
+    switch (childpid) {
+    case 0: {
+        if (out_pipe[1] >= 0) {
+            int null_fd = open("/dev/null", O_RDONLY);
+            if (null_fd >= 0) {
+                dup2(null_fd, 0);
+                close(null_fd);
+            }
+            dup2(out_pipe[1], 1);
+            dup2(out_pipe[1], 2);
+            close(out_pipe[0]);
+            close(out_pipe[1]);
+        }
+        char command_str[BUFSIZE];
+        sprintf(command_str, "%s %s", editor, s->file);
         setenv("TITLE", title, 1);
         execl("/bin/sh", "/bin/sh", "-c", command_str, (char *)NULL);
         exec_failed("the editor");
-	break;
-      case -1:
-	errmsg("cannot start the editor");
-	if (out_pipe[0] >= 0) {
-	    close(out_pipe[0]);
-	    close(out_pipe[1]);
-	}
-	free(title);
-	free(s->descr);
-	free(s->file);
-	free(s);
-	return;
+        break;
+    }
+    case -1:
+        errmsg("cannot start the editor");
+        if (out_pipe[0] >= 0) {
+            close(out_pipe[0]);
+            close(out_pipe[1]);
+        }
+        free(title);
+        free(s->descr);
+        free(s->file);
+        free(s);
+        return;
     }
     free(title);
     s->pid = childpid;
     if (out_pipe[0] >= 0) {
-	close(out_pipe[1]);
-	fcntl(out_pipe[0], F_SETFL, O_NONBLOCK);
-	fcntl(out_pipe[0], F_SETFD, FD_CLOEXEC);
-	s->out_fd = out_pipe[0];
+        close(out_pipe[1]);
+        fcntl(out_pipe[0], F_SETFL, O_NONBLOCK);
+        fcntl(out_pipe[0], F_SETFD, FD_CLOEXEC);
+        s->out_fd = out_pipe[0];
     }
     if (waitforeditor) {
-	while ((i = waitpid(childpid, (int*)NULL, 0)) == -1 && errno == EINTR)
-	    ;
+        int wpid;
+        while ((wpid = waitpid(childpid, NULL, 0)) == -1 && errno == EINTR)
+            ;
 
-	signal_start();		/* reset SIGINT and SIGCHLD handlers */
-	tty_start();
-	/* the terminal echoed the keys typed after the editor restored
-	 * it and before tty_start(), such as ^P: erase them */
-	tty_putc('\r');
-	tty_puts(tty_clreoln);
+        signal_start();         /* reset SIGINT and SIGCHLD handlers */
+        tty_start();
+        /* the terminal echoed the keys typed after the editor restored
+         * it and before tty_start(), such as ^P: erase them */
+        tty_putc('\r');
+        tty_puts(tty_clreoln);
 
-	if (s->conn != NULL) {
-	    tty_gotoxy(0, lines - 1);
-	    tty_putc('\n');
-	}
+        if (s->conn != NULL) {
+            tty_gotoxy(0, lines - 1);
+            tty_putc('\n');
+        }
 
-	if (i == -1)
-	    errmsg("cannot wait for the editor");
-	else
-	    finish_edit(s);
+        if (wpid == -1)
+            errmsg("cannot wait for the editor");
+        else
+            finish_edit(s);
 
-	free(s->descr);
-	free(s->file);
-	if (i != -1 && !edit_sess && *edit_end) {
-	    error = 0;
-	    parse_instruction(edit_end, false, false, true);
-	    history_done = 0;
-	}
+        free(s->descr);
+        free(s->file);
+        if (wpid != -1 && edit_sess == NULL && *edit_end != '\0') {
+            error = 0;
+            parse_instruction(edit_end, false, false, true);
+            history_done = 0;
+        }
 
-	free(s);
-
+        free(s);
     } else {
-	s->next = edit_sess;
-	edit_sess = s;
+        s->next = edit_sess;
+        edit_sess = s;
     }
 }
 
@@ -604,7 +614,7 @@ int edit_read_output(const fd_set *set)
     for (editsess *sp = edit_sess; sp != NULL; sp = sp->next) {
         if (sp->out_fd >= 0 && FD_ISSET(sp->out_fd, set)) {
             ++count;
-            (void)read_edit_output(sp);
+            read_edit_output(sp);
         }
     }
     return count;
@@ -616,42 +626,41 @@ int edit_read_output(const fd_set *set)
  */
 void sig_chld_bottomhalf(void)
 {
-    int pid, ret;
-    editsess **sp, *p;
-
+    int pid;
+    int ret;
     while ((pid = waitpid(-1, &ret, WNOHANG)) > 0) {
+        /* no need to check WIFSTOPPED, since waitpid() has no WUNTRACED */
+        editsess **sp = &edit_sess;
+        while (*sp != NULL && (*sp)->pid != pid)
+            sp = &(*sp)->next;
+        if (*sp != NULL) {
+            if ((*sp)->out_fd >= 0) {
+                /*
+                 * show what the editor printed last; do not wait for
+                 * the end, as programs it started may still keep it open
+                 */
+                while ((*sp)->out_fd >= 0 && read_edit_output(*sp))
+                    ;
+                if ((*sp)->out_fd >= 0)
+                    close_edit_output(*sp);
+            }
+            finish_edit(*sp);
+            editsess *p = *sp;
+            *sp = p->next;
+            connsess *conn = p->conn;
+            free(p->descr);
+            free(p->file);
+            free(p);
 
-	/* no need to check WIFSTOPPED, since waitpid() has no WUNTRACED */
-	for (sp = &edit_sess; *sp && (*sp)->pid != pid; sp = &(*sp)->next)
-	    ;
-	if (*sp) {
-	    if ((*sp)->out_fd >= 0) {
-		/*
-		 * show what the editor printed last; do not wait for
-		 * the end, as programs it started may still keep it open
-		 */
-		while ((*sp)->out_fd >= 0 && read_edit_output(*sp))
-		    ;
-		if ((*sp)->out_fd >= 0)
-		    close_edit_output(*sp);
-	    }
-	    finish_edit(*sp);
-	    p = *sp; *sp = p->next;
-	    connsess *conn = p->conn;
-	    free(p->descr);
-	    free(p->file);
-	    free(p);
-
-	    /* send the edit_end message if this is the last editor... */
-	    if ((!edit_sess) && (*edit_end)) {
-		connsess *old_conn = current_connection;
+            /* send the edit_end message if this is the last editor... */
+            if (edit_sess == NULL && *edit_end != '\0') {
+                connsess *old_conn = current_connection;
                 current_connection = conn;
-		error = 0;
-		parse_instruction(edit_end, false, false, true);
-		history_done = 0;
-		current_connection = old_conn;
-	    }
-	}
+                error = 0;
+                parse_instruction(edit_end, false, false, true);
+                history_done = 0;
+                current_connection = old_conn;
+            }
+        }
     }
 }
-
