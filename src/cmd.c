@@ -503,7 +503,7 @@ static char *format_command_help(char *dst, const cmdstruct *c)
 static void show_help_text(char *text, bool use_pager)
 {
     if (use_pager) {
-        message_edit(text, strlen(text), 1, 1);
+        message_edit(text, strlen(text), true, true);
         return;
     }
     const char *body = strchr(text, '\n');
