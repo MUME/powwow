@@ -1292,6 +1292,14 @@ has '#error: text/string longer than limit, discarded.'
 has 'after'
 lacks '#out of memory'
 
+# a prompt longer than the memory limit
+awk 'BEGIN { s = sprintf("%150s", ""); gsub(/ /, "x", s); printf "%s", s }' \
+    > "$tmp/long"
+run 'prompt longer than the memory limit' "#setvar mem=120
+#emulate <$tmp/long"
+has '#error: text/string longer than limit, discarded.'
+lacks '#out of memory'
+
 # a spawned command is a connection that uses the telnet protocol too:
 # what the command prints is received, and what is sent is its input
 cat > "$tmp/server" <<'EOF'
