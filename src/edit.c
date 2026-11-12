@@ -2900,7 +2900,7 @@ static void flashparen(char c)
     }
     if (i >= 0) {
         tty_gotoxy_opt(CURCOL(pos), CURLINE(pos), CURCOL(i), CURLINE(i));
-        flashback = 1;
+        flashback = true;
         excursion = i;
     }
 }
@@ -2913,7 +2913,7 @@ void putbackcursor(void)
     if (line_status == 0)
         tty_gotoxy_opt(CURCOL(excursion), CURLINE(excursion), CURCOL(pos),
                        CURLINE(pos));
-    flashback = 0;
+    flashback = false;
 }
 
 /* characters typed, to insert at once (see insert_flush) */
@@ -2929,7 +2929,7 @@ void insert_flush(void)
 {
     if (ninsbuf == 0)
         return;
-    if (flashback != 0)
+    if (flashback)
         putbackcursor();
     input_insert_follow_chars(insbuf, ninsbuf);
     ninsbuf = 0;
@@ -2995,7 +2995,7 @@ static void insert_string(char *arg)
     int len = strlen(buf);
 
     if (len > 1) {
-        if (flashback != 0)
+        if (flashback)
             putbackcursor();
         input_insert_follow_chars(buf, len);
     } else if (len == 1) {

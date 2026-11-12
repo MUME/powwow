@@ -68,7 +68,6 @@
 #include "width.h"
 #include "charname.h"
 
-
 /* the start of the lines that continue the version and the authors */
 #define VER_CONT "    "
 
@@ -86,52 +85,58 @@ static void exec_delays(void);
 static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds);
 static void get_user_input(void);
 
-static int  search_action_or_prompt(char *line, char clearline, char onprompt);
-#define search_action(line, clearline) search_action_or_prompt((line), (clearline), 0)
-#define search_prompt(line, copyprompt) search_action_or_prompt((line), 0, (copyprompt)+1)
+static bool search_action_or_prompt(char *line, bool clearline, int onprompt);
+#define search_action(line, clearline) \
+    search_action_or_prompt((line), (clearline), 0)
+#define search_prompt(line, copyprompt) \
+    search_action_or_prompt((line), false, (copyprompt) + 1)
 
 static void set_params(char *line, int *match_s, int *match_e);
 static void parse_commands(char *command, char *arg);
-static int  subst_param(ptr **buf, char *src);
-static int  jit_subst_vars(ptr **buf, char *src);
-
+static bool subst_param(ptr **buf, char *src);
+static bool jit_subst_vars(ptr **buf, char *src);
 
 /*        GLOBALS                */
 static const char *helpname = HELPNAME;
 static const char *copyname = COPYNAME;
 
-long received = 0;	/* amount of data received from remote host */
-long sent = 0;		/* amount of data sent to remote host */
+long received = 0;      /* amount of data received from remote host */
+long sent = 0;          /* amount of data sent to remote host */
 
-volatile char confirm = 0; /* 1 if just tried to quit */
-int  history_done = 0;	/* number of recursive #history commands */
-int  prompt_status = 0;	/* prompt status: 0 = ready -> nothing to do;
-			 *  1 if internal echo -> must redraw;
-			 * -1 if something sent to MUD -> waiting for it.
-			 */
-int  line_status = 0;	/* input line status: 0 = ready -> nothing to do;
-			 *  1 if printed something -> must redraw.
-			 */
+volatile bool confirm = false;  /* true if just tried to quit */
+int history_done = 0;   /* number of recursive #history commands */
+int prompt_status = 0;  /* prompt status: 0 = ready -> nothing to do;
+                         *  1 if internal echo -> must redraw;
+                         * -1 if something sent to MUD -> waiting for it.
+                         */
+int line_status = 0;    /* input line status: 0 = ready -> nothing to do;
+                         *  1 if printed something -> must redraw.
+                         */
 
-int limit_mem = 0;	/* if !=0, max len of a string or text */
+int limit_mem = 0;      /* if != 0, max len of a string or text */
 
-bool opt_echo = true;	/* true if text sent to MUD must be echoed */
-bool opt_keyecho = true;	/* true if binds must be echoed */
-bool opt_info = true;	/* false if internal messages are suppressed */
-bool opt_exit = false;	/* true to autoquit when closing last conn. */
-bool opt_history = false;	/* true if to save also history */
-bool opt_words = false;	/* true if to save also word completion list */
-bool opt_compact = false;	/* true if to clear prompt between remote messages */
-bool opt_debug = false;	/* true if to echo every line before executing it */
-bool opt_speedwalk = false;	/* true: speedwalk on */
-bool opt_wrap = false;	/* true: word wrap active */
-bool opt_autoprint = false;	/* true: automatically #print lines matched by actions */
-bool opt_reprint = false;	/* true: reprint sent commands when we get a prompt */
-bool opt_sendsize = false;	/* true: send term size upon connect */
-bool opt_autoclear = true;	/* true: clear input line before executing commands
-			 * from spawned programs.
-			 * if 0, spawned progs must #clear before printing
-			 */
+bool opt_echo = true;           /* true if text sent to MUD must be echoed */
+bool opt_keyecho = true;        /* true if binds must be echoed */
+bool opt_info = true;           /* false if internal messages are suppressed */
+bool opt_exit = false;          /* true to autoquit when closing last conn. */
+bool opt_history = false;       /* true if to save also history */
+bool opt_words = false;         /* true if to save also word completion list */
+bool opt_compact = false;       /* true if to clear prompt between remote
+                                 * messages */
+bool opt_debug = false;         /* true if to echo every line before executing
+                                 * it */
+bool opt_speedwalk = false;     /* true: speedwalk on */
+bool opt_wrap = false;          /* true: word wrap active */
+bool opt_autoprint = false;     /* true: automatically #print lines matched by
+                                 * actions */
+bool opt_reprint = false;       /* true: reprint sent commands when we get a
+                                 * prompt */
+bool opt_sendsize = false;      /* true: send term size upon connect */
+bool opt_autoclear = true;      /* true: clear input line before executing
+                                 * commands from spawned programs.
+                                 * if false, spawned progs must #clear before
+                                 * printing
+                                 */
 
 struct hostinfo hostinfo;
 bool default_utf8 = true;
@@ -151,7 +156,8 @@ actionnode *actions;               /* head of action list */
 promptnode *prompts;               /* head of prompt list */
 marknode *markers;                 /* head of mark list */
 substnode *substitutions;          /* head of substitution list */
-int a_nice = 0;                    /* default priority of new actions/marks/substitutions */
+int a_nice = 0;                    /* default priority of new
+                                    * actions/marks/substitutions */
 keynode *keydefs;                  /* head of key binding list */
 delaynode *delays;                 /* head of delayed commands list */
 delaynode *dead_delays;            /* head of dead-delayed commands list */
@@ -184,17 +190,17 @@ ptr **text_var(int n)
     return &numbered_var(n)->str;
 }
 
-varnode *prompt;		   /* $prompt is always set */
-ptr *marked_prompt;		   /* $prompt with marks added */
-static varnode *last_line;	   /* $line is always set to
-				    * the last line processed */
+varnode *prompt;                   /* $prompt is always set */
+ptr *marked_prompt;                /* $prompt with marks added */
+static varnode *last_line;         /* $line is always set to
+                                    * the last line processed */
 
 vtime now;                         /* current time */
-int now_updated;		   /* current time is up to date */
+bool now_updated;                  /* current time is up to date */
 vtime start_time;                  /* time of powwow timer startup */
 vtime ref_time;                    /* time corresponding to timer == 0 */
 
-function_str last_edit_cmd;	   /* to detect repeated commands */
+function_str last_edit_cmd;        /* to detect repeated commands */
 
 clock_t start_clock, cpu_clock;
 
@@ -203,9 +209,9 @@ char initstr[BUFSIZE];             /* initial string to send on connect */
 int linemode = 0;                  /* line mode flags (LM_* in main.h) */
 
 /* for line editing */
-int cols=80, lines=24;    /* screen size */
-int cols_1=79;		  /* == cols if tty_wrapglitch, == cols-1 otherwise */
-int olines;		  /* previous screen size */
+int cols = 80, lines = 24; /* screen size */
+int cols_1 = 79;          /* == cols if tty_wrapglitch, == cols-1 otherwise */
+int olines;               /* previous screen size */
 int col0;                 /* input line offset (= printstrlen of prompt) */
 int line0;                /* screen line where the input line starts */
 char edbuf[BUFSIZE];      /* line editing buffer */
@@ -216,19 +222,18 @@ int edstart = 0;          /* where the text that can be edited starts, after
 int edlabel = 0;          /* the bytes at the start of edbuf that are a
                            * label of powwow, drawn as its messages */
 int isprompt_len = 0;     /* set by #isprompt: 0 if not a prompt, -1 if a
-                             prompt of unknown length, else its length */
+                           * prompt of unknown length, else its length */
 bool verbatim = false;    /* don't expand aliases or process semicolons */
 char prefixstr[BUFSIZE];  /* inserted in the editing buffer each time */
-char inserted_next[BUFSIZE];/* inserted in buffer just once */
-char flashback = 0;	  /* cursor is on excursion and should be put back */
-int excursion;		  /* where the excursion is */
+char inserted_next[BUFSIZE]; /* inserted in buffer just once */
+bool flashback = false;   /* cursor is on excursion and should be put back */
+int excursion;            /* where the excursion is */
 char edattrbeg[ATTR_SGR_MAX];   /* starting input line attributes */
 char edattrend[ATTR_SGR_MAX];   /* ending input line attributes */
-bool edattrbg;		  /* input line attributes do change bg color */
+bool edattrbg;            /* input line attributes do change bg color */
 
 /* signals handling */
 volatile int sig_pending, sig_winch_got, sig_chld_got;
-
 
 /* different ID characters for different action types */
 /*
@@ -242,11 +247,11 @@ const char action_chars[ACTION_TYPES] = { '>', '%' };
 #define DELIMSET_PROGRAM  " <>!=(),;\"'{}[]+-/*%"
 
 const char *delim_list[] = { DELIMSET_NORMAL, DELIMSET_PROGRAM, NULL };
-int   delim_len [] = {
+int delim_len[] = {
     sizeof DELIMSET_NORMAL - 1, sizeof DELIMSET_PROGRAM - 1, 0
 };
 const char *const delim_name[] = { "normal", "program", "custom" };
-int   delim_mode = DELIM_NORMAL;
+int delim_mode = DELIM_NORMAL;
 
 /* Group delimiter */
 char *group_delim;
@@ -324,7 +329,8 @@ static bool in_build_dir(const char *argv0)
     char dir[BUFSIZE];
     snprintf(dir, sizeof(dir), "%.*s",
              slash == argv0 ? 1 : (int)(slash - argv0), argv0);
-    char *real = realpath(dir, NULL), *build = realpath(POWWOW_BUILD_DIR, NULL);
+    char *real = realpath(dir, NULL);
+    char *build = realpath(POWWOW_BUILD_DIR, NULL);
     bool same = real != NULL && build != NULL && strcmp(real, build) == 0;
     free(real);
     free(build);
@@ -334,9 +340,8 @@ static bool in_build_dir(const char *argv0)
 int main(int argc, char **argv)
 {
 #ifdef USE_LOCALE
-    if (!setlocale(LC_ALL, "")) {
+    if (setlocale(LC_ALL, "") == NULL)
         fprintf(stderr, "Failed setlocale(LC_ALL, \"\")\n");
-    }
 #endif
 
 #ifdef HAVE_GETOPT_LONG
@@ -373,7 +378,7 @@ int main(int argc, char **argv)
             optarg = NULL;      /* only -T accepts arguments */
 #endif
         case 'T': {
-            const char *arg = optarg ? optarg : "";
+            const char *arg = optarg != NULL ? optarg : "";
             if (!parse_tls_flag(&cmdline_tlsopt, &arg, false)) {
                 fprintf(stderr, "invalid TLS options: '%s'\n", optarg);
                 exit(EXIT_FAILURE);
@@ -419,69 +424,69 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    char *p;
-    bool read_file = false;     /* run initstr ? */
-
     /* initializations */
-    group_delim = my_strdup( "@" );
+    group_delim = my_strdup("@");
 
     update_now();
-    ref_time = start_time = movie_last = now;
+    ref_time = now;
+    start_time = now;
+    movie_last = now;
 
-    start_clock = cpu_clock = clock();
+    start_clock = clock();
+    cpu_clock = start_clock;
     srand48(now.tv_sec ^ now.tv_usec ^ ((long)getpid() << 16));
 
     initialize_cmd();
 
-    if ((p = getenv("POWWOWDIR"))) {
-	strcpy(powwow_dir, p);
-	if (powwow_dir[strlen(powwow_dir) - 1] != '/')
-	    strcat(powwow_dir, "/");
-    } else
-	powwow_dir[0] = '\0';
+    const char *dir = getenv("POWWOWDIR");
+    if (dir != NULL) {
+        strcpy(powwow_dir, dir);
+        if (powwow_dir[strlen(powwow_dir) - 1] != '/')
+            strcat(powwow_dir, "/");
+    } else {
+        powwow_dir[0] = '\0';
+    }
 
     bool from_build_dir = in_build_dir(argv[0]);
-    if ((p = getenv("POWWOWHELP")))
-	strcpy(helpfile, p);
-    else if (powwow_dir[0])
-	strcpy(helpfile, powwow_dir);
+    const char *help = getenv("POWWOWHELP");
+    if (help != NULL)
+        strcpy(helpfile, help);
+    else if (powwow_dir[0] != '\0')
+        strcpy(helpfile, powwow_dir);
     else if (from_build_dir)
-	strcpy(helpfile, POWWOW_SOURCE_DIR "/doc");
+        strcpy(helpfile, POWWOW_SOURCE_DIR "/doc");
     else
-	strcpy(helpfile, POWWOW_DIR);
+        strcpy(helpfile, POWWOW_DIR);
 
     if (helpfile[strlen(helpfile) - 1] != '/')
-	strcat(helpfile, "/");
+        strcat(helpfile, "/");
     strcat(helpfile, helpname);
-    if (access(helpfile, R_OK) == -1 && !access(helpname, R_OK))
-	strcpy(helpfile, helpname);
+    if (access(helpfile, R_OK) == -1 && access(helpname, R_OK) == 0)
+        strcpy(helpfile, helpname);
 
     names_file_path(namesfile, NAMESNAME);
     names_file_path(emojifile, EMOJINAME);
 
-    if (powwow_dir[0])
-	strcpy(copyfile, powwow_dir);
+    if (powwow_dir[0] != '\0')
+        strcpy(copyfile, powwow_dir);
     else if (from_build_dir)
-	strcpy(copyfile, POWWOW_SOURCE_DIR);
+        strcpy(copyfile, POWWOW_SOURCE_DIR);
     else
-	strcpy(copyfile, POWWOW_DIR);
+        strcpy(copyfile, POWWOW_DIR);
     if (copyfile[strlen(copyfile) - 1] != '/')
-	strcat(copyfile, "/");
+        strcat(copyfile, "/");
     strcat(copyfile, copyname);
-    if (access(copyfile, R_OK) == -1 && !access(copyname, R_OK))
-	strcpy(copyfile, copyname);
+    if (access(copyfile, R_OK) == -1 && access(copyname, R_OK) == 0)
+        strcpy(copyfile, copyname);
 
     /* allocate permanent variables */
-    if ((prompt = add_varnode("prompt", VAR_TEXT)) != NULL
-        && (prompt->str = ptrnew(PARAMLEN)) != NULL
-        && (marked_prompt = ptrnew(PARAMLEN)) != NULL
-        && (last_line = add_varnode("last_line", VAR_TEXT)) != NULL
-        && (last_line->str = ptrnew(PARAMLEN)) != NULL
-	&& !MEM_ERROR)
-	;
-    else
-	syserr("out of memory");
-
+    if ((prompt = add_varnode("prompt", VAR_TEXT)) == NULL
+        || (prompt->str = ptrnew(PARAMLEN)) == NULL
+        || (marked_prompt = ptrnew(PARAMLEN)) == NULL
+        || (last_line = add_varnode("last_line", VAR_TEXT)) == NULL
+        || (last_line->str = ptrnew(PARAMLEN)) == NULL
+        || MEM_ERROR)
+        syserr("out of memory");
 
     /*
      ptr_bootstrap();
@@ -503,16 +508,17 @@ int main(int argc, char **argv)
     printver(1);
 
     if (nargs == 0) {
-	message_wrap(VER_CONT, "\nPowwow comes with ABSOLUTELY NO WARRANTY; "
+        message_wrap(VER_CONT, "\nPowwow comes with ABSOLUTELY NO WARRANTY; "
                      "for details type \"#help warranty\".\nThis is free "
                      "software, and you are welcome to redistribute it "
                      "under certain conditions; type \"#help copyright\" "
                      "for details.");
     }
 
+    bool read_file = false;     /* run initstr ? */
     if (nargs == 0 || nargs == 2) {
-	tty_add_initial_binds();
-	tty_add_walk_binds();
+        tty_add_initial_binds();
+        tty_add_walk_binds();
     } else if (nargs == 1 || nargs == 3) {
         /*
          * assuming first arg is definition file name
@@ -523,40 +529,41 @@ int main(int argc, char **argv)
         set_deffile(argv[optind++]);
 
         if (access(deffile, R_OK) == -1 || access(deffile, W_OK) == -1) {
-	    char portnum[INTLEN];
             tty_printf("Creating %s\nHost name  :", deffile);
-	    tty_flush();
-	    tty_gets(hostinfo.name, BUFSIZE);
-	    if (hostinfo.name[0] == '\n')
-		hostinfo.name[0] = '\0';
-	    else
-		strtok(hostinfo.name, "\n");
+            tty_flush();
+            tty_gets(hostinfo.name, BUFSIZE);
+            if (hostinfo.name[0] == '\n')
+                hostinfo.name[0] = '\0';
+            else
+                strtok(hostinfo.name, "\n");
             tty_puts("Port number:");
-	    tty_flush();
-	    tty_gets(portnum, INTLEN);
-	    hostinfo.port = atoi(portnum);
+            tty_flush();
+            char portnum[INTLEN];
+            tty_gets(portnum, INTLEN);
+            hostinfo.port = atoi(portnum);
             tty_add_initial_binds();
-	    tty_add_walk_binds();
-	    limit_mem = 1048576;
+            tty_add_walk_binds();
+            limit_mem = 1048576;
             if (save_settings() < 0)
-		exit(0);
-        } else if (read_settings() < 0)
-	    exit(0);
-        else
-	    read_file = true;
+                exit(0);
+        } else if (read_settings() < 0) {
+            exit(0);
+        } else {
+            read_file = true;
+        }
     }
 
     /* the definition file's #host must not override --utf8/--latin1
      * or --tls/--no-tls */
     if (cmdline_utf8 >= 0)
-        hostinfo.utf8 = cmdline_utf8;
+        hostinfo.utf8 = cmdline_utf8 != 0;
     if (cmdline_tls)
         hostinfo.tlsopt = cmdline_tlsopt;
 
     nargs = argc - optind;
     if (nargs == 2) {
         /* assume last two args are hostname and port number */
-        my_strncpy(hostinfo.name, argv[optind], BUFSIZE-1);
+        my_strncpy(hostinfo.name, argv[optind], BUFSIZE - 1);
         hostinfo.port = atoi(argv[optind + 1]);
     }
 
@@ -565,23 +572,25 @@ int main(int argc, char **argv)
 
     tty_puts(tty_clreoscr);
     tty_putc('\n');
-    tty_gotoxy(col0 = 0, lines - 2);
+    col0 = 0;
+    tty_gotoxy(col0, lines - 2);
     tty_puts("Type #help for help.\n");
     line0 = lines - 1;
 
     FD_ZERO(&fdset);
     FD_SET(tty_read_fd, &fdset);
 
-    if (*hostinfo.name)
-	tcp_open("main", (*initstr ? initstr : NULL), hostinfo.name,
+    if (*hostinfo.name != '\0') {
+        tcp_open("main", (*initstr != '\0' ? initstr : NULL), hostinfo.name,
                  hostinfo.port, &hostinfo.tlsopt, hostinfo.utf8);
-
-    if (read_file && !*hostinfo.name && *initstr) {
-	parse_instruction(initstr, false, false, true);
-	history_done = 0;
     }
 
-    confirm = 0;
+    if (read_file && *hostinfo.name == '\0' && *initstr != '\0') {
+        parse_instruction(initstr, false, false, true);
+        history_done = 0;
+    }
+
+    confirm = false;
 
     mainloop();
 
@@ -629,32 +638,32 @@ void printver(int level)
 
     message_wrap(VER_CONT, "\nOptions: "
 #ifdef USE_VT100
-	       "vt100-only"
+                 "vt100-only"
 #else
-	       "termcaps"
+                 "termcaps"
 #endif
 #ifdef USE_REGEXP
   #ifdef USE_REGEXP_PCRE2POSIX
-	       ", regexp (pcre2posix)"
+                 ", regexp (pcre2posix)"
   #else
-	       ", regexp (libc)"
+                 ", regexp (libc)"
   #endif
 #else
-	       ", no regexp"
+                 ", no regexp"
 #endif
 #ifdef USE_LOCALE
-	       ", locale"
+                 ", locale"
 #endif
 #ifdef USE_TLS
-	       ", tls"
+                 ", tls"
 #endif
 #ifdef HAVE_LIBDL
-	       ", modules"
+                 ", modules"
 #endif
 #ifdef HAVE_ZLIB
-	       ", zlib"
+                 ", zlib"
 #endif
-	       );
+                 );
 }
 
 #ifdef MOTDFILE
@@ -663,12 +672,12 @@ void printver(int level)
  */
 static void printmotd(void)
 {
-    char line[BUFSIZE];
     FILE *f = fopen(MOTDFILE, "r");
-    if (f) {
-        while (utf8_fgets(line, BUFSIZE, f))
-	    tty_puts(line);
-	fclose(f);
+    if (f != NULL) {
+        char line[BUFSIZE];
+        while (utf8_fgets(line, BUFSIZE, f) != NULL)
+            tty_puts(line);
+        fclose(f);
     }
 }
 #endif
@@ -676,15 +685,16 @@ static void printmotd(void)
 static void redraw_everything(void)
 {
     if (prompt_status == 1 && line_status == 0)
-	line_status = 1;
-    if (prompt_status == 1)
-	draw_prompt();
-    else if (prompt_status == -1) {
-	promptzero();
-	col0 = isprompt_len = '\0';
+        line_status = 1;
+    if (prompt_status == 1) {
+        draw_prompt();
+    } else if (prompt_status == -1) {
+        promptzero();
+        isprompt_len = 0;
+        col0 = 0;
     }
     if (line_status == 1)
-	draw_input_line();
+        draw_input_line();
 }
 
 static char typed[CAPLEN];     /* keys typed so far, that start a binding */
@@ -747,25 +757,26 @@ static void compute_sleeptime(vtime **timeout, bool force_zero)
 
     int sleeptime = 0;
 
-    if (delays) {
-	update_now();
-	sleeptime = diff_vtime(&delays->when, &now);
-	if (!sleeptime)
-	    sleeptime = 1;    /* if sleeptime is less than 1 millisec,
-			       * set to 1 millisec */
+    if (delays != NULL) {
+        update_now();
+        sleeptime = diff_vtime(&delays->when, &now);
+        if (sleeptime == 0)
+            sleeptime = 1;    /* if sleeptime is less than 1 millisec,
+                               * set to 1 millisec */
     }
-    if (flashback && (!sleeptime || sleeptime > FLASHDELAY))
-	sleeptime = FLASHDELAY;
+    if (flashback && (sleeptime == 0 || sleeptime > FLASHDELAY))
+        sleeptime = FLASHDELAY;
     int wait = typed_hint_wait();
-    if (wait >= 0 && (!sleeptime || sleeptime > wait))
+    if (wait >= 0 && (sleeptime == 0 || sleeptime > wait))
         sleeptime = wait > 0 ? wait : 1;
 
-    if (sleeptime) {
-	tbuf.tv_sec = sleeptime / mSEC_PER_SEC;
-	tbuf.tv_usec = (sleeptime % mSEC_PER_SEC) * uSEC_PER_mSEC;
-	*timeout = &tbuf;
-    } else
-	*timeout = (vtime *)NULL;
+    if (sleeptime != 0) {
+        tbuf.tv_sec = sleeptime / mSEC_PER_SEC;
+        tbuf.tv_usec = (sleeptime % mSEC_PER_SEC) * uSEC_PER_mSEC;
+        *timeout = &tbuf;
+    } else {
+        *timeout = NULL;
+    }
 }
 
 /*
@@ -773,45 +784,48 @@ static void compute_sleeptime(vtime **timeout, bool force_zero)
  */
 static noreturn void mainloop(void)
 {
-    fd_set readfds, cache_read_fds;
-    int i, err;
-    vtime *timeout;
+    fd_set cache_read_fds;
     unsigned ncache_read_fds = 0;
 
     FD_ZERO(&cache_read_fds);
 
     for (;;) {
-	current_connection = main_connection;
-	exec_delays();
+        current_connection = main_connection;
+        exec_delays();
 
-	do {
-	    if (sig_pending)
-		sig_bottomhalf(); /* this might set errno... */
+        fd_set readfds;
+        int err;
+        do {
+            if (sig_pending != 0)
+                sig_bottomhalf(); /* this might set errno... */
 
-	    tcp_flush();
+            tcp_flush();
 
-	    if (!(pos <= edlen)) {
-		PRINTF("\n#*ARGH* assertion failed (pos <= edlen)\n");
-		pos = edlen;
-	    }
+            if (!(pos <= edlen)) {
+                PRINTF("\n#*ARGH* assertion failed (pos <= edlen)\n");
+                pos = edlen;
+            }
 
-	    redraw_everything();
-	    tty_flush();
+            redraw_everything();
+            tty_flush();
 
-            compute_sleeptime(&timeout, ncache_read_fds > 0 || tty_has_chars());
+            vtime *timeout;
+            compute_sleeptime(&timeout,
+                              ncache_read_fds > 0 || tty_has_chars() != 0);
 
-	    error = now_updated = 0;
+            error = 0;
+            now_updated = false;
 
             readfds = fdset;
             int max_fd = edit_output_fds(&readfds, tcp_max_fd);
             err = select(max_fd + 1, &readfds, NULL, NULL, timeout);
-	} while (err < 0 && errno == EINTR);
+        } while (err < 0 && errno == EINTR);
 
-	if (err < 0)
-	    syserr("cannot wait for input");
-	if (typed_hint_wait() == 0)
-	    show_typed_hint();
-        if (tty_has_chars() && !FD_ISSET(tty_read_fd, &readfds)) {
+        if (err < 0)
+            syserr("cannot wait for input");
+        if (typed_hint_wait() == 0)
+            show_typed_hint();
+        if (tty_has_chars() != 0 && !FD_ISSET(tty_read_fd, &readfds)) {
             /* keys already read from the terminal */
             FD_SET(tty_read_fd, &readfds);
             ++err;
@@ -829,35 +843,36 @@ static noreturn void mainloop(void)
             }
         }
 
-	if (flashback) putbackcursor();
+        if (flashback)
+            putbackcursor();
 
-	if (err > 0)
-	    err -= edit_read_output(&readfds);
+        if (err > 0)
+            err -= edit_read_output(&readfds);
 
-	/* process subsidiary and spawned connections first */
-	if (tcp_count > 1 || tcp_attachcount) {
-	    for (i=0; err && i<conn_max_index; i++) {
-		if (CONN_INDEX(i).id && &CONN_INDEX(i) != main_connection) {
-		    current_connection = &CONN_INDEX(i);
-		    if (FD_ISSET(current_connection->fd, &readfds)) {
-			--err;
-			get_remote_input(&cache_read_fds, &ncache_read_fds);
-		    }
-		}
-	    }
-	}
-	/* and main connection last */
-	if (main_connection != NULL
+        /* process subsidiary and spawned connections first */
+        if (tcp_count > 1 || tcp_attachcount != 0) {
+            for (int i = 0; err != 0 && i < conn_max_index; ++i) {
+                if (CONN_INDEX(i).id != NULL
+                    && &CONN_INDEX(i) != main_connection) {
+                    current_connection = &CONN_INDEX(i);
+                    if (FD_ISSET(current_connection->fd, &readfds)) {
+                        --err;
+                        get_remote_input(&cache_read_fds, &ncache_read_fds);
+                    }
+                }
+            }
+        }
+        /* and main connection last */
+        if (main_connection != NULL
             && FD_ISSET(main_connection->fd, &readfds)) {
-	    current_connection = main_connection;
+            current_connection = main_connection;
             get_remote_input(&cache_read_fds, &ncache_read_fds);
-	}
-	if (FD_ISSET(tty_read_fd, &readfds)) {
-	    current_connection = main_connection;
-	    confirm = 0;
-	    get_user_input();
-	}
-
+        }
+        if (FD_ISSET(tty_read_fd, &readfds)) {
+            current_connection = main_connection;
+            confirm = false;
+            get_user_input();
+        }
     }
 }
 
@@ -867,14 +882,14 @@ static noreturn void mainloop(void)
 void status(int s)
 {
     if (s < 0) {
-	/* waiting prompt from the MUD */
-	prompt_status = s;
-	line_status = 1;
+        /* waiting prompt from the MUD */
+        prompt_status = s;
+        line_status = 1;
     } else {
-	if (prompt_status >= 0)
-	    prompt_status = s;
-	if (line_status >= 0)
-	    line_status = s;
+        if (prompt_status >= 0)
+            prompt_status = s;
+        if (line_status >= 0)
+            line_status = s;
     }
 }
 
@@ -884,57 +899,56 @@ void status(int s)
  */
 static void exec_delays(void)
 {
-    delaynode *dying;
-    ptr *buf = NULL;
-
-    if (!delays)
-	return;
+    if (delays == NULL)
+        return;
 
     update_now();
 
     if (cmp_vtime(&delays->when, &now) > 0)
-	return;
+        return;
 
     /* remember delayed command may modify the prompt and/or input line! */
     if (prompt_status == 0) {
-	clear_input_line(opt_compact || !opt_info);
-	if (!opt_compact && opt_info && prompt_status == 0 && promptlen) {
-	    tty_putc('\n');
-	    col0 = 0;
-	    status(1);
-	}
+        clear_input_line(opt_compact || !opt_info);
+        if (!opt_compact && opt_info && prompt_status == 0
+            && promptlen != 0) {
+            tty_putc('\n');
+            col0 = 0;
+            status(1);
+        }
     }
 
-    while (delays && cmp_vtime(&delays->when, &now) <= 0) {
-	dying = delays;           /* remove delayed command from active list */
-	delays = dying->next;     /* and put it in the dead one  */
+    ptr *buf = NULL;
+    while (delays != NULL && cmp_vtime(&delays->when, &now) <= 0) {
+        /* remove delayed command from active list and put it in the dead
+         * one */
+        delaynode *dying = delays;
+        delays = dying->next;
 
         insert_delaynode(dying, true);
 
-	/* must be moved before executing delay->command
-	 * and command must be copied in a buffer
-	 * (can't you imagine why? The command may edit itself...)
-	 */
+        /* must be moved before executing delay->command
+         * and command must be copied in a buffer
+         * (can't you imagine why? The command may edit itself...)
+         */
 
-	if (opt_info)
-	    tty_message("#now [%s]\n", dying->command);
+        if (opt_info)
+            tty_message("#now [%s]\n", dying->command);
 
-	if (*dying->command) {
+        if (*dying->command != '\0') {
+            error = 0;
 
-	    error = 0;
-
-	    buf = ptrmcpy(buf, dying->command, strlen(dying->command));
-	    if (MEM_ERROR)
-		out_of_memory();
-	    else {
-		parse_instruction(ptrdata(buf), false, false, true);
-		history_done = 0;
-	    }
-	}
+            buf = ptrmcpy(buf, dying->command, strlen(dying->command));
+            if (MEM_ERROR) {
+                out_of_memory();
+            } else {
+                parse_instruction(ptrdata(buf), false, false, true);
+                history_done = 0;
+            }
+        }
     }
     ptrdel(&buf);
 }
-
 
 /* append 'len' bytes to the buffer at *buf of *size bytes, *used used */
 static void buf_add(char **buf, size_t *used, size_t *size,
@@ -946,7 +960,8 @@ static void buf_add(char **buf, size_t *used, size_t *size,
         if (new_buf == NULL) {
             free(*buf);
             *buf = NULL;
-            *used = *size = 0;
+            *used = 0;
+            *size = 0;
             return;
         }
         *buf = new_buf;
@@ -975,7 +990,7 @@ static void sgr_transition(char **buf, size_t *used, size_t *size,
         return;
     }
     buf_add(buf, used, size, reset, sizeof reset - 1);
-    if (!to->reset)
+    if (to->reset == 0)
         buf_add(buf, used, size, base, strlen(base));
     buf_add(buf, used, size, to->seq, to->len);
 }
@@ -1013,11 +1028,12 @@ static void effective_prompt(void)
     const size_t len = promptlen;
 
     size_t k;
-    for (k = 0; k < len; ++k)
+    for (k = 0; k < len; ++k) {
         if (pstr[k] == '\b' || pstr[k] == '\r'
             || (pstr[k] == ASCII_ESC && len - k >= 3
                 && pstr[k + 1] == '[' && pstr[k + 2] == 'K'))
             break;
+    }
     if (k == len)
         return;                 /* nothing to emulate */
 
@@ -1064,7 +1080,8 @@ static void effective_prompt(void)
                     ;
                 if (q < len
                     && (pstr[q] == 'K'
-                        && (q == p + 2 || (q == p + 3 && pstr[p + 2] == '0')))) {
+                        && (q == p + 2
+                            || (q == p + 3 && pstr[p + 2] == '0')))) {
                     /* erase to end of line */
                     UNSPLIT(at);
                     for (size_t i = at; i < ncells; ++i)
@@ -1124,7 +1141,8 @@ static void effective_prompt(void)
             }
             if (cur_attr < 0) {
                 attrs[nattrs] = cur;
-                cur_attr = nattrs++;
+                cur_attr = nattrs;
+                ++nattrs;
             }
             UNSPLIT(at);
             if (w == 2)
@@ -1136,8 +1154,8 @@ static void effective_prompt(void)
                     ncells = at + 1;
                 }
                 if (half == 0 && npend > 0) {
-                    size_t used = cl->other ? strlen(cl->other) : 0;
-                    size_t size = used ? used + 1 : 0;
+                    size_t used = cl->other != NULL ? strlen(cl->other) : 0;
+                    size_t size = used != 0 ? used + 1 : 0;
                     buf_add(&cl->other, &used, &size, pend, npend);
                     npend = 0;
                 }
@@ -1163,8 +1181,9 @@ static void effective_prompt(void)
     struct sgr_state emitted;
     sgr_reset(&emitted);
     for (size_t i = 0; i < ncells; ++i) {
-        if (cells[i].other) {
-            buf_add(&out, &used, &size, cells[i].other, strlen(cells[i].other));
+        if (cells[i].other != NULL) {
+            buf_add(&out, &used, &size, cells[i].other,
+                    strlen(cells[i].other));
             free(cells[i].other);
         }
         if (cells[i].kind == WIDE_RIGHT)
@@ -1180,14 +1199,15 @@ static void effective_prompt(void)
         buf_add(&out, &used, &size, pend, npend);
     if (at < ncells) {
         /* the cursor is not at the end: move it back */
-        if (at == 0)
+        if (at == 0) {
             buf_add(&out, &used, &size, "\r", 1);
-        else
+        } else {
             for (size_t i = at; i < ncells; ++i)
                 buf_add(&out, &used, &size, "\b", 1);
+        }
     }
 
-    prompt->str = ptrmcpy(prompt->str, out ? out : "", used);
+    prompt->str = ptrmcpy(prompt->str, out != NULL ? out : "", used);
     free(out);
     free(pend);
     for (size_t i = 0; i < maxcells; ++i)
@@ -1196,7 +1216,7 @@ static void effective_prompt(void)
     free(attrs);
 }
 
-static int grab_prompt(char *linestart, int len, int islast)
+static int grab_prompt(char *linestart, int len, bool islast)
 {
     isprompt_len = 0;
 
@@ -1208,76 +1228,78 @@ static int grab_prompt(char *linestart, int len, int islast)
      * if islast is not set and a #prompt matches.
      */
     if ((islast || printstrlen(linestart) < cols)
-        && search_prompt(linestart, 1) != 0 && isprompt_len != 0) {
+        && search_prompt(linestart, true) && isprompt_len != 0) {
+        /*
+         * the line starts with a prompt.
+         * #isprompt placed the actual prompt in $prompt,
+         * we must still process the rest of the line.
+         */
+        if (isprompt_len > 0 && isprompt_len <= len) {
+            len = isprompt_len;
+            prompt_status = 1;
+        }
 
-	char *reprint;
-	/*
-	 * the line starts with a prompt.
-	 * #isprompt placed the actual prompt in $prompt,
-	 * we must still process the rest of the line.
-	 */
-	if (isprompt_len > 0 && isprompt_len <= len) {
-	    len = isprompt_len;
-	    prompt_status = 1;
-	}
-
-	/*
-	 * following data may be the reply to a previously sent command,
-	 * so we may have to reprint that command.
-	 */
-	if ((reprint = reprint_getline()) && *reprint) {
-	    smart_print(promptstr, 0);
-	    status(-1);
-	    tty_printf("(%s)\n", reprint);
-	} else if (!islast)
-	    smart_print(promptstr, 1);
+        /*
+         * following data may be the reply to a previously sent command,
+         * so we may have to reprint that command.
+         */
+        char *reprint = reprint_getline();
+        if (reprint != NULL && *reprint != '\0') {
+            smart_print(promptstr, 0);
+            status(-1);
+            tty_printf("(%s)\n", reprint);
+        } else if (!islast) {
+            smart_print(promptstr, 1);
+        }
     } else if (islast) {
-	prompt->str = ptrmcpy(prompt->str, linestart, len);
-	if (MEM_ERROR) { promptzero(); out_of_memory(); return 0; }
+        prompt->str = ptrmcpy(prompt->str, linestart, len);
+        if (MEM_ERROR) {
+            promptzero();
+            out_of_memory();
+            return 0;
+        }
         effective_prompt();
-	prompt_status = 1; /* good, we got what to redraw */
-    } else
-	len = 0;
+        prompt_status = 1; /* good, we got what to redraw */
+    } else {
+        len = 0;
+    }
 
     return len;
 }
-
 
 /*
  * process remote input one line at time. stop at "\n".
  */
 static void process_singleline(char **pbuf, int *psize)
 {
-    int size, len = 0;
-    char *wasn = 0, *buf, *linestart = *pbuf, *lineend, *end = *pbuf + *psize;
+    char *linestart = *pbuf, *end = *pbuf + *psize;
+    char *wasn = NULL, *buf;
+    char *lineend = memchr(linestart, '\n', *psize);
 
-    if ((lineend = memchr(linestart, '\n', *psize))) {
-	/* ok, there is a newline */
-
-	*(wasn = lineend) = '\0';
-	buf = lineend + 1; /* start of next line */
+    if (lineend != NULL) {
+        /* ok, there is a newline */
+        wasn = lineend;
+        *wasn = '\0';
+        buf = lineend + 1; /* start of next line */
+    } else {
+        /* line continues till end of buffer, no trailing \n */
+        lineend = end;
+        buf = end;
     }
 
-    if (!lineend)
-	/* line continues till end of buffer, no trailing \n */
-	buf = lineend = end;
-
-    size = buf - linestart;
+    int size = buf - linestart, len = 0;
 
 #ifdef DEBUGCODE_2
     /* debug code to see in detail what codes come from the server */
-    {
-	char c;
-	char *t;
-	tty_putc('{');
-	for (t = linestart; t < lineend && (c = *t); t++) {
-	    if (c < ' ' || c > '~')
-                tty_printf("[%d]", c);
-	    else
-		tty_putc(c);
-	}
-	tty_puts("}\n");
+    tty_putc('{');
+    for (char *t = linestart; t < lineend && *t != '\0'; ++t) {
+        char c = *t;
+        if (c < ' ' || c > '~')
+            tty_printf("[%d]", c);
+        else
+            tty_putc(c);
     }
+    tty_puts("}\n");
 #endif
 
     /*
@@ -1294,40 +1316,52 @@ static void process_singleline(char **pbuf, int *psize)
      *     so never match #actions on it.
      */
     if (lineend == end && current_connection == main_connection) {
-	/*
-	 * The last line in the chunk we received has no trailing \n
-	 * Assume it is a prompt.
-	 */
-	if (isprompt_len != 0 && promptlen != 0 && prompt_status == 1) {
-	    draw_prompt(); tty_putc('\n'); col0 = 0;
-	    sgr_prompt_commit(promptstr, promptlen);
-	}
-	isprompt_len = 0;
-	promptzero();
-	if (lineend > linestart && (len = grab_prompt(linestart, lineend-linestart, 1)))
-	    size = len;
+        /*
+         * The last line in the chunk we received has no trailing \n
+         * Assume it is a prompt.
+         */
+        if (isprompt_len != 0 && promptlen != 0 && prompt_status == 1) {
+            draw_prompt();
+            tty_putc('\n');
+            col0 = 0;
+            sgr_prompt_commit(promptstr, promptlen);
+        }
+        isprompt_len = 0;
+        promptzero();
+        if (lineend > linestart) {
+            len = grab_prompt(linestart, lineend - linestart, true);
+            if (len != 0)
+                size = len;
+        }
     } else {
-	if (current_connection == main_connection) {
-	    isprompt_len = 0;
-	    promptzero();
+        if (current_connection == main_connection) {
+            isprompt_len = 0;
+            promptzero();
 
-	    if (linestart[0]) {
-		/* set $last_line */
-		last_line->str = ptrmcpy(last_line->str, linestart, strlen(linestart));
-		if (MEM_ERROR) { print_error(error); return; }
+            if (linestart[0] != '\0') {
+                /* set $last_line */
+                last_line->str = ptrmcpy(last_line->str, linestart,
+                                         strlen(linestart));
+                if (MEM_ERROR) {
+                    print_error(error);
+                    return;
+                }
 
-		if (lineend > linestart && (len = grab_prompt(linestart, lineend-linestart, 0)))
-		    size = len;
-	    }
-	}
-	if (!len && ((!search_action(linestart, 0) || opt_autoprint))) {
-	    if (line0 < lines - 1)
-		line0++;
-	    if (current_connection != main_connection) /* sub connection */
-		tty_message("##%s> ", current_connection->id);
+                if (lineend > linestart) {
+                    len = grab_prompt(linestart, lineend - linestart, false);
+                    if (len != 0)
+                        size = len;
+                }
+            }
+        }
+        if (len == 0 && (!search_action(linestart, false) || opt_autoprint)) {
+            if (line0 < lines - 1)
+                ++line0;
+            if (current_connection != main_connection) /* sub connection */
+                tty_message("##%s> ", current_connection->id);
 
-	    smart_print(linestart, 1);
-	}
+            smart_print(linestart, 1);
+        }
     }
 
     /*
@@ -1335,7 +1369,8 @@ static void process_singleline(char **pbuf, int *psize)
      * might set error: clear it to avoid troubles.
      */
     error = 0;
-    if (wasn) *wasn = '\n';
+    if (wasn != NULL)
+        *wasn = '\n';
     *pbuf += size;
     *psize -= size;
 }
@@ -1360,89 +1395,95 @@ static int process_first_fragment(char *buf, int got)
      * (to avoid intercepting it twice)
      */
     if (*buf == '\n') {
-	char deleteprompt = 0, matched = 0;
+        bool deleteprompt = false, matched = false;
 
-	/* the text from the MUD continues after the prompt */
-	sgr_prompt_commit(promptstr, promptlen);
+        /* the text from the MUD continues after the prompt */
+        sgr_prompt_commit(promptstr, promptlen);
 
-	if (opt_compact) {
-	    /* in compact mode, skip the first \n */
-	    deleteprompt = 1;
-	    processed++;
-	}
+        if (opt_compact) {
+            /* in compact mode, skip the first \n */
+            deleteprompt = true;
+            ++processed;
+        }
 
-	/*
-	 * the prompt was actually a complete line.
-	 * no need to put it on the top of received data.
-	 * unless #isprompt was executed, demote it to a regular line,
-	 * match #actions on it, copy it in last_line.
-	 */
-	if (isprompt_len == 0) {
-	    last_line->str = ptrcpy(last_line->str, prompt->str);
-	    if (MEM_ERROR) { print_error(error); return 0; }
+        /*
+         * the prompt was actually a complete line.
+         * no need to put it on the top of received data.
+         * unless #isprompt was executed, demote it to a regular line,
+         * match #actions on it, copy it in last_line.
+         */
+        if (isprompt_len == 0) {
+            last_line->str = ptrcpy(last_line->str, prompt->str);
+            if (MEM_ERROR) {
+                print_error(error);
+                return 0;
+            }
 
-	    /*
-	     * Kludge for kludge: don't delete the old prompt immediately.
-	     * Instead, match actions on it first.
-	     * If it matches, clear the line before running the action
-	     * (done by the "1" in search_action() )
-	     * If it doesn't match, delete it only if opt_compact != 0
-	     */
+            /*
+             * Kludge for kludge: don't delete the old prompt immediately.
+             * Instead, match actions on it first.
+             * If it matches, clear the line before running the action
+             * (done by the "true" in search_action())
+             * If it doesn't match, delete it only if opt_compact != 0
+             */
 
-	    matched = search_action(promptstr, 1);
-	}
-	if (!matched)
-	    clear_input_line(deleteprompt);
-	status(-1);
+            matched = search_action(promptstr, true);
+        }
+        if (!matched)
+            clear_input_line(deleteprompt);
+        status(-1);
     } else {
-	/*
-	 * try to merge the prompt with the first line in buf
-	 * (assuming we have a line splitted into those parts)
-	 * then clear the prompt.
-	 */
-	char *lineend, *spinning = NULL;
+        /*
+         * try to merge the prompt with the first line in buf
+         * (assuming we have a line splitted into those parts)
+         * then clear the prompt.
+         */
+        char *spinning = NULL;
 
-	/* find the end of the first line. include the final newline. */
-	if ((lineend = strchr(buf, '\n')))
-	    lineend++;
-	else
-	    lineend = buf + got;
+        /* find the end of the first line. include the final newline. */
+        char *lineend = strchr(buf, '\n');
+        if (lineend != NULL)
+            ++lineend;
+        else
+            lineend = buf + got;
 
-	if (isprompt_len != 0) {
-	    /*
-	     * either #isprompt _was_ executed,
-	     * or we got a MUME spinning bar.
-	     * in both cases, don't try to merge.
-	     *
-	     * print a newline (to keep the old prompt on screen)
-	     * only if !opt_compact and we didn't get a MUME spinning bar.
-	     */
-	    clear_input_line(opt_compact);
-	    if (!spinning && !opt_compact)
-		tty_putc('\n'), col0 = 0;
-	    sgr_prompt_commit(promptstr, promptlen);
-	    promptzero();
-       	} else {
-	    ptr *p = NULL;
-	    char *dummy;
-	    int dummyint;
+        if (isprompt_len != 0) {
+            /*
+             * either #isprompt _was_ executed,
+             * or we got a MUME spinning bar.
+             * in both cases, don't try to merge.
+             *
+             * print a newline (to keep the old prompt on screen)
+             * only if !opt_compact and we didn't get a MUME spinning bar.
+             */
+            clear_input_line(opt_compact);
+            if (spinning == NULL && !opt_compact) {
+                tty_putc('\n');
+                col0 = 0;
+            }
+            sgr_prompt_commit(promptstr, promptlen);
+            promptzero();
+        } else {
+            /* ok, merge this junk with the prompt */
+            ptr *p = ptrcpy(NULL, prompt->str);
+            p = ptrmcat(p, buf, lineend - buf);
 
-	    /* ok, merge this junk with the prompt */
-	    p = ptrcpy(p, prompt->str);
-	    p = ptrmcat(p, buf, lineend - buf);
+            if (MEM_ERROR) {
+                print_error(error);
+                ptrdel(&p);
+                return 0;
+            }
+            if (p == NULL)
+                return 0;
+            char *dummy = ptrdata(p);
+            int dummyint = ptrlen(p);
+            /* this also sets last_line or prompt->str : */
+            clear_input_line(true);
+            process_singleline(&dummy, &dummyint);
+            ptrdel(&p);
 
-	    if (MEM_ERROR) { print_error(error); ptrdel(&p); return 0; }
-	    if (p == NULL)
-		return 0;
-	    dummy = ptrdata(p);
-	    dummyint = ptrlen(p);
-	    /* this also sets last_line or prompt->str : */
-	    clear_input_line(true);
-	    process_singleline(&dummy, &dummyint);
-	    ptrdel(&p);
-
-	    processed = lineend - buf;
-	}
+            processed = lineend - buf;
+        }
     }
     return processed;
 }
@@ -1454,22 +1495,23 @@ static int process_first_fragment(char *buf, int got)
  */
 void process_remote_input(char *buf, int size)
 {
-
-    if (promptlen && current_connection == main_connection)
-	promptzero();  /* discard the prompt, we look for another one */
+    if (promptlen != 0 && current_connection == main_connection)
+        promptzero();  /* discard the prompt, we look for another one */
 
     status(1);
 
     do {
-	process_singleline(&buf, &size);
+        process_singleline(&buf, &size);
     } while (size > 0);
 }
 
-static void common_clear(int newline)
+static void common_clear(bool newline)
 {
     clear_input_line(opt_compact);
     if (newline) {
-	tty_putc('\n'); col0 = 0; status(1);
+        tty_putc('\n');
+        col0 = 0;
+        status(1);
     }
 }
 
@@ -1484,342 +1526,369 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
      * terminating \0 later.
      */
     char buffer[TCP_READ_EXPANSION * BUFSIZE + 2];
-    char *buf = buffer, *newline;
-    int i;
+    char *buf = buffer;
+    int len = 0;
 
-    if (current_connection->fragment) {
-	/* leave tcp_read() room to decode; see TCP_READ_MIN */
-	if ((i = strlen(current_connection->fragment)) > BUFSIZE - TCP_READ_MIN) {
-	    i = 0;
-	    common_clear(promptlen && !opt_compact);
-	    message_wrap(WRAP_CONT, "#error: ##%s : line too long, discarded",
+    if (current_connection->fragment != NULL) {
+        /* leave tcp_read() room to decode; see TCP_READ_MIN */
+        len = strlen(current_connection->fragment);
+        if (len > BUFSIZE - TCP_READ_MIN) {
+            len = 0;
+            common_clear(promptlen != 0 && !opt_compact);
+            message_wrap(WRAP_CONT, "#error: ##%s : line too long, discarded",
                          current_connection->id);
-	} else {
-	    buf += i;
-	    memcpy(buffer, current_connection->fragment, i);
-	}
-	free(current_connection->fragment);
-	current_connection->fragment = 0;
-    } else
-	i = 0;
+        } else {
+            buf += len;
+            memcpy(buffer, current_connection->fragment, len);
+        }
+        free(current_connection->fragment);
+        current_connection->fragment = NULL;
+    }
 
-    int got = tcp_read(current_connection, buf, TCP_READ_EXPANSION * BUFSIZE - i);
-    if (!got)
-	return;
+    int got = tcp_read(current_connection, buf,
+                       TCP_READ_EXPANSION * BUFSIZE - len);
+    if (got == 0)
+        return;
     if (!FD_ISSET(current_connection->fd, read_fds)
         && current_connection->fns->can_read(current_connection)) {
         FD_SET(current_connection->fd, read_fds);
         ++*ncache_read_fds;
     }
 
-    buf[got]='\0';  /* Safe, there is space. Do it now not to forget it later */
+    /* Safe, there is space. Do it now not to forget it later */
+    buf[got] = '\0';
     received += got;
 
 #ifdef DEBUGCODE
     /* debug code to see in detail what strange codes come from the server */
-    {
-	char c, *t;
-	newline = buf + got;
-	tty_printf("%s{", edattrend);
-	for (t = buf; t < newline; t++) {
-	    if ((c = *t) < ' ' || c > '~')
-		tty_printf("[%d]", c);
-	    else tty_putc(c);
-	}
-	tty_puts("}\n");
+    tty_printf("%s{", edattrend);
+    for (char *t = buf; t < buf + got; ++t) {
+        char c = *t;
+        if (c < ' ' || c > '~')
+            tty_printf("[%d]", c);
+        else
+            tty_putc(c);
     }
+    tty_puts("}\n");
 #endif
 
     if (!current_connection->active)
-	return; /* process only active connections */
+        return; /* process only active connections */
 
-    got += (buf - buffer);
+    got += buf - buffer;
     buf = buffer;
 
     if (current_connection->spawn) {
-	/* this is data from a spawned child or an attached program.
-	 * execute as if typed */
+        /* this is data from a spawned child or an attached program.
+         * execute as if typed */
         connsess *old_connection = current_connection;
         current_connection = main_connection;
 
-	if ((newline = strchr(buf, '\n'))) {
-	    /* instead of newline = strtok(buf, "\n") */
-	    *newline = '\0';
+        char *newline = strchr(buf, '\n');
+        if (newline != NULL) {
+            /* instead of newline = strtok(buf, "\n") */
+            *newline = '\0';
 
-	    if (opt_autoclear && line_status == 0) {
-		common_clear(!opt_compact);
-	    }
-	    do {
-		if (opt_info) {
-		    if (line_status == 0) {
-			common_clear(!opt_compact);
-		    }
-		    tty_message("##%s [%s]\n", old_connection->id, buf);
-		}
-		parse_user_input(buf, false);
-		/*
-		 * strtok() may have been used in parse_user_input()...
-		 * cannot rely it refers on what we may have set above.
-		 * (it causes a bug in #spawned commands if they
-		 * evaluate (attr(), noattr) or they #connect ... )
-		 * so do it manually.
-		 */
-		/*
-		 * buf = strtok(NULL, "\n");
-		 */
-		if ((buf = newline) &&
-		    (newline = strchr(++buf, '\n')))
-			*newline = '\0';
-	    } while (buf && newline);
-	}
+            if (opt_autoclear && line_status == 0)
+                common_clear(!opt_compact);
+            do {
+                if (opt_info) {
+                    if (line_status == 0)
+                        common_clear(!opt_compact);
+                    tty_message("##%s [%s]\n", old_connection->id, buf);
+                }
+                parse_user_input(buf, false);
+                /*
+                 * strtok() may have been used in parse_user_input()...
+                 * cannot rely it refers on what we may have set above.
+                 * (it causes a bug in #spawned commands if they
+                 * evaluate (attr(), noattr) or they #connect ... )
+                 * so do it manually.
+                 */
+                /*
+                 * buf = strtok(NULL, "\n");
+                 */
+                buf = newline + 1;
+                newline = strchr(buf, '\n');
+                if (newline != NULL)
+                    *newline = '\0';
+            } while (newline != NULL);
+        }
 
-	if (buf && *buf && !newline) {
-	    /*
-	     * save last fragment for later, when spawned command will
-	     * (hopefully) send the rest of the text
-	     */
-	    old_connection->fragment = my_strdup(buf);
+        if (*buf != '\0') {
+            /*
+             * save last fragment for later, when spawned command will
+             * (hopefully) send the rest of the text
+             */
+            old_connection->fragment = my_strdup(buf);
 
-	    if (opt_info) {
-		if (line_status == 0) {
-		    common_clear(!opt_compact);
-		}
+            if (opt_info) {
+                if (line_status == 0)
+                    common_clear(!opt_compact);
                 message_wrap(WRAP_CONT,
                              "#warning: ##%s: unterminated line [%s]",
                              old_connection->id, buf);
-	    }
-	}
-	current_connection = old_connection;
-	return;
+            }
+        }
+        current_connection = old_connection;
+        return;
     }
 
     if (linemode & LM_CHAR) {
-	/* char-by-char mode: just display output, no fuss */
-	clear_input_line(false);
-	sgr_output_sync();
-	sgr_output(buf, got);
-	tty_puts(buf);
-	return;
+        /* char-by-char mode: just display output, no fuss */
+        clear_input_line(false);
+        sgr_output_sync();
+        sgr_output(buf, got);
+        tty_puts(buf);
+        return;
     }
 
     /* line-at-a-time mode: process input in a number of ways */
 
-    if (current_connection == main_connection && promptlen) {
-	i = process_first_fragment(buf, got);
-	buf += i, got -= i;
+    if (current_connection == main_connection && promptlen != 0) {
+        int processed = process_first_fragment(buf, got);
+        buf += processed;
+        got -= processed;
     } else {
-	common_clear(promptlen && !opt_compact);
+        common_clear(promptlen != 0 && !opt_compact);
     }
 
     if (got > 0)
-	process_remote_input(buf, got);
+        process_remote_input(buf, got);
 }
-
 
 #ifdef USE_REGEXP
 /*
  * match a precompiled regexp, return actual params in param array;
- * return 1 if matched, 0 if not
+ * return true if matched
  */
-static int match_regexp_action(void *regexp, char *line, int *match_s, int *match_e)
+static bool match_regexp_action(void *regexp, char *line, int *match_s,
+                                int *match_e)
 {
+    regex_t *re = regexp;
     regmatch_t reg_match[PARAM_COUNT - 1];
 
-    if (!regexec((regex_t *)regexp, line, PARAM_COUNT - 1, reg_match, 0)) {
-	int n;
+    if (regexec(re, line, PARAM_COUNT - 1, reg_match, 0) != 0)
+        return false;
 
-	match_s[0] = 0;
-	match_e[0] = strlen(line);
-        for (n = 1; n < PARAM_COUNT; ++n)
-	    match_s[n] = match_e[n] = 0;
-        for (n = 0; (n <= (int)((regex_t *)regexp)->re_nsub
-                     && n < PARAM_COUNT - 1); ++n) {
-	    if (reg_match[n].rm_so == -1) continue;
-	    match_s[n+1] = reg_match[n].rm_so;
-	    match_e[n+1] = reg_match[n].rm_eo;
-	}
-	return 1;
+    match_s[0] = 0;
+    match_e[0] = strlen(line);
+    for (int n = 1; n < PARAM_COUNT; ++n) {
+        match_s[n] = 0;
+        match_e[n] = 0;
     }
-    return 0;
+    for (int n = 0; n <= (int)re->re_nsub && n < PARAM_COUNT - 1; ++n) {
+        if (reg_match[n].rm_so == -1)
+            continue;
+        match_s[n + 1] = reg_match[n].rm_so;
+        match_e[n + 1] = reg_match[n].rm_eo;
+    }
+    return true;
 }
 #endif
 
 /*
- * match action containing &1..&9 and $1..$9 and return actual params start/end
- * in match_s/match_e - return 1 if matched, 0 if not
+ * match action containing &1..&9 and $1..$9 and return actual params
+ * start/end in match_s/match_e - return true if matched
  */
-static int match_weak_action(char *pat, char *line, int *match_s, int *match_e)
+static bool match_weak_action(char *pat, char *line, int *match_s,
+                              int *match_e)
 {
-    char mpat[BUFSIZE], *npat=0, *npat2=0, *src=line, *nsrc=0, c;
     ptr *buf = NULL;
-    char *tmp, *realpat = pat;
-    int mbeg = 0, mword = 0, prm = -1;
+    char *realpat = pat;
 
     if (jit_subst_vars(&buf, pat))
-	pat = ptrdata(buf);
+        pat = ptrdata(buf);
     if (REAL_ERROR) {
-	print_error(error);
-	ptrdel(&buf);
-	return 0;
+        print_error(error);
+        ptrdel(&buf);
+        return false;
     }
     unescape(pat);
 
-    {
-        int p;
-        for (p = 0; p < PARAM_COUNT; ++p)
-            match_s[p] = match_e[p] = 0;
+    for (int p = 0; p < PARAM_COUNT; ++p) {
+        match_s[p] = 0;
+        match_e[p] = 0;
     }
 
+    int mbeg = 0, prm = -1;
+    bool mword = false;
     if (*pat == '^') {
-	pat++;
-	mbeg = 1;  /* anchor match at line start */
+        ++pat;
+        mbeg = 1;  /* anchor match at line start */
     }
     if (*pat == '&' || *pat == '$')
-	mbeg = - mbeg - 1;  /* pattern starts with '&' or '$' */
+        mbeg = -mbeg - 1;  /* pattern starts with '&' or '$' */
 
-    while (pat && *pat) {
-	if (((c=*pat) == '&' || c == '$')) {
-	    /* &x matches a string */
-	    /* $x matches a single word */
-	    tmp = pat + 1;
+    char mpat[BUFSIZE], *src = line, *nsrc = NULL;
+    while (pat != NULL && *pat != '\0') {
+        char c = *pat;
+        if (c == '&' || c == '$') {
+            /* &x matches a string */
+            /* $x matches a single word */
+            char *tmp = pat + 1;
             if (isdigit((unsigned char)*tmp)) {
-		int p = 0;
+                int p = 0;
                 while (isdigit((unsigned char)*tmp) && p < PARAM_COUNT) {
-		    p *= 10;
-		    p += *tmp++ - '0';
-		}
+                    p *= 10;
+                    p += *tmp++ - '0';
+                }
                 if (p <= 0 || p >= PARAM_COUNT) {
-		    ptrdel(&buf);
-		    return 0;
-		}
-		prm = p;
-		pat = tmp;
-		if (c == '$')
-		    mword = 1;
-	    } else {
-		wrap_printf("#error: bad action pattern \"%s\"\n#missing "
+                    ptrdel(&buf);
+                    return false;
+                }
+                prm = p;
+                pat = tmp;
+                if (c == '$')
+                    mword = true;
+            } else {
+                wrap_printf("#error: bad action pattern \"%s\"\n#missing "
                             "digit after \"%s\"", realpat, pat);
-		ptrdel(&buf);
-		return 0;
-	    }
-	}
+                ptrdel(&buf);
+                return false;
+            }
+        }
 
-	npat  = first_valid(pat, '&');
-	npat2 = first_valid(pat, '$');
-	if (npat2 < npat) npat = npat2;
-	if (!*npat) npat = 0;
+        char *npat = first_valid(pat, '&');
+        char *npat2 = first_valid(pat, '$');
+        if (npat2 < npat)
+            npat = npat2;
+        if (*npat == '\0')
+            npat = NULL;
 
-	if (npat) {
-	    my_strncpy(mpat, pat, npat-pat);
-	    /* mpat[npat - pat] = 0; */
-	} else
-	    strcpy(mpat, pat);
+        if (npat != NULL) {
+            my_strncpy(mpat, pat, npat - pat);
+            /* mpat[npat - pat] = 0; */
+        } else {
+            strcpy(mpat, pat);
+        }
 
-	if (*mpat) {
-	    nsrc = strstr(src, mpat);
-	    if (!nsrc) {
-		ptrdel(&buf);
-		return 0;
-	    }
-	    if (mbeg > 0) {
-		if (nsrc != src) {
-		    ptrdel(&buf);
-		    return 0;
-		}
-		mbeg = 0;  /* reset mbeg to stop further start match */
-	    }
-	    if (prm != -1) {
-		match_s[prm] = src - line;
-		match_e[prm] = nsrc - line;
-	    }
-	} else if (prm != -1) {
-	    /* end of pattern space */
-	    match_s[prm] = src - line;
-	    match_e[prm] = strlen(line);
-	}
+        if (*mpat != '\0') {
+            nsrc = strstr(src, mpat);
+            if (nsrc == NULL) {
+                ptrdel(&buf);
+                return false;
+            }
+            if (mbeg > 0) {
+                if (nsrc != src) {
+                    ptrdel(&buf);
+                    return false;
+                }
+                mbeg = 0;  /* reset mbeg to stop further start match */
+            }
+            if (prm != -1) {
+                match_s[prm] = src - line;
+                match_e[prm] = nsrc - line;
+            }
+        } else if (prm != -1) {
+            /* end of pattern space */
+            match_s[prm] = src - line;
+            match_e[prm] = strlen(line);
+        }
 
-	/* post-processing of param */
-	if (prm != -1 && match_e[prm] && mword) {
-	    if (mbeg == -1) {
-		/* unanchored '$' start, take last word */
-		if ((tmp = memrchrs(line + match_s[prm],
-				    match_e[prm] - match_s[prm],
-				    DELIM, DELIM_LEN))) {
-		    match_s[prm] = tmp - line + 1;
-		}
-	    } else if (!*pat) {
-		/* '$' at end of pattern, take first word */
-		if ((tmp = memchrs(line + match_s[prm],
-				   match_e[prm] - match_s[prm],
-				   DELIM, DELIM_LEN)))
-		    match_e[prm] = tmp - line;
-	    } else {
-		/* match only if param is single-worded */
-		if (memchrs(line + match_s[prm],
-			    match_e[prm] - match_s[prm],
-			    DELIM, DELIM_LEN)) {
-		    ptrdel(&buf);
-		    return 0;
-		}
-	    }
-	}
-	if (prm != -1 && match_e[prm])
-	    mbeg = mword = 0;  /* reset match flags */
-	if (nsrc != NULL)
-	    src = nsrc + strlen(mpat);
-	pat = npat;
+        /* post-processing of param */
+        if (prm != -1 && match_e[prm] != 0 && mword) {
+            if (mbeg == -1) {
+                /* unanchored '$' start, take last word */
+                char *tmp = memrchrs(line + match_s[prm],
+                                     match_e[prm] - match_s[prm],
+                                     DELIM, DELIM_LEN);
+                if (tmp != NULL)
+                    match_s[prm] = tmp - line + 1;
+            } else if (*pat == '\0') {
+                /* '$' at end of pattern, take first word */
+                char *tmp = memchrs(line + match_s[prm],
+                                    match_e[prm] - match_s[prm],
+                                    DELIM, DELIM_LEN);
+                if (tmp != NULL)
+                    match_e[prm] = tmp - line;
+            } else {
+                /* match only if param is single-worded */
+                if (memchrs(line + match_s[prm], match_e[prm] - match_s[prm],
+                            DELIM, DELIM_LEN) != NULL) {
+                    ptrdel(&buf);
+                    return false;
+                }
+            }
+        }
+        if (prm != -1 && match_e[prm] != 0) {
+            /* reset match flags */
+            mbeg = 0;
+            mword = false;
+        }
+        if (nsrc != NULL)
+            src = nsrc + strlen(mpat);
+        pat = npat;
     }
     ptrdel(&buf);
 
-    match_s[0] = 0; match_e[0] = strlen(line);
-    return 1;
+    match_s[0] = 0;
+    match_e[0] = strlen(line);
+    return true;
+}
+
+/*
+ * does the #action or #prompt 'p' match 'line'? return the actual params
+ * start/end in match_s/match_e
+ */
+static bool trigger_match(triggernode *p, char *line, int *match_s,
+                          int *match_e)
+{
+    if (p->type == ACTION_WEAK)
+        return match_weak_action(p->pattern, line, match_s, match_e);
+#ifdef USE_REGEXP
+    if (p->type == ACTION_REGEXP)
+        return match_regexp_action(p->regexp, line, match_s, match_e);
+#endif
+    return false;
 }
 
 /*
  * Search for #actions or #prompts to trigger on an input line.
  * The line can't be trashed since we want to print it on the screen later.
- * Return 1 if line matched to some #action, 0 otherwise
+ * Return true if line matched to some #action
  *
  * Optionally clear the input line before running the trigger command.
  */
-static int search_action_or_prompt(char *line, char clearline, char onprompt)
+static bool search_action_or_prompt(char *line, bool clearline, int onprompt)
 {
     /*
      * we need actionnode and promptnode to be the same "triggernode" type
      */
-    triggernode *p;
-    int ret = 0;
+    bool ret = false;
     int match_s[PARAM_COUNT], match_e[PARAM_COUNT];
 
-    for (p = onprompt ? prompts : actions; p; p = p->next) {
-#ifdef USE_REGEXP
-        if (p->active &&
-	    ((p->type == ACTION_WEAK && match_weak_action(p->pattern, line, match_s, match_e))
-	     || (p->type == ACTION_REGEXP && match_regexp_action(p->regexp, line, match_s, match_e))
-	     ))
-#else
-	    if (p->active &&
-		((p->type == ACTION_WEAK && match_weak_action(p->pattern, line, match_s, match_e))
-		 ))
-#endif
-	{
-	    push_params(); if (error) return 0;
-	    ret = 1; error = 0;
-	    set_params(line, match_s, match_e); if (error) return 0;
-	    if (onprompt == 2) {
-		prompt->str = ptrmcpy(prompt->str, line, strlen(line));
-		if (MEM_ERROR) { promptzero(); out_of_memory(); return 0; }
-	    }
-	    if (clearline)
-		clear_input_line(true);
-	    parse_instruction(p->command, false, true, true);
-	    history_done = 0;
-	    if (error!=DYN_STACK_UND_ERROR && error!=DYN_STACK_OV_ERROR)
-		pop_params();
-            break;
-	}
+    for (triggernode *p = onprompt != 0 ? prompts : actions; p != NULL;
+         p = p->next) {
+        if (!p->active || !trigger_match(p, line, match_s, match_e))
+            continue;
+
+        push_params();
+        if (error != 0)
+            return false;
+        ret = true;
+        error = 0;
+        set_params(line, match_s, match_e);
+        if (error != 0)
+            return false;
+        if (onprompt == 2) {
+            prompt->str = ptrmcpy(prompt->str, line, strlen(line));
+            if (MEM_ERROR) {
+                promptzero();
+                out_of_memory();
+                return false;
+            }
+        }
+        if (clearline)
+            clear_input_line(true);
+        parse_instruction(p->command, false, true, true);
+        history_done = 0;
+        if (error != DYN_STACK_UND_ERROR && error != DYN_STACK_OV_ERROR)
+            pop_params();
+        break;
     }
-    if (error) return 0;
+    if (error != 0)
+        return false;
     return ret;
 }
 
@@ -1858,8 +1927,7 @@ static int unbound_key_len(const char *seq, int n)
  */
 static void get_user_input(void)
 {
-    int j, chunk = 1;
-    static char buf[BUFSIZE+1];   /* allow for terminating \0 */
+    static char buf[BUFSIZE + 1];   /* allow for terminating \0 */
     char *c = buf;
 
     /* We have 4 possible line modes:
@@ -1868,16 +1936,18 @@ static void get_user_input(void)
      * char mode, no echo: send a character directly, no local processing
      * char mode, local echo: extremely rare, do as above.
      */
+    int chunk = 1;
     if (!(linemode & (LM_NOECHO | LM_CHAR))) /* line mode, local echo */
-	chunk = BUFSIZE;
+        chunk = BUFSIZE;
 
+    int j;
     while ((j = tty_read(c, chunk)) < 0 && errno == EINTR)
-	;
+        ;
     if (j == 0)
         return;
 
     if (j < 0 || (chunk == 1 && j != chunk))
-	syserr("cannot read from the terminal");
+        syserr("cannot read from the terminal");
 
     if (typed_shown) {
         input_hide_hint();
@@ -1892,114 +1962,115 @@ static void get_user_input(void)
         edit_mode_cancel();
 
     if (linemode & LM_CHAR) {
-	/* char mode. chunk == 1; send complete UTF-8 characters */
-	static char pend[UTF8_MAX];
-	static int npend;
-	if (*c == '\r')
-	    *c = '\n';     /* send Ret as before ICRNL was turned off */
+        /* char mode. chunk == 1; send complete UTF-8 characters */
+        static char pend[UTF8_MAX];
+        static int npend;
+        if (*c == '\r')
+            *c = '\n';     /* send Ret as before ICRNL was turned off */
         if (npend > 0 && !utf8_is_continuation(*c))
-	    npend = 0;          /* incomplete character */
-	pend[npend++] = *c;
-	if (npend >= utf8_seqlen(pend[0])) {
-	    tcp_write_chars(current_connection, pend, npend);
-	    npend = 0;
-	}
-	if (!(linemode & LM_NOECHO))
-	    tty_putc(*c);
-	last_edit_cmd = (function_str)0;
+            npend = 0;          /* incomplete character */
+        pend[npend++] = *c;
+        if (npend >= utf8_seqlen(pend[0])) {
+            tcp_write_chars(current_connection, pend, npend);
+            npend = 0;
+        }
+        if (!(linemode & LM_NOECHO))
+            tty_putc(*c);
+        last_edit_cmd = NULL;
     } else if (linemode & LM_NOECHO) {
-	/* sending password (line mode, no echo). chunk == 1 */
-	if ((*c != '\n' && *c != '\r') && edlen < BUFSIZE - 2)
-	    edbuf[edlen++] = *c;
-	else {
-	    edbuf[edlen] = '\0';
-	    if (edattrbg)
-		tty_puts(edattrend);
-	    tcp_write(current_connection, edbuf);
-	    edlen = 0;
-	    typed[nchars = 0] = 0;
-	}
-	edbuf[pos = edlen] = '\0';
-	last_edit_cmd = (function_str)0;
+        /* sending password (line mode, no echo). chunk == 1 */
+        if ((*c != '\n' && *c != '\r') && edlen < BUFSIZE - 2) {
+            edbuf[edlen++] = *c;
+        } else {
+            edbuf[edlen] = '\0';
+            if (edattrbg)
+                tty_puts(edattrend);
+            tcp_write(current_connection, edbuf);
+            edlen = 0;
+            nchars = 0;
+            typed[0] = '\0';
+        }
+        pos = edlen;
+        edbuf[pos] = '\0';
+        last_edit_cmd = NULL;
     } else {
-	/* normal mode (line mode, echo). chunk == BUFSIZE */
-	int done = 0;
-	keynode *p;
+        /* normal mode (line mode, echo). chunk == BUFSIZE */
+        for (; j > 0; ++c, --j) {
+            /* search function key strings for match */
+            /* sequences may contain \0 */
+            bool done = false;
+            typed[nchars++] = *c;
 
-	for (; j > 0; c++, j--) {
+            while (!done) {
+                done = true;
+                /*
+                 * shortcut:
+                 * an initial single ASCII char cannot match any #bind
+                 */
+                keynode *p;
+                if (nchars == 1 && *c >= ' ' && *c <= '~') {
+                    p = NULL;
+                } else {
+                    for (p = keydefs;
+                         (p != NULL
+                          && (p->seqlen < nchars
+                              || memcmp(typed, p->sequence, nchars) != 0));
+                         p = p->next)
+                        ;
+                }
 
-	    /* search function key strings for match */
-	    /* sequences may contain \0 */
-	    done = 0;
-	    typed[nchars++] = *c;
-
-	    while (!done) {
-		done = 1;
-		/*
-		 * shortcut:
-		 * an initial single ASCII char cannot match any #bind
-		 */
-		if (nchars == 1 && *c >= ' ' && *c <= '~')
-		    p = NULL;
-		else {
-		    for (p = keydefs; (p && (p->seqlen < nchars ||
-					     memcmp(typed, p->sequence, nchars)));
-			 p = p->next)
-			;
-		}
-
-		if (!p) {
-		    /*
-		     * ignore an unbound key sequence that starts like a bound
-		     * one, as a whole once it is complete, or else type the
-		     * first character; then keep processing the rest
-		     */
-		    if (nchars >= 2 && typed[nchars - 1] == '\b') {
-			/* a key sequence and C-h: list how it can go on */
-			clear_input_line(false);
-			tty_putc('\n');
-			char names[64];
-			key_names(typed, nchars - 1, names, sizeof(names));
-			show_binds_starting(typed, nchars - 1, names);
-			last_edit_cmd = (function_str)0;
-			nchars = 0;
-			break;
-		    }
-		    int skip = unbound_key_len(typed, nchars);
-		    if (skip < 0 && nchars < CAPLEN)
-			break;		/* wait for the rest */
-		    last_edit_cmd = (function_str)0;
-		    if (skip != 0) {
-			if (skip < 0)
-			    skip = nchars;
+                if (p == NULL) {
+                    /*
+                     * ignore an unbound key sequence that starts like a bound
+                     * one, as a whole once it is complete, or else type the
+                     * first character; then keep processing the rest
+                     */
+                    if (nchars >= 2 && typed[nchars - 1] == '\b') {
+                        /* a key sequence and C-h: list how it can go on */
+                        clear_input_line(false);
+                        tty_putc('\n');
+                        char names[64];
+                        key_names(typed, nchars - 1, names, sizeof(names));
+                        show_binds_starting(typed, nchars - 1, names);
+                        last_edit_cmd = NULL;
+                        nchars = 0;
+                        break;
+                    }
+                    int skip = unbound_key_len(typed, nchars);
+                    if (skip < 0 && nchars < CAPLEN)
+                        break;          /* wait for the rest */
+                    last_edit_cmd = NULL;
+                    if (skip != 0) {
+                        if (skip < 0)
+                            skip = nchars;
                         tty_putc(ASCII_BEL);
-		    } else {
-			skip = 1;
-			insert_char(typed[0]);
-		    }
+                    } else {
+                        skip = 1;
+                        insert_char(typed[0]);
+                    }
                     int rest = nchars - skip;   /* the keys after them */
                     assert(rest >= 0);
                     memmove(typed, typed + skip, rest);
                     nchars = rest;
-		    if (nchars > 0)
-			done = 0;
-		} else if (p->seqlen == nchars) {
-		    insert_flush();
-		    if (flashback)
-			putbackcursor();
-		    /* the command may delete p, for example with #load */
-		    function_str funct = p->funct;
-		    undo_before();
-		    bool handled = edit_mode_command(funct);
-		    if (!handled)
-			funct(p->call_data);
-		    undo_after(funct, !handled);
-		    last_edit_cmd = funct;
-		    nchars = 0;
-		}
-	    }
-	}
-	insert_flush();
+                    if (nchars > 0)
+                        done = false;
+                } else if (p->seqlen == nchars) {
+                    insert_flush();
+                    if (flashback)
+                        putbackcursor();
+                    /* the command may delete p, for example with #load */
+                    function_str funct = p->funct;
+                    undo_before();
+                    bool handled = edit_mode_command(funct);
+                    if (!handled)
+                        funct(p->call_data);
+                    undo_after(funct, !handled);
+                    last_edit_cmd = funct;
+                    nchars = 0;
+                }
+            }
+        }
+        insert_flush();
     }
 }
 
@@ -2010,23 +2081,22 @@ static void get_user_input(void)
  */
 static char *split_words(char *str)
 {
-    int i;
-    char *end;
-    ptr **prm;
-
     *text_var(0) = ptrmcpy(*text_var(0), str, strlen(str));
-    for (i = 1; i < PARAM_COUNT; ++i) {
+    for (int i = 1; i < PARAM_COUNT; ++i) {
         *num_var(i) = 0;
-        prm = text_var(i);
-	/* skip multiple span of DELIM */
-	while (*str && IS_DELIM(*str))
-	    str++;
-	end = str;
-	while (*end && !IS_DELIM(*end))
-	    end++;
-	*prm = ptrmcpy(*prm, str, end-str);
-	str = end;
-	if (MEM_ERROR) { print_error(error); return NULL; }
+        ptr **prm = text_var(i);
+        /* skip multiple span of DELIM */
+        while (*str != '\0' && IS_DELIM(*str))
+            ++str;
+        char *end = str;
+        while (*end != '\0' && !IS_DELIM(*end))
+            ++end;
+        *prm = ptrmcpy(*prm, str, end - str);
+        str = end;
+        if (MEM_ERROR) {
+            print_error(error);
+            return NULL;
+        }
     }
     return str;
 }
@@ -2074,65 +2144,74 @@ void pop_params(void)
 
 static void set_params(char *line, int *match_s, int *match_e)
 {
-    int i;
-
-    for (i = 0; i < PARAM_COUNT; ++i) {
+    for (int i = 0; i < PARAM_COUNT; ++i) {
         *num_var(i) = 0;
-	if (match_e[i] > match_s[i]) {
+        if (match_e[i] > match_s[i]) {
             *text_var(i) = ptrmcpy(*text_var(i), line + match_s[i],
-				  match_e[i] - match_s[i]);
-	    if (MEM_ERROR) {
-		print_error(error);
-		return;
-	    }
-	} else
+                                   match_e[i] - match_s[i]);
+            if (MEM_ERROR) {
+                print_error(error);
+                return;
+            }
+        } else {
             ptrzero(*text_var(i));
+        }
     }
 }
 
 char *get_next_instr(char *p)
 {
-    int count, is_if;
-    char *sep, *q;
-
     p = skipspace(p);
 
-    if (!*p)
-	return p;
+    if (*p == '\0')
+        return p;
 
-    count = is_if = !strncmp(p, "#if", 3);
+    bool is_if = strncmp(p, "#if", 3) == 0;
+    int count = is_if ? 1 : 0;
 
-    do {
-	sep   = first_regular(p, CMDSEP);
+    for (;;) {
+        char *sep = first_regular(p, CMDSEP);
 
-	q = p;
-	if (*q) do {
-	    if (*q == '#') q++;
+        char *q = p;
+        if (*q != '\0') {
+            do {
+                if (*q == '#')
+                    ++q;
 
-	    q = first_regular(q, '#');
-	} while (*q && strncmp(q, "#if", 3));
+                q = first_regular(q, '#');
+            } while (*q != '\0' && strncmp(q, "#if", 3) != 0);
+        }
 
-	if (sep<=q) {
-	    if (*(p = sep))
-		p++;
-	}
-	else if (*q != '\0')
-	    p = get_next_instr(q);
-	else {
-	    print_error(error=SYNTAX_ERROR);
-	    return NULL;
-	}
-	sep = skipspace(p);
-    } while (*p && count-- &&
-	     (!is_if || (!strncmp(sep, "#else", 5) &&
-			 (*(p = sep + 5)))));
+        if (sep <= q) {
+            p = sep;
+            if (*p != '\0')
+                ++p;
+        } else if (*q != '\0') {
+            p = get_next_instr(q);
+        } else {
+            error = SYNTAX_ERROR;
+            print_error(error);
+            return NULL;
+        }
+        char *next = skipspace(p);
+        if (*p == '\0' || count-- == 0)
+            break;
+        if (is_if) {
+            if (strncmp(next, "#else", 5) != 0)
+                break;
+            p = next + 5;
+            if (*p == '\0')
+                break;
+        }
+    }
 
     return p;
 }
 
 static void send_line(char *line, bool silent)
 {
-    if (!silent && opt_echo) { PRINTF("[%s]\n", line); }
+    if (!silent && opt_echo)
+        PRINTF("[%s]\n", line);
     tcp_write(current_connection, line);
 }
 
@@ -2256,20 +2335,15 @@ static void run_instruction(char *line, bool silent, bool subs,
  * Parse and exec the first instruction in 'line', and return pointer to the
  * second instruction in 'line' (if any).
  */
-char *parse_instruction(char *line, bool silent, bool subs,
-			bool jit_subs)
+char *parse_instruction(char *line, bool silent, bool subs, bool jit_subs)
 {
-    char *ret;
-    char last_is_sep = 0;
-    int copied = 0;
-    ptr *pbuf = NULL, *pbusy = NULL;
+    if (error != 0)
+        return NULL;
 
-    if (error) return NULL;
+    char *ret = get_next_instr(line);
 
-    ret = get_next_instr(line);
-
-    if (!ret || ret==line)  /* error or empty instruction, bail out */
-	return ret;
+    if (ret == NULL || ret == line)  /* error or empty instruction, bail out */
+        return ret;
 
     /*
      * remove the optional ';' after an instruction,
@@ -2277,14 +2351,16 @@ char *parse_instruction(char *line, bool silent, bool subs,
      * If it is escaped, DON'T remove it: it is not a separator,
      * and the instruction must already end with \0, or we would not be here.
      */
+    bool last_is_sep = false;
     if (ret[-1] == CMDSEP) {
-	/* instruction is not empty, ret[-1] is allowed */
-	if (ret > line + 1 && ret[-2] == ESC) {
-	    /* ';' is escaped */
-	} else {
-	    *--ret = '\0';
-	    last_is_sep = 1;
-	}
+        /* instruction is not empty, ret[-1] is allowed */
+        if (ret > line + 1 && ret[-2] == ESC) {
+            /* ';' is escaped */
+        } else {
+            --ret;
+            *ret = '\0';
+            last_is_sep = true;
+        }
     }
 
     /*
@@ -2294,40 +2370,44 @@ char *parse_instruction(char *line, bool silent, bool subs,
      *
      * So care is required to avoid clashes.
      */
+    ptr *pbuf = NULL, *pbusy = NULL;
+    bool copied = false;
     char empty[] = "";
     if (subs && subst_param(&pbuf, line)) {
         line = pbuf != NULL ? ptrdata(pbuf) : empty;
-	swap_ptrs(&pbusy, &pbuf);
-	copied = 1;
+        swap_ptrs(&pbusy, &pbuf);
+        copied = true;
     }
     if (jit_subs && jit_subst_vars(&pbuf, line)) {
         line = pbuf != NULL ? ptrdata(pbuf) : empty;
-	swap_ptrs(&pbusy, &pbuf);
-	copied = 1;
+        swap_ptrs(&pbusy, &pbuf);
+        copied = true;
     }
     if (!copied) {
-	pbuf = ptrmcpy(pbuf, line, strlen(line));
+        pbuf = ptrmcpy(pbuf, line, strlen(line));
         line = pbuf != NULL ? ptrdata(pbuf) : empty;
-	swap_ptrs(&pbusy, &pbuf);
+        swap_ptrs(&pbusy, &pbuf);
     }
     if (subs || jit_subs)
-	unescape(line);
+        unescape(line);
 
     /* now line is in (pbusy) and (pbuf) is available */
 
     /* restore integrity of original line: must still put it in history */
-    if (last_is_sep)
-	*ret++ = CMDSEP;
+    if (last_is_sep) {
+        *ret = CMDSEP;
+        ++ret;
+    }
 
     if (REAL_ERROR) {
-	print_error(error);
-	ptrdel(&pbuf); ptrdel(&pbusy);
-	return NULL;
+        print_error(error);
+        ptrdel(&pbuf);
+        ptrdel(&pbusy);
+        return NULL;
     }
     /* run-time debugging */
-    if (opt_debug) {
-	PRINTF("#parsing: %s\n", line);
-    }
+    if (opt_debug)
+        PRINTF("#parsing: %s\n", line);
 
     connsess *old_conn = NULL;
 
@@ -2338,20 +2418,21 @@ char *parse_instruction(char *line, bool silent, bool subs,
 
     if (old_conn != NULL)
         current_connection = old_conn;
-    ptrdel(&pbuf); ptrdel(&pbusy);
+    ptrdel(&pbuf);
+    ptrdel(&pbusy);
     return !REAL_ERROR ? ret : NULL;
 }
 
 /*
  * parse input from user: calls parse_instruction for each instruction
  * in cmd_line.
- * silent = 1 if the line should not be echoed, 0 otherwise.
+ * silent = true if the line should not be echoed.
  */
 void parse_user_input(char *line, bool silent)
 {
     do {
-	line = parse_instruction(line, silent, false, false);
-    } while (!error && line && *line);
+        line = parse_instruction(line, silent, false, false);
+    } while (error == 0 && line != NULL && *line != '\0');
 }
 
 /*
@@ -2359,119 +2440,113 @@ void parse_user_input(char *line, bool silent)
  */
 static void parse_commands(char *command, char *arg)
 {
-    int i, j;
-    cmdstruct *c;
-
     /* We ALLOW special commands also on subsidiary connections ! */
 
     /* assume output will be enough to make input line = last screen line */
     /* line0 = lines - 1; */
-    if (isdigit((unsigned char)*command) && (i = atoi(command))) {
-	if (i >= 0) {
-	    while (i--)
-		(void)parse_instruction(arg, true, false, true);
-	} else {
-	    PRINTF("#bogus repeat count\n");
-	}
-    } else {
-	j = strlen(command);
-
-	if( j == 0 ) {
-		/* comment */
-		return;
-	}
-
-	for( c = commands; c != NULL; c = c -> next )
-	    if (!strncmp(command, c -> name, j)) {
-		if (c -> funct) {
-		    (*(c -> funct))(arg);
-		    return;
-		}
-	    }
-
-	wrap_printf("#unknown powwow command \"%s\"", command);
+    int count = isdigit((unsigned char)*command) ? atoi(command) : 0;
+    if (count != 0) {
+        if (count >= 0) {
+            while (count-- > 0)
+                parse_instruction(arg, true, false, true);
+        } else {
+            PRINTF("#bogus repeat count\n");
+        }
+        return;
     }
+
+    int len = strlen(command);
+    if (len == 0) {
+        /* comment */
+        return;
+    }
+
+    for (cmdstruct *c = commands; c != NULL; c = c->next) {
+        if (strncmp(command, c->name, len) == 0 && c->funct != NULL) {
+            c->funct(arg);
+            return;
+        }
+    }
+
+    wrap_printf("#unknown powwow command \"%s\"", command);
 }
 
 /*
  * substitute $0..$9 and @0..@9 in a string
  * (unless $ or @ is escaped with backslash)
  *
- * return 0 if dst not filled. if returned 0 and not error,
+ * return false if dst not filled. if returned false and not error,
  * there was nothing to substitute.
  */
-static int subst_param(ptr **buf, char *src)
+static bool subst_param(ptr **buf, char *src)
 {
-    int done, i;
-    char *dst, *tmp, kind;
+    if (strchr(src, '$') == NULL && strchr(src, '@') == NULL)
+        return false;
 
-    if (!strchr(src, '$') && !strchr(src, '@'))
-	return 0;
-
-    i = strlen(src);
-    if (!*buf || ptrlen(*buf) < i) {
-	*buf = ptrsetlen(*buf, i);
-	if (REAL_ERROR)
-	    return 0;
+    int len = strlen(src);
+    if (*buf == NULL || ptrlen(*buf) < len) {
+        *buf = ptrsetlen(*buf, len);
+        if (REAL_ERROR)
+            return false;
     }
-    dst = ptrdata(*buf);
+    char *dst = ptrdata(*buf);
 
-    while (*src)  {
-	while (*src && *src != '$' && *src != '@' && *src != ESC)
-	    *dst++ = *src++;
+    while (*src != '\0') {
+        while (*src != '\0' && *src != '$' && *src != '@' && *src != ESC)
+            *dst++ = *src++;
 
-	if (*src == ESC) {
-	    while (*src == ESC)
-		*dst++ = *src++;
+        if (*src == ESC) {
+            while (*src == ESC)
+                *dst++ = *src++;
 
-	    if (*src)
-		*dst++ = *src++;
-	}
+            if (*src != '\0')
+                *dst++ = *src++;
+        }
 
-	done = 0;
-	if (*src == '$' || *src == '@') {
-	    kind = *src == '$' ? 1 : 0;
-	    tmp = src + 1;
+        bool done = false;
+        if (*src == '$' || *src == '@') {
+            bool text = *src == '$';
+            char *tmp = src + 1;
             if (isdigit((unsigned char)*tmp)) {
-		i = atoi(tmp);
+                int i = atoi(tmp);
                 while (isdigit((unsigned char)*tmp))
-		    tmp++;
+                    ++tmp;
 
                 if (i < PARAM_COUNT) {
-		    int max = 0, n;
-		    char *data = NULL, buf2[LONGLEN];
+                    int max = 0;
+                    char *data = NULL, buf2[LONGLEN];
 
-		    done = 1;
-		    src = tmp;
+                    done = true;
+                    src = tmp;
 
-		    /* now the actual substitution */
-		    if (kind) {
+                    /* now the actual substitution */
+                    if (text) {
                         if (*text_var(i) != NULL) {
                             data = ptrdata(*text_var(i));
                             max = ptrlen(*text_var(i));
                         }
-		    } else {
+                    } else {
                         data = buf2;
                         sprintf(data, "%ld", *num_var(i));
-			max = strlen(buf2);
-		    }
-		    if (data && max) {
-			n = dst - ptrdata(*buf);
-			*buf = ptrpad(*buf, max);
-			if (REAL_ERROR)
-			    return 0;
-			dst = ptrdata(*buf) + n;
-			memcpy(dst, data, max);
-			dst += max;
-		    }
-		}
-	    }
-	}
-	if (!done && (*src == '$' || *src == '@'))
-	    *dst++ = *src++;
+                        max = strlen(buf2);
+                    }
+                    if (data != NULL && max != 0) {
+                        int n = dst - ptrdata(*buf);
+                        *buf = ptrpad(*buf, max);
+                        if (REAL_ERROR)
+                            return false;
+                        dst = ptrdata(*buf) + n;
+                        memcpy(dst, data, max);
+                        dst += max;
+                    }
+                }
+            }
+        }
+        if (!done && (*src == '$' || *src == '@'))
+            *dst++ = *src++;
     }
     *dst = '\0';
-    return 1;
+    return true;
 }
 
 /*
@@ -2479,151 +2554,149 @@ static int subst_param(ptr **buf, char *src)
  * substitute ${name}, @{name} and #{expression} in a string
  * (unless "${", "@{" or "#{" are escaped with backslash)
  *
- * return 0 if dst not filled. if returned 0 and not error,
+ * return false if dst not filled. if returned false and not error,
  * there was nothing to substitute.
  */
-
-static int jit_subst_vars(ptr **buf, char *src)
+static bool jit_subst_vars(ptr **buf, char *src)
 {
-    int i, done;
-    char *tmp, *name, *dst, c;
-    varnode *named_var;
+    if (strstr(src, "${") == NULL && strstr(src, "@{") == NULL
+        && strstr(src, "#{") == NULL)
+        return false;
 
-    if (!strstr(src, "${") && !strstr(src, "@{") && !strstr(src, "#{"))
-	return 0;
-
-    i = strlen(src);
-    if (!*buf || ptrlen(*buf) < i) {
-	*buf = ptrsetlen(*buf, i);
-	if (REAL_ERROR)
-	    return 0;
+    int len = strlen(src);
+    if (*buf == NULL || ptrlen(*buf) < len) {
+        *buf = ptrsetlen(*buf, len);
+        if (REAL_ERROR)
+            return false;
     }
-    dst = ptrdata(*buf);
+    char *dst = ptrdata(*buf);
 
-    while (*src)  {
-	while (*src && *src != '$' && *src != '@' && *src != '#' && *src != ESC)
-	    *dst++ = *src++;
+    while (*src != '\0') {
+        while (*src != '\0' && *src != '$' && *src != '@' && *src != '#'
+               && *src != ESC)
+            *dst++ = *src++;
 
-	if (*src == ESC) {
-	    while (*src == ESC)
-		*dst++ = *src++;
+        if (*src == ESC) {
+            while (*src == ESC)
+                *dst++ = *src++;
 
-	    if (*src)
-		*dst++ = *src++;
-	}
+            if (*src != '\0')
+                *dst++ = *src++;
+        }
 
-	done = 0;
-	if (*src == '$' || *src == '@') {
-	    i = 0;
+        bool done = false;
+        if (*src == '$' || *src == '@') {
             enum var_kind kind = *src == '$' ? VAR_TEXT : VAR_NUM;
             long *num = NULL;
             ptr **text = NULL;
-	    tmp = src + 1;
-	    if (*tmp == '{') {
-		tmp = skipspace(tmp+1);
+            char *tmp = src + 1;
+            if (*tmp == '{') {
+                tmp = skipspace(tmp + 1);
                 if (isdigit((unsigned char)*tmp) || *tmp == '-') {
-		    /* numbered variable */
-		    i = atoi(tmp);
+                    /* numbered variable */
+                    int i = atoi(tmp);
                     if (i >= -GLOBAL_VAR_COUNT && i < PARAM_COUNT) {
-			if (*tmp == '-')
-			    tmp++;
+                        if (*tmp == '-')
+                            ++tmp;
                         while (isdigit((unsigned char)*tmp))
-			    tmp++;
+                            ++tmp;
                         num = num_var(i);
                         text = text_var(i);
-			done = 1;
-		    }
+                        done = true;
+                    }
                 } else if (isalpha((unsigned char)*tmp) || *tmp == '_') {
-		    /* named variable */
-		    name = tmp++;
+                    /* named variable */
+                    char *name = tmp++;
                     while (isalnum((unsigned char)*tmp) || *tmp == '_')
-			tmp++;
-		    c = *tmp;
-		    *tmp = '\0';
-		    named_var = *lookup_varnode(name, kind);
-		    *tmp = c;
+                        ++tmp;
+                    char c = *tmp;
+                    *tmp = '\0';
+                    varnode *named_var = *lookup_varnode(name, kind);
+                    *tmp = c;
                     if (named_var != NULL) {
                         num = &named_var->num;
                         text = &named_var->str;
-			done = 1;
-		    }
-		}
-		tmp = skipspace(tmp);
-		if (done) {
-		    int max = 0, n;
-		    char *data = NULL, buf2[LONGLEN];
+                        done = true;
+                    }
+                }
+                tmp = skipspace(tmp);
+                if (done) {
+                    int max = 0;
+                    char *data = NULL, buf2[LONGLEN];
 
-		    src = tmp + 1; /* skip the '}' */
+                    src = tmp + 1; /* skip the '}' */
 
-		    /* now the actual substitution */
+                    /* now the actual substitution */
                     if (kind == VAR_TEXT) {
                         if (*text != NULL) {
                             data = ptrdata(*text);
                             max = ptrlen(*text);
                         }
-		    } else {
+                    } else {
                         data = buf2;
                         sprintf(data, "%ld", *num);
-			max = strlen(buf2);
-		    }
-		    if (data && max) {
-			n = dst - ptrdata(*buf);
-			*buf = ptrpad(*buf, max);
-			if (REAL_ERROR)
-			    return 0;
-			dst = ptrdata(*buf) + n;
-			memcpy(dst, data, max);
-			dst += max;
-		    }
-		} else if (*tmp == '}')
-		    /* met an undefined variable, consider empty */
-		    src = tmp + 1;
+                        max = strlen(buf2);
+                    }
+                    if (data != NULL && max != 0) {
+                        int n = dst - ptrdata(*buf);
+                        *buf = ptrpad(*buf, max);
+                        if (REAL_ERROR)
+                            return false;
+                        dst = ptrdata(*buf) + n;
+                        memcpy(dst, data, max);
+                        dst += max;
+                    }
+                } else if (*tmp == '}') {
+                    /* met an undefined variable, consider empty */
+                    src = tmp + 1;
+                }
 
-		/* else syntax error, do nothing */
-	    }
-	} else if (src[0] == '#' && src[1] == '{') {
-	    int max, n;
-	    ptr *pbuf = (ptr *)0;
+                /* else syntax error, do nothing */
+            }
+        } else if (src[0] == '#' && src[1] == '{') {
+            ptr *pbuf = NULL;
 
-	    src += 2;
-	    (void)evalp(&pbuf, &src);
-	    if (REAL_ERROR) {
-		ptrdel(&pbuf);
-		return 0;
-	    }
-	    if (pbuf) {
-		max = ptrlen(pbuf);
-		n = dst - ptrdata(*buf);
-		*buf = ptrpad(*buf, max);
-		if (REAL_ERROR) {
-		    ptrdel(&pbuf);
-		    return 0;
-		}
-		dst = ptrdata(*buf) + n;
-		memcpy(dst, ptrdata(pbuf), max);
-		dst += max;
-	    }
-	    ptrdel(&pbuf);
+            src += 2;
+            evalp(&pbuf, &src);
+            if (REAL_ERROR) {
+                ptrdel(&pbuf);
+                return false;
+            }
+            if (pbuf != NULL) {
+                int max = ptrlen(pbuf);
+                int n = dst - ptrdata(*buf);
+                *buf = ptrpad(*buf, max);
+                if (REAL_ERROR) {
+                    ptrdel(&pbuf);
+                    return false;
+                }
+                dst = ptrdata(*buf) + n;
+                memcpy(dst, ptrdata(pbuf), max);
+                dst += max;
+            }
+            ptrdel(&pbuf);
 
-	    if (*src)
-		src = skipspace(src);
-	    if (*src != '}') {
-		PRINTF("#{}: ");
-		print_error(error=MISSING_PAREN_ERROR);
-		return 0;
-	    }
-	    done = 1;
-	    if (*src)
-		src++;
-	}
+            if (*src != '\0')
+                src = skipspace(src);
+            if (*src != '}') {
+                PRINTF("#{}: ");
+                error = MISSING_PAREN_ERROR;
+                print_error(error);
+                return false;
+            }
+            done = true;
+            if (*src != '\0')
+                ++src;
+        }
 
-	if (!done && (*src == '$' || *src == '@' || *src == '#'))
-	    /* not matched, just copy */
-	    *dst++ = *src++;
+        if (!done && (*src == '$' || *src == '@' || *src == '#')) {
+            /* not matched, just copy */
+            *dst++ = *src++;
+        }
     }
     *dst = '\0';
     ptrtrunc(*buf, dst - ptrdata(*buf));
-    return 1;
+    return true;
 }
 
 /*
@@ -2634,14 +2707,15 @@ static int jit_subst_vars(ptr **buf, char *src)
  */
 void set_deffile(char *arg)
 {
-    if (!strchr(arg, '/') && *powwow_dir) {
-	strcpy(deffile, powwow_dir);
-	strcat(deffile, arg);
-	if ((access(deffile, R_OK) == -1 || access(deffile, W_OK) == -1)
-	    && !access(arg,R_OK) && !access(arg, W_OK))
-	    strcpy(deffile, arg);
-    } else
-	strcpy(deffile, arg);
+    if (strchr(arg, '/') == NULL && *powwow_dir != '\0') {
+        strcpy(deffile, powwow_dir);
+        strcat(deffile, arg);
+        if ((access(deffile, R_OK) == -1 || access(deffile, W_OK) == -1)
+            && access(arg, R_OK) == 0 && access(arg, W_OK) == 0)
+            strcpy(deffile, arg);
+    } else {
+        strcpy(deffile, arg);
+    }
 }
 
 /*
@@ -2649,5 +2723,5 @@ void set_deffile(char *arg)
  */
 bool is_permanent_variable(varnode *v)
 {
-    return (v == prompt || v == last_line);
+    return v == prompt || v == last_line;
 }
