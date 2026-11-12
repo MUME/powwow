@@ -1370,6 +1370,16 @@ run --until '#connection on "n" closed.' 'MPI messages with a bad length' \
 lacks '#out of memory'
 has 'two'
 
+# the connection closes before the end of an MPI message
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE100\nabc'
+EOF
+run --until '#connection on "n" closed.' 'MPI message cut short' \
+    "#spawn n sh $tmp/server
+##n #request editor"
+has '#connection "n" closed in the middle of an MPI message'
+
 # every command must have a help entry with the syntax shown by #help, and
 # the manual must have it too, except for the commands it does not show
 name='every command has the same syntax in the help'
