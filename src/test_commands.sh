@@ -27,9 +27,12 @@ esc=$(printf '\033')
 cr=$(printf '\r')
 failed=0
 
+# report the failure of test $name, for the reason $1, with the start of
+# what powwow printed
 fail() {
     echo "FAIL $name: $1"
-    sed 's/^/    /' "$tmp/out"
+    cut -c 1-500 "$tmp/out" | sed -e 's/^/    /' -e 200q
+    [ "$(wc -l < "$tmp/out")" -le 200 ] || echo '    [...]'
     failed=1
 }
 
@@ -90,7 +93,11 @@ run() {
         fi
         [ -z "$until" ] || wait_for "$until"
         [ -z "$quit" ] || printf '#quit\n'
-    } | "$POWWOW" $args > "$tmp/raw" 2>&1 &
+    } | (
+        # stop powwow if it prints a flood of text, such as when it hangs
+        ulimit -f 4096 2>/dev/null
+        exec "$POWWOW" $args
+    ) > "$tmp/raw" 2>&1 &
     pid=$!
     (sleep 20; kill -9 $pid) > /dev/null 2>&1 &
     watchdog=$!
