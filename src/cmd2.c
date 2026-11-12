@@ -773,7 +773,7 @@ void parse_mark(char *str)
         marknode *n = *lookup_marker(str, mbeg);
         if (n != NULL) {
             ptr *pbuf = ptrmescape(NULL, n->b.pattern,
-                                   strlen(n->b.pattern), 0);
+                                   strlen(n->b.pattern), false);
             if (MEM_ERROR) {
                 ptrdel(&pbuf);
                 return;
@@ -1605,7 +1605,7 @@ void show_vars(void)
             if (kind == VAR_NUM) {
                 tty_message("#(@%s = %ld)\n", v->name, v->num);
             } else {
-                p = ptrescape(p, v->str, 0);
+                p = ptrescape(p, v->str, false);
                 if (REAL_ERROR) {
                     print_error(error);
                     break;
@@ -1621,7 +1621,7 @@ void show_vars(void)
     }
     for (int i = -GLOBAL_VAR_COUNT; !REAL_ERROR && i < PARAM_COUNT; ++i) {
         if (*text_var(i) != NULL && ptrlen(*text_var(i)) != 0) {
-            p = ptrescape(p, *text_var(i), 0);
+            p = ptrescape(p, *text_var(i), false);
             if (p != NULL && ptrlen(p) != 0)
                 tty_message("#($%d = \"%s\")\n", i, ptrdata(p));
         }

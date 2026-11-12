@@ -1735,7 +1735,7 @@ static void cmd_print(char *arg)
     clear_input_line(opt_compact);
 
     if (*arg == '\0') {
-        smart_print(*text_var(0) != NULL ? ptrdata(*text_var(0)) : "", 1);
+        smart_print(*text_var(0) != NULL ? ptrdata(*text_var(0)) : "", true);
         return;
     }
 
@@ -1764,7 +1764,7 @@ static void cmd_print(char *arg)
 
         if (kind == '!') pclose(fp); else fclose(fp);
     } else
-        smart_print(arg, 1);
+        smart_print(arg, true);
     ptrdel(&pbuf);
 }
 
@@ -2115,7 +2115,7 @@ static void cmd_var(char *arg)
         /* no right-hand expression, just show */
         if (named_var != NULL) {
             if (kind == VAR_TEXT) {
-                pbuf = ptrescape(pbuf, *var_text, 0);
+                pbuf = ptrescape(pbuf, *var_text, false);
                 if (REAL_ERROR) {
                     print_error(error);
                     ptrdel(&pbuf);
@@ -2131,7 +2131,7 @@ static void cmd_var(char *arg)
             }
         } else {
             if (kind == VAR_TEXT) {
-                pbuf = ptrescape(pbuf, *var_text, 0);
+                pbuf = ptrescape(pbuf, *var_text, false);
                 fmt_next_edit("#($%d = \"%s\")", idx,
                               pbuf != NULL ? ptrdata(pbuf) : "");
             } else {
