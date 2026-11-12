@@ -55,8 +55,8 @@ static bool has_contents(const ptr *p, const char *expect)
 {
     size_t len = strlen(expect);
     return (p != NULL
-	    && (size_t)ptrlen(p) == len
-	    && memcmp(ptrdata(p), expect, len + 1) == 0);
+            && (size_t)ptrlen(p) == len
+            && memcmp(ptrdata(p), expect, len + 1) == 0);
 }
 
 /* return a ptr containing 'len' chars 'a' to 'z', in a buffer of size 'max' */
@@ -64,7 +64,7 @@ static ptr *new_alphabet(int max, int len)
 {
     ptr *p = ptrnew(max);
     for (int i = 0; i < len; ++i)
-	ptrdata(p)[i] = 'a' + i % 26;
+        ptrdata(p)[i] = 'a' + i % 26;
     ptrdata(p)[len] = '\0';
     return ptrsetlen(p, len);
 }
@@ -85,7 +85,7 @@ static void test_ptrrchr(void)
     ptr *p = ptrmcpy(NULL, "abca", 4);
     check("ptrrchr() finds the last match", ptrrchr(p, 'a') == ptrdata(p) + 3);
     check("ptrrchr() finds a match in the middle",
-	  ptrrchr(p, 'b') == ptrdata(p) + 1);
+          ptrrchr(p, 'b') == ptrdata(p) + 1);
     ptrdel(&p);
 
     p = ptrmcpy(NULL, "abc", 3);
@@ -120,9 +120,9 @@ static void test_overlap_grow(void)
 {
     ptr *p = ptrmcpy(NULL, "abc", 3);
     while (ptrlen(p) < 3000)
-	p = ptrmcat(p, ptrdata(p), ptrlen(p));
+        p = ptrmcat(p, ptrdata(p), ptrlen(p));
     check("ptrmcat() from itself while growing",
-	  ptrlen(p) == 3 * 1024 && memcmp(ptrdata(p) + 3069, "abc", 3) == 0);
+          ptrlen(p) == 3 * 1024 && memcmp(ptrdata(p) + 3069, "abc", 3) == 0);
     ptrdel(&p);
 }
 
@@ -135,7 +135,7 @@ static void test_overflow(void)
 
     error = 0;
     check("ptrdup2(p, INT_MAX)",
-	  ptrdup2(p, INT_MAX) == NULL && error == NO_MEM_ERROR);
+          ptrdup2(p, INT_MAX) == NULL && error == NO_MEM_ERROR);
 
     error = 0;
     p = ptrmcpy(p, "x", INT_MAX);
@@ -144,7 +144,7 @@ static void test_overflow(void)
     error = 0;
     p = ptrmcat(p, "x", INT_MAX - 1);
     check("ptrmcat(INT_MAX - 1)",
-	  error == NO_MEM_ERROR && has_contents(p, "abc"));
+          error == NO_MEM_ERROR && has_contents(p, "abc"));
 
     error = 0;
     p = ptrpad(p, INT_MAX);
@@ -176,6 +176,6 @@ int main(void)
     test_overflow();
     test_negative_lengths();
     if (failures != 0)
-	printf("%d failures\n", failures);
+        printf("%d failures\n", failures);
     return failures != 0;
 }
