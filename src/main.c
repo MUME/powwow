@@ -494,16 +494,6 @@ int main(int argc, char **argv)
         || MEM_ERROR)
         syserr("out of memory");
 
-    /*
-     ptr_bootstrap();
-     utils_bootstrap();
-     beam_bootstrap();
-     cmd_bootstrap();
-     map_bootstrap();
-     eval_bootstrap();
-     list_bootstrap();
-     tcp_bootstrap();
-     */
     edit_bootstrap();
     tty_bootstrap();
 
