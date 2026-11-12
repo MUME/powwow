@@ -46,14 +46,60 @@ enum {
 
 static bool can_suspend = false; /* true if shell has job control */
 
+/*
+ * restore the terminal, print that memory ran out and terminate, without
+ * saving the settings; it allocates nothing
+ */
+noreturn void fatal_out_of_memory(void)
+{
+    clear_input_line(opt_compact);
+    if (!opt_compact)
+        tty_putc('\n');
+    tty_flush();
+    fputs("#fatal error: out of memory\n", stderr);
+    tty_puts("#settings NOT saved to file.\n");
+    tty_quit();
+    exit(EXIT_FAILURE);
+}
+
+/* malloc(), but at least 1 byte, and fatal_out_of_memory() if it fails */
+void *xmalloc(size_t size)
+{
+    void *p = malloc(size != 0 ? size : 1);
+    if (p == NULL)
+        fatal_out_of_memory();
+    return p;
+}
+
+/* calloc(), like xmalloc() */
+void *xcalloc(size_t count, size_t size)
+{
+    void *p = calloc(count != 0 ? count : 1, size != 0 ? size : 1);
+    if (p == NULL)
+        fatal_out_of_memory();
+    return p;
+}
+
+/* realloc(), like xmalloc() */
+void *xrealloc(void *p, size_t size)
+{
+    void *res = realloc(p, size != 0 ? size : 1);
+    if (res == NULL)
+        fatal_out_of_memory();
+    return res;
+}
+
+/* strdup(), like xmalloc() */
+char *xstrdup(const char *s)
+{
+    size_t size = strlen(s) + 1;
+    return memcpy(xmalloc(size), s, size);
+}
+
+/* xstrdup(), or NULL for NULL */
 char *my_strdup(const char *s)
 {
-    if (s == NULL)
-        return NULL;
-    char *res = strdup(s);
-    if (res == NULL)
-        error = NO_MEM_ERROR;
-    return res;
+    return s != NULL ? xstrdup(s) : NULL;
 }
 
 /*
