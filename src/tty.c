@@ -1271,6 +1271,14 @@ static char tty_out_buf[(CHARSET_DECODE_MAX > UTF8_MAX
                          : UTF8_MAX)];
 static size_t tty_out_start = 0, tty_out_used = 0;
 
+/* has reading the terminal found the end of the input? */
+static bool tty_eof = false;
+
+bool tty_at_eof(void)
+{
+    return tty_eof;
+}
+
 bool tty_has_chars(void)
 {
     return tty_in_used != tty_in_start || tty_out_used != tty_out_start;
@@ -1379,6 +1387,8 @@ int tty_read(char *buf, size_t count)
                             sizeof(tty_in_buf) - tty_in_used);
         if (did_read < 0 && errno == EINTR)
             continue;
+        if (did_read == 0)
+            tty_eof = true;
         if (did_read <= 0)
             break;
         tty_in_used += did_read;

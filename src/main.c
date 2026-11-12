@@ -1949,8 +1949,12 @@ static void get_user_input(void)
     int j;
     while ((j = tty_read(c, chunk)) < 0 && errno == EINTR)
         ;
-    if (j == 0)
+    if (j == 0) {
+        /* such as at the end of commands piped into powwow */
+        if (tty_at_eof())
+            exit_powwow();
         return;
+    }
 
     if (j < 0 || (chunk == 1 && j != chunk))
         syserr("cannot read from the terminal");

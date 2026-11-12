@@ -151,6 +151,9 @@ system twice (usually `C-c`) (You must hit it twice
 because hitting only once is used to stop command parsing -
 see the bottom of this file).
 
+Powwow also quits at the end of its input, such as when it runs
+commands piped into it, as in `printf '#print hi\n' | powwow`.
+
 ## Powwow test mode
 
 There are various ways to enter powwow test mode:

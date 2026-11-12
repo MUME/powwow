@@ -59,6 +59,8 @@ int  input_col(int p);
 #define tty_flush()             fflush(stdout)
 #define tty_raw_write(s,size)   do { tty_flush(); write(1, (s), (size)); } while (0)
 #define tty_has_chars()         false
+/* after tty_read() returned 0, which read() does only at the end */
+#define tty_at_eof()            true
 
 #else /* USE_LOCALE */
 
@@ -70,6 +72,7 @@ void tty_gets(char *s, int size);
 void tty_flush(void);
 void tty_raw_write(char *data, size_t len);
 bool tty_has_chars(void);
+bool tty_at_eof(void);
 
 #endif /* USE_LOCALE */
 
