@@ -1524,30 +1524,31 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
     char buffer[TCP_READ_EXPANSION * BUFSIZE + 2];
     char *buf = buffer;
     int len = 0;
+    connsess *conn = current_connection;
 
-    if (current_connection->fragment != NULL) {
+    if (conn->fragment != NULL) {
         /* leave tcp_read() room to decode; see TCP_READ_MIN */
-        len = strlen(current_connection->fragment);
+        len = strlen(conn->fragment);
         if (len > BUFSIZE - TCP_READ_MIN) {
             len = 0;
             common_clear(promptlen != 0 && !opt_compact);
             message_wrap(WRAP_CONT, "#error: ##%s : line too long, discarded",
-                         current_connection->id);
+                         conn->id);
         } else {
             buf += len;
-            memcpy(buffer, current_connection->fragment, len);
+            memcpy(buffer, conn->fragment, len);
         }
-        free(current_connection->fragment);
-        current_connection->fragment = NULL;
+        free(conn->fragment);
+        conn->fragment = NULL;
     }
 
-    int got = tcp_read(current_connection, buf,
-                       TCP_READ_EXPANSION * BUFSIZE - len);
-    if (got == 0)
+    int got = tcp_read(conn, buf, TCP_READ_EXPANSION * BUFSIZE - len);
+    /* commands run by an MPI message may have closed the connection */
+    if (got == 0 || conn->id == NULL)
         return;
-    if (!FD_ISSET(current_connection->fd, read_fds)
-        && current_connection->fns->can_read(current_connection)) {
-        FD_SET(current_connection->fd, read_fds);
+    if (!FD_ISSET(conn->fd, read_fds)
+        && conn->fns->can_read(conn)) {
+        FD_SET(conn->fd, read_fds);
         ++*ncache_read_fds;
     }
 
@@ -1568,13 +1569,13 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
     tty_puts("}\n");
 #endif
 
-    if (!current_connection->active)
+    if (!conn->active)
         return; /* process only active connections */
 
     got += buf - buffer;
     buf = buffer;
 
-    if (current_connection->spawn) {
+    if (conn->spawn) {
         /* this is data from a spawned child or an attached program.
          * execute as if typed */
         connsess *old_connection = current_connection;
@@ -1641,7 +1642,7 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
 
     /* line-at-a-time mode: process input in a number of ways */
 
-    if (current_connection == main_connection && promptlen != 0) {
+    if (conn == main_connection && promptlen != 0) {
         int processed = process_first_fragment(buf, got);
         buf += processed;
         got -= processed;

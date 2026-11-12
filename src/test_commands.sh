@@ -1380,6 +1380,21 @@ run --until '#connection on "n" closed.' 'MPI message cut short' \
 ##n #request editor"
 has '#connection "n" closed in the middle of an MPI message'
 
+# the command run when an editing session starts closes the connection
+# that sent it, with more text in the same read
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf 'x\n~$#EE14\nM5\ndescr\ntext\ny\n'
+cat > /dev/null
+EOF
+run --until '#connection on "n" closed.' \
+    'editing session start command closing its connection' \
+    "#alias z=#zap n
+#option editor=&true
+#spawn n sh $tmp/server
+##n #identify z"
+has '#connection on "n" closed.'
+
 # every command must have a help entry with the syntax shown by #help, and
 # the manual must have it too, except for the commands it does not show
 name='every command has the same syntax in the help'
