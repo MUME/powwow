@@ -1664,6 +1664,7 @@ int eval_any(long *lres, ptr **pres, char **what)
             if (printmode == PRINT_AS_PTR) {
                 if (txt != NULL && *ptrdata(txt) != '\0') {
                     if (res.type == TYPE_TXT) {
+                        ptrdel(pres);
                         *pres = txt; /* shortcut! */
                         handed_over = true;
                     } else {
