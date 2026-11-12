@@ -1275,6 +1275,20 @@ run --until '#connection on "n" closed.' 'suboption longer than the buffer' \
     "#spawn n sh $tmp/server"
 has '#charset: iso-8859-1 (negotiated)'
 
+# the command cancels the session as soon as it starts, without a main
+# connection
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE14\nM5\ndescr\ntext\n#cancel\n'
+cat > /dev/null
+EOF
+run --until '#cancelled session' \
+    'cancelling an editing session without a main connection' \
+    "#option editor=&sh -c 'sleep 5'
+#spawn n sh $tmp/server
+##n #request editor"
+has '#killed "descr" (5)'
+
 # every command must have a help entry with the syntax shown by #help, and
 # the manual must have it too, except for the commands it does not show
 name='every command has the same syntax in the help'

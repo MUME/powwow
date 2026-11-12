@@ -860,7 +860,7 @@ void tcp_write(connsess *conn, const char *data)
     }
 
     /* must be AFTER reprint_writeline() */
-    if (current_connection->spawn)
+    if (conn->spawn)
         status(1);
     else
         status(-1);
