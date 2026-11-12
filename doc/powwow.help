@@ -632,7 +632,8 @@ operators between strings:
   :? number of words in a string
    ? position of first occurrence of second string in the first
    * convert first char of a string into its ASCII code or vice versa
-   % convert string into its numeric value or vice versa
+   % convert string into its numeric value or vice versa; a value
+     too large for powwow causes an error
 
 operators between a string and a number:
  (string is first argument)
