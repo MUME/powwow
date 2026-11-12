@@ -86,6 +86,8 @@ static void sgr_params(struct sgr_state *st, const char *params, size_t plen)
             else if (m < end && *m == '2')
                 skip = 4;
         }
+        if (e == end)
+            break;
         s = e + 1;
     }
 
