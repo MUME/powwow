@@ -26,9 +26,12 @@ static void check_bytes(const char *what, const char *got, size_t n,
 {
     if (n != elen || memcmp(got, expect, n) != 0) {
         printf("FAIL %s: got \"", what);
-        for (size_t i = 0; i < n; ++i)
-            printf((unsigned char)got[i] < 0x80 && got[i] >= ' '
-                   ? "%c" : "\\x%02x", (unsigned char)got[i]);
+        for (size_t i = 0; i < n; ++i) {
+            printf(((unsigned char)got[i] < 0x80 && got[i] >= ' '
+                    ? "%c"
+                    : "\\x%02x"),
+                   (unsigned char)got[i]);
+        }
         printf("\"\n");
         ++failures;
     }
@@ -44,7 +47,7 @@ static void check_to_utf8(const char *what, enum charset cs,
         struct utf8_decoder d = { .need = 0 };
         char out[256];
         size_t n = 0;
-        for (size_t i = 0; i < inlen; i += chunk)
+        for (size_t i = 0; i < inlen; i += chunk) {
             for (size_t j = i; j < i + chunk && j < inlen; ++j) {
                 int k = charset_decode_byte(cs, &d, in[j], out + n);
                 if (k > CHARSET_DECODE_MAX) {
@@ -53,6 +56,7 @@ static void check_to_utf8(const char *what, enum charset cs,
                 }
                 n += k;
             }
+        }
         n += charset_decode_flush(&d, out + n);
         check_bytes(what, out, n, expect, elen);
     }
@@ -87,7 +91,8 @@ static void test_utf8_internal(void)
     TO_UTF8("utf8 truncated+stray", CS_UTF8, "\xe0\x80", FFFD FFFD);
     TO_UTF8("utf8 truncated at end", CS_UTF8, "ab\xf0\x9f", "ab" FFFD);
     TO_UTF8("utf8 0xff", CS_UTF8, "\xff", FFFD);
-    TO_UTF8("latin1", CS_LATIN1, "caf\xe9 \xff\x80", "caf\xc3\xa9 \xc3\xbf\xc2\x80");
+    TO_UTF8("latin1", CS_LATIN1, "caf\xe9 \xff\x80",
+            "caf\xc3\xa9 \xc3\xbf\xc2\x80");
     TO_UTF8("ascii", CS_ASCII, "caf\xe9!", "caf" FFFD "!");
 
     char buf[64];
@@ -97,8 +102,10 @@ static void test_utf8_internal(void)
     check_bytes("latin1_to_utf8", buf, n, "\xc3\xa9t\xc3\xa9", 5);
 
     /* UTF-8 -> link charset */
-    ENCODE("encode utf8", CS_UTF8, "h\xc3\xa9\xe2\x82\xac", "h\xc3\xa9\xe2\x82\xac");
-    ENCODE("encode latin1", CS_LATIN1, "h\xc3\xa9\xc3\xbf\xe2\x82\xac\xf0\x9f\x98\x80!",
+    ENCODE("encode utf8", CS_UTF8, "h\xc3\xa9\xe2\x82\xac",
+           "h\xc3\xa9\xe2\x82\xac");
+    ENCODE("encode latin1", CS_LATIN1,
+           "h\xc3\xa9\xc3\xbf\xe2\x82\xac\xf0\x9f\x98\x80!",
            "h\xe9\xff??" "!");
     ENCODE("encode ascii", CS_ASCII, "h\xc3\xa9\xe2\x82\xac!", "h??" "!");
     ENCODE("encode latin1 invalid", CS_LATIN1, "a\x80" "b", "a?b");
@@ -109,8 +116,7 @@ static void test_utf8_internal(void)
         uint32_t back;
         int len = utf8_put(cp, s);
         int got = utf8_get(s, len, &back);
-        uint32_t expect = unicode_is_surrogate(cp)
-            ? UNICODE_REPLACEMENT : cp;
+        uint32_t expect = unicode_is_surrogate(cp) ? UNICODE_REPLACEMENT : cp;
         if (got != len || back != expect) {
             printf("FAIL round trip U+%04X\n", (unsigned)cp);
             ++failures;
@@ -148,8 +154,8 @@ static void test_utf8_internal(void)
 
 static void test_width(void)
 {
-    if (!setlocale(LC_CTYPE, "C.UTF-8")
-        && !setlocale(LC_CTYPE, "en_US.UTF-8")) {
+    if (setlocale(LC_CTYPE, "C.UTF-8") == NULL
+        && setlocale(LC_CTYPE, "en_US.UTF-8") == NULL) {
         printf("SKIP width tests: no UTF-8 locale\n");
         return;
     }
