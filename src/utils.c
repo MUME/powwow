@@ -1147,7 +1147,7 @@ static void sig_intr_handler(int signum)
     message_wrap(WRAP_CONT, "%s\n#interrupted; press %s again to quit.%s",
                  edattrend, tty_intr_key(), tty_clreoln);
     tty_flush(); /* in case we are not in mainlupe */
-    confirm = 1;
+    confirm = true;
     error = USER_BREAK;
 
     sig_oneshot(SIGINT, sig_intr_handler);
@@ -1823,7 +1823,7 @@ void update_now(void)
 {
     if (!now_updated) {
 	gettimeofday(&now, NULL);
-	now_updated = 1;
+	now_updated = true;
     }
 }
 

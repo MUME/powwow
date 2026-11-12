@@ -35,7 +35,7 @@ ptr **text_var(int n);
 extern int  prompt_status, line_status;
 extern int  limit_mem;
 extern char ready;
-extern volatile char confirm;
+extern volatile bool confirm;
 extern int  history_done;
 extern int  linemode;
 
@@ -101,12 +101,12 @@ extern delaynode *dead_delays;
 extern struct named_vars named_vars[VAR_KINDS];
 
 extern vtime now, start_time, ref_time;
-extern int now_updated;
+extern bool now_updated;
 
 extern char initstr[];
 extern char prefixstr[];
 extern char inserted_next[BUFSIZE];
-extern char flashback;
+extern bool flashback;
 extern int excursion;
 extern bool verbatim;
 
