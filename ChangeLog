@@ -90,6 +90,7 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  as an expression, such as `(1+)', as `string expected'.
 	* Fixed a #prompt with a group crashing powwow, or changing the group
 	  of the action with the same label.
+	* Fixed deleting a #prompt crashing powwow on some systems.
 	* Fixed an anonymous #action with the pattern of a regular
 	  expression action crashing powwow when the action was matched.
 	* Fixed `#bind <name> <sequence>=<command>' calling a new key a
