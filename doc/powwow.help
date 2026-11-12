@@ -903,7 +903,7 @@ Set or show an internal variable. Known variables are:
 buffer  bytes of recent text from the MUD to keep and write at the beginning
         of #capture and #movie files when you open them (default 0; else
         1000 to 2147483647)
-lines   the number of lines of your terminal
+lines   the number of lines of your terminal (1 to 2147483647)
 mem     the maximum length of a text or string, in bytes (default 1048576;
         0: no limit)
 timer   the number of milliseconds since program start
