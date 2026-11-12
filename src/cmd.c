@@ -2516,14 +2516,15 @@ static void cmd_cancel(char *arg)
         message_printf("#no editing sessions to cancel.\n");
     } else {
         if (*arg != '\0') {
+            unsigned long key = strtoul(arg, NULL, 10);
             editsess *sp;
             for (sp = edit_sess; sp != NULL; sp = sp->next)
-                if (strtoul(arg, NULL, 10) == sp->key) {
+                if (key == sp->key) {
                     cancel_edit(sp);
                     break;
                 }
             if (sp == NULL) {
-                message_printf("#unknown editing session %d\n", atoi(arg));
+                message_printf("#unknown editing session %lu\n", key);
             }
         } else {
             for (editsess *sp = edit_sess; sp != NULL; sp = sp->next)

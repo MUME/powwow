@@ -1508,6 +1508,14 @@ run --until "#killed \"Help on 'mark'\"" 'cancelling all editing sessions' \
 has "#killed \"Help on 'mark'\" (4294967295)"
 has "#killed \"Help on 'beep'\" (4294967295)"
 
+# #cancel with the number of no editing session
+run --until '#killed' 'cancelling an unknown editing session' \
+    "#option pager=&sh -c 'sleep 5'
+#help mark
+#cancel 4294967294
+#cancel"
+has '#unknown editing session 4294967294'
+
 # a suboption from one connection, split by a suboption from another one
 cat > "$tmp/server" <<'EOF'
 printf '\377\372\052\001;ISO-8859-1'
