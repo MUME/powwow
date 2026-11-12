@@ -43,7 +43,8 @@ static void tls_nofail(int error, const char *file, int line, const char *func)
 {
     if (error >= 0)
         return;
-    PRINTF("#%s:%d: %s: %s\n", file, line, func, gnutls_strerror(error));
+    message_printf("#%s:%d: %s: %s\n", file, line, func,
+                   gnutls_strerror(error));
     tty_flush();
     abort();
 }
@@ -106,7 +107,7 @@ static const struct io_fns tls_io_fns = {
 
 static void tls_log(int level, const char *msg)
 {
-    PRINTF("#TLS log %d: %s", level, msg);
+    message_printf("#TLS log %d: %s", level, msg);
 }
 
 /* the name of the server that the certificate must be for */
@@ -138,12 +139,12 @@ static int cert_verify_callback(gnutls_session_t session)
     int rc = gnutls_certificate_verify_peers(
         session, data, sizeof data / sizeof data[0], &cert_status);
     if (rc == GNUTLS_E_NO_CERTIFICATE_FOUND) {
-        PRINTF("#peer did not send any certificate.\n");
+        message_printf("#peer did not send any certificate.\n");
         return -1;
     }
     if (rc < 0) {
-        PRINTF("#failed to verify certificate: %s\n",
-               gnutls_strerror(rc));
+        message_printf("#failed to verify certificate: %s\n",
+                       gnutls_strerror(rc));
         return -1;
     }
 
@@ -153,7 +154,7 @@ static int cert_verify_callback(gnutls_session_t session)
         gnutls_datum_t out;
         tls_nofail(gnutls_certificate_verification_status_print(
                        cert_status, type, &out, 0));
-        PRINTF("#failed to verify certificate: %s\n", out.data);
+        message_printf("#failed to verify certificate: %s\n", out.data);
         gnutls_free(out.data);
         return -1;
     }
@@ -241,7 +242,7 @@ bool tls_upgrade(struct connsess *conn, const struct tls_options *tlsopt)
         }
         if (!gnutls_error_is_fatal(res))
             continue;
-        PRINTF("#TLS handshake failed: %s\n", gnutls_strerror(res));
+        message_printf("#TLS handshake failed: %s\n", gnutls_strerror(res));
         return false;
     }
 }

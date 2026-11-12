@@ -1658,7 +1658,7 @@ void enter_line(char *dummy)
             col0 = 0;
         draw_input_line();
     }
-    PRINTF("%s\n", edattrend);
+    message_printf("%s\n", edattrend);
 
     line0 = CURLINE(edlen);
     if (line0 < lines - 1)

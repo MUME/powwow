@@ -447,7 +447,7 @@ static bool check_object(object *obj)
             if (REAL_ERROR)
                 return false;
             if (opt_info)
-                PRINTF("#new variable: %s\n", line - 1);
+                message_printf("#new variable: %s\n", line - 1);
         }
         *end = c;
         line = end;
@@ -1411,8 +1411,9 @@ static bool exe_op(operator *op)
                 if (REAL_ERROR)
                     break;
                 if (opt_info) {
-                    PRINTF("#new variable: %c%s\n",
-                           kind == VAR_TEXT ? '$' : '@', ptrdata(o1.txt));
+                    message_printf("#new variable: %c%s\n",
+                                   kind == VAR_TEXT ? '$' : '@',
+                                   ptrdata(o1.txt));
                 }
             }
             check_delete(&o1);
@@ -1569,7 +1570,7 @@ int eval_any(long *lres, ptr **pres, char **what)
         pop_obj(&res);
     if (error != 0) {
         if (opt_debug)
-            PRINTF("#result not available\n");
+            message_printf("#result not available\n");
     } else if (printmode != PRINT_NOTHING || opt_debug) {
         if (res.type == TYPE_NUM || res.type == TYPE_NUM_VAR) {
             long val = res.type == TYPE_NUM ? res.num : *res.num_ref;
@@ -1586,9 +1587,9 @@ int eval_any(long *lres, ptr **pres, char **what)
 
             if (opt_debug) {
                 if (error != 0)
-                    PRINTF("#result not available\n");
+                    message_printf("#result not available\n");
                 else
-                    PRINTF("#result: %ld\n", val);
+                    message_printf("#result: %ld\n", val);
             }
         } else {
             ptr *txt = res.type == TYPE_TXT ? res.txt : *res.txt_ref;
@@ -1604,11 +1605,11 @@ int eval_any(long *lres, ptr **pres, char **what)
             }
             if (opt_debug) {
                 if (error != 0)
-                    PRINTF("#result not available\n");
+                    message_printf("#result not available\n");
                 else if (txt != NULL && *ptrdata(txt) != '\0')
-                    PRINTF("#result: %s\n", ptrdata(txt));
+                    message_printf("#result: %s\n", ptrdata(txt));
                 else
-                    PRINTF("#result empty\n");
+                    message_printf("#result empty\n");
             }
         }
     }

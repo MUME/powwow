@@ -55,12 +55,12 @@ static void show_alias(const aliasnode *p)
  */
 void show_aliases(void)
 {
-    PRINTF("#%s alias%s defined%c\n",
-           sortedaliases != NULL ? "the following" : "no",
-           (sortedaliases != NULL && sortedaliases->snext == NULL
-            ? " is"
-            : "es are"),
-           sortedaliases != NULL ? ':' : '.');
+    message_printf("#%s alias%s defined%c\n",
+                   sortedaliases != NULL ? "the following" : "no",
+                   (sortedaliases != NULL && sortedaliases->snext == NULL
+                    ? " is"
+                    : "es are"),
+                   sortedaliases != NULL ? ':' : '.');
     for (aliasnode *p = sortedaliases; p != NULL; p = p->snext)
         show_alias(p);
 }
@@ -73,7 +73,7 @@ void show_aliases(void)
 static bool check_alias(char *name)
 {
     if (*name == '\0') {
-        PRINTF("#illegal alias name: is empty!\n");
+        message_printf("#illegal alias name: is empty!\n");
         error = INVALID_NAME_ERROR;
         return true;
     }
@@ -169,7 +169,7 @@ void parse_alias(char *str)
             /* delete alias */
             if (p != NULL) {
                 if (opt_info) {
-                    PRINTF("#deleting alias: %s=%s\n", left, p->subst);
+                    message_printf("#deleting alias: %s=%s\n", left, p->subst);
                 }
                 delete_aliasnode(np);
             } else {
@@ -202,9 +202,9 @@ void parse_alias(char *str)
             }
 
             if (opt_info) {
-                PRINTF("#%s alias in group '%s': %s=%s\n",
-                       p != NULL ? "changed" : "new",
-                       group == NULL ? "*" : group, left, right);
+                message_printf("#%s alias in group '%s': %s=%s\n",
+                               p != NULL ? "changed" : "new",
+                               group == NULL ? "*" : group, left, right);
             }
         }
     } else {
@@ -235,9 +235,9 @@ void parse_alias(char *str)
 static void delete_action(actionnode **nodep)
 {
     if (opt_info) {
-        PRINTF("#deleting action: >%c%s %s\n",
-               (*nodep)->active ? '+' : '-', (*nodep)->label,
-               (*nodep)->pattern);
+        message_printf("#deleting action: >%c%s %s\n",
+                       (*nodep)->active ? '+' : '-', (*nodep)->label,
+                       (*nodep)->pattern);
     }
     delete_actionnode(nodep);
 }
@@ -248,9 +248,9 @@ static void delete_action(actionnode **nodep)
 static void delete_prompt(actionnode **nodep)
 {
     if (opt_info) {
-        PRINTF("#deleting prompt: >%c%s %s\n",
-               (*nodep)->active ? '+' : '-', (*nodep)->label,
-               (*nodep)->pattern);
+        message_printf("#deleting prompt: >%c%s %s\n",
+                       (*nodep)->active ? '+' : '-', (*nodep)->label,
+                       (*nodep)->pattern);
     }
     delete_promptnode(nodep);
 }
@@ -263,10 +263,10 @@ static void add_new_action(char *label, char *pattern, char *command,
 {
     add_actionnode(pattern, command, label, active, type, q);
     if (opt_info) {
-        PRINTF("#new action: %c%c%s %s=%s\n",
-               action_chars[type],
-               active ? '+' : '-', label,
-               pattern, command);
+        message_printf("#new action: %c%c%s %s=%s\n",
+                       action_chars[type],
+                       active ? '+' : '-', label,
+                       pattern, command);
     }
 }
 
@@ -278,10 +278,10 @@ static void add_new_prompt(char *label, char *pattern, char *command,
 {
     add_promptnode(pattern, command, label, active, type, q);
     if (opt_info) {
-        PRINTF("#new prompt: %c%c%s %s=%s\n",
-               action_chars[type],
-               active ? '+' : '-', label,
-               pattern, command);
+        message_printf("#new prompt: %c%c%s %s=%s\n",
+                       action_chars[type],
+                       active ? '+' : '-', label,
+                       pattern, command);
     }
 }
 
@@ -327,10 +327,10 @@ static void change_actionorprompt(actionnode *node, char *pattern,
     }
 
     if (opt_info) {
-        PRINTF("#changed %s %c%c%s %s=%s\n", ONPROMPT,
-               action_chars[node->type],
-               node->active ? '+' : '-',
-               node->label, node->pattern, node->command);
+        message_printf("#changed %s %c%c%s %s=%s\n", ONPROMPT,
+                       action_chars[node->type],
+                       node->active ? '+' : '-',
+                       node->label, node->pattern, node->command);
     }
 }
 
@@ -351,10 +351,12 @@ static void show_action(const actionnode *p)
  */
 void show_actions(void)
 {
-    PRINTF("#%s action%s defined%c\n",
-           actions != NULL ? "the following" : "no",
-           (actions != NULL && actions->next == NULL) ? " is" : "s are",
-           actions != NULL ? ':' : '.');
+    message_printf("#%s action%s defined%c\n",
+                   actions != NULL ? "the following" : "no",
+                   (actions != NULL && actions->next == NULL
+                    ? " is"
+                    : "s are"),
+                   actions != NULL ? ':' : '.');
     for (const actionnode *p = actions; p != NULL; p = p->next)
         show_action(p);
 }
@@ -377,11 +379,11 @@ void show_group(const char *group)
     for (const actionnode *p = actions; p != NULL; p = p->next)
         count += in_group(p->group, group) ? 1 : 0;
     if (count == 0) {
-        PRINTF("#no aliases or actions are in group %s.\n", group);
+        message_printf("#no aliases or actions are in group %s.\n", group);
         return;
     }
-    PRINTF("#the following %s in group %s:\n",
-           count == 1 ? "is" : "are", group);
+    message_printf("#the following %s in group %s:\n",
+                   count == 1 ? "is" : "are", group);
     for (const aliasnode *p = sortedaliases; p != NULL; p = p->snext) {
         if (in_group(p->group, group))
             show_alias(p);
@@ -397,10 +399,12 @@ void show_group(const char *group)
  */
 void show_prompts(void)
 {
-    PRINTF("#%s prompt%s defined%c\n",
-           prompts != NULL ? "the following" : "no",
-           (prompts != NULL && prompts->next == NULL) ? " is" : "s are",
-           prompts != NULL ? ':' : '.');
+    message_printf("#%s prompt%s defined%c\n",
+                   prompts != NULL ? "the following" : "no",
+                   (prompts != NULL && prompts->next == NULL
+                    ? " is"
+                    : "s are"),
+                   prompts != NULL ? ':' : '.');
     for (promptnode *p = prompts; p != NULL; p = p->next)
         tty_message("#prompt %c%c%s %s=%s\n",
                     action_chars[p->type],
@@ -418,7 +422,7 @@ void parse_action(char *str, bool onprompt)
     char *p = skipspace(str);
     char sign = *p;
     if (sign == '\0') {
-        PRINTF("%s: no arguments given\n", ONPROMPT);
+        message_printf("%s: no arguments given\n", ONPROMPT);
         return;
     }
 
@@ -441,7 +445,7 @@ void parse_action(char *str, bool onprompt)
         assign = '>';
         sign = *(p + 1);
         if (sign == '\0') {
-            PRINTF("#%s: label expected\n", ONPROMPT);
+            message_printf("#%s: label expected\n", ONPROMPT);
             return;
         } else if (sign == '+' || sign == '-') {
             ++str;
@@ -475,7 +479,7 @@ void parse_action(char *str, bool onprompt)
             *p++ = ' '; /* p points to start of pattern, or to \0 */
 
         if (*label == '\0') {
-            PRINTF("#%s: label expected\n", ONPROMPT);
+            message_printf("#%s: label expected\n", ONPROMPT);
             return;
         }
 
@@ -497,7 +501,7 @@ void parse_action(char *str, bool onprompt)
             /* '>' : define action */
 #ifndef USE_REGEXP
             if (type == ACTION_REGEXP) {
-                PRINTF("#error: regexp not allowed\n");
+                message_printf("#error: regexp not allowed\n");
                 return;
             }
 #endif
@@ -513,7 +517,7 @@ void parse_action(char *str, bool onprompt)
                 if (!REAL_ERROR && kind != TYPE_TXT)
                     error = NO_STRING_ERROR;
                 if (REAL_ERROR) {
-                    PRINTF("#%s: ", ONPROMPT);
+                    message_printf("#%s: ", ONPROMPT);
                     print_error(error);
                     ptrdel(&pbuf);
                     return;
@@ -580,7 +584,7 @@ void parse_action(char *str, bool onprompt)
                         if (regerror(errcode, regexp, tmp, n) == 0) {
                             errmsg("invalid regular expression");
                         } else {
-                            PRINTF("#regexp error: %s\n", tmp);
+                            message_printf("#regexp error: %s\n", tmp);
                         }
                         free(tmp);
                     } else {
@@ -657,8 +661,8 @@ void parse_action(char *str, bool onprompt)
         /* anonymous action, cannot be regexp */
 
         if (onprompt) {
-            PRINTF("#anonymous prompts not supported.\n"
-                   "#please use labelled prompts.\n");
+            message_printf("#anonymous prompts not supported.\n"
+                           "#please use labelled prompts.\n");
             return;
         }
 
@@ -704,16 +708,16 @@ void parse_action(char *str, bool onprompt)
  */
 void show_attr_syntax(void)
 {
-    PRINTF("#an attribute is: [<style>...] [<color>] [on <color>]\n"
-           "  styles:   bold, dim, italic, underline, blink, inverse,"
-           " hidden,\n"
-           "            strike, overline\n"
-           "  colors:   black, red, green, yellow, blue, magenta, cyan,"
-           " white,\n"
-           "            bright with a capital (Black, Red, ...), 0 to 255 for"
-           " the\n"
-           "            256-color palette, #rrggbb or none\n"
-           "  example:  bold yellow on blue\n");
+    message_printf("#an attribute is: [<style>...] [<color>] [on <color>]\n"
+                   "  styles:   bold, dim, italic, underline, blink, inverse,"
+                   " hidden,\n"
+                   "            strike, overline\n"
+                   "  colors:   black, red, green, yellow, blue, magenta,"
+                   " cyan, white,\n"
+                   "            bright with a capital (Black, Red, ...), 0 to"
+                   " 255 for the\n"
+                   "            256-color palette, #rrggbb or none\n"
+                   "  example:  bold yellow on blue\n");
 }
 
 /*
@@ -744,10 +748,12 @@ char *attr_name(const struct attr *attr)
  */
 void show_marks(void)
 {
-    PRINTF("#%s marker%s defined%c\n",
-           markers != NULL ? "the following" : "no",
-           (markers != NULL && markers->next == NULL) ? " is" : "s are",
-           markers != NULL ? ':' : '.');
+    message_printf("#%s marker%s defined%c\n",
+                   markers != NULL ? "the following" : "no",
+                   (markers != NULL && markers->next == NULL
+                    ? " is"
+                    : "s are"),
+                   markers != NULL ? ':' : '.');
     for (marknode *p = markers; p != NULL; p = p->next)
         tty_message("#mark %s%s=%s\n", p->b.mbeg ? "^" : "",
                     p->b.pattern, attr_name(&p->attr));
@@ -759,7 +765,7 @@ void show_marks(void)
 void parse_mark(char *str)
 {
     if (*str == '=') {
-        PRINTF("#marker must be non-empty.\n");
+        message_printf("#marker must be non-empty.\n");
         return;
     }
     char *p = first_regular(str, '=');
@@ -812,7 +818,7 @@ void parse_mark(char *str)
         struct attr attr;
         char why[BUFSIZE];
         if (!attr_parse_why(p, &attr, why, sizeof(why))) {
-            PRINTF("#mark: %s.\n", why);
+            message_printf("#mark: %s.\n", why);
             error = SYNTAX_ERROR;
             if (opt_info)
                 show_attr_syntax();
@@ -820,9 +826,9 @@ void parse_mark(char *str)
             marknode *n = *np;
             if (n != NULL) {
                 if (opt_info) {
-                    PRINTF("#deleting mark: %s%s=%s\n",
-                           n->b.mbeg ? "^" : "",
-                           n->b.pattern, attr_name(&n->attr));
+                    message_printf("#deleting mark: %s%s=%s\n",
+                                   n->b.mbeg ? "^" : "",
+                                   n->b.pattern, attr_name(&n->attr));
                 }
                 delete_marknode(np);
             } else {
@@ -833,12 +839,12 @@ void parse_mark(char *str)
             if (*np != NULL) {
                 (*np)->attr = attr;
                 if (opt_info) {
-                    PRINTF("#changed");
+                    message_printf("#changed");
                 }
             } else {
                 add_marknode(pattern, &attr, mbeg, wild);
                 if (opt_info) {
-                    PRINTF("#new");
+                    message_printf("#new");
                 }
             }
             if (opt_info)
@@ -853,12 +859,12 @@ void parse_mark(char *str)
  */
 void show_substitutions(void)
 {
-    PRINTF("#%s substitution%s defined%c\n",
-           substitutions != NULL ? "the following" : "no",
-           (substitutions != NULL && substitutions->next == NULL
-            ? " is"
-            : "s are"),
-           substitutions != NULL ? ':' : '.');
+    message_printf("#%s substitution%s defined%c\n",
+                   substitutions != NULL ? "the following" : "no",
+                   (substitutions != NULL && substitutions->next == NULL
+                    ? " is"
+                    : "s are"),
+                   substitutions != NULL ? ':' : '.');
 
     ptr *pbuf = NULL;
     for (substnode *p = substitutions; p != NULL; p = p->next) {
@@ -881,7 +887,7 @@ static void subst_info(const char *what, bool mbeg, char *pattern,
 
     ptr *pbuf = ptrsubstdef(NULL, mbeg, pattern, replacement);
     if (!MEM_ERROR)
-        PRINTF("#%s substitution: %s\n", what, ptrdata(pbuf));
+        message_printf("#%s substitution: %s\n", what, ptrdata(pbuf));
     ptrdel(&pbuf);
 }
 
@@ -891,7 +897,7 @@ static void subst_info(const char *what, bool mbeg, char *pattern,
 void parse_substitute(char *str)
 {
     if (*str == '=') {
-        PRINTF("#substitute must be non-empty.\n");
+        message_printf("#substitute must be non-empty.\n");
         return;
     }
 
@@ -924,7 +930,7 @@ void parse_substitute(char *str)
     my_strncpy(pattern, str, BUFSIZE - 1);
     unescape(pattern);
     if (*pattern == '\0') {
-        PRINTF("#substitute must be non-empty.\n");
+        message_printf("#substitute must be non-empty.\n");
         return;
     }
 
@@ -1157,7 +1163,7 @@ static char *read_seq(char *name, int *len)
 {
     static char seq[CAPLEN];
 
-    PRINTF("#please press the key \"%s\" : ", name);
+    message_printf("#please press the key \"%s\" : ", name);
     tty_flush();
 
     int tmp = get_one_char(0);
@@ -1175,7 +1181,7 @@ static char *read_seq(char *name, int *len)
 
     tty_putc('\n');
     if (seq[0] >= ' ' && seq[0] <= '~') {
-        PRINTF("#that is not a redefinable key.\n");
+        message_printf("#that is not a redefinable key.\n");
         return NULL;
     }
     return seq;
@@ -1188,14 +1194,14 @@ static char *read_seq(char *name, int *len)
 static void show_single_bind(const char *msg, keynode *p)
 {
     if (p->funct == key_run_command) {
-        PRINTF("#%s %s %s=%s\n", msg, p->name,
-               seq_name(p->sequence, p->seqlen), p->call_data);
+        message_printf("#%s %s %s=%s\n", msg, p->name,
+                       seq_name(p->sequence, p->seqlen), p->call_data);
     } else {
-        PRINTF("#%s %s %s=%s%s%s\n", msg, p->name,
-               seq_name(p->sequence, p->seqlen),
-               internal_functions[lookup_edit_function(p->funct)].name,
-               p->call_data != NULL ? " " : "",
-               p->call_data != NULL ? p->call_data : "");
+        message_printf("#%s %s %s=%s%s%s\n", msg, p->name,
+                       seq_name(p->sequence, p->seqlen),
+                       internal_functions[lookup_edit_function(p->funct)].name,
+                       p->call_data != NULL ? " " : "",
+                       p->call_data != NULL ? p->call_data : "");
     }
 }
 
@@ -1205,7 +1211,7 @@ static void show_single_bind(const char *msg, keynode *p)
  */
 void show_binds_starting(const char *prefix, int len, const char *names)
 {
-    PRINTF("#key bindings starting with %s:\n", names);
+    message_printf("#key bindings starting with %s:\n", names);
     for (keynode *p = keydefs; p != NULL; p = p->next) {
         if (p->seqlen > len && memcmp(p->sequence, prefix, len) == 0)
             show_single_bind("bind", p);
@@ -1219,12 +1225,12 @@ void show_binds_starting(const char *prefix, int len, const char *names)
 void show_edit_functions(void)
 {
     enum { FUNCTION_COLUMN = 24 };
-    PRINTF("#editing functions:\n");
+    message_printf("#editing functions:\n");
     for (const edit_function *f = internal_functions + 1; f->name != NULL;
          ++f) {
         if (f == internal_functions + 1 || strcmp(f->group, f[-1].group) != 0)
-            PRINTF("%s#%s:\n", f == internal_functions + 1 ? "" : "\n",
-                   f->group);
+            message_printf("%s#%s:\n", f == internal_functions + 1 ? "" : "\n",
+                           f->group);
         char keys[BUFSIZE];
         int n = 0;
         for (const keynode *k = keydefs; k != NULL; k = k->next) {
@@ -1232,8 +1238,8 @@ void show_edit_functions(void)
                 n += snprintf(keys + n, sizeof(keys) - n, "%s%s",
                               n == 0 ? " (" : ", ", k->name);
         }
-        PRINTF("%-*s%s%s%s\n", FUNCTION_COLUMN, f->name, f->help,
-               n > 0 ? keys : "", n > 0 ? ")" : "");
+        message_printf("%-*s%s%s%s\n", FUNCTION_COLUMN, f->name, f->help,
+                       n > 0 ? keys : "", n > 0 ? ")" : "");
     }
 }
 
@@ -1283,9 +1289,9 @@ void show_binds(bool edit)
         if (edit != (p->funct == key_run_command)) {
             if (count == 0) {
                 if (edit) {
-                    PRINTF("#line-editing keys:\n");
+                    message_printf("#line-editing keys:\n");
                 } else {
-                    PRINTF("#user-defined keys:\n");
+                    message_printf("#user-defined keys:\n");
                 }
             }
             show_single_bind("bind", p);
@@ -1293,7 +1299,7 @@ void show_binds(bool edit)
         }
     }
     if (count == 0) {
-        PRINTF("#no key bindings defined right now.\n");
+        message_printf("#no key bindings defined right now.\n");
     }
 }
 
@@ -1324,8 +1330,8 @@ static void define_new_key(char *name, char *command)
         add_keynode(name, seq, seqlen, key_run_command, command);
 
     if (opt_info) {
-        PRINTF("#new key binding: %s %s=%s\n",
-               name, seq_name(seq, seqlen), command);
+        message_printf("#new key binding: %s %s=%s\n",
+                       name, seq_name(seq, seqlen), command);
     }
 }
 
@@ -1336,7 +1342,7 @@ static void parse_bind_noninteractive(char *arg)
 {
     char *p = strchr(arg, ' ');
     if (p == NULL) {
-        PRINTF("#syntax error: \"#bind %s\"\n", arg);
+        message_printf("#syntax error: \"#bind %s\"\n", arg);
         return;
     }
     *(p++) = '\0';
@@ -1347,7 +1353,7 @@ static void parse_bind_noninteractive(char *arg)
     int seqlen;
     p = unescape_seq(rawseq, p, &seqlen);
     if (p[0] == '\0' || p[1] == '\0') {
-        PRINTF("#syntax error: \"#bind %s %s\"\n", arg, seq);
+        message_printf("#syntax error: \"#bind %s %s\"\n", arg, seq);
         return;
     }
     *p++ = '\0';
@@ -1366,8 +1372,9 @@ static void parse_bind_noninteractive(char *arg)
         add_keynode(arg, rawseq, seqlen, key_run_command, p);
 
     if (opt_info) {
-        PRINTF("#%s: %s %s=%s\n",
-               redefined ? "redefined key" : "new key binding", arg, seq, p);
+        message_printf("#%s: %s %s=%s\n",
+                       redefined ? "redefined key" : "new key binding",
+                       arg, seq, p);
     }
 }
 
@@ -1403,9 +1410,9 @@ void parse_bind(char *arg)
                     np->funct = key_run_command;
                 }
                 if (opt_info) {
-                    PRINTF("#redefined key: %s %s=%s\n", name,
-                           seq_name(np->sequence, np->seqlen),
-                           command);
+                    message_printf("#redefined key: %s %s=%s\n", name,
+                                   seq_name(np->sequence, np->seqlen),
+                                   command);
                 }
             } else {
                 define_new_key(name, command);
@@ -1442,7 +1449,7 @@ void parse_rebind(char *arg)
 {
     arg = skipspace(arg);
     if (*arg == '\0') {
-        PRINTF("#rebind: missing key.\n");
+        message_printf("#rebind: missing key.\n");
         return;
     }
 
@@ -1470,7 +1477,7 @@ void parse_rebind(char *arg)
     }
 
     if (seqlen == 0) {
-        PRINTF("#rebind: empty key sequence.\n");
+        message_printf("#rebind: empty key sequence.\n");
         return;
     }
 
@@ -1533,7 +1540,7 @@ char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
         if (!REAL_ERROR && type != TYPE_TXT && !also_num)
             error = NO_STRING_ERROR;
         if (REAL_ERROR) {
-            PRINTF("#%s: ", name);
+            message_printf("#%s: ", name);
             print_error(error);
             ptrdel(pbuf);
             return NULL;
@@ -1554,7 +1561,7 @@ char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
                 if (!REAL_ERROR && type != TYPE_NUM)
                     error = NO_NUM_VALUE_ERROR;
                 if (REAL_ERROR) {
-                    PRINTF("#%s: ", name);
+                    message_printf("#%s: ", name);
                     print_error(error);
                     ptrdel(pbuf);
                     return NULL;
@@ -1566,7 +1573,7 @@ char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
             }
         }
         if (*arg != ')') {
-            PRINTF("#%s: ", name);
+            message_printf("#%s: ", name);
             error = MISSING_PAREN_ERROR;
             print_error(error);
             ptrdel(pbuf);
@@ -1597,7 +1604,7 @@ void show_vars(void)
 {
     ptr *p = NULL;
 
-    PRINTF("#the following variables are defined:\n");
+    message_printf("#the following variables are defined:\n");
 
     for (enum var_kind kind = VAR_NUM; !REAL_ERROR && kind < VAR_KINDS;
          ++kind) {
@@ -1645,7 +1652,8 @@ void show_delaynode(delaynode *p, int in_or_at)
     } else {
         char buf[BUFSIZE];
         strftime(buf, BUFSIZE - 1, "%H:%M:%S", s);
-        PRINTF("#at (%s) #in (%ld) \"%s\" %s\n", buf, d, p->name, p->command);
+        message_printf("#at (%s) #in (%ld) \"%s\" %s\n", buf, d, p->name,
+                       p->command);
     }
 }
 
@@ -1654,8 +1662,9 @@ void show_delays(void)
     int n = ((delays == NULL ? 0 : delays->next == NULL ? 1 : 2)
              + (dead_delays == NULL ? 0 : dead_delays->next == NULL ? 1 : 2));
 
-    PRINTF("#%s delay label%s defined%c\n", n != 0 ? "the following" : "no",
-           n == 1 ? " is" : "s are", n != 0 ? ':' : '.');
+    message_printf("#%s delay label%s defined%c\n",
+                   n != 0 ? "the following" : "no",
+                   n == 1 ? " is" : "s are", n != 0 ? ':' : '.');
     for (delaynode *p = delays; p != NULL; p = p->next)
         show_delaynode(p, 0);
     for (delaynode *p = dead_delays; p != NULL; p = p->next)
@@ -1681,7 +1690,7 @@ void change_delaynode(delaynode **p, char *command, long millisec)
     }
     insert_delaynode(m, millisec < 0);
     if (opt_info) {
-        PRINTF("#changed ");
+        message_printf("#changed ");
         show_delaynode(m, 0);
     }
 }
@@ -1696,7 +1705,7 @@ void new_delaynode(char *name, char *command, long millisec)
     add_vtime(&t, &now);
     delaynode *node = add_delaynode(name, command, &t, millisec < 0);
     if (opt_info && node != NULL) {
-        PRINTF("#new ");
+        message_printf("#new ");
         show_delaynode(node, 0);
     }
 }
@@ -1713,7 +1722,7 @@ void show_history(int count)
 
     while (count != 0) {
         if (hist[i] != NULL) {
-            PRINTF("#%2d: %s\n", count, hist[i]);
+            message_printf("#%2d: %s\n", count, hist[i]);
         }
         --count;
         ++i;

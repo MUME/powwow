@@ -82,9 +82,9 @@ void map_retrace(int steps, bool walk_back)
 void map_show(void)
 {
     if (mapstart == mapend) {
-        PRINTF("#map empty\n");
+        message_printf("#map empty\n");
     } else {
-        PRINTF("#map: ");
+        message_printf("#map: ");
 
         char lastdir = mappath[mapstart];
         int count = 0;

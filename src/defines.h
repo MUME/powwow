@@ -42,10 +42,10 @@
 #endif
 
 /* print a message of powwow, with the attribute of #hilite messages, after
- * clearing the input line (PRINTF), or where the cursor is (tty_message) */
+ * clearing the input line (message_printf), or where the cursor is
+ * (tty_message) */
 int message_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);
 int tty_message(const char *format, ...) PRINTF_FUNCTION(1, 2);
-#define PRINTF message_printf
 
 #define INTLEN		(3*(1+(int)sizeof(int)))
 				/* max length of a string representation

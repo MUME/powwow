@@ -168,7 +168,7 @@ static void log_reset(void)
 void log_resize(int newsize)
 {
     if (newsize != 0 && newsize < 1000) {
-        PRINTF("#buffer size must be 0 (zero) or >= 1000\n");
+        message_printf("#buffer size must be 0 (zero) or >= 1000\n");
         return;
     }
 
@@ -196,8 +196,8 @@ void log_resize(int newsize)
         logsize = newsize / 16;
     }
     if (opt_info) {
-        PRINTF("#buffer resized to %d bytes%s\n", newsize,
-               newsize != 0 ? "" : " (disabled)");
+        message_printf("#buffer resized to %d bytes%s\n", newsize,
+                       newsize != 0 ? "" : " (disabled)");
     }
 }
 

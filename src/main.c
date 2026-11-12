@@ -802,7 +802,7 @@ static noreturn void mainloop(void)
             tcp_flush();
 
             if (!(pos <= edlen)) {
-                PRINTF("\n#*ARGH* assertion failed (pos <= edlen)\n");
+                message_printf("\n#*ARGH* assertion failed (pos <= edlen)\n");
                 pos = edlen;
             }
 
@@ -2211,7 +2211,7 @@ char *get_next_instr(char *p)
 static void send_line(char *line, bool silent)
 {
     if (!silent && opt_echo)
-        PRINTF("[%s]\n", line);
+        message_printf("[%s]\n", line);
     tcp_write(current_connection, line);
 }
 
@@ -2407,7 +2407,7 @@ char *parse_instruction(char *line, bool silent, bool subs, bool jit_subs)
     }
     /* run-time debugging */
     if (opt_debug)
-        PRINTF("#parsing: %s\n", line);
+        message_printf("#parsing: %s\n", line);
 
     connsess *old_conn = NULL;
 
@@ -2450,7 +2450,7 @@ static void parse_commands(char *command, char *arg)
             while (count-- > 0)
                 parse_instruction(arg, true, false, true);
         } else {
-            PRINTF("#bogus repeat count\n");
+            message_printf("#bogus repeat count\n");
         }
         return;
     }
@@ -2679,7 +2679,7 @@ static bool jit_subst_vars(ptr **buf, char *src)
             if (*src != '\0')
                 src = skipspace(src);
             if (*src != '}') {
-                PRINTF("#{}: ");
+                message_printf("#{}: ");
                 error = MISSING_PAREN_ERROR;
                 print_error(error);
                 return false;

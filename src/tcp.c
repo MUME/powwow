@@ -209,7 +209,7 @@ void tcp_set_charset(connsess *conn, enum charset cs, const char *why)
     conn->charset = cs;
 
     if (opt_info)
-        PRINTF("#charset: %s (%s)\n", charset_name(cs), why);
+        message_printf("#charset: %s (%s)\n", charset_name(cs), why);
 
     /* keep the MPI charset in sync with the connection */
     if (conn->ideditor && !conn->ideditor_utf8 != (cs == CS_LATIN1))
@@ -1010,9 +1010,9 @@ connsess *tcp_find_connection(const char *id)
 void tcp_show(void)
 {
     int count = tcp_count + tcp_attachcount;
-    PRINTF("#%s connection%s opened%c\n",
-           count != 0 ? "The following" : "No",
-           count == 1 ? " is" : "s are", count != 0 ? ':' : '.');
+    message_printf("#%s connection%s opened%c\n",
+                   count != 0 ? "The following" : "No",
+                   count == 1 ? " is" : "s are", count != 0 ? ':' : '.');
 
     /* the ids padded with spaces to the longest, to align what follows */
     int id_width = 0;
@@ -1095,7 +1095,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
               int port, const struct tls_options *tlsopt, bool utf8)
 {
     if (tcp_count + tcp_attachcount >= MAX_CONNECTS) {
-        PRINTF("#too many open connections.\n");
+        message_printf("#too many open connections.\n");
         return;
     }
     if (tcp_find_connection(id) != NULL) {
@@ -1276,11 +1276,11 @@ void tcp_togglesnoop(const char *id)
     if (conn != NULL) {
         conn->active = !conn->active;
         if (opt_info) {
-            PRINTF("#connection %s is now %sactive.\n",
-                   conn->id, conn->active ? "" : "non");
+            message_printf("#connection %s is now %sactive.\n",
+                           conn->id, conn->active ? "" : "non");
         }
     } else {
-        PRINTF("#no such connection: %s\n", id);
+        message_printf("#no such connection: %s\n", id);
     }
 }
 
