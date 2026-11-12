@@ -157,7 +157,7 @@ int main( int argc, char *argv[] ) {
 		if( displine != NULL ) {
 			/* handle converting ansi colors to curses attrs */
 			for( i = 0; i < strlen( displine ); i++ ) {
-				if( displine[ i ] == 0x1b ) {
+                                if( displine[ i ] == ASCII_ESC ) {
 					/* this is super crappy ansi color decoding */
 					i++;
 					if( strncmp( &displine[ i ], "[3", 2 ) == 0 ) {
