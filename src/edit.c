@@ -247,6 +247,7 @@ void draw_prompt(void)
         if (MEM_ERROR) {
             promptzero();
             print_error(error);
+            error = e;
             return;
         }
 
