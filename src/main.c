@@ -1703,13 +1703,16 @@ static bool match_weak_action(char *pat, char *line, int *match_s,
     ptr *buf = NULL;
     char *realpat = pat;
 
-    if (jit_subst_vars(&buf, pat))
-        pat = ptrdata(buf);
+    /* unescape a copy, not the pattern of the action */
+    if (!jit_subst_vars(&buf, pat))
+        buf = ptrmcpy(buf, pat, strlen(pat));
     if (REAL_ERROR) {
         print_error(error);
         ptrdel(&buf);
         return false;
     }
+    char empty[] = "";
+    pat = buf != NULL ? ptrdata(buf) : empty;
     unescape(pat);
 
     for (int p = 0; p < PARAM_COUNT; ++p) {

@@ -1216,6 +1216,15 @@ run 'jit substitution after an undefined variable' '#var $v=V
 t'
 has '[V] [0]'
 
+run 'matching an action keeps the escapes of its pattern' \
+    '#action >a x\\\$y=#print ("m")
+#emulate x$y
+#emulate x$y
+#emulate x$y
+#action'
+has '#action >+a@* x\\\$y=#print ("m")'
+lacks '#missing digit after "$y"'
+
 run 'action pattern longer than a buffer' '#($v = "x" * 5000)
 #action >a ${v}=#print ("matched")
 #emulate y
