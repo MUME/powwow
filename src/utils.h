@@ -26,6 +26,11 @@ static inline bool is_odigit(char c)
     return c >= '0' && c <= '7';
 }
 
+noreturn void fatal_out_of_memory(void);
+void *xmalloc(size_t size);
+void *xcalloc(size_t count, size_t size);
+void *xrealloc(void *p, size_t size);
+char *xstrdup(const char *s);
 char *my_strdup(const char *s);
 char *my_strncpy(char *dst, const char *src, int len);
 int  printstrlen(char *s);
