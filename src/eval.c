@@ -1587,6 +1587,7 @@ int eval_any(long *lres, ptr **pres, char **what)
     object res = { 0 };
     if (error == 0)
         pop_obj(&res);
+    bool handed_over = false;   /* res.txt is now *pres */
     if (error != 0) {
         if (opt_debug)
             message_printf("#result not available\n");
@@ -1614,10 +1615,12 @@ int eval_any(long *lres, ptr **pres, char **what)
             ptr *txt = res.type == TYPE_TXT ? res.txt : *res.txt_ref;
             if (printmode == PRINT_AS_PTR) {
                 if (txt != NULL && *ptrdata(txt) != '\0') {
-                    if (res.type == TYPE_TXT)
+                    if (res.type == TYPE_TXT) {
                         *pres = txt; /* shortcut! */
-                    else
+                        handed_over = true;
+                    } else {
                         *pres = ptrcpy(*pres, txt);
+                    }
                 } else {
                     ptrzero(*pres);
                 }
@@ -1635,9 +1638,7 @@ int eval_any(long *lres, ptr **pres, char **what)
     *what = line;
 
     if (error == 0) {
-        /* unless the shortcut above handed the text over to *pres */
-        if (!(printmode == PRINT_AS_PTR && res.type == TYPE_TXT
-              && res.txt != NULL && ptrdata(res.txt) != NULL))
+        if (!handed_over)
             check_delete(&res);
     } else {
         while (stk.curr_obj >= 0) {
