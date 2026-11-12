@@ -50,9 +50,9 @@
 static void insert_string(char *arg);
 
 /* history buffer */
-char *hist[MAX_HIST];	/* saved history lines */
-int curline = 0;	/* current history line */
-int pickline = 0;	/* line to pick history from */
+char *hist[MAX_HIST];   /* saved history lines */
+int curline = 0;        /* current history line */
+int pickline = 0;       /* line to pick history from */
 
 /* word completion list */
 wordnode words[MAX_WORDS];
@@ -90,19 +90,24 @@ const edit_function internal_functions[] = {
       .help = "show the line being typed, after the history" },
     { .name = "&to-history", .funct = to_history, .group = "history",
       .help = "put the line in the history, and clear it" },
-    { .name = "&del-char-left", .funct = del_char_left, .group = "changing text",
+    { .name = "&del-char-left", .funct = del_char_left,
+      .group = "changing text",
       .help = "delete the character before the cursor" },
-    { .name = "&del-char-right", .funct = del_char_right, .group = "changing text",
+    { .name = "&del-char-right", .funct = del_char_right,
+      .group = "changing text",
       .help = "delete the character under the cursor" },
     { .name = "&transpose", .funct = transpose_chars, .group = "changing text",
       .help = "swap the two characters at the cursor" },
-    { .name = "&transpose-words", .funct = transpose_words, .group = "changing text",
+    { .name = "&transpose-words", .funct = transpose_words,
+      .group = "changing text",
       .help = "swap the two words at the cursor" },
     { .name = "&upcase-word", .funct = upcase_word, .group = "changing text",
       .help = "uppercase to the end of the word" },
-    { .name = "&downcase-word", .funct = downcase_word, .group = "changing text",
+    { .name = "&downcase-word", .funct = downcase_word,
+      .group = "changing text",
       .help = "lowercase to the end of the word" },
-    { .name = "&capitalize-word", .funct = capitalize_word, .group = "changing text",
+    { .name = "&capitalize-word", .funct = capitalize_word,
+      .group = "changing text",
       .help = "capitalize to the end of the word" },
     { .name = "&undo", .funct = undo, .group = "changing text",
       .help = "undo the last change of the line" },
@@ -113,17 +118,23 @@ const edit_function internal_functions[] = {
       .help = "insert a character by name or code point" },
     { .name = "&insert-emoji", .funct = insert_emoji,
       .group = "changing text", .help = "insert an emoji by its name" },
-    { .name = "&insert-string", .funct = insert_string, .group = "changing text",
+    { .name = "&insert-string", .funct = insert_string,
+      .group = "changing text",
       .help = "insert the text after the function name" },
-    { .name = "&kill-to-eol", .funct = kill_to_eol, .group = "killing and yanking",
+    { .name = "&kill-to-eol", .funct = kill_to_eol,
+      .group = "killing and yanking",
       .help = "kill to the end of the line" },
-    { .name = "&kill-to-bol", .funct = kill_to_bol, .group = "killing and yanking",
+    { .name = "&kill-to-bol", .funct = kill_to_bol,
+      .group = "killing and yanking",
       .help = "kill to the start of the line" },
-    { .name = "&del-word-left", .funct = del_word_left, .group = "killing and yanking",
+    { .name = "&del-word-left", .funct = del_word_left,
+      .group = "killing and yanking",
       .help = "kill the word left of the cursor" },
-    { .name = "&del-unix-word-left", .funct = del_unix_word_left, .group = "killing and yanking",
+    { .name = "&del-unix-word-left", .funct = del_unix_word_left,
+      .group = "killing and yanking",
       .help = "kill back to the previous space" },
-    { .name = "&del-word-right", .funct = del_word_right, .group = "killing and yanking",
+    { .name = "&del-word-right", .funct = del_word_right,
+      .group = "killing and yanking",
       .help = "kill the word right of the cursor" },
     { .name = "&yank", .funct = yank, .group = "killing and yanking",
       .help = "insert the last killed text" },
@@ -142,7 +153,8 @@ const edit_function internal_functions[] = {
       .help = "clear the input line" },
     { .name = "&redraw-line", .funct = redraw_line, .group = "other",
       .help = "redraw the prompt and the input line" },
-    { .name = "&redraw-line-noprompt", .funct = redraw_line_noprompt, .group = "other",
+    { .name = "&redraw-line-noprompt", .funct = redraw_line_noprompt,
+      .group = "other",
       .help = "redraw the input line without the prompt" },
     { .name = "&suspend", .funct = suspend_key, .group = "other",
       .help = "suspend powwow" },
@@ -151,38 +163,32 @@ const edit_function internal_functions[] = {
 
 int lookup_edit_name(char *name, char **arg)
 {
-    int i, len, flen;
-    const char *fname;
-    char *extra = NULL;
+    const char *space = strchr(name, ' ');
+    int len = space != NULL ? space - name : strlen(name);
 
-    if ((fname = strchr(name, ' ')))
-	len = fname - name;
-    else
-	len = strlen(name);
-
-    for (i=1; (fname = internal_functions[i].name); i++) {
-	flen = strlen(fname);
-	if (flen == len && !strncmp(name, fname, flen)) {
-	    extra = name + flen;
-	    if (*extra == ' ') extra++;
-	    if (!*extra) extra = NULL;
-	    *arg = extra;
-	    return i;
-	}
+    for (int i = 1; internal_functions[i].name != NULL; ++i) {
+        const char *fname = internal_functions[i].name;
+        int flen = strlen(fname);
+        if (flen == len && strncmp(name, fname, flen) == 0) {
+            char *extra = name + flen;
+            if (*extra == ' ')
+                ++extra;
+            if (*extra == '\0')
+                extra = NULL;
+            *arg = extra;
+            return i;
+        }
     }
-    *arg = extra;
+    *arg = NULL;
     return 0;
 }
 
 int lookup_edit_function(function_str funct)
 {
-    int i;
-    function_str ffunct;
-
-    for (i = 1; (ffunct = internal_functions[i].funct); i++)
-	if (funct == ffunct)
-	    return i;
-
+    for (int i = 1; internal_functions[i].funct != NULL; ++i) {
+        if (funct == internal_functions[i].funct)
+            return i;
+    }
     return 0;
 }
 
@@ -218,12 +224,12 @@ static int prev_cell(int p)
 
 /* is the character at byte offset 'p' of edbuf part of a word?
  * all non-ASCII characters are, to behave the same in any locale */
-static int word_at(int p)
+static bool word_at(int p)
 {
     uint32_t cp;
     utf8_get(edbuf + p, edlen - p, &cp);
     if (cp > ASCII_MAX)
-        return 1;
+        return true;
     return isalnum(cp);
 }
 
@@ -233,61 +239,67 @@ static int word_at(int p)
  */
 void draw_prompt(void)
 {
-    if (promptlen && prompt_status == 1) {
-        char *esc, *pstr;
-	int e = error;
-	error = 0;
-	marked_prompt = ptraddsubst_and_marks(marked_prompt, prompt->str);
-	if (MEM_ERROR) { promptzero(); out_of_memory(); return; }
+    if (promptlen != 0 && prompt_status == 1) {
+        int e = error;
+        error = 0;
+        marked_prompt = ptraddsubst_and_marks(marked_prompt, prompt->str);
+        if (MEM_ERROR) {
+            promptzero();
+            out_of_memory();
+            return;
+        }
 
         /* if prompt ends in unterminated escape code, do not print
          * that part */
-        pstr = ptrdata(marked_prompt);
-        esc = find_partial_esc(pstr);
-        if (esc)
-            *esc = 0;
+        char *pstr = ptrdata(marked_prompt);
+        char *esc = find_partial_esc(pstr);
+        if (esc != NULL)
+            *esc = '\0';
         sgr_prompt_draw();
         tty_puts(pstr);
-	col0 = printstrlen(pstr);
-        if (esc)
+        col0 = printstrlen(pstr);
+        if (esc != NULL)
             *esc = ASCII_ESC;
 
-	error = e;
+        error = e;
     }
     prompt_status = 0;
 }
 
 /*
- * clear current input line (deleteprompt == 1 if to clear also prompt)
+ * clear current input line (deleteprompt if to clear also prompt)
  * cursor is left right after the prompt.
  *
  * since we do not expect data from the user at this point,
  * do not print edattrbeg now.
  */
-void clear_input_line(int deleteprompt)
+void clear_input_line(bool deleteprompt)
 {
     /*
      * be careful: if prompt and/or input line have been erased from screen,
      * pos will be different from the actual cursor position
      */
-    if ((edlen && line_status == 0) || (promptlen && prompt_status == 0 && deleteprompt)) {
-	int newcol = deleteprompt ? 0 : col0;
-	int realpos = line_status == 0 ? pos : (prompt_status == 0 ? 0 : -col0);
+    if ((edlen != 0 && line_status == 0)
+        || (promptlen != 0 && prompt_status == 0 && deleteprompt)) {
+        int newcol = deleteprompt ? 0 : col0;
+        int realpos = (line_status == 0
+                       ? pos
+                       : (prompt_status == 0 ? 0 : -col0));
 
-	tty_gotoxy_opt(CURCOL(realpos), CURLINE(realpos), newcol, line0);
-	tty_puts(edattrend);
-	if (line0 < lines - 1)
-	    tty_puts(tty_clreoscr);
-	else
-	    tty_puts(tty_clreoln);
-	col0 = newcol;
+        tty_gotoxy_opt(CURCOL(realpos), CURLINE(realpos), newcol, line0);
+        tty_puts(edattrend);
+        if (line0 < lines - 1)
+            tty_puts(tty_clreoscr);
+        else
+            tty_puts(tty_clreoln);
+        col0 = newcol;
     } else {
-	tty_puts(edattrend);
+        tty_puts(edattrend);
     }
     if (deleteprompt)
-	status(1);
+        status(1);
     else
-	line_status = 1;
+        line_status = 1;
 }
 
 /*
@@ -295,12 +307,13 @@ void clear_input_line(int deleteprompt)
  */
 void clear_line(char *dummy)
 {
-    if (!edlen)
-	return;
-    clear_input_line(0);
+    if (edlen == 0)
+        return;
+    clear_input_line(false);
     pickline = curline;
     *edbuf = '\0';
-    pos = edlen = 0;
+    edlen = 0;
+    pos = 0;
 }
 
 /*
@@ -310,11 +323,11 @@ void clear_line(char *dummy)
 void draw_input_line(void)
 {
     if (line_status == 0 || linemode & LM_NOECHO)
-	return;
+        return;
 
     tty_puts(edattrbeg);
 
-    if (edlen)
+    if (edlen != 0)
         input_draw();
     line_status = 0;
 }
@@ -324,7 +337,7 @@ void draw_input_line(void)
  */
 void redraw_line(char *dummy)
 {
-    clear_input_line(1);
+    clear_input_line(true);
 }
 
 /*
@@ -332,10 +345,10 @@ void redraw_line(char *dummy)
  */
 void redraw_line_noprompt(char *dummy)
 {
-    clear_input_line(0);
+    clear_input_line(false);
     tty_putc('\n');
     if (line0 < lines - 1)
-	line0++;
+        ++line0;
     status(-1);
 }
 
@@ -395,12 +408,11 @@ void suspend_key(char *dummy)
  */
 void transpose_chars(char *dummy)
 {
-    /* swap the cells [i, j) and [j, k) */
-    int i, j, k;
-    char buf[2 * BUFSIZE];
-
     if (pos <= edstart || (pos == edlen && prev_cell(pos) <= edstart))
         return;
+
+    /* swap the cells [i, j) and [j, k) */
+    int j, k;
     if (pos < edlen) {
         j = pos;
         k = next_cell(pos);
@@ -408,8 +420,9 @@ void transpose_chars(char *dummy)
         k = pos;
         j = prev_cell(pos);
     }
-    i = prev_cell(j);
+    int i = prev_cell(j);
 
+    char buf[2 * BUFSIZE];
     memcpy(buf, edbuf + j, k - j);
     memcpy(buf + k - j, edbuf + i, j - i);
     input_replace(i, k - i, buf, k - i);
@@ -655,18 +668,19 @@ void kill_to_eol(char *dummy)
 {
     kill_text(edbuf + pos, edlen - pos, false);
     if (line_status == 0) {
-	if (edattrbg)
-	    tty_printf("%s%s", edattrend, tty_clreoln);
-	else
-	    tty_puts(tty_clreoln);
-	if (CURLINE(edlen) > CURLINE(pos)) {
-	    tty_printf("\n%s", tty_clreoscr);
-	    tty_gotoxy_opt(0, CURLINE(pos) + 1, CURCOL(pos), CURLINE(pos));
-	}
-	if (edattrbg)
-	    tty_puts(edattrbeg);
+        if (edattrbg)
+            tty_printf("%s%s", edattrend, tty_clreoln);
+        else
+            tty_puts(tty_clreoln);
+        if (CURLINE(edlen) > CURLINE(pos)) {
+            tty_printf("\n%s", tty_clreoscr);
+            tty_gotoxy_opt(0, CURLINE(pos) + 1, CURCOL(pos), CURLINE(pos));
+        }
+        if (edattrbg)
+            tty_puts(edattrbeg);
     }
-    edbuf[edlen = pos] = '\0';
+    edlen = pos;
+    edbuf[edlen] = '\0';
 }
 
 /*
@@ -700,8 +714,8 @@ void del_char_left(char *dummy)
 {
     if (pos > edstart) {
         int p = pos;
-	input_moveto(prev_cell(pos));
-	input_delete_nofollow_chars(p - pos);
+        input_moveto(prev_cell(pos));
+        input_delete_nofollow_chars(p - pos);
     }
 }
 
@@ -710,13 +724,14 @@ void del_char_left(char *dummy)
  */
 void to_history(char *dummy)
 {
-    if (!edlen)
-	return;
-    clear_input_line(0);
+    if (edlen == 0)
+        return;
+    clear_input_line(false);
     put_history(edbuf);
     pickline = curline;
     *edbuf = '\0';
-    pos = edlen = 0;
+    edlen = 0;
+    pos = 0;
 }
 
 /*
@@ -725,22 +740,22 @@ void to_history(char *dummy)
  */
 void put_history(char *str)
 {
-    char *p;
-    if (hist[curline]) free(hist[curline]);
-    if (!(hist[curline] = my_strdup(str))) {
-	out_of_memory();
-	return;
+    if (hist[curline] != NULL)
+        free(hist[curline]);
+    hist[curline] = my_strdup(str);
+    if (hist[curline] == NULL) {
+        out_of_memory();
+        return;
     }
 
     if (++curline == MAX_HIST)
-	curline = 0;
+        curline = 0;
 
     /* split into words and put into completion list */
-    for (p = strtok(str, DELIM); p;
-	 p = strtok(NULL, DELIM)) {
-        if (strlen(p) >= MIN_WORDLEN &&
-	    p[0] != '#') /* no commands/short words */
-	    put_word(p);
+    for (char *p = strtok(str, DELIM); p != NULL; p = strtok(NULL, DELIM)) {
+        /* no commands/short words */
+        if (strlen(p) >= MIN_WORDLEN && p[0] != '#')
+            put_word(p);
     }
 }
 
@@ -751,8 +766,10 @@ static void demote_word(int i)
 {
     words[words[i].prev].next = words[i].next;
     words[words[i].next].prev = words[i].prev;
-    words[i].prev = words[words[i].next = wordindex].prev;
-    words[wordindex].prev = words[words[wordindex].prev].next = i;
+    words[i].next = wordindex;
+    words[i].prev = words[wordindex].prev;
+    words[words[wordindex].prev].next = i;
+    words[wordindex].prev = i;
 }
 
 static struct {
@@ -1254,14 +1271,15 @@ static void word_list_show(const struct word_list *l, const char *word,
     if (columns < 1)
         columns = 1;
     int rows = (count + columns - 1) / columns;
-    clear_input_line(0);
+    clear_input_line(false);
     tty_putc('\n');
     for (int row = 0; row < rows; ++row) {
         char line[BUFSIZE];
         int n = 0;
-        for (int i = row; i < count && n < (int)sizeof(line); i += rows)
+        for (int i = row; i < count && n < (int)sizeof(line); i += rows) {
             n += snprintf(line + n, sizeof(line) - n, "%-*s", width + 2,
                           l->words[first + i] + skip);
+        }
         if (n >= (int)sizeof(line))
             n = (int)sizeof(line) - 1;
         while (n > 0 && line[n - 1] == ' ')
@@ -1425,8 +1443,6 @@ void complete_word(char *dummy)
      */
 
     static int curr_word, comp_len = 0, root_len = 0;
-    char *root, *p;
-    int k, n;
 
     if (complete_command()) {
         comp_len = 0;
@@ -1434,52 +1450,65 @@ void complete_word(char *dummy)
     }
 
     /* find word start */
-    if (last_edit_cmd == complete_word && comp_len) {
-	k = comp_len;
-	input_moveto(pos - k);
-	n = pos - root_len;
+    int k, n;
+    if (last_edit_cmd == complete_word && comp_len != 0) {
+        k = comp_len;
+        input_moveto(pos - k);
+        n = pos - root_len;
     } else {
-	for (n = pos; n > 0 && !IS_DELIM(edbuf[n - 1]); n--)
-	    ;
-	k = 0;
-	curr_word = wordindex;
-	root_len = pos - n;
+        n = pos;
+        while (n > 0 && !IS_DELIM(edbuf[n - 1]))
+            --n;
+        k = 0;
+        curr_word = wordindex;
+        root_len = pos - n;
     }
-    root = edbuf + n; comp_len = 0;
+    char *root = edbuf + n;
+    comp_len = 0;
 
     /* k = chars to delete,  n = position of starting word */
 
     /* scan word list for next match */
-    while ((p = compl_get_word(curr_word = compl_next_word(curr_word)))) {
-	if (!strncasecmp(p, root, root_len) &&
-	    *(p += root_len) &&
-	    (n = strlen(p)) + edlen < BUFSIZE) {
-	    comp_len = n;
-	    input_replace(pos, k, p, n);
-	    k = 0;
-	    break;
-	}
+    char *p;
+    for (;;) {
+        curr_word = compl_next_word(curr_word);
+        p = compl_get_word(curr_word);
+        if (p == NULL)
+            break;
+        if (strncasecmp(p, root, root_len) != 0 || p[root_len] == '\0')
+            continue;
+        p += root_len;
+        n = strlen(p);
+        if (n + edlen < BUFSIZE) {
+            comp_len = n;
+            input_replace(pos, k, p, n);
+            k = 0;
+            break;
+        }
     }
     if (k > 0)
-	input_delete_nofollow_chars(k);
+        input_delete_nofollow_chars(k);
 
     /* delete duplicate instances of the word */
-    if (p && curr_word >= 0
-        && !(words[k = curr_word].flags & WORD_UNIQUE)) {
-	words[k].flags |= WORD_UNIQUE;
-	p = words[k].word;
-	n = words[k].next;
-	while (words[k = n].word) {
-	    n = words[k].next;
-	    if (!strcmp(p, words[k].word)) {
-		demote_word(k);
-		free(words[k].word);
-		words[k].word = 0;
-		words[curr_word].flags |= words[k].flags;	/* move retain flag */
-		if ((words[k].flags &= WORD_UNIQUE))
-		    break;
-	    }
-	}
+    if (p != NULL && curr_word >= 0
+        && !(words[curr_word].flags & WORD_UNIQUE)) {
+        words[curr_word].flags |= WORD_UNIQUE;
+        p = words[curr_word].word;
+        n = words[curr_word].next;
+        while (words[n].word != NULL) {
+            k = n;
+            n = words[k].next;
+            if (strcmp(p, words[k].word) == 0) {
+                demote_word(k);
+                free(words[k].word);
+                words[k].word = NULL;
+                /* move retain flag */
+                words[curr_word].flags |= words[k].flags;
+                words[k].flags &= WORD_UNIQUE;
+                if (words[k].flags != 0)
+                    break;
+            }
+        }
     }
 }
 
@@ -1489,50 +1518,53 @@ void complete_word(char *dummy)
  */
 void complete_line(char *dummy)
 {
-    static int curr_line = MAX_HIST-1, root_len = 0, first_line = 0;
-    int i;
+    static int curr_line = MAX_HIST - 1, root_len = 0, first_line = 0;
 
     if (last_edit_cmd != complete_line) {
-	root_len = edlen;
-	first_line = curr_line = curline;
+        root_len = edlen;
+        curr_line = curline;
+        first_line = curline;
     }
 
-    for (i = curr_line - 1; i != curr_line; i--) {
-	if (i < 0) i = MAX_HIST - 1;
-	if (i == first_line)
-	    break;
-	if (hist[i] && !strncmp(edbuf, hist[i], root_len))
-	    break;
+    int i;
+    for (i = curr_line - 1; i != curr_line; --i) {
+        if (i < 0)
+            i = MAX_HIST - 1;
+        if (i == first_line)
+            break;
+        if (hist[i] != NULL && strncmp(edbuf, hist[i], root_len) == 0)
+            break;
     }
     if (i != curr_line) {
-	clear_input_line(0);
-	if (i == first_line) {
-	    edbuf[root_len] = 0;
-	    edlen = root_len;
-	} else {
-	    strcpy(edbuf, hist[i]);
-	    edlen = strlen(edbuf);
-	}
-	pos = edlen;
-	curr_line = i;
+        clear_input_line(false);
+        if (i == first_line) {
+            edbuf[root_len] = '\0';
+            edlen = root_len;
+        } else {
+            strcpy(edbuf, hist[i]);
+            edlen = strlen(edbuf);
+        }
+        pos = edlen;
+        curr_line = i;
     }
 }
 
 static void default_completions(void)
 {
-    char buf[BUFSIZE];
-    cmdstruct *p;
-    int i;
     /* TODO: add some way to handle new commands going in the default
      * completions list */
-    for (i = 0, buf[0] = '#', p = commands; p != NULL; p = p -> next)
-	if (p->funct) {
-	    strcpy(buf + 1, p->name);
+    char buf[BUFSIZE] = "#";
+    for (cmdstruct *p = commands; p != NULL; p = p->next) {
+        if (p->funct != NULL) {
+            strcpy(buf + 1, p->name);
             put_static_word(buf);
-	}
+        }
+    }
     /* init 'words' double-linked list */
-    for (i = MAX_WORDS; i--; words[i].prev = i - 1, words[i].next = i + 1)
-	;
+    for (int i = MAX_WORDS - 1; i >= 0; --i) {
+        words[i].prev = i - 1;
+        words[i].next = i + 1;
+    }
     words[0].prev = MAX_WORDS - 1;
     words[MAX_WORDS - 1].next = 0;
 }
@@ -1554,11 +1586,12 @@ void put_static_word(char *s)
         static_words.size = size;
     }
 
-    if ((s = my_strdup(s)) == NULL) {
+    char *copy = my_strdup(s);
+    if (copy == NULL) {
         out_of_memory();
         return;
     }
-    static_words.words[static_words.used++] = s;
+    static_words.words[static_words.used++] = copy;
 }
 
 /*
@@ -1567,17 +1600,18 @@ void put_static_word(char *s)
 void put_word(char *s)
 {
     int r = wordindex;
-    if (!(words[r].word = my_strdup(s))) {
-	out_of_memory();
-	return;
+    words[r].word = my_strdup(s);
+    if (words[r].word == NULL) {
+        out_of_memory();
+        return;
     }
     words[r].flags = 0;
     r = words[r].prev;
     demote_word(r);
     wordindex = r;
-    if (words[r].word) {
-	free(words[r].word);
-	words[r].word = 0;
+    if (words[r].word != NULL) {
+        free(words[r].word);
+        words[r].word = NULL;
     }
 }
 
@@ -1603,11 +1637,11 @@ void fmt_next_edit(const char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
-    int n = vsnprintf(inserted_next, sizeof inserted_next, fmt, va);
-    if (n < 0 || (size_t)n >= sizeof inserted_next) {
+    int n = vsnprintf(inserted_next, sizeof(inserted_next), fmt, va);
+    if (n < 0 || (size_t)n >= sizeof(inserted_next)) {
         static const char msg[] = " [TRUNCATED]";
-        memcpy(inserted_next + sizeof inserted_next - sizeof msg,
-               msg, sizeof msg);
+        memcpy(inserted_next + sizeof(inserted_next) - sizeof(msg),
+               msg, sizeof(msg));
     }
     va_end(va);
 }
@@ -1617,45 +1651,49 @@ void fmt_next_edit(const char *fmt, ...)
  */
 void enter_line(char *dummy)
 {
-    char *p;
-
-    if (line_status == 0)
-	input_moveto(edlen);
-    else {
-	if (prompt_status != 0)
-	    col0 = 0;
-	draw_input_line();
+    if (line_status == 0) {
+        input_moveto(edlen);
+    } else {
+        if (prompt_status != 0)
+            col0 = 0;
+        draw_input_line();
     }
     PRINTF("%s\n", edattrend);
 
     line0 = CURLINE(edlen);
-    if (line0 < lines - 1) line0++;
+    if (line0 < lines - 1)
+        ++line0;
 
     log_record_line(edbuf);
 
-    col0 = error = pos = line_status = 0;
+    col0 = 0;
+    error = 0;
+    pos = 0;
+    line_status = 0;
 
-    if (!*edbuf || (verbatim && *edbuf != '#'))
-	tcp_write(current_connection, edbuf);
+    if (*edbuf == '\0' || (verbatim && *edbuf != '#'))
+        tcp_write(current_connection, edbuf);
     else
-	parse_user_input(edbuf, true);
+        parse_user_input(edbuf, true);
     history_done = 0;
 
     /* don't put identical lines in history, nor empty ones */
-    p = hist[curline ? curline - 1 : MAX_HIST - 1];
-    if (!p || (edlen > 0 && strcmp(edbuf, p)))
-	put_history(edbuf);
+    char *p = hist[curline != 0 ? curline - 1 : MAX_HIST - 1];
+    if (p == NULL || (edlen > 0 && strcmp(edbuf, p) != 0))
+        put_history(edbuf);
     pickline = curline;
-    if (*inserted_next) {
-	strcpy(edbuf, inserted_next);
-	inserted_next[0] = '\0';
-	line_status = 1;
-    } else if (*prefixstr) {
-	strcpy(edbuf, prefixstr);
-	line_status = 1;
-    } else
-	edbuf[0] = '\0';
-    pos = edlen = strlen(edbuf);
+    if (*inserted_next != '\0') {
+        strcpy(edbuf, inserted_next);
+        inserted_next[0] = '\0';
+        line_status = 1;
+    } else if (*prefixstr != '\0') {
+        strcpy(edbuf, prefixstr);
+        line_status = 1;
+    } else {
+        edbuf[0] = '\0';
+    }
+    edlen = strlen(edbuf);
+    pos = edlen;
 }
 
 /*
@@ -1663,11 +1701,11 @@ void enter_line(char *dummy)
  */
 void next_word(char *dummy)
 {
-    int i;
-    for (i = pos; i < edlen && !word_at(i); i = next_cell(i))
-	;
+    int i = pos;
+    while (i < edlen && !word_at(i))
+        i = next_cell(i);
     while (i < edlen && word_at(i))
-	i = next_cell(i);
+        i = next_cell(i);
     input_moveto(i);
 }
 
@@ -1676,11 +1714,11 @@ void next_word(char *dummy)
  */
 void prev_word(char *dummy)
 {
-    int i;
-    for (i = pos; i > edstart && !word_at(prev_cell(i)); i = prev_cell(i))
-	;
+    int i = pos;
+    while (i > edstart && !word_at(prev_cell(i)))
+        i = prev_cell(i);
     while (i > edstart && word_at(prev_cell(i)))
-	i = prev_cell(i);
+        i = prev_cell(i);
     input_moveto(i);
 }
 
@@ -1689,11 +1727,11 @@ void prev_word(char *dummy)
  */
 void del_word_right(char *dummy)
 {
-    int i;
-    for (i = pos; i < edlen && !word_at(i); i = next_cell(i))
-	;
+    int i = pos;
+    while (i < edlen && !word_at(i))
+        i = next_cell(i);
     while (i < edlen && word_at(i))
-	i = next_cell(i);
+        i = next_cell(i);
     kill_right(i - pos);
 }
 
@@ -1702,11 +1740,11 @@ void del_word_right(char *dummy)
  */
 void del_word_left(char *dummy)
 {
-    int i;
-    for (i = pos; i > edstart && !word_at(prev_cell(i)); i = prev_cell(i))
-	;
+    int i = pos;
+    while (i > edstart && !word_at(prev_cell(i)))
+        i = prev_cell(i);
     while (i > edstart && word_at(prev_cell(i)))
-	i = prev_cell(i);
+        i = prev_cell(i);
     kill_left(pos - i);
 }
 
@@ -1879,20 +1917,22 @@ void capitalize_word(char *dummy)
  */
 static void goto_history_line(int i)
 {
-    if (hist[pickline] && strcmp(hist[pickline], edbuf)) {
-	free(hist[pickline]);
-	hist[pickline] = NULL;
+    if (hist[pickline] != NULL && strcmp(hist[pickline], edbuf) != 0) {
+        free(hist[pickline]);
+        hist[pickline] = NULL;
     }
-    if (!hist[pickline]) {
-	if (!(hist[pickline] = my_strdup(edbuf))) {
-	    out_of_memory();
-	    return;
-	}
+    if (hist[pickline] == NULL) {
+        hist[pickline] = my_strdup(edbuf);
+        if (hist[pickline] == NULL) {
+            out_of_memory();
+            return;
+        }
     }
     pickline = i;
-    clear_input_line(0);
+    clear_input_line(false);
     strcpy(edbuf, hist[pickline]);
-    pos = edlen = strlen(edbuf);
+    edlen = strlen(edbuf);
+    pos = edlen;
 }
 
 /*
@@ -1901,8 +1941,9 @@ static void goto_history_line(int i)
 void prev_line(char *dummy)
 {
     int i = pickline - 1;
-    if (i < 0) i = MAX_HIST - 1;
-    if (hist[i])
+    if (i < 0)
+        i = MAX_HIST - 1;
+    if (hist[i] != NULL)
         goto_history_line(i);
 }
 
@@ -1912,8 +1953,9 @@ void prev_line(char *dummy)
 void next_line(char *dummy)
 {
     int i = pickline + 1;
-    if (i == MAX_HIST) i = 0;
-    if (hist[i])
+    if (i == MAX_HIST)
+        i = 0;
+    if (hist[i] != NULL)
         goto_history_line(i);
 }
 
@@ -1970,10 +2012,10 @@ void yank_last_word(char *dummy)
             --start;
         if (start == end)
             continue;
-        if (again)
+        if (again) {
             input_replace(yank_word.start, pos - yank_word.start,
                           line + start, end - start);
-        else {
+        } else {
             yank_word.start = pos;
             input_insert_follow_chars((char *)line + start, end - start);
         }
@@ -2116,10 +2158,13 @@ static void isearch_start_or_repeat(bool reverse)
         isearch.active = true;
         isearch.reverse = reverse;
         isearch.failed = false;
-        isearch.query[isearch.query_len = 0] = '\0';
-        isearch.origin = isearch.index = pickline;
+        isearch.query_len = 0;
+        isearch.query[0] = '\0';
+        isearch.origin = pickline;
+        isearch.index = pickline;
         strcpy(isearch.saved, edbuf);
-        isearch.saved_pos = isearch.offset = pos;
+        isearch.saved_pos = pos;
+        isearch.offset = pos;
     } else if (isearch.query_len == 0) {
         /* search again for the last query */
         isearch.reverse = reverse;
@@ -2163,7 +2208,8 @@ static void isearch_add(const char *s, int n)
     if (isearch.query_len + n >= BUFSIZE / 2)
         return;
     memcpy(isearch.query + isearch.query_len, s, n);
-    isearch.query[isearch.query_len += n] = '\0';
+    isearch.query_len += n;
+    isearch.query[isearch.query_len] = '\0';
     isearch_find(isearch.index, isearch.offset);
     isearch_show();
 }
@@ -2173,9 +2219,10 @@ static void isearch_del_char(void)
 {
     if (isearch.query_len == 0)
         return;
-    int n = utf8_prev_cell(isearch.query, isearch.query + isearch.query_len)
-        - isearch.query;
-    isearch.query[isearch.query_len = n] = '\0';
+    int n = (utf8_prev_cell(isearch.query, isearch.query + isearch.query_len)
+             - isearch.query);
+    isearch.query_len = n;
+    isearch.query[n] = '\0';
     isearch.index = isearch.origin;
     isearch.offset = isearch.saved_pos;
     isearch_find(isearch.index, isearch.offset);
@@ -2236,7 +2283,8 @@ static void charin_get_name(void)
     charin.text[len] = '\0';
 
     charin.parts = 0;
-    charin.group[0] = charin.subgroup[0] = '\0';
+    charin.group[0] = '\0';
+    charin.subgroup[0] = '\0';
     charin.name_at = 0;
     const char *slash = (charin.file == emojifile
                          ? strchr(charin.text, '/') : NULL);
@@ -2320,7 +2368,8 @@ static void charin_end(void)
     undo_clear(&name_undo.undo);
     undo_clear(&name_undo.redo);
     undos = &line_undo;
-    edstart = edlabel = 0;
+    edstart = 0;
+    edlabel = 0;
     input_replace(0, edlen, charin.saved, strlen(charin.saved));
     input_moveto(charin.saved_pos);
 }
@@ -2511,14 +2560,17 @@ static void charin_list_groups(void)
         bool first = i == 0 || strcmp(e->group, l.entries[i - 1].group) != 0;
         if (charin.parts == 1) {
             if (charname_words_match(charin.group, e->group, false)
-                && charname_words_match(charin.subgroup, e->subgroup, false))
+                && charname_words_match(charin.subgroup, e->subgroup,
+                                        false)) {
                 tty_message("%s/%s/ (%d emoji)\n", e->group, e->subgroup,
                             e->count);
+            }
         } else if (charname_words_match(charin.name, e->group, false)) {
             if (first) {
                 int count = 0;
-                for (int j = i; j < l.count
-                         && strcmp(l.entries[j].group, e->group) == 0; ++j)
+                for (int j = i;
+                     j < l.count && strcmp(l.entries[j].group, e->group) == 0;
+                     ++j)
                     count += l.entries[j].count;
                 tty_message("%s/ (%d emoji)\n", e->group, count);
             }
@@ -2535,7 +2587,7 @@ static void charin_list_groups(void)
  */
 static void charin_list(void)
 {
-    clear_input_line(0);
+    clear_input_line(false);
     tty_putc('\n');
     if (charin.file == emojifile && charin.parts < 2)
         charin_list_groups();
@@ -2558,11 +2610,12 @@ static void charin_list(void)
             width = w;
     }
     for (int i = 0; i < l.count; ++i) {
-        if (i < CHARIN_LIST_MAX)
+        if (i < CHARIN_LIST_MAX) {
             tty_message("%s%*s  %s\n", l.names[i].shown,
                         width - utf8_width(l.names[i].shown,
                                            strlen(l.names[i].shown)), "",
                         l.names[i].chars);
+        }
         free(l.names[i].name);
         free(l.names[i].shown);
         free(l.names[i].chars);
@@ -2573,12 +2626,6 @@ static void charin_list(void)
     status(1);
 }
 
-/*
- * complete the name, like readline: to the only name that matches, or to
- * the start that those that match have in common, preferring those that
- * start with it, and then those that start with its first word; if that
- * adds nothing, beep, and list them if Tab is pressed again
- */
 /* Tab completed nothing: beep, and list the names if pressed again */
 static void charin_no_completion(void)
 {
@@ -2633,6 +2680,12 @@ static void charin_complete_group(void)
     }
 }
 
+/*
+ * complete the name, like readline: to the only name that matches, or to
+ * the start that those that match have in common, preferring those that
+ * start with it, and then those that start with its first word; if that
+ * adds nothing, beep, and list them if Tab is pressed again
+ */
 static void charin_complete(void)
 {
     charin_get_name();
@@ -2680,8 +2733,8 @@ static void charin_complete(void)
         if (strcmp(text, pattern) != 0 || at + (int)cursor != pos) {
             /* more than one still matches: list them on the next Tab,
              * as readline does */
-            at = edstart + charin.name_at + charin_set_name_after(m->keep,
-                                                                 text);
+            at = (edstart + charin.name_at
+                  + charin_set_name_after(m->keep, text));
             input_moveto(at + (int)cursor);
             charin.tabbed = true;
         } else {
@@ -2828,26 +2881,27 @@ static inline char matching_lparen(char c)
  */
 static void flashparen(char c)
 {
-    int lev, i;
     if (line_status != 0)
-	return;
-    for (i = pos - 1, lev = 0; i >= 0; i--) {
-	if (is_rparen(edbuf[i])) {
-	    lev++;
-	} else if (is_lparen(edbuf[i])) {
-	    lev--;
-	    if (!lev) {
-		if (matching_lparen(c) == edbuf[i])
-		    break;
-		else
-		    i = -1;
-	    }
-	}
+        return;
+    int lev = 0;
+    int i;
+    for (i = pos - 1; i >= 0; --i) {
+        if (is_rparen(edbuf[i])) {
+            ++lev;
+        } else if (is_lparen(edbuf[i])) {
+            --lev;
+            if (lev == 0) {
+                if (matching_lparen(c) == edbuf[i])
+                    break;
+                else
+                    i = -1;
+            }
+        }
     }
     if (i >= 0) {
-	tty_gotoxy_opt(CURCOL(pos), CURLINE(pos), CURCOL(i), CURLINE(i));
-	flashback = 1;
-	excursion = i;
+        tty_gotoxy_opt(CURCOL(pos), CURLINE(pos), CURCOL(i), CURLINE(i));
+        flashback = 1;
+        excursion = i;
     }
 }
 
@@ -2857,14 +2911,11 @@ static void flashparen(char c)
 void putbackcursor(void)
 {
     if (line_status == 0)
-	tty_gotoxy_opt(CURCOL(excursion), CURLINE(excursion), CURCOL(pos), CURLINE(pos));
+        tty_gotoxy_opt(CURCOL(excursion), CURLINE(excursion), CURCOL(pos),
+                       CURLINE(pos));
     flashback = 0;
 }
 
-/*
- * insert a typed byte on screen, once it completes a printable
- * UTF-8 character
- */
 /* characters typed, to insert at once (see insert_flush) */
 static char insbuf[BUFSIZE];
 static int ninsbuf;
@@ -2878,7 +2929,8 @@ void insert_flush(void)
 {
     if (ninsbuf == 0)
         return;
-    if (flashback) putbackcursor();
+    if (flashback != 0)
+        putbackcursor();
     input_insert_follow_chars(insbuf, ninsbuf);
     ninsbuf = 0;
 }
@@ -2925,30 +2977,29 @@ void insert_char(char c)
     if (edlen + ninsbuf < BUFSIZE - n - 1) {
         memcpy(insbuf + ninsbuf, pend, n);
         ninsbuf += n;
-	if (is_rparen(c)) {
+        if (is_rparen(c)) {
             insert_flush();
-	    flashparen(c);
+            flashparen(c);
         }
     }
 }
 
 static void insert_string(char *arg)
 {
+    if (arg == NULL || *arg == '\0')
+        return;
+
     char buf[BUFSIZE];
-    int len;
-
-    if (!arg || !*arg)
-	return;
-
-    my_strncpy(buf, arg, BUFSIZE-1);
+    my_strncpy(buf, arg, BUFSIZE - 1);
     unescape(buf);
-    len = strlen(buf);
+    int len = strlen(buf);
 
     if (len > 1) {
-	if (flashback) putbackcursor();
-	input_insert_follow_chars(buf, len);
+        if (flashback != 0)
+            putbackcursor();
+        input_insert_follow_chars(buf, len);
     } else if (len == 1) {
-	insert_char(buf[0]); /* also flash matching parentheses */
+        insert_char(buf[0]); /* also flash matching parentheses */
         insert_flush();
     }
 }
@@ -2960,9 +3011,10 @@ void key_run_command(char *cmd)
 {
     clear_input_line(opt_compact && !opt_keyecho);
     if (opt_keyecho) {
-	tty_printf("%s%s%s\n", edattrbeg, cmd, edattrend);
-    } else if (!opt_compact)
+        tty_printf("%s%s%s\n", edattrbeg, cmd, edattrend);
+    } else if (!opt_compact) {
         tty_putc('\n');
+    }
 
     status(1);
     error = 0;
@@ -2977,4 +3029,3 @@ void edit_bootstrap(void)
 {
     default_completions();
 }
-
