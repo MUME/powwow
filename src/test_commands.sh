@@ -1462,6 +1462,20 @@ has '#edited text too long, not sent'
 [ "$(grep -c '^C5$' "$tmp/got")" -eq 1 ] \
     || fail "expected a cancel message, got: $(od -c "$tmp/got")"
 
+# an editing session with a long description
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE1009\nM5\n'
+awk 'BEGIN { for (i = 0; i < 1000; ++i) printf "d"; print "\ntext" }'
+cat > /dev/null
+EOF
+run --until '#cancelled session' 'editing session with a long description' \
+    "#option editor=&true
+#spawn n sh $tmp/server
+##n #request editor"
+descr=$(awk 'BEGIN { for (i = 0; i < 1000; ++i) printf "d" }')
+has "#cancelled session $descr (5)"
+
 # cancelling a view, which has no connection to tell
 run --until '#killed' 'cancelling a view' \
     "#option pager=&sh -c 'sleep 5'

@@ -315,9 +315,9 @@ static void finish_edit(editsess *sp)
         /* text[hdrlen + txtlen] = '\0'; */
         tcp_write_escape_iac(sp->conn, text, hdrlen + txtlen);
 
-        char buf[256];
-        sprintf(buf, "#completed session %s (%u)\n", sp->descr, sp->key);
-        write_message(buf);
+        write_message("#completed session ");
+        tty_puts(sp->descr);
+        tty_printf(" (%u)\n", sp->key);
     } else {
         /* file wasn't changed, cancel editing session */
         char keystr[16];
@@ -327,9 +327,9 @@ static void finish_edit(editsess *sp)
 
         tcp_raw_write(sp->conn, hdr, strlen(hdr));
 
-        char buf[256];
-        sprintf(buf, "#cancelled session %s (%u)\n", sp->descr, sp->key);
-        write_message(buf);
+        write_message("#cancelled session ");
+        tty_puts(sp->descr);
+        tty_printf(" (%u)\n", sp->key);
     }
 
  cleanup_text:
