@@ -83,11 +83,12 @@ int main(int argc, char *argv[])
     int sleep = 0;
     int color = 0;
     char action[100] = { 0 };
+    char *buf = NULL;
+    size_t size = 0;
     bool looping = true;
     while (looping) {
-        char line[1000] = { 0 };
-        if (fgets(line, sizeof(line), in) == NULL)
-            line[0] = '\0';
+        char empty[] = "";
+        char *line = getline(&buf, &size, in) != -1 ? buf : empty;
 
         /* get file pos */
         long curr_pos = ftell(in);
@@ -96,10 +97,10 @@ int main(int argc, char *argv[])
         /* handle disp or other */
         char *displine = NULL;
         if (strncmp(line, "line", 4) == 0) {
-            displine = &line[5];
+            displine = line[4] != '\0' ? &line[5] : &line[4];
             sleep = 0;
         } else if (strncmp(line, "prompt", 6) == 0) {
-            displine = &line[7];
+            displine = line[6] != '\0' ? &line[7] : &line[6];
             /* Munch newline */
             line[strlen(line) - 1] = '\0';
             sleep = 0;
@@ -293,8 +294,7 @@ int main(int argc, char *argv[])
 
             /* read to next newline so we don't break up
                lines seeking around */
-            if (fgets(line, sizeof(line), in) == NULL)
-                line[0] = '\0';
+            getline(&buf, &size, in);
             new_pos = ftell(in);
 
             /* Make a note of moving */
@@ -311,6 +311,7 @@ int main(int argc, char *argv[])
     delwin(status);
     endwin();
 
+    free(buf);
     fclose(in);
 
     return 0;
