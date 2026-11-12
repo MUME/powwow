@@ -1187,7 +1187,9 @@ run 'Tab completes the arguments of #delim, #option and #group' '' \
 "
 grep -aq '^#delim: "program" ' "$tmp/out" || fail "expected #delim program"
 has '#option autoprint is now on.'
-grep -aq 'fights off $' "$tmp/out" || fail "expected #group fights off"
+# keys read separately are drawn after moving the cursor where they go
+sed 's/<ESC>\[[0-9;]*H//g' "$tmp/out" | grep -aq 'fights off $' \
+    || fail "expected #group fights off"
 
 run 'Tab completes the names of aliases, actions, marks and variables' '' \
     "#alias kfoo=kill foo
@@ -1199,10 +1201,11 @@ run 'Tab completes the names of aliases, actions, marks and variables' '' \
 #mark tr	
 #var \$tar	
 "
-grep -aq '#alias kfoo $' "$tmp/out" || fail "expected #alias kfoo"
-grep -aq '#action -hpcheck $' "$tmp/out" || fail "expected #action -hpcheck"
-grep -aq '#mark troll $' "$tmp/out" || fail "expected #mark troll"
-grep -aq '#var \$target $' "$tmp/out" || fail "expected #var \$target"
+sed 's/<ESC>\[[0-9;]*H//g' "$tmp/out" > "$tmp/drawn"
+grep -aq '#alias kfoo $' "$tmp/drawn" || fail "expected #alias kfoo"
+grep -aq '#action -hpcheck $' "$tmp/drawn" || fail "expected #action -hpcheck"
+grep -aq '#mark troll $' "$tmp/drawn" || fail "expected #mark troll"
+grep -aq '#var \$target $' "$tmp/drawn" || fail "expected #var \$target"
 
 run 'the spaces after a file name are not part of it' "#save $tmp/saved "
 [ -f "$tmp/saved" ] || fail "expected $tmp/saved"
