@@ -1166,6 +1166,17 @@ run 'Tab lists the words down and then across' '' \
 has 'autoclear  debug      exit       keyecho    reprint    speedwalk'
 has 'compact    editor=    info       pager=     shell=     wrap'
 
+name='powwow-movieplay -a converts lines longer than 4 KB'
+long=$(printf '%05000d' 0)
+printf 'line %s\nsleep 10\nprompt >\n' "$long" > "$tmp/movie"
+if "$(dirname "$POWWOW")/powwow-movieplay" -a "$tmp/movie" > "$tmp/out" 2>&1
+then
+    [ "$(cat "$tmp/out")" = "$long
+>" ] || fail 'the movie is not converted'
+else
+    fail "exit status $?"
+fi
+
 # the texts that #help shows must be ASCII, except for what tty_put_wc()
 # writes as ASCII where the locale is not UTF-8: the copyright sign, and
 # the dashes U+2010 to U+2015

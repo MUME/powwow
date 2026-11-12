@@ -64,9 +64,10 @@ int main(int argc, char *argv[])
         }
     }
 
-    char buf[4096];
-    while (fgets(buf, sizeof(buf), infile) != NULL) {
-        size_t len = strlen(buf);
+    char *buf = NULL;
+    size_t size = 0;
+    ssize_t len;
+    while ((len = getline(&buf, &size, infile)) != -1) {
         if (len > 0 && buf[len - 1] == '\n')
             buf[len - 1] = '\0';
         if (strncmp(buf, "sleep ", 6) == 0) {
@@ -78,10 +79,12 @@ int main(int argc, char *argv[])
             fprintf(outfile, "%s", buf + 7);
         } else {
             fprintf(stderr, "Syntax error in line:\n%s\n", buf);
+            free(buf);
             return 1;
         }
         fflush(outfile);
     }
+    free(buf);
     if (feof(infile)) {
         fprintf(outfile, "\n");
         return 0;
