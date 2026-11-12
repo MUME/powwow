@@ -505,6 +505,23 @@ static void check_delete(object *obj)
     }
 }
 
+/*
+ * shift *num left, or else right, by count bits: the bits shifted out are
+ * lost, and a right shift keeps the sign; a negative count is an error
+ */
+static void shift(long *num, long count, bool left)
+{
+    const long bits = sizeof(long) * CHAR_BIT;
+    if (count < 0)
+        error = OUT_RANGE_ERROR;
+    else if (left)
+        *num = count >= bits ? 0 : (long)((unsigned long)*num << count);
+    else if (*num >= 0)
+        *num = count >= bits ? 0 : *num >> count;
+    else
+        *num = count >= bits ? -1 : ~(~*num >> count);
+}
+
 static bool exe_op(operator *op)
 {
     object o1 = { 0 };
@@ -609,10 +626,8 @@ static bool exe_op(operator *op)
                 *l &= o2.num;
                 break;
             case op_lshift_eq:
-                *l <<= o2.num;
-                break;
             case op_rshift_eq:
-                *l >>= o2.num;
+                shift(l, o2.num, *op == op_lshift_eq);
                 break;
             case op_plus_eq:
                 *l += o2.num;
@@ -761,10 +776,8 @@ static bool exe_op(operator *op)
                 o1.num &= o2.num;
                 break;
             case op_lshift:
-                o1.num <<= o2.num;
-                break;
             case op_rshift:
-                o1.num >>= o2.num;
+                shift(&o1.num, o2.num, *op == op_lshift);
                 break;
             case op_minus:
                 o1.num -= o2.num;
