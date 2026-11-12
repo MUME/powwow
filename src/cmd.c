@@ -277,7 +277,7 @@ void cmd_add_command(cmdstruct *cmd)
      */
     for (cmdstruct *c = commands; c != NULL; c = c->next) {
         if (strcmp(cmd->name, c->name) == 0) {
-            PRINTF("#error %s is already defined\n", c->name);
+            message_printf("#error %s is already defined\n", c->name);
             return;
         }
     }
@@ -312,7 +312,7 @@ void cmd_add_command(cmdstruct *cmd)
         }
     }
 
-    PRINTF("ERROR INSERTING COMMAND\n");
+    message_printf("ERROR INSERTING COMMAND\n");
 }
 
 /* Init the command listing, called from main */
@@ -354,17 +354,17 @@ static void cmd_module(char *arg)
 
     void *lib = dlopen(libname, RTLD_GLOBAL | RTLD_LAZY);
     if (lib == NULL) {
-        PRINTF("#module error: %s\n", dlerror());
+        message_printf("#module error: %s\n", dlerror());
         return;
     } else {
-        PRINTF("#module loaded %s\n", libname);
+        message_printf("#module loaded %s\n", libname);
     }
 
     void (*func)(void) = dlsym(lib, "powwow_init");
     if (func != NULL) {
         (*func)();
     } else {
-        PRINTF("#module error: %s\n", dlerror());
+        message_printf("#module error: %s\n", dlerror());
     }
 }
 #endif
@@ -388,7 +388,7 @@ static void cmd_group(char *arg)
             show_group(group);
             return;
         } else {
-            PRINTF("#unknown group command, use off/on/list\n");
+            message_printf("#unknown group command, use off/on/list\n");
             return;
         }
 
@@ -404,7 +404,7 @@ static void cmd_group(char *arg)
             }
         }
     } else {
-        PRINTF("#group name required\n");
+        message_printf("#group name required\n");
     }
 }
 
@@ -507,7 +507,7 @@ static void show_help_text(char *text, bool use_pager)
         return;
     }
     const char *body = strchr(text, '\n');
-    PRINTF("%s", body != NULL ? body + 1 : text);
+    message_printf("%s", body != NULL ? body + 1 : text);
     free(text);
 }
 
@@ -758,7 +758,7 @@ static void cmd_shell(char *arg)
 {
     if (*arg == '\0') {
         if (opt_info) {
-            PRINTF("#that's easy.\n");
+            message_printf("#that's easy.\n");
         }
     } else {
         char *command = shell_command(arg);
@@ -779,7 +779,7 @@ static void cmd_shell(char *arg)
             errmsg("cannot run the shell");
         } else if (WIFSIGNALED(wstatus) && WTERMSIG(wstatus) == SIGINT) {
             /* stop a loop, as shells do */
-            PRINTF("#interrupted.\n");
+            message_printf("#interrupted.\n");
             error = USER_BREAK;
         }
     }
@@ -851,7 +851,7 @@ static void cmd_delim(char *arg)
         ++n;
 
     if (n >= DELIM_MODES) {
-        PRINTF("#delim [normal|program|{custom <chars>}\n");
+        message_printf("#delim [normal|program|{custom <chars>}\n");
         return;
     }
 
@@ -871,7 +871,7 @@ static void cmd_do(char *arg)
 {
     arg = skipspace(arg);
     if (*arg != '(') {
-        PRINTF("#do: ");
+        message_printf("#do: ");
         error = MISMATCH_PAREN_ERROR;
         print_error(error);
         return;
@@ -883,7 +883,7 @@ static void cmd_do(char *arg)
     if (REAL_ERROR) return;
 
     if (type != TYPE_NUM) {
-        PRINTF("#do: ");
+        message_printf("#do: ");
         error = NO_NUM_VALUE_ERROR;
         print_error(error);
         return;
@@ -893,7 +893,7 @@ static void cmd_do(char *arg)
         if (*++arg == ' ')
             ++arg;
     } else {
-        PRINTF("#do: ");
+        message_printf("#do: ");
         error = MISSING_PAREN_ERROR;
         print_error(error);
         return;
@@ -903,7 +903,7 @@ static void cmd_do(char *arg)
         while (error == 0 && result-- != 0)
             parse_instruction(arg, true, false, true);
     else {
-        PRINTF("#do: bogus repeat count \"%ld\"\n", result);
+        message_printf("#do: bogus repeat count \"%ld\"\n", result);
     }
 }
 
@@ -922,17 +922,18 @@ static void cmd_hilite(char *arg)
     struct attr attr;
     char why[BUFSIZE];
     if (!attr_parse_why(arg, &attr, why, sizeof(why))) {
-        PRINTF("#hilite: %s.\n", why);
+        message_printf("#hilite: %s.\n", why);
         if (opt_info) {
-            PRINTF("#syntax: #hilite [input|messages] [<attribute>]\n");
+            message_printf("#syntax: #hilite [input|messages]"
+                           " [<attribute>]\n");
             show_attr_syntax();
         }
     } else if (messages) {
         message_attr = attr;
         attr_string(&attr, msgattrbeg, msgattrend);
         if (opt_info) {
-            PRINTF("#message highlighting is now %s.\n",
-                   attr_is_none(&attr) ? "off" : "on");
+            message_printf("#message highlighting is now %s.\n",
+                           attr_is_none(&attr) ? "off" : "on");
         }
     } else {
         input_attr = attr;
@@ -969,7 +970,7 @@ static void cmd_history(char *arg)
         if (!REAL_ERROR && num != TYPE_NUM)
             error = NO_NUM_VALUE_ERROR;
         if (REAL_ERROR) {
-            PRINTF("#history: ");
+            message_printf("#history: ");
             error = NO_NUM_VALUE_ERROR;
             print_error(error);
             return;
@@ -1032,9 +1033,9 @@ static void cmd_host(char *arg)
             hostinfo.utf8 = utf8;
 
             if (opt_info)
-                PRINTF("#host set to: %s %d%s%s\n", hostinfo.name,
-                       hostinfo.port, tlsopt_str(&hostinfo.tlsopt),
-                       charset_flag_str(utf8));
+                message_printf("#host set to: %s %d%s%s\n", hostinfo.name,
+                               hostinfo.port, tlsopt_str(&hostinfo.tlsopt),
+                               charset_flag_str(utf8));
             return;
         }
     } else if (*hostinfo.name != '\0') {
@@ -1047,14 +1048,14 @@ static void cmd_host(char *arg)
 
  fail:
     error = NOT_SUPPORTED_ERROR;
-    PRINTF("#syntax: #host <hostname> <port> [--tls[=<options>]|"
-           NO_TLS_FLAG "] [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
+    message_printf("#syntax: #host <hostname> <port> [--tls[=<options>]|"
+                   NO_TLS_FLAG "] [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
 }
 
 static void cmd_request(char *arg)
 {
     if (current_connection == NULL) {
-        PRINTF("#not connected to a MUD!\n");
+        message_printf("#not connected to a MUD!\n");
         return;
     }
     while (*(arg = skipspace(arg)) != '\0') {
@@ -1066,7 +1067,7 @@ static void cmd_request(char *arg)
             if (all || strncmp(buf, "editor", len) == 0) {
                 mpi_identify(current_connection);
                 if (opt_info) {
-                    PRINTF("#request editor\n");
+                    message_printf("#request editor\n");
                 }
             }
         }
@@ -1117,7 +1118,7 @@ static void cmd_in(char *arg)
         return;
     }
     if (*arg != '(') {
-        PRINTF("#in: ");
+        message_printf("#in: ");
         error = MISMATCH_PAREN_ERROR;
         print_error(error);
         return;
@@ -1133,7 +1134,7 @@ static void cmd_in(char *arg)
             error = MISSING_PAREN_ERROR;
     }
     if (REAL_ERROR) {
-        PRINTF("#in: ");
+        message_printf("#in: ");
         print_error(error);
         return;
     }
@@ -1150,7 +1151,8 @@ static void cmd_in(char *arg)
         }
     } else if (*p != NULL && millisec == 0) {
         if (opt_info) {
-            PRINTF("#deleting delay label: %s %s\n", name, (*p)->command);
+            message_printf("#deleting delay label: %s %s\n", name,
+                           (*p)->command);
         }
         delete_delaynode(p);
     } else {
@@ -1185,7 +1187,7 @@ static void cmd_at(char *arg)
         return;
     }
     if (*arg != '(') {
-        PRINTF("#in: ");
+        message_printf("#in: ");
         error = MISMATCH_PAREN_ERROR;
         print_error(error);
         return;
@@ -1205,7 +1207,7 @@ static void cmd_at(char *arg)
         /* convert time-string into hour, minute, second */
         buf = skipspace(ptrdata(pbuf));
         if (*buf == '\0' || !isdigit((unsigned char)*buf)) {
-            PRINTF("#at: ");
+            message_printf("#at: ");
             error = NO_NUM_VALUE_ERROR;
             print_error(error);
             ptrdel(&pbuf);
@@ -1232,7 +1234,7 @@ static void cmd_at(char *arg)
         if (*++arg == ' ')
             ++arg;
     } else {
-        PRINTF("#at: ");
+        message_printf("#at: ");
         error = MISSING_PAREN_ERROR;
         print_error(error);
         return;
@@ -1275,12 +1277,12 @@ static void cmd_init(char *arg)
         if (*++arg != '\0') {
             my_strncpy(initstr, arg, BUFSIZE - 1);
             if (opt_info) {
-                PRINTF("#init: %s\n", initstr);
+                message_printf("#init: %s\n", initstr);
             }
         } else {
             *initstr = '\0';
             if (opt_info) {
-                PRINTF("#init cleared.\n");
+                message_printf("#init cleared.\n");
             }
         }
     } else
@@ -1303,7 +1305,7 @@ static void cmd_isprompt(char *arg)
                   error = MISSING_PAREN_ERROR;
             }
             if (REAL_ERROR) {
-                PRINTF("#isprompt: ");
+                message_printf("#isprompt: ");
                 print_error(error);
                 return;
             }
@@ -1383,7 +1385,7 @@ static void cmd_nice(char *arg)
     int nnice = a_nice;
     arg = skipspace(arg);
     if (*arg == '\0') {
-        PRINTF("#nice: %d\n", a_nice);
+        message_printf("#nice: %d\n", a_nice);
         return;
     }
     if (isdigit((unsigned char)*arg)) {
@@ -1400,7 +1402,7 @@ static void cmd_nice(char *arg)
         else if (!REAL_ERROR && *arg++ != ')')
             error = MISSING_PAREN_ERROR;
         if (REAL_ERROR) {
-            PRINTF("#nice: ");
+            message_printf("#nice: ");
             print_error(error);
             return;
         }
@@ -1419,7 +1421,7 @@ static void cmd_prefix(char *arg)
 {
     strcpy(prefixstr, arg);
     if (opt_info) {
-        PRINTF("#prefix %s.\n", *arg != '\0' ? "set" : "cleared");
+        message_printf("#prefix %s.\n", *arg != '\0' ? "set" : "cleared");
     }
 }
 
@@ -1433,7 +1435,7 @@ static void cmd_quote(char *arg)
     else if (strcmp(arg, "off") == 0)
         verbatim = false;
     if (opt_info) {
-        PRINTF("#%s mode.\n", verbatim ? "verbatim" : "normal");
+        message_printf("#%s mode.\n", verbatim ? "verbatim" : "normal");
     }
 }
 
@@ -1474,7 +1476,7 @@ static void cmd_rebindALL(char *arg)
 static void reset_usage(const char *arg)
 {
     if (*arg == '\0')
-        PRINTF("#reset: must specify one of:\n");
+        message_printf("#reset: must specify one of:\n");
     else
         wrap_printf("#reset: unknown list \"%s\", must specify one of:", arg);
     tty_puts(" action, alias, all, at, bind [<key>], in, mark, prompt,"
@@ -1572,7 +1574,7 @@ static void cmd_reset(char *arg)
 static void cmd_snoop(char *arg)
 {
     if (*arg == '\0') {
-        PRINTF("#snoop: which connection?\n");
+        message_printf("#snoop: which connection?\n");
     } else
         tcp_togglesnoop(arg);
 }
@@ -1591,7 +1593,7 @@ static void cmd_stop(char *arg)
         dead_delays = dying;
     }
     if (opt_info) {
-        PRINTF("#all delayed labels are now disabled.\n");
+        message_printf("#all delayed labels are now disabled.\n");
     }
 }
 
@@ -1609,7 +1611,7 @@ static void cmd_time(char *arg)
     struct tm *s = localtime(&now.tv_sec);
     char buf[BUFSIZE];
     strftime(buf, BUFSIZE - 1, "%a,  %d %b %Y  %H:%M:%S", s);
-    PRINTF("#current time is %s\n", buf);
+    message_printf("#current time is %s\n", buf);
 }
 
 static void cmd_ver(char *arg)
@@ -1620,7 +1622,7 @@ static void cmd_ver(char *arg)
     else if (strcmp(arg, "-v") == 0)
         printver(2);
     else
-        PRINTF("#syntax: #ver [-v]\n");
+        message_printf("#syntax: #ver [-v]\n");
 }
 
 static void cmd_emulate(char *arg)
@@ -1670,12 +1672,12 @@ static void cmd_eval(char *arg)
         ++arg;
         evaln(&arg);
         if (*arg != ')') {
-            PRINTF("#(): ");
+            message_printf("#(): ");
             error = MISSING_PAREN_ERROR;
             print_error(error);
         }
     } else {
-        PRINTF("#(): ");
+        message_printf("#(): ");
         error = MISMATCH_PAREN_ERROR;
         print_error(error);
     }
@@ -1796,7 +1798,7 @@ static void cmd_send(char *arg)
 
             if (start == 0 || i++ >= start) {
                 if (opt_echo) {
-                    PRINTF("[%s]\n", buf);
+                    message_printf("[%s]\n", buf);
                 }
                 tcp_write(current_connection, buf);
             }
@@ -1804,7 +1806,7 @@ static void cmd_send(char *arg)
         if (kind == '!') pclose(fp); else fclose(fp);
     } else {
         if (opt_echo) {
-            PRINTF("[%s]\n", arg);
+            message_printf("[%s]\n", arg);
         }
         tcp_write(current_connection, arg);
     }
@@ -1881,12 +1883,12 @@ static void cmd_write(char *arg)
             if (REAL_ERROR)
                 goto write_cleanup;
         } else {
-            PRINTF("#write: ");
+            message_printf("#write: ");
             error = SYNTAX_ERROR;
             goto write_cleanup;
         }
         if (*arg != ')') {
-            PRINTF("#write: ");
+            message_printf("#write: ");
             error = MISSING_PAREN_ERROR;
             goto write_cleanup;
         }
@@ -1904,7 +1906,7 @@ static void cmd_write(char *arg)
         fflush(fp);
         if (kind == '!') pclose(fp); else fclose(fp);
     } else {
-        PRINTF("#write: ");
+        message_printf("#write: ");
         error = MISMATCH_PAREN_ERROR;
     }
 
@@ -1989,7 +1991,7 @@ static void cmd_var(char *arg)
             arg = tmp + 1;
             idx = evalp(&pbuf, &arg);
             if (REAL_ERROR) {
-                PRINTF("#var: ");
+                message_printf("#var: ");
                 print_error(error);
                 ptrdel(&pbuf);
                 return;
@@ -2042,8 +2044,8 @@ static void cmd_var(char *arg)
                             return;
                         }
                         if (opt_info) {
-                            PRINTF("#new variable: %c%s\n",
-                                   kind == VAR_TEXT ? '$' : '@', buf);
+                            message_printf("#new variable: %c%s\n",
+                                           kind == VAR_TEXT ? '$' : '@', buf);
                         }
                     } else {
                         error = UNDEFINED_VARIABLE_ERROR;
@@ -2061,7 +2063,7 @@ static void cmd_var(char *arg)
             if (!REAL_ERROR && idx != TYPE_NUM)
                 error = NO_STRING_ERROR;
             if (REAL_ERROR) {
-                PRINTF("#var: ");
+                message_printf("#var: ");
                 print_error(error);
                 return;
             }
@@ -2181,12 +2183,12 @@ static void cmd_var(char *arg)
         long num = strtol(arg, &num_end, 10);
 
         if (errno == ERANGE) {
-            PRINTF("#var: ");
+            message_printf("#var: ");
             error = OUT_RANGE_ERROR;
             print_error(error);
         } else {
             if (num_end == arg) {
-                PRINTF("#var: ");
+                message_printf("#var: ");
                 error = NO_NUM_VALUE_ERROR;
                 print_error(error);
             }
@@ -2224,7 +2226,7 @@ static void cmd_setvar(char *arg)
             buf = 0;
 
         if (REAL_ERROR) {
-            PRINTF("#setvar: ");
+            message_printf("#setvar: ");
             print_error(error);
             return;
         }
@@ -2252,7 +2254,7 @@ static void cmd_setvar(char *arg)
             if (buf > 0)
                 lines = (int)buf;
             if (opt_info) {
-                PRINTF("#setvar: lines=%d\n", lines);
+                message_printf("#setvar: lines=%d\n", lines);
             }
         }
     } else if (i != 0 && strncmp(name, "mem", i) == 0) {
@@ -2262,8 +2264,8 @@ static void cmd_setvar(char *arg)
             if (buf == 0 || buf >= PARAMLEN)
                 limit_mem = buf <= INT_MAX ? (int)buf : INT_MAX;
             if (opt_info) {
-                PRINTF("#setvar: mem=%d%s\n", limit_mem,
-                       limit_mem != 0 ? "" : " (unlimited)");
+                message_printf("#setvar: mem=%d%s\n", limit_mem,
+                               limit_mem != 0 ? "" : " (unlimited)");
             }
         }
     } else if (i != 0 && strncmp(name, "buffer", i) == 0) {
@@ -2273,11 +2275,12 @@ static void cmd_setvar(char *arg)
             log_resize(buf);
     } else {
         update_now();
-        PRINTF("#setvar buffer=%d\n"
-               "#setvar lines=%d\n"
-               "#setvar mem=%d\n"
-               "#setvar timer=%ld\n",
-               log_getsize(), lines, limit_mem, diff_vtime(&now, &ref_time));
+        message_printf("#setvar buffer=%d\n"
+                       "#setvar lines=%d\n"
+                       "#setvar mem=%d\n"
+                       "#setvar timer=%ld\n",
+                       log_getsize(), lines, limit_mem,
+                       diff_vtime(&now, &ref_time));
     }
 }
 
@@ -2285,7 +2288,7 @@ static void cmd_if(char *arg)
 {
     arg = skipspace(arg);
     if (*arg != '(') {
-        PRINTF("#if: ");
+        message_printf("#if: ");
         error = MISMATCH_PAREN_ERROR;
         print_error(error);
         return;
@@ -2305,7 +2308,7 @@ static void cmd_if(char *arg)
         }
     }
     if (REAL_ERROR) {
-        PRINTF("#if: ");
+        message_printf("#if: ");
         print_error(error);
         return;
     }
@@ -2324,7 +2327,7 @@ static void cmd_for(char *arg)
 {
     arg = skipspace(arg);
     if (*arg != '(') {
-        PRINTF("#for: ");
+        message_printf("#for: ");
         error = MISMATCH_PAREN_ERROR;
         print_error(error);
         return;
@@ -2345,7 +2348,7 @@ static void cmd_for(char *arg)
     if (REAL_ERROR)
         ;
     else if (*arg != CMDSEP) {
-        PRINTF("#for: ");
+        message_printf("#for: ");
         error = MISSING_SEPARATOR_ERROR;
         print_error(error);
     } else while (error == 0 && loop != 0
@@ -2357,7 +2360,7 @@ static void cmd_for(char *arg)
         if (*tmp != '\0')
             parse_instruction(tmp + 1, true, true, true);
         else {
-            PRINTF("#for: ");
+            message_printf("#for: ");
             error = MISSING_PAREN_ERROR;
             print_error(error);
         }
@@ -2379,7 +2382,7 @@ static void cmd_for(char *arg)
     else if (type != TYPE_NUM)
         error = NO_NUM_VALUE_ERROR;
     if (REAL_ERROR) {
-        PRINTF("#for: ");
+        message_printf("#for: ");
         print_error(error);
     }
     if (error != DYN_STACK_UND_ERROR && error != DYN_STACK_OV_ERROR)
@@ -2390,7 +2393,7 @@ static void cmd_while(char *arg)
 {
     arg = skipspace(arg);
     if (*arg != '(') {
-        PRINTF("#while: ");
+        message_printf("#while: ");
         error = MISMATCH_PAREN_ERROR;
         print_error(error);
         return;
@@ -2421,7 +2424,7 @@ static void cmd_while(char *arg)
     else if (type != TYPE_NUM)
         error = NO_NUM_VALUE_ERROR;
     if (REAL_ERROR) {
-        PRINTF("#while: ");
+        message_printf("#while: ");
         print_error(error);
     }
     if (error != DYN_STACK_UND_ERROR && error != DYN_STACK_OV_ERROR)
@@ -2447,7 +2450,7 @@ static void cmd_capture(char *arg)
         }
     } else {
         if (capturefile != NULL) {
-            PRINTF("#capture already active.\n");
+            message_printf("#capture already active.\n");
         } else {
             bool append = false;
             /* Append to log file, if the name starts with '>' */
@@ -2487,7 +2490,7 @@ static void cmd_movie(char *arg)
         }
     } else {
         if (moviefile != NULL) {
-            PRINTF("#movie already active.\n");
+            message_printf("#movie already active.\n");
         } else {
             moviefile = fopen(arg, "w");
             if (moviefile == NULL) {
@@ -2524,7 +2527,7 @@ static void cmd_record(char *arg)
         }
     } else {
         if (recordfile != NULL) {
-            PRINTF("#record already active.\n");
+            message_printf("#record already active.\n");
         } else {
             recordfile = fopen(arg, "w");
             if (recordfile == NULL) {
@@ -2543,17 +2546,17 @@ static void cmd_edit(char *arg)
 {
     if (edit_sess != NULL) {
         for (editsess *sp = edit_sess; sp != NULL; sp = sp->next) {
-            PRINTF("# %s (%u)\n", sp->descr, sp->key);
+            message_printf("# %s (%u)\n", sp->descr, sp->key);
         }
     } else {
-        PRINTF("#no active editors.\n");
+        message_printf("#no active editors.\n");
     }
 }
 
 static void cmd_cancel(char *arg)
 {
     if (edit_sess == NULL) {
-        PRINTF("#no editing sessions to cancel.\n");
+        message_printf("#no editing sessions to cancel.\n");
     } else {
         if (*arg != '\0') {
             editsess *sp;
@@ -2563,7 +2566,7 @@ static void cmd_cancel(char *arg)
                     break;
                 }
             if (sp == NULL) {
-                PRINTF("#unknown editing session %d\n", atoi(arg));
+                message_printf("#unknown editing session %d\n", atoi(arg));
             }
         } else {
             if (edit_sess->next != NULL) {
@@ -2592,8 +2595,8 @@ static void cmd_cpu(char *arg)
     cpu_clock = clock();
     float f = (float)(cpu_clock - start_clock) / (float)CLOCKS_PER_SEC;
     float l = (float)(diff_vtime(&now, &start_time)) / (float)mSEC_PER_SEC;
-    PRINTF("#CPU time used: %.3f sec. (%.2f%%)\n", f,
-               (l > 0 && l > f) ? f * 100.0 / l : 100.0);
+    message_printf("#CPU time used: %.3f sec. (%.2f%%)\n", f,
+                   (l > 0 && l > f) ? f * 100.0 / l : 100.0);
 }
 
 /*
@@ -2617,7 +2620,7 @@ static bool maybe_flag_args(char **argp, struct tls_options *tlsopt,
             } else {
                 const char *targ = *argp;
                 if (!parse_tls_flag(tlsopt, &targ, true)) {
-                    PRINTF("#connect: invalid argument '%s'\n", *argp);
+                    message_printf("#connect: invalid argument '%s'\n", *argp);
                     return false;
                 }
                 if (!tlsopt->use_tls)
@@ -2677,11 +2680,11 @@ static void cmd_connect(char *arg)
                      tls >= 0 ? &tlsopt : &hostinfo.tlsopt,
                      (utf8 >= 0 ? utf8 : hostinfo.utf8) != 0);
         else {
-            PRINTF("#connect: no host defined!\n"
-                   "#syntax: #connect"
-                   " <session-id> [<initstr>] <address> <port>"
-                   " [--tls[=<options>]|" NO_TLS_FLAG "]"
-                   " [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
+            message_printf("#connect: no host defined!\n"
+                           "#syntax: #connect"
+                           " <session-id> [<initstr>] <address> <port>"
+                           " [--tls[=<options>]|" NO_TLS_FLAG "]"
+                           " [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
         }
     } else if (argc == 3) {
         if (tls < 0)
@@ -2727,7 +2730,7 @@ static void cmd_spawn(char *arg)
             return;
         }
     }
-    PRINTF("#syntax: #spawn <session-id> <command>\n");
+    message_printf("#syntax: #spawn <session-id> <command>\n");
 }
 
 /* If you have speedwalk off but still want to use a speedwalk sequence,
@@ -2735,10 +2738,10 @@ static void cmd_spawn(char *arg)
 static void cmd_speedwalk(char *arg)
 {
     bool save_speedwalk = opt_speedwalk;
-    PRINTF("Executing speedwalk '%s'\n", arg);
+    message_printf("Executing speedwalk '%s'\n", arg);
     opt_speedwalk = true;
     if (!map_walk(skipspace(arg), false, false)) {
-        PRINTF("Error executing speedwalk\n");
+        message_printf("Error executing speedwalk\n");
     }
     opt_speedwalk = save_speedwalk;
 }
@@ -2746,7 +2749,7 @@ static void cmd_speedwalk(char *arg)
 static void cmd_zap(char *arg)
 {
     if (*arg == '\0') {
-        PRINTF("#zap: no connection name.\n");
+        message_printf("#zap: no connection name.\n");
     } else
         tcp_close(arg);
 }
@@ -2759,7 +2762,7 @@ static void cmd_qui(char *arg)
 static void cmd_quit(char *arg)
 {
     if (*arg != '\0') { /* no skipspace() here! */
-        PRINTF("#quit: spurious argument?\n");
+        message_printf("#quit: spurious argument?\n");
     } else
         exit_powwow();
 }
@@ -2930,10 +2933,11 @@ static bool command_option(const char *word, int len, const char *rest)
     }
     if (opt_info) {
         if (*value != NULL)
-            PRINTF("#option %s is now: %s\n", command_options[i].name,
-                   *value);
+            message_printf("#option %s is now: %s\n", command_options[i].name,
+                           *value);
         else
-            PRINTF("#option %s is now not set.\n", command_options[i].name);
+            message_printf("#option %s is now not set.\n",
+                           command_options[i].name);
     }
     return true;
 }
@@ -3025,9 +3029,9 @@ static void cmd_option(char *arg)
          * "#option info" alone was typed */
         if (mode != MODE_REP && *arg == '\0' && count == 1
             && (opt_info || (mode == MODE_TOGGLE && varp == &opt_info))) {
-            PRINTF("#option %s is now o%s.\n",
-                   options[i].name,
-                   *varp ? "n" : "ff");
+            message_printf("#option %s is now o%s.\n",
+                           options[i].name,
+                           *varp ? "n" : "ff");
         }
     }
 }
@@ -3098,7 +3102,7 @@ static void cmd_load(char *arg)
         tty_add_initial_binds();
         tty_add_walk_binds();
         limit_mem = 1048576;
-        PRINTF("#emergency loaded default settings.\n");
+        message_printf("#emergency loaded default settings.\n");
     }
 }
 
@@ -3114,7 +3118,7 @@ static char *trivial_eval(ptr **pbuf, char *arg, const char *name)
         if (!REAL_ERROR && *arg != ')')
             error = MISSING_PAREN_ERROR;
         if (REAL_ERROR) {
-            PRINTF("#%s: ", name);
+            message_printf("#%s: ", name);
             print_error(error);
             return NULL;
         }

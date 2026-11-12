@@ -1634,7 +1634,7 @@ static void fail_msg(void)
 int save_settings(void)
 {
     if (REAL_ERROR) {
-        PRINTF("#will not save after an error!\n");
+        message_printf("#will not save after an error!\n");
         return -1;
     }
     error = 0;
