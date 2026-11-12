@@ -140,6 +140,7 @@ static void tty_set_input(bool input)
 }
 
 static struct termios ttybsave;
+static bool tty_started;        /* ttybsave holds the state to restore */
 
 /*
  * the name of the interrupt key of the terminal, as C-c, which stops the
@@ -195,6 +196,7 @@ bool tty_locale_utf8(void)
 void tty_start(void)
 {
     tcgetattr(tty_read_fd, &ttybsave);
+    tty_started = true;
     struct termios ttyb = ttybsave;
     ttyb.c_lflag &= ~(ECHO | ICANON);
     /* let ^S and ^Q through instead of stopping and starting the output,
@@ -233,6 +235,11 @@ void tty_start(void)
  */
 void tty_quit(void)
 {
+    /* the terminal is as powwow found it before tty_start(), such as
+     * when a fatal error ends powwow while it starts */
+    if (!tty_started)
+        return;
+    tty_started = false;
     tcsetattr(tty_read_fd, TCSANOW, &ttybsave);
     tty_puts(kpadend);
     tty_flush();

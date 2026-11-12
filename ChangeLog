@@ -126,6 +126,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Connections closed by an error, such as a reset by the server,
 	  are closed by powwow too, instead of printing the error again
 	  and again.
+	* Fatal errors while powwow starts, before it sets up the terminal,
+	  such as running out of memory while loading the definition file,
+	  no longer leave the terminal without echo and line editing.
 	* Zero width spaces no longer stop C-b and C-f, or shift the input
 	  line.
 	* Combining characters at the start of the input line, with no
