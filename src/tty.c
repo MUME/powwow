@@ -1254,12 +1254,12 @@ int tty_has_chars(void)
 static uint32_t wc_char(wchar_t wc, uint32_t *high)
 {
     uint32_t cp = (uint32_t)wc;
-#if WCHAR_MAX < 0x10ffff
-    if (cp >= 0xd800 && cp <= 0xdbff) {
+#if WCHAR_MAX < UNICODE_MAX
+    if (unicode_is_high_surrogate(cp)) {
         *high = cp;
         return 0;
     }
-    if (cp >= 0xdc00 && cp <= 0xdfff && *high != 0)
+    if (unicode_is_low_surrogate(cp) && *high != 0)
         cp = 0x10000 + ((*high - 0xd800) << 10) + (cp - 0xdc00);
     *high = 0;
 #endif

@@ -1163,7 +1163,7 @@ static int exe_op(operator *op)
 	    } else {
 		/* character with that code point */
 		char buf[UTF8_MAX];
-		uint32_t cp = o1.num < 0 || o1.num > 0x10ffff
+		uint32_t cp = o1.num < 0 || o1.num > UNICODE_MAX
 		    ? UNICODE_REPLACEMENT : (uint32_t)o1.num;
 		o1.txt = ptrmcpy(o1.txt, buf, utf8_put(cp, buf));
 	    }

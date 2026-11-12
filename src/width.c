@@ -37,7 +37,7 @@ int cp_width(uint32_t cp)
     if (cp < 0x20 || cp == ASCII_DEL)
         return 0;               /* control characters */
 #ifdef USE_LOCALE
-#if WCHAR_MAX < 0x10ffff
+#if WCHAR_MAX < UNICODE_MAX
     /* a wchar_t of 16 bits, as on Cygwin, cannot hold the characters
      * above U+FFFF, such as most emoji: wcswidth() takes them as their
      * UTF-16 surrogates */

@@ -104,12 +104,12 @@ static void test_utf8_internal(void)
     ENCODE("encode latin1 invalid", CS_LATIN1, "a\x80" "b", "a?b");
 
     /* round trip of code points via utf8_put/utf8_get */
-    for (uint32_t cp = 0; cp <= 0x10ffff; cp += cp < 0x800 ? 1 : 97) {
+    for (uint32_t cp = 0; cp <= UNICODE_MAX; cp += cp < 0x800 ? 1 : 97) {
         char s[UTF8_MAX];
         uint32_t back;
         int len = utf8_put(cp, s);
         int got = utf8_get(s, len, &back);
-        uint32_t expect = (cp >= 0xd800 && cp <= 0xdfff)
+        uint32_t expect = unicode_is_surrogate(cp)
             ? UNICODE_REPLACEMENT : cp;
         if (got != len || back != expect) {
             printf("FAIL round trip U+%04X\n", (unsigned)cp);

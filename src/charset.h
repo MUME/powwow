@@ -3,6 +3,7 @@
 #ifndef _CHARSET_H_
 #define _CHARSET_H_
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -18,6 +19,32 @@
 #define UTF8_REPLACEMENT     "\xef\xbf\xbd"
 #define UTF8_REPLACEMENT_LEN 3
 #define UNICODE_REPLACEMENT  0xfffd
+
+#define UNICODE_MAX 0x10ffff    /* the last code point */
+
+/* is 'cp' a UTF-16 surrogate, which is not a character? */
+static inline bool unicode_is_surrogate(uint32_t cp)
+{
+    return cp >= 0xd800 && cp <= 0xdfff;
+}
+
+/* is 'cp' a high surrogate, the first of two in UTF-16? */
+static inline bool unicode_is_high_surrogate(uint32_t cp)
+{
+    return cp >= 0xd800 && cp <= 0xdbff;
+}
+
+/* is 'cp' a low surrogate, the second of two in UTF-16? */
+static inline bool unicode_is_low_surrogate(uint32_t cp)
+{
+    return cp >= 0xdc00 && cp <= 0xdfff;
+}
+
+/* is 'cp' a code point other than a surrogate, which UTF-8 can encode? */
+static inline bool unicode_is_scalar(uint32_t cp)
+{
+    return cp <= UNICODE_MAX && !unicode_is_surrogate(cp);
+}
 
 enum charset { CS_LATIN1, CS_UTF8, CS_ASCII };
 
