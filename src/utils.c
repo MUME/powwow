@@ -62,10 +62,15 @@ noreturn void fatal_out_of_memory(void)
     exit(EXIT_FAILURE);
 }
 
-/* malloc(), but at least 1 byte, and fatal_out_of_memory() if it fails */
+/*
+ * malloc(), but fatal_out_of_memory() if it fails; never NULL, also for
+ * 0 bytes
+ */
 void *xmalloc(size_t size)
 {
-    void *p = malloc(size != 0 ? size : 1);
+    void *p = malloc(size);
+    if (p == NULL && size == 0)
+        p = malloc(1);
     if (p == NULL)
         fatal_out_of_memory();
     return p;
@@ -74,7 +79,9 @@ void *xmalloc(size_t size)
 /* calloc(), like xmalloc() */
 void *xcalloc(size_t count, size_t size)
 {
-    void *p = calloc(count != 0 ? count : 1, size != 0 ? size : 1);
+    void *p = calloc(count, size);
+    if (p == NULL && (count == 0 || size == 0))
+        p = malloc(1);
     if (p == NULL)
         fatal_out_of_memory();
     return p;
@@ -406,12 +413,7 @@ static int vmessage(const char *format, va_list ap)
         va_end(ap2);
         return len;
     }
-    char *text = malloc(len + 1);
-    if (text == NULL) {
-        va_end(ap2);
-        out_of_memory();
-        return -1;
-    }
+    char *text = xmalloc(len + 1);
     vsnprintf(text, len + 1, format, ap2);
     va_end(ap2);
 
@@ -489,16 +491,14 @@ int wrap_width(void)
 
 /*
  * 'text' wrapped to wrap_width() before the words that do not fit, which
- * go on a new line after 'cont'; NULL if out of memory
+ * go on a new line after 'cont'
  */
 static char *wrap_text(const char *text, const char *cont)
 {
     int max = wrap_width();
     size_t cont_len = strlen(cont);
     size_t size = strlen(text) + 1 + (strlen(text) / 2 + 1) * (cont_len + 1);
-    char *out = malloc(size);
-    if (out == NULL)
-        return NULL;
+    char *out = xmalloc(size);
     size_t n = 0;
     int col = 0, line_start = 0;
     for (const char *p = text; *p != '\0'; ) {
@@ -539,17 +539,15 @@ static int vmessage_wrap(const char *cont, const char *format, va_list ap)
     va_list ap2;
     va_copy(ap2, ap);
     int len = vsnprintf(NULL, 0, format, ap);
-    char *text = len >= 0 ? malloc(len + 1) : NULL;
-    if (text != NULL)
-        vsnprintf(text, len + 1, format, ap2);
-    va_end(ap2);
-    char *out = text != NULL ? wrap_text(text, cont) : NULL;
-    free(text);
-    if (out == NULL) {
-        if (len >= 0)
-            out_of_memory();
-        return -1;
+    if (len < 0) {
+        va_end(ap2);
+        return len;
     }
+    char *text = xmalloc(len + 1);
+    vsnprintf(text, len + 1, format, ap2);
+    va_end(ap2);
+    char *out = wrap_text(text, cont);
+    free(text);
     len = tty_message("%s\n", out);
     free(out);
     return len;
@@ -1389,17 +1387,6 @@ void errmsg(const char *format, ...)
 }
 
 /*
- * print that memory ran out; code that sets error to NO_MEM_ERROR instead
- * leaves the message to print_error()
- */
-void out_of_memory(void)
-{
-    start_message();
-    tty_message("#out of memory\n");
-    tty_flush();
-}
-
-/*
  * print "#fatal error: message: reason", with the reason from errno, and
  * terminate
  */
@@ -1595,12 +1582,7 @@ int read_settings(void)
         if (3 * llen + 1 > linesize) {
             free(line);
             linesize = 3 * llen + 1;
-            line = malloc(linesize);
-            if (line == NULL) {
-                linesize = 0;
-                out_of_memory();
-                break;
-            }
+            line = xmalloc(linesize);
         }
         if (savefilever < UTF8_SAVEFILEVER)
             llen = latin1_to_utf8(buf, llen, line);

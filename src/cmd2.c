@@ -190,10 +190,7 @@ void parse_alias(char *str)
              * don't take the lookup penalty though if not changing groups */
             if (group != NULL) {
                 np = lookup_alias(left);
-                if (*np == NULL)
-                    return;     /* out of memory when adding it */
-                if ((*np)->group != NULL)
-                    free((*np)->group);
+                free((*np)->group);
 
                 if (*group == '\0' || strcmp(group, "*") == 0)
                     group = NULL;
@@ -564,11 +561,7 @@ void parse_action(char *str, bool onprompt)
                 strcpy(unesc_pat, pattern);
                 unescape(unesc_pat);
 
-                regexp = malloc(sizeof(regex_t));
-                if (regexp == NULL) {
-                    out_of_memory();
-                    return;
-                }
+                regexp = xmalloc(sizeof(regex_t));
 
 #ifdef REG_UTF
                 /* PCRE2: match UTF-8 characters, not bytes */
@@ -579,17 +572,13 @@ void parse_action(char *str, bool onprompt)
                 int errcode = regcomp(regexp, unesc_pat, cflags);
                 if (errcode != 0) {
                     int n = regerror(errcode, regexp, NULL, 0);
-                    char *tmp = malloc(n);
-                    if (tmp != NULL) {
-                        if (regerror(errcode, regexp, tmp, n) == 0) {
-                            errmsg("invalid regular expression");
-                        } else {
-                            message_printf("#regexp error: %s\n", tmp);
-                        }
-                        free(tmp);
+                    char *tmp = xmalloc(n);
+                    if (regerror(errcode, regexp, tmp, n) == 0) {
+                        errmsg("invalid regular expression");
                     } else {
-                        out_of_memory();
+                        message_printf("#regexp error: %s\n", tmp);
                     }
+                    free(tmp);
                     free(regexp);
                     return;
                 }
@@ -618,10 +607,7 @@ void parse_action(char *str, bool onprompt)
                     np = (onprompt
                           ? lookup_prompt(label)
                           : lookup_action(label));
-                    if (np == NULL || *np == NULL)
-                        return; /* out of memory when adding it */
-                    if ((*np)->group != NULL)
-                        free((*np)->group);
+                    free((*np)->group);
 
                     if (*group == '\0' || strcmp(group, "*") == 0)
                         group = NULL;
@@ -958,13 +944,8 @@ void parse_substitute(char *str)
         subst_info("deleting", n->b.mbeg, n->b.pattern, n->replacement);
         delete_substnode(np);
     } else if (n != NULL) {
-        char *replacement = my_strdup(p);
-        if (replacement == NULL) {
-            out_of_memory();
-            return;
-        }
         free(n->replacement);
-        n->replacement = replacement;
+        n->replacement = xstrdup(p);
         subst_info("changed", mbeg, pattern, p);
     } else {
         add_substnode(pattern, p, mbeg, wild);
@@ -1492,11 +1473,7 @@ void parse_rebind(char *arg)
         }
     }
 
-    char *new_seq = malloc(seqlen);
-    if (new_seq == NULL) {
-        out_of_memory();
-        return;
-    }
+    char *new_seq = xmalloc(seqlen);
     memmove(new_seq, seq, seqlen);
 
     char **old = &(*kp)->sequence;
@@ -1706,7 +1683,7 @@ void new_delaynode(char *name, char *command, long millisec)
     update_now();
     add_vtime(&t, &now);
     delaynode *node = add_delaynode(name, command, &t, millisec < 0);
-    if (opt_info && node != NULL) {
+    if (opt_info) {
         message_printf("#new ");
         show_delaynode(node, 0);
     }
