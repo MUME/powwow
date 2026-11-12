@@ -1,5 +1,5 @@
-#ifndef _FEATURE_REGEX_H_
-#define _FEATURE_REGEX_H_
+#ifndef _REGEXLIB_H_
+#define _REGEXLIB_H_
 
 #ifdef USE_REGEXP_PCRE2POSIX
 # include <pcre2posix.h>
@@ -8,4 +8,4 @@
 # include <regex.h>
 #endif
 
-#endif /* _FEATURE_REGEX_H_ */
+#endif /* _REGEXLIB_H_ */
