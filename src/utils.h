@@ -57,7 +57,7 @@ int message_wrap(const char *cont, const char *format, ...)
 /* text that powwow wraps itself is at most this wide, for readability */
 enum { WRAP_COLUMNS = 80 };
 int wrap_width(void);
-/* like PRINTF, but wrapped as message_wrap() with WRAP_CONT */
+/* like message_printf(), but wrapped as message_wrap() with WRAP_CONT */
 int wrap_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);
 
 ptr  *ptrescape(ptr *dst, ptr *src, bool append);
