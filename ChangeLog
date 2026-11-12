@@ -117,6 +117,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  line.
 	* Windows of 1 or 2 columns are drawn as if 3 wide, as a window of
 	  1 column made powwow divide by zero.
+	* Connections closed by an error, such as a reset by the server,
+	  are closed by powwow too, instead of printing the error again
+	  and again.
 	* Zero width spaces no longer stop C-b and C-f, or shift the input
 	  line.
 	* Combining characters at the start of the input line, with no
