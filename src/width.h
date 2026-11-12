@@ -19,13 +19,17 @@ int utf8_width(const char *s, size_t len);
  * joined by ZWJ.  Without libgrapheme, it is a character followed by
  * any combining characters.  An ASCII control character is always a
  * cell of its own.  The line editor moves and deletes one cell at a
- * time.
+ * time.  On the input line, characters that join the cell before them,
+ * such as combining characters, where there is none, at the start of
+ * the line or after a control character, are a cell of their own,
+ * shown on a space.
  */
 /* a cell being read one character at a time */
 struct cell_state {
     uint32_t first, prev;       /* its first and last characters */
     uint_least16_t gstate;      /* libgrapheme's state */
     int width;                  /* in terminal columns */
+    bool on_space;              /* shown on a space, on the input line */
 };
 /* start a cell with 'cp' */
 void cell_start(struct cell_state *c, uint32_t cp);
@@ -38,9 +42,16 @@ size_t utf8_cell_len(const char *s, size_t len);
 /* number of terminal columns used to display the cell of 'len' bytes
  * at 's' */
 int utf8_cell_width(const char *s, size_t len);
-/* start of the next cell after 's', but not after 'end' */
+/* the same for a cell of the input line */
+size_t utf8_input_cell_len(const char *s, size_t len);
+int utf8_input_cell_width(const char *s, size_t len);
+/* is the cell of the input line at 's' shown on a space? */
+bool utf8_input_cell_on_space(const char *s, size_t len);
+/* start of the next cell of the input line after 's', but not after
+ * 'end' */
 const char *utf8_next_cell(const char *s, const char *end);
-/* start of the cell before 's', but not before 'start' */
+/* start of the cell of the input line before 's', but not before
+ * 'start' */
 const char *utf8_prev_cell(const char *start, const char *s);
 
 #endif /* _WIDTH_H_ */

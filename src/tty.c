@@ -774,8 +774,8 @@ static void input_layout_end(int p, int *line, int *col)
     int l = col0 / cols_1, c = col0 % cols_1;
     const char *s = edbuf, *end = edbuf + p;
     while (s < end) {
-        size_t n = utf8_cell_len(s, end - s);
-        int w = utf8_cell_width(s, n);
+        size_t n = utf8_input_cell_len(s, end - s);
+        int w = utf8_input_cell_width(s, n);
         if (!tty_cell_fits(c, s, n, w)) {
             /* does not fit; drawn on the next row */
             ++l;
@@ -801,9 +801,9 @@ static void input_layout(int p, int *line, int *col)
 {
     input_layout_end(p, line, col);
     if (p >= 0 && p < edlen && *col > 0) {
-        size_t n = utf8_cell_len(edbuf + p, edlen - p);
+        size_t n = utf8_input_cell_len(edbuf + p, edlen - p);
         if (!tty_cell_fits(*col, edbuf + p, n,
-                           utf8_cell_width(edbuf + p, n))) {
+                           utf8_input_cell_width(edbuf + p, n))) {
             ++*line;
             *col = 0;
         }
@@ -950,8 +950,8 @@ static void input_redraw_from(int from)
     const char *s = edbuf + from, *end = edbuf + edlen;
     bool in_label = false;      /* drawing a label, as a message */
     while (s < end) {
-        size_t n = utf8_cell_len(s, end - s);
-        int w = utf8_cell_width(s, n);
+        size_t n = utf8_input_cell_len(s, end - s);
+        int w = utf8_input_cell_width(s, n);
         if (!tty_cell_fits(col, s, n, w)) {
             if (in_label) {
                 tty_printf("%s%s", msgattrend, edattrbeg);
@@ -983,7 +983,10 @@ static void input_redraw_from(int from)
          * characters, nor of a character not shown, such as a zero
          * width space: put the cursor where the next cell goes
          */
-        bool resync = w == 0 || n > (size_t)utf8_seqlen(*s);
+        bool on_space = utf8_input_cell_on_space(s, n);
+        bool resync = on_space || w == 0 || n > (size_t)utf8_seqlen(*s);
+        if (on_space)
+            tty_putc(' ');
         while (n-- > 0)
             tty_putc(*s++);
         col += w;
@@ -1039,7 +1042,7 @@ static int input_redraw_start(int p)
     int prev = utf8_prev_cell(edbuf, edbuf + p) - edbuf;
     if (prev == p)
         return p;
-    int len = utf8_cell_len(edbuf + prev, edlen - prev);
+    int len = utf8_input_cell_len(edbuf + prev, edlen - prev);
     return prev + len > p ? prev : p;
 }
 

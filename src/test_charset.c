@@ -187,6 +187,22 @@ static void test_width(void)
     check_int("vs16 width", utf8_width("\xe2\x9d\xa4\xef\xb8\x8f", 6), 2);
     check_int("cr lf", utf8_cell_len("\r\n", 2), 1);
     check_int("control", utf8_cell_len("\033\xcc\x81", 3), 1);
+    /* U+0301 with nothing before it: it joins the next cell, but on the
+     * input line it is a cell of its own, shown on a space */
+    static const char lone[] = "\xcc\x81" "a";
+    check_int("lone combining", utf8_cell_len(lone, 3), 3);
+    check_int("lone combining input", utf8_input_cell_len(lone, 3), 2);
+    check_int("lone combining width", utf8_input_cell_width(lone, 3), 1);
+    check_int("lone combining on space", utf8_input_cell_on_space(lone, 3),
+              1);
+    check_int("combining on its base", utf8_input_cell_on_space(s, 3), 0);
+    check_int("lone combining next cell", utf8_next_cell(lone, lone + 3)
+              - lone, 2);
+    check_int("lone combining prev cell", utf8_prev_cell(lone, lone + 3)
+              - lone, 2);
+    static const char ctl[] = "\001\xcc\x81" "a";
+    check_int("combining after control", utf8_prev_cell(ctl, ctl + 3) - ctl,
+              1);
 #ifdef HAVE_LIBGRAPHEME
     /* flag: two regional indicators */
     static const char flag[] = "x\xf0\x9f\x87\xb8\xf0\x9f\x87\xaay";

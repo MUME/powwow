@@ -586,6 +586,11 @@ if [ -n "$utf8" ]; then
     grep -Eq "<ESC>\\[[0-9;]*He$(printf '\314\201')" "$tmp/out" \
         || fail "e and the accent not drawn again together"
 
+    run 'a combining character at the start of the line is drawn on a space' \
+        '' "$(printf '\314\201a\025')"
+    grep -Eq "<ESC>\\[[0-9;]*H $(printf '\314\201')" "$tmp/out" \
+        || fail "the accent not drawn on a space"
+
     run 'version with a copyright sign and an en dash' '#ver'
     joined | grep -q ', © 1998–[0-9]* by the powwow authors$' \
         || fail "expected © and an en dash"

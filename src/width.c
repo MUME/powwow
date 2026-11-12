@@ -119,15 +119,20 @@ bool cell_add(struct cell_state *c, uint32_t cp)
      * width of the first character, but emoji presentation (VS16) and
      * flags (pairs of regional indicators) take two columns
      */
-    if (c->width == 1
+    if (c->width == 1 && !c->on_space
         && (cp == UNICODE_VS16
             || (is_regional_indicator(c->first) && is_regional_indicator(cp))))
         c->width = 2;
     return true;
 }
 
-/* read the cell at 's' into 'c'; returns its length */
-static size_t cell_read(struct cell_state *c, const char *s, size_t len)
+/*
+ * read the cell at 's' into 'c'; returns its length.  On the 'input'
+ * line, characters that would join the cell after them, as they have
+ * none before them, are a cell of their own, shown on a space.
+ */
+static size_t cell_read(struct cell_state *c, const char *s, size_t len,
+                        bool input)
 {
     if (len == 0) {
         cell_start(c, 0);
@@ -136,6 +141,10 @@ static size_t cell_read(struct cell_state *c, const char *s, size_t len)
     uint32_t cp;
     size_t n = utf8_get(s, len, &cp);
     cell_start(c, cp);
+    if (input && is_zero_width(cp)) {
+        c->on_space = true;
+        c->width = 1;
+    }
     while (n < len) {
         int k = utf8_get(s + n, len - n, &cp);
         if (!cell_add(c, cp))
@@ -148,14 +157,34 @@ static size_t cell_read(struct cell_state *c, const char *s, size_t len)
 size_t utf8_cell_len(const char *s, size_t len)
 {
     struct cell_state c;
-    return cell_read(&c, s, len);
+    return cell_read(&c, s, len, false);
 }
 
 int utf8_cell_width(const char *s, size_t len)
 {
     struct cell_state c;
-    cell_read(&c, s, len);
+    cell_read(&c, s, len, false);
     return c.width;
+}
+
+size_t utf8_input_cell_len(const char *s, size_t len)
+{
+    struct cell_state c;
+    return cell_read(&c, s, len, true);
+}
+
+int utf8_input_cell_width(const char *s, size_t len)
+{
+    struct cell_state c;
+    cell_read(&c, s, len, true);
+    return c.width;
+}
+
+bool utf8_input_cell_on_space(const char *s, size_t len)
+{
+    struct cell_state c;
+    cell_read(&c, s, len, true);
+    return c.on_space;
 }
 
 int utf8_width(const char *s, size_t len)
@@ -166,7 +195,7 @@ int utf8_width(const char *s, size_t len)
 
     while (s < end) {
         struct cell_state c;
-        size_t n = cell_read(&c, s, end - s);
+        size_t n = cell_read(&c, s, end - s, false);
         uint32_t cp = c.first;
         switch (state) {
         case NORM:
@@ -192,7 +221,7 @@ const char *utf8_next_cell(const char *s, const char *end)
 {
     if (s >= end)
         return end;
-    return s + utf8_cell_len(s, end - s);
+    return s + utf8_input_cell_len(s, end - s);
 }
 
 const char *utf8_prev_cell(const char *start, const char *s)
@@ -211,7 +240,7 @@ const char *utf8_prev_cell(const char *start, const char *s)
                 && (unsigned char)*p <= ASCII_MAX))
         --p;
     for (;;) {
-        const char *q = p + utf8_cell_len(p, s - p);
+        const char *q = p + utf8_input_cell_len(p, s - p);
         if (q >= s)
             return p;
         p = q;
