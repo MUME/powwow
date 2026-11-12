@@ -1349,7 +1349,7 @@ static void process_singleline(char **pbuf, int *psize)
                                          strlen(linestart));
                 if (MEM_ERROR) {
                     print_error(error);
-                    return;
+                    error = 0;
                 }
 
                 if (lineend > linestart) {
