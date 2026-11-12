@@ -131,6 +131,14 @@ static struct {
 };
 #endif  /* USE_LOCALE */
 
+/* tell tty_putc whether it is drawing the input line */
+static void tty_set_input(bool input)
+{
+#ifdef USE_LOCALE
+    tty_write_state.input = input;
+#endif
+}
+
 static struct termios ttybsave;
 
 /*
@@ -935,7 +943,7 @@ static void input_redraw_from(int from)
 {
     int line, col;
     input_layout_end(from, &line, &col);
-    tty_write_state.input = true;
+    tty_set_input(true);
 
     const char *s = edbuf + from, *end = edbuf + edlen;
     bool in_label = false;      /* drawing a label, as a message */
@@ -980,7 +988,7 @@ static void input_redraw_from(int from)
         if (resync && col < cols)
             tty_gotoxy(col, line);
     }
-    tty_write_state.input = false;
+    tty_set_input(false);
     if (in_label)
         tty_printf("%s%s", msgattrend, edattrbeg);
     if (col >= cols_1) {
