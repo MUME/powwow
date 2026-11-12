@@ -2635,10 +2635,6 @@ static bool maybe_flag_args(char **argp, struct tls_options *tlsopt,
 
 static void cmd_connect(char *arg)
 {
-#ifdef TERM
-    wrap_printf("#connect: multiple connections not supported in term"
-                " version.");
-#else
     if (*skipspace(arg) == '\0') {
         tcp_show();
         return;
@@ -2715,7 +2711,6 @@ static void cmd_connect(char *arg)
         }
         tcp_open(s1, s2, s3, atoi(s4), &tlsopt, utf8 != 0);
     }
-#endif /* TERM */
 }
 
 

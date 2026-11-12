@@ -38,10 +38,6 @@
 #  include <unistd.h>
 #endif
 
-#ifdef TERM
-#  include "client.h"
-#endif
-
 #include "main.h"
 #include "utils.h"
 #include "tcp.h"
@@ -293,7 +289,6 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
 
     status(1);
 
-#ifndef TERM
     char service[16];
     snprintf(service, sizeof(service), "%d", port);
     struct addrinfo hints = {
@@ -364,29 +359,6 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
         errmsg("cannot connect to %s:%d", addr, port);
         return -1;
     }
-
-#else /* TERM */
-
-    newtcp_fd = connect_server(0);
-    if (newtcp_fd < 0) {
-        message_wrap(WRAP_CONT, "\n#powwow: unable to connect to term server");
-        return -1;
-    } else {
-        if (newtcp_fd >= FD_SETSIZE) {
-            message_wrap(WRAP_CONT,
-                         "#connect: #error: too many open connections");
-            close(newtcp_fd);
-            return -1;
-        }
-        send_command(newtcp_fd, C_PORT, 0, "%s:%d", addr, port);
-        tty_message("Connected to term server...\n");
-#ifdef TERM_COMPRESS
-        send_command(newtcp_fd, C_COMPRESS, 1, "y");
-#endif
-        send_command(newtcp_fd, C_DUMB, 1, NULL);
-    }
-
-#endif /* TERM */
 
     tty_message("connected!\n");
 
