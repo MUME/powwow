@@ -13,7 +13,7 @@ extern vtime movie_last;
 void log_clearsleep(void);
 void log_flush(void);
 int  log_getsize(void);
-void log_resize(int newsize);
+void log_resize(long newsize);
 void log_write(const char *str, int len, bool newline, enum charset cs);
 void log_record_line(const char *line);
 
