@@ -446,8 +446,6 @@ static byte *flush_data(connsess *conn, byte *p)
  */
 int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 {
-    static byte subopt[MAX_SUBOPT];
-    static int subchars;
     static byte rawbuf[BUFSIZE];
 
     /*
@@ -544,10 +542,10 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                         wrap_printf("#warning: ignored an MPI message that"
                                     " may be spoofed");
                     } else {
-                        subchars = process_message((char *)s + 1, i - 1);
+                        int used = process_message((char *)s + 1, i - 1);
                         /* no +MPILEN here, as it was already processed. */
-                        s += subchars;
-                        i -= subchars;
+                        s += used;
+                        i -= used;
                         p = linestart;
                     }
                 }
@@ -573,10 +571,8 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                 state = GOTDONT;
                 break;
             case SB:
-                /* BUG (multiple connections): there is only one subopt
-                 * buffer */
                 state = GOTSB;
-                subchars = 0;
+                conn->subchars = 0;
                 break;
             case IAC:
                 p = put_data(conn, p, IAC);
@@ -712,17 +708,17 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
         case GOTSB:
             if (*s == IAC)
                 state = GOTSBIAC;
-            else if (subchars < MAX_SUBOPT)
-                subopt[subchars++] = *s;
+            else if (conn->subchars < MAX_SUBOPT)
+                conn->subopt[conn->subchars++] = *s;
             break;
 
         case GOTSBIAC:
             if (*s == IAC) {
-                if (subchars < MAX_SUBOPT)
-                    subopt[subchars++] = IAC;
+                if (conn->subchars < MAX_SUBOPT)
+                    conn->subopt[conn->subchars++] = IAC;
                 state = GOTSB;
             } else if (*s == SE) {
-                dosubopt(conn, subopt, subchars);
+                dosubopt(conn, conn->subopt, conn->subchars);
                 state = old_state;
             } else {
                 /* problem! I haven't the foggiest idea of what to do here.

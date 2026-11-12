@@ -1289,6 +1289,29 @@ run --until '#cancelled session' \
 ##n #request editor"
 has '#killed "descr" (5)'
 
+# a suboption from one connection, split by a suboption from another one
+cat > "$tmp/server" <<'EOF'
+printf '\377\372\052\001;ISO-8859-1'
+touch "$1/sent"
+until [ -e "$1/done" ]; do
+    sleep 1
+done
+printf '\377\360'
+EOF
+cat > "$tmp/other" <<'EOF'
+until [ -e "$1/sent" ]; do
+    sleep 1
+done
+printf '\377\372\143\377\360'
+sleep 1
+touch "$1/done"
+EOF
+run --until '#connection on "n" closed.' \
+    'suboptions from two connections at the same time' \
+    "#spawn n sh $tmp/server $tmp
+#spawn o sh $tmp/other $tmp"
+has '#charset: iso-8859-1 (negotiated)'
+
 # every command must have a help entry with the syntax shown by #help, and
 # the manual must have it too, except for the commands it does not show
 name='every command has the same syntax in the help'

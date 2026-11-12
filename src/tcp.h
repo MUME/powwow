@@ -64,6 +64,8 @@ typedef struct connsess {
     bool ideditor_utf8;         /* and announced UTF-8 support in it */
     char state;
     char old_state;
+    unsigned char subopt[MAX_SUBOPT]; /* telnet suboption being read */
+    int subchars;               /* and its length so far */
     unsigned char cs_flags;	/* CHARSET option state */
     bool prefer_utf8;		/* starts as and prefers UTF-8 */
     enum charset charset;	/* current encoding of this link */
