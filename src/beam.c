@@ -430,9 +430,25 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
 
     /* send a edit_start message (if wanted) */
     if (edit_sess == NULL && *edit_start != '\0') {
+        unsigned generation = conn != NULL ? conn->generation : 0;
         error = 0;
         parse_instruction(edit_start, false, false, true);
         history_done = 0;
+        if (s->conn != NULL && conn->generation != generation) {
+            /* it closed the connection: abort as abort_edit_fd() does */
+            wrap_printf("#aborted \"%s\" (%u)", s->descr, s->key);
+            unlink(tmpname);
+            free(title);
+            free(s->descr);
+            free(s->file);
+            free(s);
+            if (edit_sess == NULL && *edit_end != '\0') {
+                error = 0;
+                parse_instruction(edit_end, false, false, true);
+                history_done = 0;
+            }
+            return;
+        }
     }
 
     /* #option pager and editor come first, then the environment */

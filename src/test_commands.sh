@@ -1449,6 +1449,22 @@ run --until '#connection on "n" closed.' \
 has '#connection on "n" closed.'
 
 # the command run when an editing session starts closes the connection
+# that sent it, which ends the session
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE14\nM5\ndescr\ntext\n'
+cat > /dev/null
+EOF
+run --until 'ended' 'editing session start command ending the session' \
+    "#alias z=#zap n
+#alias e=#print (\"end\" + \"ed\")
+#option editor=true
+#spawn n sh $tmp/server
+##n #identify z e"
+has '#aborted "descr" (5)'
+lacks '#cancelled session descr (5)'
+
+# the command run when an editing session starts closes the connection
 # that sent it, and opens a new one in its place
 cat > "$tmp/server" <<'EOF'
 read -r identify
