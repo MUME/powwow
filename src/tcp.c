@@ -737,7 +737,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     conn->state = state;
     conn->old_state = old_state;
 
-    if (!current_connection->spawn)
+    if (!conn->spawn)
         log_write(buffer, (char *)p - (char *)buffer, false, conn->charset);
 
     return (char *)p - (char *)buffer;
