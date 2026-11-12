@@ -198,16 +198,16 @@ void add_actionnode(char *pattern, char *command, char *label, bool active,
         out_of_memory();
         return;
     }
-
-    new->group = NULL;
-    new->pattern = my_strdup(pattern);
-    new->command = my_strdup(command);
-    new->label = my_strdup(label);
-    new->active = active;
-    new->type = type;
+    *new = (actionnode){
+        .pattern = my_strdup(pattern),
+        .command = my_strdup(command),
+        .label = my_strdup(label),
+        .active = active,
+        .type = type,
 #ifdef USE_REGEXP
-    new->regexp = vregexp;
+        .regexp = vregexp,
 #endif
+    };
     if (new->pattern == NULL
         || (command != NULL && new->command == NULL)
         || (label != NULL && new->label == NULL)) {
@@ -236,15 +236,16 @@ void add_promptnode(char *pattern, char *command, char *label, bool active,
         out_of_memory();
         return;
     }
-
-    new->pattern = my_strdup(pattern);
-    new->command = my_strdup(command);
-    new->label = my_strdup(label);
-    new->active = active;
-    new->type = type;
+    *new = (promptnode){
+        .pattern = my_strdup(pattern),
+        .command = my_strdup(command),
+        .label = my_strdup(label),
+        .active = active,
+        .type = type,
 #ifdef USE_REGEXP
-    new->regexp = vregexp;
+        .regexp = vregexp,
 #endif
+    };
     if (new->pattern == NULL
         || (command != NULL && new->command == NULL)
         || (label != NULL && new->label == NULL)) {

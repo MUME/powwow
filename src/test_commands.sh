@@ -12,6 +12,12 @@ HOME=$tmp
 TERM=xterm
 LC_ALL=C
 export HOME TERM LC_ALL
+# fill memory when it is allocated and freed, on macOS and with glibc, so
+# that using a field that was never set, or freed memory, finds no zeros
+MallocPreScribble=1
+MallocScribble=1
+MALLOC_PERTURB_=170
+export MallocPreScribble MallocScribble MALLOC_PERTURB_
 unset POWWOWDIR POWWOWHELP
 POWWOWHELP=${srcdir:-.}/../doc
 POWWOWPAGER=cat
@@ -137,6 +143,12 @@ run 'prompt with a group' '#prompt >q@c bar=#print ("prompt")
 #emulate foo
 #print ("alive")'
 lacks 'action'
+has 'alive'
+
+run 'prompt is deleted' '#prompt >q bar=#print ("prompt")
+#prompt <q
+#print ("alive")'
+has '#deleting prompt: >+q bar'
 has 'alive'
 
 if grep -q 'define USE_REGEXP 1' ../config.h 2>/dev/null; then
