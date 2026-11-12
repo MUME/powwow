@@ -811,6 +811,15 @@ has '5'
 has '2 barzero'
 has '3 bar!'
 
+run 'repeating the text of a variable leaves the variable alone' \
+    '#($s = "b", $b = "c")
+#print ("1 " + ($$s * 0) + ($$s * 2) + ($s * 0))
+#print ("2 " + $s + $b)
+#print ("3 " + ($("a" < "b") * 0))'
+has '1 cc'
+has '2 bc'
+has '3 '
+
 run 'an expression assigns to a variable that it reads' \
     '#(@foo = 5)
 #(@foo = @foo + 1)

@@ -831,8 +831,10 @@ static bool exe_op(operator *op)
         } else if (*op == op_times
                    && (o1.type == TYPE_TXT_VAR || o1.type == TYPE_TXT)
                    && o2.type == TYPE_NUM) {
-            if (o2.num > 0 && o1.type == TYPE_TXT_VAR) {
-                o1.txt = ptrdup(*o1.txt_ref);
+            if (o1.type == TYPE_TXT_VAR) {
+                /* the result is a copy, not the text of the variable */
+                o1.txt = o2.num > 0 ? ptrdup(*o1.txt_ref) : NULL;
+                o1.type = TYPE_TXT;
                 if (REAL_ERROR)
                     break;
             }
@@ -1443,10 +1445,15 @@ static bool exe_op(operator *op)
     }
 
     if (!REAL_ERROR) {
-        if (!ret)
+        if (!ret) {
             error = NOT_DONE_ERROR;
-        else if (p != NULL && !push_obj(p))
-            check_delete(p);
+        } else if (p != NULL) {
+            /* txt is the value of TYPE_TXT only; elsewhere it may be stale */
+            if (p->type != TYPE_TXT)
+                p->txt = NULL;
+            if (!push_obj(p))
+                check_delete(p);
+        }
     }
 
     if (REAL_ERROR)
