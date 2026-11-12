@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
                         wattrset(text, A_NORMAL);
                     }
                     /* eat chars to the next m */
-                    while (displine[i] != 'm' && displine != NULL)
+                    while (displine[i] != 'm' && displine[i] != '\0')
                         ++i;
                 } else {
                     waddch(text, (unsigned char)displine[i]);

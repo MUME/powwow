@@ -180,6 +180,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Walk sequences repeat a direction at most 1000 times; a larger
 	  count, such as in `99999999999n', makes the command not a walk,
 	  instead of walking billions of times or nearly forever.
+	* powwow-muc no longer reads past the end of a line with an
+	  escape sequence that does not end in `m'.
 
 	Removed:
 	* Removed the #color command.
