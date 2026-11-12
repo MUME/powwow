@@ -729,6 +729,18 @@ envelope" ] || fail "en dash, en quad, en space and envelope are not first"
     LC_ALL=C
 fi
 
+# a multibyte charset other than UTF-8, in which \201 starts a character
+# that the space cannot end
+gb18030=$(locale -a 2>/dev/null | grep -iE '^zh_CN\.gb18030$' | head -n 1)
+if [ -n "$gb18030" ]; then
+    LC_ALL=$gb18030
+    run 'keys after an invalid character are read' '' \
+        "$(printf '#print a\201 b')
+"
+    has 'a b'
+    LC_ALL=C
+fi
+
 run '#while needs a parenthesis' '#while 1
 #while (
 #print (
