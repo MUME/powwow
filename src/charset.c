@@ -52,10 +52,11 @@ int charset_lookup(const char *name, size_t len)
         { "csASCII",          CS_ASCII  },
     };
 
-    for (size_t i = 0; i < sizeof names / sizeof names[0]; ++i)
+    for (size_t i = 0; i < sizeof names / sizeof names[0]; ++i) {
         if (strlen(names[i].name) == len
             && strncasecmp(names[i].name, name, len) == 0)
             return names[i].cs;
+    }
     return -1;
 }
 
@@ -78,7 +79,7 @@ static int utf8_check_byte(struct utf8_decoder *d, unsigned char b,
 {
     int n = 0;
 
-    if (d->need) {
+    if (d->need != 0) {
         if (b >= d->lo && b <= d->hi) {
             d->cp = (d->cp << 6) | (b & 0x3f);
             d->lo = 0x80;
@@ -141,7 +142,7 @@ int charset_decode_byte(enum charset cs, struct utf8_decoder *d,
 
 int charset_decode_flush(struct utf8_decoder *d, char *out)
 {
-    if (!d->need)
+    if (d->need == 0)
         return 0;
     d->need = 0;
     memcpy(out, UTF8_REPLACEMENT, UTF8_REPLACEMENT_LEN);
@@ -203,16 +204,15 @@ int utf8_seqlen(unsigned char lead)
 
 int utf8_get(const char *s, size_t len, uint32_t *cp)
 {
-    struct utf8_decoder d = { .need = 0 };
-    char out[CHARSET_DECODE_MAX];
-
     if (len == 0) {
         *cp = UNICODE_REPLACEMENT;
         return 0;
     }
+    struct utf8_decoder d = { .need = 0 };
+    char out[CHARSET_DECODE_MAX];
     for (size_t i = 0; i < len && i < UTF8_MAX; ++i) {
         int n = utf8_check_byte(&d, s[i], out);
-        if (d.need)
+        if (d.need != 0)
             continue;           /* incomplete */
         if (i == 0 && n == 1) {
             *cp = (unsigned char)s[0];
@@ -261,8 +261,9 @@ const char *utf8_prev(const char *start, const char *s)
         return start;
     const char *p = s - 1;
     /* back over at most three continuation bytes */
-    for (int i = 0; i < UTF8_MAX - 1 && p > start
-             && utf8_is_continuation(*p); ++i)
+    for (int i = 0;
+         i < UTF8_MAX - 1 && p > start && utf8_is_continuation(*p);
+         ++i)
         --p;
     uint32_t cp;
     /* if that is not the start of a character ending at 's', step
