@@ -679,7 +679,6 @@ static void cmd_clear(char *arg)
     }
 }
 
-#ifdef USE_SHELL
 /*
  * the command for /bin/sh that #!, and the ! of #var and others, run
  * 'arg' with: 'arg' itself, or, if POWWOWSHELL is set, such as to
@@ -722,6 +721,7 @@ static FILE *shell_popen(const char *command, const char *mode)
     return fp;
 }
 
+#ifdef USE_SHELL
 static void cmd_shell(char *arg)
 {
     if (*arg == '\0') {
