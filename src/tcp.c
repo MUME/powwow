@@ -261,17 +261,16 @@ static void dosubopt(connsess *conn, byte *str, size_t len)
  * send an option negotiation
  * 'what' is one of WILL, WONT, DO, DONT
  */
-static void sendopt(byte what, byte opt)
+static void sendopt(connsess *conn, byte what, byte opt)
 {
     byte buf[] = { IAC, what, opt };
     int i;
 
-    while ((i = current_connection->fns->write(
-                current_connection, buf, sizeof buf)) < 0
+    while ((i = conn->fns->write(conn, buf, sizeof buf)) < 0
            && errno == EINTR)
         ;
     if (i != sizeof buf) {
-        errmsg("cannot write to connection \"%s\"", current_connection->id);
+        errmsg("cannot write to connection \"%s\"", conn->id);
         return;
     }
 
@@ -542,7 +541,8 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                         wrap_printf("#warning: ignored an MPI message that"
                                     " may be spoofed");
                     } else {
-                        int used = process_message((char *)s + 1, i - 1);
+                        int used = process_message(conn, (char *)s + 1,
+                                                   i - 1);
                         /* a command it ran may have closed conn */
                         if (conn->id == NULL)
                             return (char *)linestart - (char *)buffer;
@@ -608,28 +608,28 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                  */
                 if (conn == main_connection)
                     linemode |= LM_NOECHO;
-                sendopt(DO, *s);
+                sendopt(conn, DO, *s);
                 break;
             case TELOPT_SGA:
                 /* this can't hurt */
                 linemode |= LM_CHAR;
                 tty_special_keys();
-                sendopt(DO, *s);
+                sendopt(conn, DO, *s);
                 break;
             case TELOPT_CHARSET:
                 /* let the server send REQUESTs, and offer to send our own */
                 if (!(conn->cs_flags & CS_SRV_WILL))
-                    sendopt(DO, *s);
+                    sendopt(conn, DO, *s);
                 conn->cs_flags |= CS_SRV_WILL;
                 if (!(conn->cs_flags & CS_WILL_SENT)) {
-                    sendopt(WILL, *s);
+                    sendopt(conn, WILL, *s);
                     conn->cs_flags |= CS_WILL_SENT;
                 }
                 maybe_send_charset_request(conn);
                 break;
             default:
                 /* don't accept other options */
-                sendopt(DONT, *s);
+                sendopt(conn, DONT, *s);
                 break;
             }
             state = old_state;
@@ -646,13 +646,13 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             if (*s == TELOPT_CHARSET) {
                 /* only acknowledge if it was enabled */
                 if (conn->cs_flags & CS_SRV_WILL)
-                    sendopt(DONT, *s);
+                    sendopt(conn, DONT, *s);
                 conn->cs_flags &= ~CS_SRV_WILL;
                 state = old_state;
                 break;
             }
             /* accept any WONT */
-            sendopt(DONT, *s);
+            sendopt(conn, DONT, *s);
             state = old_state;
             break;
 
@@ -666,21 +666,21 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                 tty_special_keys();
                 /* FALLTHROUGH */
             case TELOPT_TTYPE:
-                sendopt(WILL, *s);
+                sendopt(conn, WILL, *s);
                 break;
             case TELOPT_NAWS:
-                sendopt(WILL, *s);
+                sendopt(conn, WILL, *s);
                 tcp_write_tty_size(conn);
                 break;
             case TELOPT_CHARSET:
                 if (!(conn->cs_flags & CS_WILL_SENT))
-                    sendopt(WILL, *s);
+                    sendopt(conn, WILL, *s);
                 conn->cs_flags |= CS_WILL_SENT | CS_DO_RCVD;
                 maybe_send_charset_request(conn);
                 break;
             default:
                 /* accept nothing else */
-                sendopt(WONT, *s);
+                sendopt(conn, WONT, *s);
                 break;
             }
             state = old_state;
@@ -698,13 +698,13 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                 /* only acknowledge if it was enabled; a refusal of our
                  * unsolicited WILL needs no answer */
                 if (conn->cs_flags & CS_DO_RCVD)
-                    sendopt(WONT, *s);
+                    sendopt(conn, WONT, *s);
                 conn->cs_flags &= ~(CS_WILL_SENT | CS_DO_RCVD
                                     | CS_REQ_PENDING);
                 state = old_state;
                 break;
             }
-            sendopt(WONT, *s);
+            sendopt(conn, WONT, *s);
             state = old_state;
             break;
 

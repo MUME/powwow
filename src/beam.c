@@ -74,7 +74,7 @@ void mpi_identify(connsess *conn)
  * Process editing protocol message from buf with len remaining chars.
  * Return number of characters used in the message.
  */
-int process_message(char *buf, int len)
+int process_message(connsess *conn, char *buf, int len)
 {
     status(1);
 
@@ -129,8 +129,7 @@ int process_message(char *buf, int len)
 
     while (i < msglen) {
         /* read() might block here, but it should't be long */
-        while ((l = current_connection->fns->read(
-                    current_connection, text + i, msglen - i)) == -1
+        while ((l = conn->fns->read(conn, text + i, msglen - i)) == -1
                && errno == EINTR)
             ;
         if (l <= 0) {
@@ -138,10 +137,9 @@ int process_message(char *buf, int len)
              * aborted connection */
             if (l == 0 || errno == ECONNRESET || errno == ECONNABORTED)
                 wrap_printf("#connection \"%s\" closed in the middle of"
-                            " an MPI message", current_connection->id);
+                            " an MPI message", conn->id);
             else
-                errmsg("cannot read from connection \"%s\"",
-                       current_connection->id);
+                errmsg("cannot read from connection \"%s\"", conn->id);
             free(text);
             return used > len ? len : used;
         }
@@ -168,10 +166,10 @@ int process_message(char *buf, int len)
 
     switch (*buf) {
     case 'E':
-        message_edit(text, msglen, false, false);
+        message_edit(conn, text, msglen, false, false);
         break;
     case 'V':
-        message_edit(text, msglen, true, false);
+        message_edit(conn, text, msglen, true, false);
         break;
     default: {
         char msg[BUFSIZE];
@@ -337,7 +335,8 @@ static void finish_edit(editsess *sp)
  * start an editing session: process the EDIT/VIEW message
  * if view is true, text will be viewed, else edited
  */
-void message_edit(char *text, int msglen, bool view, bool builtin)
+void message_edit(connsess *conn, char *text, int msglen, bool view,
+                  bool builtin)
 {
     const char *errdesc = "#warning: bad MPI edit message\n";
 
@@ -405,7 +404,7 @@ void message_edit(char *text, int msglen, bool view, bool builtin)
     s->ctime = time(NULL);
     s->oldsize = msglen - i;
     s->key = key;
-    s->conn = (view || builtin) ? NULL : current_connection;
+    s->conn = (view || builtin) ? NULL : conn;
     s->cancel = false;
     s->out_fd = -1;
     s->out_len = 0;
@@ -417,8 +416,7 @@ void message_edit(char *text, int msglen, bool view, bool builtin)
         size_t dlen = strlen(descr);
         s->descr = malloc(3 * dlen + 1);
         if (s->descr != NULL) {
-            if (current_connection != NULL
-                && current_connection->ideditor_utf8)
+            if (conn != NULL && conn->ideditor_utf8)
                 dlen = utf8_sanitize(descr, dlen, s->descr);
             else
                 dlen = latin1_to_utf8(descr, dlen, s->descr);
