@@ -55,14 +55,16 @@ sync_powwow() {
 # history
 #
 # options: --bind when $2 ends with a #bind that reads the key $3,
-# --until TEXT to wait for powwow to print TEXT before quitting, and
-# --args ARGS to give powwow the arguments ARGS, split at spaces
+# --until TEXT to wait for powwow to print TEXT before quitting,
+# --args ARGS to give powwow the arguments ARGS, split at spaces, and
+# --eof to end the input without a #quit
 run() {
-    bind= until= args=
+    bind= until= args= quit=1
     while :; do
         case $1 in
             --args) args=$2; shift 2 ;;
             --bind) bind=1; shift ;;
+            --eof) quit=; shift ;;
             --until) until=$2; shift 2 ;;
             *) break ;;
         esac
@@ -87,7 +89,7 @@ run() {
             fi
         fi
         [ -z "$until" ] || wait_for "$until"
-        printf '#quit\n'
+        [ -z "$quit" ] || printf '#quit\n'
     } | "$POWWOW" $args > "$tmp/raw" 2>&1 &
     pid=$!
     (sleep 20; kill -9 $pid) > /dev/null 2>&1 &
@@ -122,6 +124,9 @@ joined() {
          { line = $0 }
          END { if (NR > 0) print line }' "$tmp/out"
 }
+
+run --eof 'powwow quits at the end of its input' '#print ("at" + " end")'
+has 'at end'
 
 run 'var deletes an unnamed number variable' '#($3 = "text")
 #(@3 = 5)
