@@ -14,18 +14,22 @@
  *
  */
 
-static void plugtest( char *arg );
+static void plugtest(char *arg);
 
-static cmdstruct mycommand = { NULL, "plugtest", "test command", plugtest, NULL };
+static cmdstruct mycommand = {
+    .sortname = NULL, .name = "plugtest", .help = "test command",
+    .funct = plugtest, .next = NULL
+};
 
 /* found using dlsym(), so it cannot be static */
 void powwow_init(void)
 {
-	tty_printf( "Init plugtest.so!\n" );
+    tty_printf("Init plugtest.so!\n");
 
-	cmd_add_command( &mycommand );
+    cmd_add_command(&mycommand);
 }
 
-static void plugtest( char *arg ) {
-	tty_printf( "Arg was '%s'\n", arg );
+static void plugtest(char *arg)
+{
+    tty_printf("Arg was '%s'\n", arg);
 }
