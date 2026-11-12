@@ -52,22 +52,22 @@
 #include "log.h"
 
 #ifdef TELOPTS
-# define TELOPTSTR(n) ((n) > NTELOPTS ? "unknown" : telopts[n])
+#  define TELOPTSTR(n) ((n) > NTELOPTS ? "unknown" : telopts[n])
 #endif
 
 connsess *main_connection;
 connsess *current_connection;
 
-int tcp_max_fd = 0;		   /* highest used fd */
+int tcp_max_fd = 0;                 /* highest used fd */
 
-int tcp_count = 0;		   /* number of open connections */
-int tcp_attachcount = 0;	   /* number of spawned commands */
+int tcp_count = 0;                  /* number of open connections */
+int tcp_attachcount = 0;            /* number of spawned commands */
 
-int conn_max_index;		   /* 1 + highest used conn_list[] index */
+int conn_max_index;                 /* 1 + highest used conn_list[] index */
 
-connsess conn_list[MAX_CONNECTS];    /* connection list */
+connsess conn_list[MAX_CONNECTS];   /* connection list */
 
-fd_set fdset;			/* set of descriptors to select() on */
+fd_set fdset;                       /* set of descriptors to select() on */
 
 enum {
     CHARSET_REQUEST = 1,
@@ -208,9 +208,8 @@ void tcp_set_charset(connsess *conn, enum charset cs, const char *why)
         return;
     conn->charset = cs;
 
-    if (opt_info) {
+    if (opt_info)
         PRINTF("#charset: %s (%s)\n", charset_name(cs), why);
-    }
 
     /* keep the MPI charset in sync with the connection */
     if (conn->ideditor && !conn->ideditor_utf8 != (cs == CS_LATIN1))
@@ -225,16 +224,16 @@ void tcp_set_charset(connsess *conn, enum charset cs, const char *why)
 static void dosubopt(connsess *conn, byte *str, size_t len)
 {
     if (str[0] == TELOPT_TTYPE) {
-	if (str[1] == 1) {
-	    /* 1 == SEND */
+        if (str[1] == 1) {
+            /* 1 == SEND */
 #ifdef TELOPTS
-	    tty_printf("[got SB TERMINAL TYPE SEND]\n");
+            tty_printf("[got SB TERMINAL TYPE SEND]\n");
 #endif
             static const char head[] = { IAC, SB, TELOPT_TTYPE, TELQUAL_IS };
             tcp_raw_write(conn, head, sizeof head);
 
             const char *term = getenv("TERM");
-	    if (term == NULL)
+            if (term == NULL)
                 term = "unknown";
             size_t tlen = strlen(term);
             if (tlen > 256)
@@ -245,9 +244,9 @@ static void dosubopt(connsess *conn, byte *str, size_t len)
             static const char tail[] = { IAC, SE };
             tcp_raw_write(conn, tail, sizeof tail);
 #ifdef TELOPTS
-	    tty_printf("[sent SB TERMINAL TYPE IS %s]\n", term);
+            tty_printf("[sent SB TERMINAL TYPE IS %s]\n", term);
 #endif
-	}
+        }
     } else if (str[0] == TELOPT_CHARSET && len >= 2) {
         if (str[1] == CHARSET_REQUEST)
             charset_request_subopt(conn, (char *)str + 2, len - 2);
@@ -268,17 +267,20 @@ static void sendopt(byte what, byte opt)
     while ((i = current_connection->fns->write(
                 current_connection, buf, sizeof buf)) < 0
            && errno == EINTR)
-	;
+        ;
     if (i != sizeof buf) {
-	errmsg("cannot write to connection \"%s\"", current_connection->id);
-	return;
+        errmsg("cannot write to connection \"%s\"", current_connection->id);
+        return;
     }
 
 #ifdef TELOPTS
-    tty_printf("[sent %s %s]\n", (what == WILL) ? "WILL" :
-	       (what == WONT) ? "WONT" :
-	       (what == DO) ? "DO" : (what == DONT) ? "DONT" : "error",
-	       TELOPTSTR(opt));
+    tty_printf("[sent %s %s]\n",
+               (what == WILL ? "WILL"
+                : what == WONT ? "WONT"
+                : what == DO ? "DO"
+                : what == DONT ? "DONT"
+                : "error"),
+               TELOPTSTR(opt));
 #endif
 }
 
@@ -287,7 +289,7 @@ static void sendopt(byte what, byte opt)
  */
 static int tcp_connect(const char *addr, int port, const char *protocol)
 {
-    int newtcp_fd;
+    int newtcp_fd = -1;
 
     status(1);
 
@@ -303,9 +305,9 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
     int gai = getaddrinfo(addr, service, &hints, &addrs);
     if (gai == EAI_NONAME) {
         /* not a numeric address: look up the host name */
-	if (opt_info)
-	    tty_message("#looking up %s... ", addr);
-	tty_flush();
+        if (opt_info)
+            tty_message("#looking up %s... ", addr);
+        tty_flush();
         hints.ai_flags = AI_NUMERICSERV;
         gai = getaddrinfo(addr, service, &hints, &addrs);
         if (opt_info)
@@ -331,7 +333,6 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
     sigprocmask(SIG_BLOCK, &deferred, &old_mask);
 
     /* try each address until one connects */
-    newtcp_fd = -1;
     int err = 0;
     for (struct addrinfo *ai = addrs; ai != NULL; ai = ai->ai_next) {
         newtcp_fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
@@ -366,22 +367,23 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
 
 #else /* TERM */
 
-    if ((newtcp_fd = connect_server(0)) < 0) {
-	message_wrap(WRAP_CONT, "\n#powwow: unable to connect to term server");
-	return -1;
+    newtcp_fd = connect_server(0);
+    if (newtcp_fd < 0) {
+        message_wrap(WRAP_CONT, "\n#powwow: unable to connect to term server");
+        return -1;
     } else {
-	if (newtcp_fd >= FD_SETSIZE) {
-	    message_wrap(WRAP_CONT,
+        if (newtcp_fd >= FD_SETSIZE) {
+            message_wrap(WRAP_CONT,
                          "#connect: #error: too many open connections");
-	    close(newtcp_fd);
-	    return -1;
-	}
-	send_command(newtcp_fd, C_PORT, 0, "%s:%d", addr, port);
-	tty_message("Connected to term server...\n");
+            close(newtcp_fd);
+            return -1;
+        }
+        send_command(newtcp_fd, C_PORT, 0, "%s:%d", addr, port);
+        tty_message("Connected to term server...\n");
 #ifdef TERM_COMPRESS
-	send_command(newtcp_fd, C_COMPRESS, 1, "y");
+        send_command(newtcp_fd, C_COMPRESS, 1, "y");
 #endif
-	send_command(newtcp_fd, C_DUMB, 1, 0);
+        send_command(newtcp_fd, C_DUMB, 1, NULL);
     }
 
 #endif /* TERM */
@@ -402,11 +404,11 @@ static void tcp_set_fdmode(int fd)
      * First, no-nagle
      */
     int opt = 1;
-    if (setsockopt(fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt)))
+    if (setsockopt(fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt)) != 0)
         errmsg("cannot turn off delays on the connection");
 
     /* TCP keep-alive */
-    if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)))
+    if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt)) != 0)
         errmsg("cannot turn on keep-alive on the connection");
 
     /*
@@ -417,29 +419,30 @@ static void tcp_set_fdmode(int fd)
     fcntl(fd, F_SETFD, FD_CLOEXEC);
 }
 
-
-
 /*
  * we don't expect IAC commands here, except IAC IAC (a protected ASCII 255)
  * which we replace with a single IAC (a plain ASCII 255)
  */
 int tcp_unIAC(char *buffer, int len)
 {
-    char *s, *start, warnIACs = 1;
-    if (!memchr(buffer, IAC, len))
-	return len;
+    if (memchr(buffer, IAC, len) == NULL)
+        return len;
 
-    for (s = start = buffer; len > 0; buffer++, len--) {
-	if (buffer[0] == (char)(byte)IAC) {
-	    if (len > 1 && buffer[1] == (char)(byte)IAC)
-		buffer++, len--;
-	    else if (warnIACs) {
+    bool warn_iacs = true;
+    char *start = buffer;
+    char *s = buffer;
+    for (; len > 0; ++buffer, --len) {
+        if (buffer[0] == (char)(byte)IAC) {
+            if (len > 1 && buffer[1] == (char)(byte)IAC) {
+                ++buffer;
+                --len;
+            } else if (warn_iacs) {
                 wrap_printf("#warning: unescaped IAC in MPI message, kept"
                             " as is");
-		warnIACs = 0;
-	    }
-	}
-	*s++ = *buffer;
+                warn_iacs = false;
+            }
+        }
+        *s++ = *buffer;
     }
     return s - start;
 }
@@ -465,12 +468,8 @@ static byte *flush_data(connsess *conn, byte *p)
  */
 int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 {
-    char state = conn->state;
-    char old_state = conn->old_state;
-    int i;
     static byte subopt[MAX_SUBOPT];
     static int subchars;
-    byte *p, *s, *linestart;
     static byte rawbuf[BUFSIZE];
 
     /*
@@ -478,277 +477,291 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
      * leave room for a pending \r and a pending partial character
      */
     assert(maxsize >= TCP_READ_MIN);
-    maxsize = (maxsize - 1 - (size_t)CHARSET_DECODE_MAX) / TCP_READ_EXPANSION;
+    maxsize = ((maxsize - 1 - (size_t)CHARSET_DECODE_MAX)
+               / TCP_READ_EXPANSION);
     if (maxsize > sizeof rawbuf)
         maxsize = sizeof rawbuf;
 
+    int i;
     while ((i = conn->fns->read(conn, rawbuf, maxsize)) < 0
            && errno == EINTR)
-	;
+        ;
 
     if (i == 0 || (i < 0 && errno == EINVAL)) {
-	conn->state = NORMAL;
-	tcp_close(NULL);
-	return 0;
+        conn->state = NORMAL;
+        tcp_close(NULL);
+        return 0;
     }
     if (i < 0) {
         /* e.g., a TLS record without data, such as a session ticket */
         if (errno != EAGAIN && errno != EWOULDBLOCK)
             errmsg("cannot read from connection \"%s\"", conn->id);
-	return 0;
+        return 0;
     }
+
+    char state = conn->state;
+    char old_state = conn->old_state;
 
     /*
      * scan through the buffer,
      * interpret telnet protocol escapes and MUME MPI messages
      */
-    p = linestart = (byte *)buffer;
-    for (s = rawbuf; i; s++, i--) {
-	switch (state) {
-	 case NORMAL:
-	 case ALTNORMAL:
-	 case GOT_R:
-	 case GOT_N:
-	    /*
-	     * Some servers like to send NULs and other funny chars.
-	     * Clean up as much as possible.
-	     */
-	    switch (*s) {
-	     case IAC:
-                old_state = state; /* remember state to return to after IAC processing */
-		state = GOTIAC;
-		break;
-	     case '\r':
-		p = flush_data(conn, p);
-		/* start counting \r, unless just got \n */
-		if (state == NORMAL || state == ALTNORMAL) {
-		    /*
-		     * ALTNORMAL is safe here: \r cannot be in MPI header,
-		     * and any previous MPI header has already been rejected
-		     */
-		    state = GOT_R;
-		} else if (state == GOT_N)
-		  /* after \n\r, we forbid MPI messages */
-		    state = ALTNORMAL;
-		break;
-	     case '\n':
-		p = flush_data(conn, p);
-		state = GOT_N;
-		*p++ = *s;
-		linestart = p;
-		break;
-	     case '\0':
-		/* skip NULs */
-		p = flush_data(conn, p);
-		break;
-	     default:
-		/* first, flush any missing \r */
-		if (state == GOT_R)
-		  *p++ = '\r';
+    byte *p = buffer;
+    byte *linestart = p;
+    for (byte *s = rawbuf; i != 0; ++s, --i) {
+        switch (state) {
+        case NORMAL:
+        case ALTNORMAL:
+        case GOT_R:
+        case GOT_N:
+            /*
+             * Some servers like to send NULs and other funny chars.
+             * Clean up as much as possible.
+             */
+            switch (*s) {
+            case IAC:
+                /* remember state to return to after IAC processing */
+                old_state = state;
+                state = GOTIAC;
+                break;
+            case '\r':
+                p = flush_data(conn, p);
+                /* start counting \r, unless just got \n */
+                if (state == NORMAL || state == ALTNORMAL) {
+                    /*
+                     * ALTNORMAL is safe here: \r cannot be in MPI header,
+                     * and any previous MPI header has already been rejected
+                     */
+                    state = GOT_R;
+                } else if (state == GOT_N) {
+                    /* after \n\r, we forbid MPI messages */
+                    state = ALTNORMAL;
+                }
+                break;
+            case '\n':
+                p = flush_data(conn, p);
+                state = GOT_N;
+                *p++ = *s;
+                linestart = p;
+                break;
+            case '\0':
+                /* skip NULs */
+                p = flush_data(conn, p);
+                break;
+            default:
+                /* first, flush any missing \r */
+                if (state == GOT_R)
+                    *p++ = '\r';
 
-		p = put_data(conn, p, *s);
+                p = put_data(conn, p, *s);
 
-		/* check for MUME MPI messages: */
-		if (p - linestart == MPILEN && !memcmp(linestart, MPI, MPILEN)) {
+                /* check for MUME MPI messages: */
+                if (p - linestart == MPILEN
+                    && memcmp(linestart, MPI, MPILEN) == 0) {
                     if (!conn->ideditor) {
-                        wrap_printf("#warning: ignored an MPI message without"
-                                    " #request editor");
-		    } else if (state == ALTNORMAL) {
-			/* no MPI messages after \n\r */
+                        wrap_printf("#warning: ignored an MPI message"
+                                    " without #request editor");
+                    } else if (state == ALTNORMAL) {
+                        /* no MPI messages after \n\r */
                         wrap_printf("#warning: ignored an MPI message that"
                                     " may be spoofed");
-		    } else {
-			subchars = process_message((char*)s+1, i-1);
-			/* no +MPILEN here, as it was already processed. */
-			s += subchars; i-= subchars;
-			p = linestart;
-		    }
-		}
+                    } else {
+                        subchars = process_message((char *)s + 1, i - 1);
+                        /* no +MPILEN here, as it was already processed. */
+                        s += subchars;
+                        i -= subchars;
+                        p = linestart;
+                    }
+                }
 
-		if (state != ALTNORMAL)
-		    state = NORMAL;
-		break;
-	    }
-	    break;
+                if (state != ALTNORMAL)
+                    state = NORMAL;
+                break;
+            }
+            break;
 
-	 case GOTIAC:
-	    switch (*s) {
-	     case WILL:
-		state = GOTWILL; break;
-	     case WONT:
-		state = GOTWONT; break;
-	     case DO:
-		state = GOTDO; break;
-	     case DONT:
-		state = GOTDONT; break;
-	     case SB:		/* BUG (multiple connections):	*/
-		state = GOTSB;	/* there is only one subopt buffer */
-		subchars = 0;
-		break;
-	     case IAC:
-		p = put_data(conn, p, IAC);
-		state = old_state;
-		break;
-	     case GA:
-		p = flush_data(conn, p);
-		state = old_state;
-		break;
-	     default:
-		/* ignore the rest of the telnet commands */
+        case GOTIAC:
+            switch (*s) {
+            case WILL:
+                state = GOTWILL;
+                break;
+            case WONT:
+                state = GOTWONT;
+                break;
+            case DO:
+                state = GOTDO;
+                break;
+            case DONT:
+                state = GOTDONT;
+                break;
+            case SB:
+                /* BUG (multiple connections): there is only one subopt
+                 * buffer */
+                state = GOTSB;
+                subchars = 0;
+                break;
+            case IAC:
+                p = put_data(conn, p, IAC);
+                state = old_state;
+                break;
+            case GA:
+                p = flush_data(conn, p);
+                state = old_state;
+                break;
+            default:
+                /* ignore the rest of the telnet commands */
 #ifdef TELOPTS
-		tty_printf("[skipped IAC <%d>]\n", *s);
+                tty_printf("[skipped IAC <%d>]\n", *s);
 #endif
-		state = old_state;
-		break;
-	    }
-	    break;
+                state = old_state;
+                break;
+            }
+            break;
 
-	 case GOTWILL:
+        case GOTWILL:
 #ifdef TELOPTS
-	    tty_printf("[got WILL %s]\n", TELOPTSTR(*s));
+            tty_printf("[got WILL %s]\n", TELOPTSTR(*s));
 #endif
-	    switch(*s) {
-	     case TELOPT_ECHO:
-		/* host echoes, turn off echo here
-		 * but only for main connection, since we do not want
-		 * subsidiary connection password entries to block anything
-		 * in the main connection
-		 */
-		if (conn == main_connection)
-		    linemode |= LM_NOECHO;
-		sendopt(DO, *s);
-		break;
-	     case TELOPT_SGA:
-		/* this can't hurt */
-		linemode |= LM_CHAR;
-		tty_special_keys();
-		sendopt(DO, *s);
-		break;
-	     case TELOPT_CHARSET:
-		/* let the server send REQUESTs, and offer to send our own */
-		if (!(conn->cs_flags & CS_SRV_WILL))
-		    sendopt(DO, *s);
-		conn->cs_flags |= CS_SRV_WILL;
-		if (!(conn->cs_flags & CS_WILL_SENT)) {
-		    sendopt(WILL, *s);
-		    conn->cs_flags |= CS_WILL_SENT;
-		}
-		maybe_send_charset_request(conn);
-		break;
-	     default:
-		/* don't accept other options */
-		sendopt(DONT, *s);
-		break;
-	    }
-	    state = old_state;
-	    break;
+            switch (*s) {
+            case TELOPT_ECHO:
+                /* host echoes, turn off echo here
+                 * but only for main connection, since we do not want
+                 * subsidiary connection password entries to block anything
+                 * in the main connection
+                 */
+                if (conn == main_connection)
+                    linemode |= LM_NOECHO;
+                sendopt(DO, *s);
+                break;
+            case TELOPT_SGA:
+                /* this can't hurt */
+                linemode |= LM_CHAR;
+                tty_special_keys();
+                sendopt(DO, *s);
+                break;
+            case TELOPT_CHARSET:
+                /* let the server send REQUESTs, and offer to send our own */
+                if (!(conn->cs_flags & CS_SRV_WILL))
+                    sendopt(DO, *s);
+                conn->cs_flags |= CS_SRV_WILL;
+                if (!(conn->cs_flags & CS_WILL_SENT)) {
+                    sendopt(WILL, *s);
+                    conn->cs_flags |= CS_WILL_SENT;
+                }
+                maybe_send_charset_request(conn);
+                break;
+            default:
+                /* don't accept other options */
+                sendopt(DONT, *s);
+                break;
+            }
+            state = old_state;
+            break;
 
-	 case GOTWONT:
+        case GOTWONT:
 #ifdef TELOPTS
-	    tty_printf("[got WONT %s]\n", TELOPTSTR(*s));
+            tty_printf("[got WONT %s]\n", TELOPTSTR(*s));
 #endif
-	    if (*s == TELOPT_ECHO) {
-		/* host no longer echoes, we do it instead */
-		linemode &= ~LM_NOECHO;
-	    }
-	    if (*s == TELOPT_CHARSET) {
-		/* only acknowledge if it was enabled */
-		if (conn->cs_flags & CS_SRV_WILL)
-		    sendopt(DONT, *s);
-		conn->cs_flags &= ~CS_SRV_WILL;
-		state = old_state;
-		break;
-	    }
-	    /* accept any WONT */
-	    sendopt(DONT, *s);
-	    state = old_state;
-	    break;
+            if (*s == TELOPT_ECHO) {
+                /* host no longer echoes, we do it instead */
+                linemode &= ~LM_NOECHO;
+            }
+            if (*s == TELOPT_CHARSET) {
+                /* only acknowledge if it was enabled */
+                if (conn->cs_flags & CS_SRV_WILL)
+                    sendopt(DONT, *s);
+                conn->cs_flags &= ~CS_SRV_WILL;
+                state = old_state;
+                break;
+            }
+            /* accept any WONT */
+            sendopt(DONT, *s);
+            state = old_state;
+            break;
 
-	 case GOTDO:
+        case GOTDO:
 #ifdef TELOPTS
-	    tty_printf("[got DO %s]\n", TELOPTSTR(*s));
+            tty_printf("[got DO %s]\n", TELOPTSTR(*s));
 #endif
-	    switch(*s) {
-	     case TELOPT_SGA:
-		linemode |= LM_CHAR;
-		tty_special_keys();
-		/* FALLTHROUGH */
-	     case TELOPT_TTYPE:
-		sendopt(WILL, *s);
-		break;
-	     case TELOPT_NAWS:
-		sendopt(WILL, *s);
-		tcp_write_tty_size();
-		break;
+            switch (*s) {
+            case TELOPT_SGA:
+                linemode |= LM_CHAR;
+                tty_special_keys();
+                /* FALLTHROUGH */
+            case TELOPT_TTYPE:
+                sendopt(WILL, *s);
+                break;
+            case TELOPT_NAWS:
+                sendopt(WILL, *s);
+                tcp_write_tty_size();
+                break;
             case TELOPT_CHARSET:
                 if (!(conn->cs_flags & CS_WILL_SENT))
                     sendopt(WILL, *s);
                 conn->cs_flags |= CS_WILL_SENT | CS_DO_RCVD;
                 maybe_send_charset_request(conn);
                 break;
-	     default:
-		/* accept nothing else */
-		sendopt(WONT, *s);
-		break;
-	    }
-	    state = old_state;
-	    break;
+            default:
+                /* accept nothing else */
+                sendopt(WONT, *s);
+                break;
+            }
+            state = old_state;
+            break;
 
-	 case GOTDONT:
+        case GOTDONT:
 #ifdef TELOPTS
-	    tty_printf("[got DONT %s]\n", TELOPTSTR(*s));
+            tty_printf("[got DONT %s]\n", TELOPTSTR(*s));
 #endif
-	    if (*s == TELOPT_SGA) {
-		linemode &= ~LM_CHAR;
-		tty_special_keys();
-	    }
-	    if (*s == TELOPT_CHARSET) {
-		/* only acknowledge if it was enabled; a refusal of our
-		 * unsolicited WILL needs no answer */
-		if (conn->cs_flags & CS_DO_RCVD)
-		    sendopt(WONT, *s);
-		conn->cs_flags &= ~(CS_WILL_SENT | CS_DO_RCVD | CS_REQ_PENDING);
-		state = old_state;
-		break;
-	    }
-	    sendopt(WONT, *s);
-	    state = old_state;
-	    break;
+            if (*s == TELOPT_SGA) {
+                linemode &= ~LM_CHAR;
+                tty_special_keys();
+            }
+            if (*s == TELOPT_CHARSET) {
+                /* only acknowledge if it was enabled; a refusal of our
+                 * unsolicited WILL needs no answer */
+                if (conn->cs_flags & CS_DO_RCVD)
+                    sendopt(WONT, *s);
+                conn->cs_flags &= ~(CS_WILL_SENT | CS_DO_RCVD
+                                    | CS_REQ_PENDING);
+                state = old_state;
+                break;
+            }
+            sendopt(WONT, *s);
+            state = old_state;
+            break;
 
-	 case GOTSB:
-	    if (*s == IAC) {
-		state = GOTSBIAC;
-	    } else {
-		if (subchars < MAX_SUBOPT)
-		  subopt[subchars++] = *s;
-	    }
-	    break;
+        case GOTSB:
+            if (*s == IAC)
+                state = GOTSBIAC;
+            else if (subchars < MAX_SUBOPT)
+                subopt[subchars++] = *s;
+            break;
 
-	 case GOTSBIAC:
-	    if (*s == IAC) {
-		if (subchars < MAX_SUBOPT)
-		  subopt[subchars++] = IAC;
-		state = GOTSB;
-	    } else if (*s == SE) {
-		subopt[subchars] = '\0';
-		dosubopt(conn, subopt, subchars);
-		state = old_state;
-	    } else {
-		/* problem! I haven't the foggiest idea of what to do here.
-		 * I'll just ignore it and hope it goes away. */
-		wrap_printf("#telnet: got IAC <%d> instead of IAC SE!",
+        case GOTSBIAC:
+            if (*s == IAC) {
+                if (subchars < MAX_SUBOPT)
+                    subopt[subchars++] = IAC;
+                state = GOTSB;
+            } else if (*s == SE) {
+                subopt[subchars] = '\0';
+                dosubopt(conn, subopt, subchars);
+                state = old_state;
+            } else {
+                /* problem! I haven't the foggiest idea of what to do here.
+                 * I'll just ignore it and hope it goes away. */
+                wrap_printf("#telnet: got IAC <%d> instead of IAC SE!",
                             (int)*s);
-		state = old_state;
-	    }
-	    break;
-	}
+                state = old_state;
+            }
+            break;
+        }
     }
     conn->state = state;
     conn->old_state = old_state;
 
-    if (!current_connection->spawn) {
+    if (!current_connection->spawn)
         log_write(buffer, (char *)p - (char *)buffer, 0, conn->charset);
-    }
 
     return (char *)p - (char *)buffer;
 }
@@ -757,15 +770,15 @@ static void internal_tcp_raw_write(connsess *conn, const char *data, int len)
 {
     while (len > 0) {
         int i;
-	while ((i = conn->fns->write(conn, data, len)) < 0
+        while ((i = conn->fns->write(conn, data, len)) < 0
                && errno == EINTR)
-	    ;
-	if (i < 0) {
-	    errmsg("cannot write to connection \"%s\"", conn->id);
-	    break;
-	}
-	data += i;
-	len -= i;
+            ;
+        if (i < 0) {
+            errmsg("cannot write to connection \"%s\"", conn->id);
+            break;
+        }
+        data += i;
+        len -= i;
     }
 }
 
@@ -832,10 +845,9 @@ void tcp_main_write(const char *data)
     tcp_write(main_connection, data);
 }
 
-
 static char output_buffer[BUFSIZE];
-static int output_len = 0;	/* number of characters in output_buffer */
-static connsess *output_connection; /* to which socket buffer should be sent*/
+static int output_len = 0;  /* number of characters in output_buffer */
+static connsess *output_connection; /* to which socket buffer should be sent */
 
 static void warn_no_output(void)
 {
@@ -856,11 +868,11 @@ void tcp_write(connsess *conn, const char *data)
     size_t len = strlen(data);
 
     if (main_connection != NULL && main_connection == conn) {
-	if (linemode & LM_NOECHO)
-	    log_write("", 0, 1, conn->charset); /* log a newline only */
-	else
-	    log_write(data, len, 1, conn->charset);
-	reprint_writeline(data);
+        if (linemode & LM_NOECHO)
+            log_write("", 0, 1, conn->charset); /* log a newline only */
+        else
+            log_write(data, len, 1, conn->charset);
+        reprint_writeline(data);
     }
 
     /* the encoded data is never longer than the original */
@@ -872,66 +884,66 @@ void tcp_write(connsess *conn, const char *data)
 
     /* must be AFTER reprint_writeline() */
     if (current_connection->spawn)
-	status(1);
+        status(1);
     else
-	status(-1);
+        status(-1);
 
     if (conn != output_connection) {
         /* if data to another socket, then flush it */
-	tcp_flush();
-	output_connection = conn;
+        tcp_flush();
+        output_connection = conn;
     }
 
     char *out = output_buffer + output_len;
     size_t space = BUFSIZE - output_len;
 
-    while (len) {
-	const char *iacs = memchr(data, IAC, len);
-	size_t iacp = iacs != NULL ? (size_t)(iacs - data) : len;
+    while (len != 0) {
+        const char *iacs = memchr(data, IAC, len);
+        size_t iacp = iacs != NULL ? (size_t)(iacs - data) : len;
 
-	if (iacp == 0) {
-	    /* we're at the IAC, send it */
-	    if (space < 2) {
-		tcp_flush();
-		out = output_buffer;
-		space = BUFSIZE;
-	    }
-	    *out++ = (char)IAC;
-	    *out++ = (char)IAC;
-	    output_len += 2;
-	    space -= 2;
-	    ++data;
-	    --len;
-	    continue;
-	}
+        if (iacp == 0) {
+            /* we're at the IAC, send it */
+            if (space < 2) {
+                tcp_flush();
+                out = output_buffer;
+                space = BUFSIZE;
+            }
+            *out++ = (char)IAC;
+            *out++ = (char)IAC;
+            output_len += 2;
+            space -= 2;
+            ++data;
+            --len;
+            continue;
+        }
 
-	while (space < iacp) {
-	    memcpy(out, data, space);
-	    data += space;
-	    len -= space;
-	    iacp -= space;
-	    output_len = BUFSIZE;
+        while (space < iacp) {
+            memcpy(out, data, space);
+            data += space;
+            len -= space;
+            iacp -= space;
+            output_len = BUFSIZE;
 
-	    tcp_flush();
-	    out = output_buffer;
-	    space = BUFSIZE;
-	}
+            tcp_flush();
+            out = output_buffer;
+            space = BUFSIZE;
+        }
 
-	if (iacp /* && space >= iacp */ ) {
-	    memcpy(out, data, iacp);
-	    out += iacp;
-	    output_len += iacp;
-	    space -= iacp;
-	    data += iacp;
-	    len -= iacp;
-	}
+        if (iacp != 0 /* && space >= iacp */) {
+            memcpy(out, data, iacp);
+            out += iacp;
+            output_len += iacp;
+            space -= iacp;
+            data += iacp;
+            len -= iacp;
+        }
     }
-    if (!space) {
-	tcp_flush();
-	out = output_buffer;
+    if (space == 0) {
+        tcp_flush();
+        out = output_buffer;
     }
     *out++ = '\n';
-    output_len++;
+    ++output_len;
 }
 
 /*
@@ -939,40 +951,40 @@ void tcp_write(connsess *conn, const char *data)
  */
 void tcp_flush(void)
 {
-    int n;
-    char *p = output_buffer;
-
-    if (output_len && output_connection == NULL) {
-	clear_input_line(true);
+    if (output_len != 0 && output_connection == NULL) {
+        clear_input_line(true);
         warn_no_output();
-	output_len = 0;
-	return;
+        output_len = 0;
+        return;
     }
 
-    if (!output_len)
-	return;
+    if (output_len == 0)
+        return;
 
-    while (output_len) {
-	while ((n = output_connection->fns->write(
+    char *p = output_buffer;
+    while (output_len != 0) {
+        int n;
+        while ((n = output_connection->fns->write(
                     output_connection, p, output_len)) < 0
                && errno == EINTR)
-	    ;
-	if (n < 0) {
-	    output_len = 0;
-	    errmsg("cannot write to connection \"%s\"",
+            ;
+        if (n < 0) {
+            output_len = 0;
+            errmsg("cannot write to connection \"%s\"",
                    output_connection->id);
-	    return;
-	}
-	sent += n;
-	p += n;
-	output_len -= n;
+            return;
+        }
+        sent += n;
+        p += n;
+        output_len -= n;
     }
 
-    if (output_connection->spawn)
-	status(1);
-    else
-	/* sent stuff, so we expect a prompt */
-	status(-1);
+    if (output_connection->spawn) {
+        status(1);
+    } else {
+        /* sent stuff, so we expect a prompt */
+        status(-1);
+    }
 }
 
 /*
@@ -985,9 +997,9 @@ void tcp_flush(void)
  */
 connsess *tcp_find_connection(const char *id)
 {
-    for (int i = 0; i < conn_max_index; i++) {
-	if (CONN_INDEX(i).id && !strcmp(CONN_INDEX(i).id, id))
-	    return &CONN_INDEX(i);
+    for (int i = 0; i < conn_max_index; ++i) {
+        if (CONN_INDEX(i).id != NULL && strcmp(CONN_INDEX(i).id, id) == 0)
+            return &CONN_INDEX(i);
     }
     return NULL;
 }
@@ -1038,13 +1050,12 @@ void tcp_show(void)
 void tcp_set_main(connsess *conn)
 {
     main_connection = conn;
-    if (linemode & LM_CHAR)
-    {
-	linemode = 0;
+    if (linemode & LM_CHAR) {
+        linemode = 0;
         tty_special_keys();
+    } else {
+        linemode = 0;
     }
-    else
-	linemode = 0;
     status(-1);
     reprint_clear();
 }
@@ -1084,52 +1095,50 @@ void tcp_open(const char *id, char *initstring, const char *host,
               int port, const struct tls_options *tlsopt, bool utf8)
 {
     if (tcp_count + tcp_attachcount >= MAX_CONNECTS) {
-	PRINTF("#too many open connections.\n");
-	return;
+        PRINTF("#too many open connections.\n");
+        return;
     }
     if (tcp_find_connection(id) != NULL) {
-	wrap_printf("#connection \"%s\" already open.", id);
-	return;
+        wrap_printf("#connection \"%s\" already open.", id);
+        return;
     }
 
     /* find a free slot */
-    int i;
-    for (i = 0; i < MAX_CONNECTS; i++) {
-	if (!CONN_INDEX(i).id)
-	    break;
-    }
+    int i = 0;
+    while (i < MAX_CONNECTS && CONN_INDEX(i).id != NULL)
+        ++i;
     if (i == MAX_CONNECTS) {
-	wrap_printf("#internal error, connection table full :(");
-	return;
+        wrap_printf("#internal error, connection table full :(");
+        return;
     }
 
     char *conn_host = my_strdup(host);
-    char *conn_id   = my_strdup(id);
+    char *conn_id = my_strdup(id);
     if (conn_host == NULL || conn_id == NULL) {
         free(conn_host);
-	out_of_memory();
-	return;
+        out_of_memory();
+        return;
     }
 
     /* dial the number by moving the right index in small circles */
     int newtcp_fd = tcp_connect(host, port, tlsopt->use_tls ? "TLS" : "TCP");
     if (newtcp_fd < 0) {
-	free(conn_host);
-	free(conn_id);
-	return;
+        free(conn_host);
+        free(conn_id);
+        return;
     }
 
     CONN_INDEX(i) = (connsess){
-        .host      = conn_host,
-        .id        = conn_id,
-        .active    = true,
-        .state     = NORMAL,
-        .old_state = NORMAL,
-        .port      = port,
-        .fd        = newtcp_fd,
-        .fns       = &tcp_io_fns,
+        .host        = conn_host,
+        .id          = conn_id,
+        .active      = true,
+        .state       = NORMAL,
+        .old_state   = NORMAL,
+        .port        = port,
+        .fd          = newtcp_fd,
+        .fns         = &tcp_io_fns,
         .prefer_utf8 = utf8,
-        .charset   = utf8 ? CS_UTF8 : CS_LATIN1
+        .charset     = utf8 ? CS_UTF8 : CS_LATIN1
     };
 
     if (tlsopt->use_tls && !tls_upgrade(&CONN_INDEX(i), tlsopt)) {
@@ -1139,26 +1148,25 @@ void tcp_open(const char *id, char *initstring, const char *host,
     }
 
     if (tcp_max_fd < newtcp_fd)
-	tcp_max_fd = newtcp_fd;
+        tcp_max_fd = newtcp_fd;
     if (conn_max_index <= i)
-	conn_max_index = i+1;
+        conn_max_index = i + 1;
 
-    FD_SET(newtcp_fd, &fdset); 		/* add socket to select() set */
-    tcp_count++;
+    FD_SET(newtcp_fd, &fdset);      /* add socket to select() set */
+    ++tcp_count;
 
     tcp_set_fdmode(newtcp_fd);
 
-    if (opt_info && tcp_count) {
-	wrap_printf("#default connection is now \"%s\"", id);
-    }
+    if (opt_info && tcp_count != 0)
+        wrap_printf("#default connection is now \"%s\"", id);
     current_connection = &CONN_INDEX(i);
     tcp_set_main(current_connection);
     if (opt_sendsize)
-	tcp_write_tty_size();
+        tcp_write_tty_size();
 
-    if (initstring) {
-	parse_instruction(initstring, false, false, true);
-	history_done = 0;
+    if (initstring != NULL) {
+        parse_instruction(initstring, false, false, true);
+        history_done = 0;
     }
 }
 
@@ -1178,10 +1186,10 @@ void tcp_close(const char *id)
     connsess *conn = current_connection;
     if (id != NULL) {           /* #zap cmd */
         conn = tcp_find_connection(id);
-	if (conn == NULL) {
-	    message_wrap(WRAP_CONT, "#no such connection: \"%s\"", id);
-	    return;
-	}
+        if (conn == NULL) {
+            message_wrap(WRAP_CONT, "#no such connection: \"%s\"", id);
+            return;
+        }
     }
 
     conn->fns->close(conn);
@@ -1191,63 +1199,71 @@ void tcp_close(const char *id)
     message_wrap(WRAP_CONT, "#connection on \"%s\" closed.", conn->id);
 
     if (conn == main_connection) { /* main connection closed */
-	if (tcp_count == 1) { /* was last connection */
-	    if (opt_exit)
-		exit_powwow();
-	    message_wrap(WRAP_CONT,
+        if (tcp_count == 1) { /* was last connection */
+            if (opt_exit)
+                exit_powwow();
+            message_wrap(WRAP_CONT,
                          "#no connections left. Type #quit to quit.");
-            current_connection = main_connection = NULL;
-	} else {
-	    /* must find another connection and promote it to main */
-	    for (int i=0; i<conn_max_index; i++) {
-		if (!CONN_INDEX(i).id || &CONN_INDEX(i) == conn
+            main_connection = NULL;
+            current_connection = NULL;
+        } else {
+            /* must find another connection and promote it to main */
+            for (int i = 0; i < conn_max_index; ++i) {
+                if (CONN_INDEX(i).id == NULL || &CONN_INDEX(i) == conn
                     || CONN_INDEX(i).spawn)
-		    continue;
-		message_wrap(WRAP_CONT, "#default connection is now \"%s\"",
+                    continue;
+                message_wrap(WRAP_CONT, "#default connection is now \"%s\"",
                              CONN_INDEX(i).id);
-		main_connection = &CONN_INDEX(i);
-		break;
-	    }
-	    if (conn == main_connection) {
-	        tty_message("#PANIC! internal error in tcp_close()\nQuitting.\n");
-		syserr(NULL);
-	    }
-	}
-	tcp_set_main(main_connection);
+                main_connection = &CONN_INDEX(i);
+                break;
+            }
+            if (conn == main_connection) {
+                tty_message("#PANIC! internal error in tcp_close()\n"
+                            "Quitting.\n");
+                syserr(NULL);
+            }
+        }
+        tcp_set_main(main_connection);
     }
 
     if (current_connection == conn) {
         /* no further I/O allowed on sfd, as we just closed it */
-	current_connection = NULL;
+        current_connection = NULL;
     }
 
     FD_CLR(conn->fd, &fdset);
     if (conn->spawn)
-	tcp_attachcount--;
+        --tcp_attachcount;
     else
-	tcp_count--;
-    conn->active = conn->spawn = false;
-    conn->ideditor = conn->ideditor_utf8 = false;
+        --tcp_count;
+    conn->active = false;
+    conn->spawn = false;
+    conn->ideditor = false;
+    conn->ideditor_utf8 = false;
     conn->state = NORMAL;
     conn->old_state = NORMAL;
     conn->port = 0;
-    free(conn->host); conn->host = NULL;
-    free(conn->id);   conn->id = NULL;
-    free(conn->fragment); conn->fragment = NULL;
+    free(conn->host);
+    conn->host = NULL;
+    free(conn->id);
+    conn->id = NULL;
+    free(conn->fragment);
+    conn->fragment = NULL;
 
     /* recalculate conn_max_index */
-    int i = conn - conn_list;
-    if (i + 1 == conn_max_index) {
-	do {
-	    i--;
-	} while (i >= 0 && !CONN_INDEX(i).id);
-	conn_max_index = i+1;
+    int last = conn - conn_list;
+    if (last + 1 == conn_max_index) {
+        do {
+            --last;
+        } while (last >= 0 && CONN_INDEX(last).id == NULL);
+        conn_max_index = last + 1;
     }
 
     /* recalculate tcp_max_fd */
-    for (i = tcp_max_fd = 0; i<conn_max_index; i++) {
-	if (CONN_INDEX(i).id && tcp_max_fd < CONN_INDEX(i).fd)
-	    tcp_max_fd = CONN_INDEX(i).fd;
+    tcp_max_fd = 0;
+    for (int i = 0; i < conn_max_index; ++i) {
+        if (CONN_INDEX(i).id != NULL && tcp_max_fd < CONN_INDEX(i).fd)
+            tcp_max_fd = CONN_INDEX(i).fd;
     }
 }
 
@@ -1259,10 +1275,10 @@ void tcp_togglesnoop(const char *id)
     connsess *conn = tcp_find_connection(id);
     if (conn != NULL) {
         conn->active = !conn->active;
-	if (opt_info) {
-	    PRINTF("#connection %s is now %sactive.\n",
-                      conn->id, conn->active ? "" : "non");
-	}
+        if (opt_info) {
+            PRINTF("#connection %s is now %sactive.\n",
+                   conn->id, conn->active ? "" : "non");
+        }
     } else {
         PRINTF("#no such connection: %s\n", id);
     }
@@ -1270,42 +1286,44 @@ void tcp_togglesnoop(const char *id)
 
 void tcp_spawn(const char *id, char *cmd)
 {
-    int i, childpid, sockets[2];
-
     if (tcp_find_connection(id) != NULL) {
-	wrap_printf("#connection \"%s\" already open.", id);
-	return;
+        wrap_printf("#connection \"%s\" already open.", id);
+        return;
     }
+    int sockets[2];
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0) {
-	errmsg("cannot create a connection to the command");
-	return;
+        errmsg("cannot create a connection to the command");
+        return;
     }
     if (sockets[0] >= FD_SETSIZE) {
-	message_wrap(WRAP_CONT, "#spawn: #error: too many open connections");
-	close(sockets[0]);
-	close(sockets[1]);
-	return;
+        message_wrap(WRAP_CONT, "#spawn: #error: too many open connections");
+        close(sockets[0]);
+        close(sockets[1]);
+        return;
     }
     unescape(cmd);
 
-    switch (childpid = fork()) {
-      case 0:
-	/* child */
-	close(0); close(1); close(2);
-	setsid();
-	dup2(sockets[1], 0);
-	dup2(sockets[1], 1);
-	dup2(sockets[1], 2);
-	close(sockets[0]);
-	close(sockets[1]);
+    int childpid = fork();
+    switch (childpid) {
+    case 0:
+        /* child */
+        close(0);
+        close(1);
+        close(2);
+        setsid();
+        dup2(sockets[1], 0);
+        dup2(sockets[1], 1);
+        dup2(sockets[1], 2);
+        close(sockets[0]);
+        close(sockets[1]);
         execl("/bin/sh", "sh", "-c", cmd, (char *)NULL);
         exec_failed("/bin/sh");
-	break;
-      case -1:
-	close(sockets[0]);
-	close(sockets[1]);
-	errmsg("cannot start the command");
-	return;
+        break;
+    case -1:
+        close(sockets[0]);
+        close(sockets[1]);
+        errmsg("cannot start the command");
+        return;
     }
     close(sockets[1]);
 
@@ -1313,28 +1331,32 @@ void tcp_spawn(const char *id, char *cmd)
     fcntl(sockets[0], F_SETFD, FD_CLOEXEC);
 
     /* now find a free slot */
-    for (i = 0; i < MAX_CONNECTS; i++)
-	if (!CONN_INDEX(i).id)
-	    break;
+    int i = 0;
+    while (i < MAX_CONNECTS && CONN_INDEX(i).id != NULL)
+        ++i;
     if (i == MAX_CONNECTS) {
-	wrap_printf("#internal error, connection table full :(");
-	close(sockets[0]);
-	return;
+        wrap_printf("#internal error, connection table full :(");
+        close(sockets[0]);
+        return;
     }
 
-    if (!(CONN_INDEX(i).host = my_strdup(cmd))) {
-	out_of_memory();
-	close(sockets[0]);
-	return;
+    CONN_INDEX(i).host = my_strdup(cmd);
+    if (CONN_INDEX(i).host == NULL) {
+        out_of_memory();
+        close(sockets[0]);
+        return;
     }
-    if (!(CONN_INDEX(i).id = my_strdup(id))) {
-	out_of_memory();
-	free(CONN_INDEX(i).host);
-	close(sockets[0]);
-	return;
+    CONN_INDEX(i).id = my_strdup(id);
+    if (CONN_INDEX(i).id == NULL) {
+        out_of_memory();
+        free(CONN_INDEX(i).host);
+        close(sockets[0]);
+        return;
     }
-    CONN_INDEX(i).active = CONN_INDEX(i).spawn = true;
-    CONN_INDEX(i).ideditor = CONN_INDEX(i).ideditor_utf8 = false;
+    CONN_INDEX(i).active = true;
+    CONN_INDEX(i).spawn = true;
+    CONN_INDEX(i).ideditor = false;
+    CONN_INDEX(i).ideditor_utf8 = false;
     CONN_INDEX(i).state = NORMAL;
     CONN_INDEX(i).old_state = NORMAL;
     CONN_INDEX(i).port = 0;
@@ -1345,21 +1367,19 @@ void tcp_spawn(const char *id, char *cmd)
     CONN_INDEX(i).charset = hostinfo.utf8 ? CS_UTF8 : CS_LATIN1;
     utf8_decoder_reset(&CONN_INDEX(i).u8dec);
 
-    FD_SET(sockets[0], &fdset);	       /* add socket to select() set */
-    tcp_attachcount++;
+    FD_SET(sockets[0], &fdset);     /* add socket to select() set */
+    ++tcp_attachcount;
 
     if (tcp_max_fd < sockets[0])
-	tcp_max_fd = sockets[0];
+        tcp_max_fd = sockets[0];
     if (conn_max_index <= i)
-	conn_max_index = i+1;
+        conn_max_index = i + 1;
 
-    if (opt_info) {
-	wrap_printf("#successfully spawned \"%s\" with pid %d", id, childpid);
-    }
+    if (opt_info)
+        wrap_printf("#successfully spawned \"%s\" with pid %d", id, childpid);
 
     /*
      * when the child exits we also get an EOF on the socket,
      * so no special care is needed by the SIGCHLD handler.
      */
 }
-
