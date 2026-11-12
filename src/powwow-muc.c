@@ -102,7 +102,9 @@ int main(int argc, char *argv[])
         } else if (strncmp(line, "prompt", 6) == 0) {
             displine = line[6] != '\0' ? &line[7] : &line[6];
             /* Munch newline */
-            line[strlen(line) - 1] = '\0';
+            size_t len = strlen(line);
+            if (len > 0 && line[len - 1] == '\n')
+                line[len - 1] = '\0';
             sleep = 0;
         } else if (strncmp(line, "sleep", 5) == 0) {
             sscanf(line, "sleep %d", &sleep);
