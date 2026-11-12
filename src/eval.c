@@ -738,8 +738,7 @@ static bool exe_op(operator *op)
                 o1.num = o1.num != 0 || o2.num != 0;
                 break;
             case op_xor_xor:
-                if (o2.num != 0)
-                    o1.num = o1.num == 0;
+                o1.num = (o1.num != 0) != (o2.num != 0);
                 break;
             case op_and_and:
                 o1.num = o1.num != 0 && o2.num != 0;
