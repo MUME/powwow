@@ -69,7 +69,7 @@ static void log_fwrite(const char *str, size_t len, enum charset cs, FILE *f)
         char buf[1024];
         size_t n = MIN2(len, sizeof buf);
         /* do not split a character */
-        while (n < len && n > 0 && ((unsigned char)str[n] & 0xc0) == 0x80)
+        while (n < len && n > 0 && utf8_is_continuation(str[n]))
             n--;
         if (n == 0)
             n = MIN2(len, sizeof buf);

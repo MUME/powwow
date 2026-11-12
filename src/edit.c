@@ -200,7 +200,7 @@ static char *find_partial_esc(char *s)
         return NULL;            /* two-character escape */
     /* control sequence: parameter and intermediate bytes, then a
      * final byte */
-    for (++p; *p >= 0x20 && *p <= 0x3f; ++p)
+    for (++p; is_csi_param(*p); ++p)
         ;
     return *p == '\0' ? esc : NULL;
 }
@@ -222,7 +222,7 @@ static int word_at(int p)
 {
     uint32_t cp;
     utf8_get(edbuf + p, edlen - p, &cp);
-    if (cp >= 0x80)
+    if (cp > ASCII_MAX)
         return 1;
     return isalnum(cp);
 }
@@ -1733,7 +1733,7 @@ static uint32_t to_upper(uint32_t cp)
 #ifdef USE_LOCALE
     return towupper(cp);
 #else
-    return cp < 0x80 ? (uint32_t)toupper(cp) : cp;
+    return cp <= ASCII_MAX ? (uint32_t)toupper(cp) : cp;
 #endif
 }
 
@@ -1742,7 +1742,7 @@ static uint32_t to_lower(uint32_t cp)
 #ifdef USE_LOCALE
     return towlower(cp);
 #else
-    return cp < 0x80 ? (uint32_t)tolower(cp) : cp;
+    return cp <= ASCII_MAX ? (uint32_t)tolower(cp) : cp;
 #endif
 }
 
@@ -1770,7 +1770,7 @@ static bool is_letter(uint32_t cp)
 #ifdef USE_LOCALE
     return iswalpha(cp);
 #else
-    return cp < 0x80 && isalpha(cp);
+    return cp <= ASCII_MAX && isalpha(cp);
 #endif
 }
 
@@ -2890,13 +2890,13 @@ void insert_char(char c)
     static int npend, need;
     unsigned char b = c;
 
-    if (npend > 0 && (b & 0xc0) == 0x80) {
+    if (npend > 0 && utf8_is_continuation(b)) {
         pend[npend++] = b;
         if (npend < need)
             return;
     } else {
         npend = 0;
-        if (b >= 0x80) {
+        if (b > ASCII_MAX) {
             need = utf8_seqlen(b);
             if (need > 1) {
                 pend[npend++] = b;
@@ -2912,7 +2912,7 @@ void insert_char(char c)
     int n = npend;
     npend = 0;
     uint32_t cp;
-    if (utf8_get(pend, n, &cp) != n || (cp >= 0x80 && cp < 0xa0))
+    if (utf8_get(pend, n, &cp) != n || unicode_is_c1(cp))
         return;                 /* invalid or C1 control */
 
     if (isearch.active) {

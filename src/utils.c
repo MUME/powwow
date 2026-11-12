@@ -135,7 +135,7 @@ char *utf8_fgets(char *buf, int size, FILE *f)
         return buf;             /* valid */
     if (n >= (size_t)size) {
         n = (size_t)size - 1;
-        while (n > 0 && ((unsigned char)tmp[n] & 0xc0) == 0x80)
+        while (n > 0 && utf8_is_continuation(tmp[n]))
             n--;
     }
     memcpy(buf, tmp, n);
