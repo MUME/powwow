@@ -990,7 +990,7 @@ static void sgr_transition(char **buf, size_t *used, size_t *size,
         return;
     }
     buf_add(buf, used, size, reset, sizeof reset - 1);
-    if (to->reset == 0)
+    if (!to->reset)
         buf_add(buf, used, size, base, strlen(base));
     buf_add(buf, used, size, to->seq, to->len);
 }

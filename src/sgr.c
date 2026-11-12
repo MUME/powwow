@@ -18,7 +18,7 @@ void sgr_reset(struct sgr_state *st)
 {
     st->len = 0;
     st->seq[0] = '\0';
-    st->reset = 0;
+    st->reset = false;
 }
 
 /* a reset sequence was seen */
@@ -26,7 +26,7 @@ static void sgr_clear(struct sgr_state *st)
 {
     st->len = 0;
     st->seq[0] = '\0';
-    st->reset = 1;
+    st->reset = true;
 }
 
 /* append "ESC [ params m", dropping the oldest sequences if needed */
@@ -37,7 +37,7 @@ static void sgr_append(struct sgr_state *st, const char *params, size_t plen)
         return;                 /* absurdly long; ignore it */
     while (st->len + n >= sizeof st->seq) {
         char *next = strstr(st->seq + 1, "\033[");
-        size_t drop = next ? (size_t)(next - st->seq) : st->len;
+        size_t drop = next != NULL ? (size_t)(next - st->seq) : st->len;
         memmove(st->seq, st->seq + drop, st->len - drop + 1);
         st->len -= drop;
     }
@@ -54,9 +54,10 @@ static void sgr_append(struct sgr_state *st, const char *params, size_t plen)
 /* is the parameter [s, e) zero or empty, i.e. a reset? */
 static bool is_reset(const char *s, const char *e)
 {
-    for (; s < e; ++s)
+    for (; s < e; ++s) {
         if (*s != '0')
             return false;
+    }
     return true;
 }
 
@@ -88,7 +89,7 @@ static void sgr_params(struct sgr_state *st, const char *params, size_t plen)
         s = e + 1;
     }
 
-    if (after_reset) {
+    if (after_reset != NULL) {
         sgr_clear(st);
         if (after_reset < end)
             sgr_append(st, after_reset, end - after_reset);
@@ -113,7 +114,8 @@ void sgr_apply(struct sgr_state *st, const char *s, size_t len)
         if (*s != '[')
             continue;
         /* CSI: parameter bytes, then a final byte */
-        const char *params = ++s;
+        ++s;
+        const char *params = s;
         while (s < end && ((*s >= '0' && *s <= '9') || *s == ';' || *s == ':'))
             ++s;
         if (s >= end)

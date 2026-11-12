@@ -3,6 +3,7 @@
 #ifndef _SGR_H_
 #define _SGR_H_
 
+#include <stdbool.h>
 #include <stddef.h>
 
 /*
@@ -14,7 +15,7 @@
 struct sgr_state {
     char   seq[SGR_STATE_MAX];  /* NUL-terminated sequences */
     size_t len;
-    int    reset;               /* a reset preceded the sequences */
+    bool   reset;               /* a reset preceded the sequences */
 };
 
 /* initialize to no sequences and no reset */
