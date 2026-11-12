@@ -1342,6 +1342,10 @@ void errmsg(const char *format, ...)
     tty_flush();
 }
 
+/*
+ * print that memory ran out; code that sets error to NO_MEM_ERROR instead
+ * leaves the message to print_error()
+ */
 void out_of_memory(void)
 {
     start_message();

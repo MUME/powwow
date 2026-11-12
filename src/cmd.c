@@ -1970,7 +1970,7 @@ static void cmd_var(char *arg)
             if (!deleting) {
                 named_var = add_varnode(arg, kind);
                 if (named_var == NULL) {
-                    error = NO_MEM_ERROR;
+                    print_error(error);
                     return;
                 }
                 if (opt_info) {
@@ -2041,7 +2041,7 @@ static void cmd_var(char *arg)
                     if (!deleting) {
                         named_var = add_varnode(buf, kind);
                         if (named_var == NULL) {
-                            error = NO_MEM_ERROR;
+                            print_error(error);
                             ptrdel(&pbuf);
                             return;
                         }

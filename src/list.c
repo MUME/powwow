@@ -329,7 +329,8 @@ delaynode *add_delaynode(char *name, char *command, vtime *when, bool is_dead)
 }
 
 /*
- * add a node to named variables list
+ * add a node to named variables list, or set error to NO_MEM_ERROR and
+ * return NULL, leaving the message to print_error()
  *
  * do NOT allocate a ptr!
  */
@@ -337,12 +338,11 @@ varnode *add_varnode(const char *name, enum var_kind kind)
 {
     varnode *new = malloc(sizeof(varnode));
     if (new == NULL) {
-        out_of_memory();
+        error = NO_MEM_ERROR;
         return NULL;
     }
     new->name = my_strdup(name);
     if (new->name == NULL) {
-        out_of_memory();
         free(new);
         return NULL;
     }
