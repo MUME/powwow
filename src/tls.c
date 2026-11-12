@@ -66,30 +66,30 @@ static int tls_close(connsess *conn)
 
 static ssize_t tls_write(connsess *conn, const void *data, size_t len)
 {
-  ssize_t l = gnutls_record_send(conn->tls->session, data, len);
-  if (l >= 0)
-      ;
-  else if (!gnutls_error_is_fatal(l))
-      errno = EAGAIN;
-  else {
-      conn->tls->session_ok = false;
-      errno = EINVAL;
-  }
-  return l;
+    ssize_t l = gnutls_record_send(conn->tls->session, data, len);
+    if (l < 0) {
+        if (!gnutls_error_is_fatal(l)) {
+            errno = EAGAIN;
+        } else {
+            conn->tls->session_ok = false;
+            errno = EINVAL;
+        }
+    }
+    return l;
 }
 
 static ssize_t tls_read(connsess *conn, void *data, size_t len)
 {
-  ssize_t l = gnutls_record_recv(conn->tls->session, data, len);
-  if (l >= 0)
-      ;
-  else if (!gnutls_error_is_fatal(l))
-      errno = EAGAIN;
-  else {
-      conn->tls->session_ok = false;
-      errno = EINVAL;
-  }
-  return l;
+    ssize_t l = gnutls_record_recv(conn->tls->session, data, len);
+    if (l < 0) {
+        if (!gnutls_error_is_fatal(l)) {
+            errno = EAGAIN;
+        } else {
+            conn->tls->session_ok = false;
+            errno = EINVAL;
+        }
+    }
+    return l;
 }
 
 static bool tls_can_read(connsess *conn)
@@ -186,8 +186,7 @@ bool tls_upgrade(struct connsess *conn, const struct tls_options *tlsopt)
     conn->fns = &tls_io_fns;
     conn->tls = tls;
 
-    tls_nofail(
-        gnutls_certificate_allocate_credentials(&tls->xcred));
+    tls_nofail(gnutls_certificate_allocate_credentials(&tls->xcred));
     /* without them, the certificates of servers cannot be verified */
     int certs = gnutls_certificate_set_x509_system_trust(tls->xcred);
     int error = certs;
@@ -203,8 +202,7 @@ bool tls_upgrade(struct connsess *conn, const struct tls_options *tlsopt)
     } else if (certs <= 0) {
         wrap_printf("#warning: found no CA certificates of the system");
     }
-    tls_nofail(gnutls_anon_allocate_client_credentials(
-                   &tls->anon_cred));
+    tls_nofail(gnutls_anon_allocate_client_credentials(&tls->anon_cred));
 
     tls_nofail(gnutls_init(&tls->session, GNUTLS_CLIENT));
     /* the name of the server, which servers of several names need to
@@ -220,16 +218,14 @@ bool tls_upgrade(struct connsess *conn, const struct tls_options *tlsopt)
     if (prio < 0) {
         wrap_printf("#warning: cannot set the default TLS priorities: %s",
                     gnutls_strerror(prio));
-        tls_nofail(gnutls_priority_set_direct(
-                       tls->session, "NORMAL", NULL));
+        tls_nofail(gnutls_priority_set_direct(tls->session, "NORMAL", NULL));
     }
     tls_nofail(gnutls_credentials_set(
                    tls->session, GNUTLS_CRD_ANON, tls->anon_cred));
     tls_nofail(gnutls_credentials_set(
                    tls->session, GNUTLS_CRD_CERTIFICATE, tls->xcred));
 
-    gnutls_certificate_set_verify_function(
-        tls->xcred, cert_verify_callback);
+    gnutls_certificate_set_verify_function(tls->xcred, cert_verify_callback);
 
     gnutls_transport_set_int(tls->session, conn->fd);
     gnutls_handshake_set_timeout(tls->session, 0); /* disable timeout */
@@ -275,13 +271,13 @@ bool parse_tls_flag(struct tls_options *dst, const char **argp,
         arg += sizeof f_tls - 1;
         if (*arg == '=')
             ++arg;
-        else if (*arg != 0)
+        else if (*arg != '\0')
             return true;
     }
 
 #ifdef USE_TLS
 
-    while (*arg != 0) {
+    while (*arg != '\0') {
         static const char f_no_verify[] = "no-verify";
         static const char f_host[] = "host=";
 
@@ -291,17 +287,18 @@ bool parse_tls_flag(struct tls_options *dst, const char **argp,
         } else if (strncmp(f_host, arg, sizeof f_host - 1) == 0) {
             arg += sizeof f_host - 1;
             const char *end = arg;
-            while (*end != 0 && *end != TLSOPT_SEP && *end != ' ')
+            while (*end != '\0' && *end != TLSOPT_SEP && *end != ' ')
                 ++end;
             size_t len = end - arg;
             free(dst->hostname);
             dst->hostname = malloc(len + 1);
             memcpy(dst->hostname, arg, len);
-            dst->hostname[len] = 0;
+            dst->hostname[len] = '\0';
             arg = end;
-        } else
+        } else {
             return false;
-        if (*arg == 0)
+        }
+        if (*arg == '\0')
             break;
         if (*arg != TLSOPT_SEP)
             return false;
@@ -326,7 +323,9 @@ const char *tlsopt_str(const struct tls_options *tlsopt)
 
     static char *buf;
     free(buf);
-    buf = malloc(32 + (tlsopt->hostname ? strlen(tlsopt->hostname) : 0));
+    buf = malloc(32 + (tlsopt->hostname != NULL
+                       ? strlen(tlsopt->hostname)
+                       : 0));
     char *p = buf;
     p += sprintf(p, " %s", f_tls);
     char prefix = '=';
