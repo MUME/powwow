@@ -1667,7 +1667,8 @@ int save_settings(void)
     if (MEM_ERROR)
         failed = -1;
 
-    failed = fprintf(f, "#savefile-version %d\n", SAVEFILEVER);
+    if (failed > 0)
+        failed = fprintf(f, "#savefile-version %d\n", SAVEFILEVER);
     if (failed > 0 && *hostinfo.name != '\0') {
         failed = fprintf(f, "#host %s %d%s%s\n", hostinfo.name, hostinfo.port,
                          tlsopt_str(&hostinfo.tlsopt),
