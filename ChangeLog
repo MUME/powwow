@@ -205,6 +205,10 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  runs at their start closes their connection, instead of starting
 	  the editor and then reporting that powwow cannot write to the
 	  connection `(null)'.
+	* #cancel sends the server the message that cancels the editing
+	  session once, instead of twice, the first time with an extra
+	  empty line, and cancels a view, or a session whose connection
+	  closed, without printing `#no open connections'.
 	* Commands started by #spawn that close their own connection, as
 	  with `#zap', no longer have the lines that follow in the same
 	  read run as from a connection named `(null)'.

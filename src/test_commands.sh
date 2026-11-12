@@ -1418,6 +1418,34 @@ run --until '#cancelled session' \
 ##n #request editor"
 has '#killed "descr" (5)'
 
+# the server gets the message that cancels an editing session once
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE14\nM5\ndescr\ntext\n#cancel\n'
+cat > "$1/got"
+touch "$1/done"
+EOF
+run --until '#cancelled session' 'cancelling an editing session once' \
+    "#option editor=&sh -c 'sleep 5'
+#spawn n sh $tmp/server $tmp
+##n #request editor"
+i=0
+until [ -e "$tmp/done" ] || [ $i -ge 500 ]; do
+    sleep 0.01
+    i=$((i + 1))
+done
+[ "$(grep -c '^C5$' "$tmp/got")" -eq 1 ] \
+    || fail "expected one cancel message, got: $(od -c "$tmp/got")"
+
+# cancelling a view, which has no connection to tell
+run --until '#killed' 'cancelling a view' \
+    "#option pager=&sh -c 'sleep 5'
+#help mark
+#cancel"
+has "#killed \"Help on 'mark'\" (4294967295)"
+lacks "#no open connections. Use '#connect main <address> <port>'"\
+" to open a connection."
+
 # a suboption from one connection, split by a suboption from another one
 cat > "$tmp/server" <<'EOF'
 printf '\377\372\052\001;ISO-8859-1'

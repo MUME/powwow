@@ -213,8 +213,8 @@ void abort_edit_fd(connsess *conn)
 }
 
 /*
- * cancel an editing session; does not free anything
- * (the child death signal handler will remove the session from the list)
+ * cancel an editing session; does not free anything (the child death
+ * signal handler tells the server and removes the session from the list)
  */
 void cancel_edit(editsess *sp)
 {
@@ -223,11 +223,6 @@ void cancel_edit(editsess *sp)
         return;
     }
     wrap_printf("#killed \"%s\" (%u)", sp->descr, sp->key);
-    char keystr[16];
-    sprintf(keystr, "C%u\n", sp->key);
-    char buf[BUFSIZE];
-    sprintf(buf, "%sE%zu\n%s", MPI, strlen(keystr), keystr);
-    tcp_write(sp->conn, buf);
     sp->cancel = true;
 }
 
