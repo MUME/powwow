@@ -1272,7 +1272,7 @@ static void process_singleline(char **pbuf, int *psize)
 	tty_putc('{');
 	for (t = linestart; t < lineend && (c = *t); t++) {
 	    if (c < ' ' || c > '~')
-		tty_printf("[%d]", (int)c);
+                tty_printf("[%d]", c);
 	    else
 		tty_putc(c);
 	}

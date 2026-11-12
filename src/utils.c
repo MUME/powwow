@@ -549,7 +549,7 @@ ptr *ptrmescape(ptr *dst, const char *src, int srclen, int append)
 	/* write control characters as \ooo, but non-ASCII UTF-8 as
 	 * is: \ooo reads back as an ISO 8859-1 character */
 	if ((byte)*src < ' ' || *src == '\177') {
-	    sprintf(p, "\\%03o", (int)(byte)*src++);
+            sprintf(p, "\\%03hho", *src++);
 	    len = strlen(p);
 	    dst->len += len, p += len, srclen--;
 	} else {
@@ -593,7 +593,7 @@ void escape_specials(char *dst, const char *src)
 	if (!*src) break;
 
 	if (*src < ' ' || *src > '~') {
-	    sprintf(dst, "\\%03o", (int)(byte)*src++);
+            sprintf(dst, "\\%03hho", *src++);
 	    dst += strlen(dst);
 	} else {
 	    if (state == ESCAPE || strchr(SPECIAL_CHARS, *src))
