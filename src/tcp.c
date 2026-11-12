@@ -761,7 +761,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     conn->old_state = old_state;
 
     if (!current_connection->spawn)
-        log_write(buffer, (char *)p - (char *)buffer, 0, conn->charset);
+        log_write(buffer, (char *)p - (char *)buffer, false, conn->charset);
 
     return (char *)p - (char *)buffer;
 }
@@ -869,9 +869,9 @@ void tcp_write(connsess *conn, const char *data)
 
     if (main_connection != NULL && main_connection == conn) {
         if (linemode & LM_NOECHO)
-            log_write("", 0, 1, conn->charset); /* log a newline only */
+            log_write("", 0, true, conn->charset); /* log a newline only */
         else
-            log_write(data, len, 1, conn->charset);
+            log_write(data, len, true, conn->charset);
         reprint_writeline(data);
     }
 

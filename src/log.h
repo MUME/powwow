@@ -14,7 +14,7 @@ void log_clearsleep(void);
 void log_flush(void);
 int  log_getsize(void);
 void log_resize(int newsize);
-void log_write(const char *str, int len, int newline, enum charset cs);
+void log_write(const char *str, int len, bool newline, enum charset cs);
 void log_record_line(const char *line);
 
 void  reprint_writeline(const char *line);
