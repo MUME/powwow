@@ -47,41 +47,39 @@ static void reset_terminal(void)
     tcsetattr(0, TCSANOW, &ttybsave);
 }
 
-int main(int argc, char *argv[]) {
-    FILE *f;
-    char c = 0, buf[512];
-    int d;
-
+int main(int argc, char *argv[])
+{
     if (argc < 2) {
-	fprintf(stderr, "needed a file name\n");
-	exit(0);
+        fprintf(stderr, "needed a file name\n");
+        exit(0);
     }
-    f = fopen(argv[1], "r");
-    if (!f) {
-	fprintf(stderr, "unable to open %s\n", argv[1]);
-	exit(0);
+    FILE *f = fopen(argv[1], "r");
+    if (f == NULL) {
+        fprintf(stderr, "unable to open %s\n", argv[1]);
+        exit(0);
     }
 
     set_terminal();
-    while(c!=ASCII_ESC) {
-	if (read(0, &c, 1) != 1)
-	    break;
+    char c = 0;
+    while (c != ASCII_ESC) {
+        if (read(0, &c, 1) != 1)
+            break;
         if (c == '\n' || c == '\r') {
-	    if (fgets(buf, 512, f))
-		fputs(buf, stdout);
-	    else
-		break;
-	}
-	else {
-	    if ((d = fgetc(f)) != EOF)
-		putchar(d);
-	    else
-		break;
-	}
-	fflush(stdout);
+            char buf[512];
+            if (fgets(buf, sizeof(buf), f) != NULL)
+                fputs(buf, stdout);
+            else
+                break;
+        } else {
+            int d = fgetc(f);
+            if (d != EOF)
+                putchar(d);
+            else
+                break;
+        }
+        fflush(stdout);
     }
     reset_terminal();
     fputs("\033[0m\n", stdout);
     return 0;
 }
-
