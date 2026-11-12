@@ -48,12 +48,14 @@ sync_powwow() {
 # the input line empty, and the commands sent to wait for powwow are in the
 # history
 #
-# options: --bind when $2 ends with a #bind that reads the key $3, and
-# --until TEXT to wait for powwow to print TEXT before quitting
+# options: --bind when $2 ends with a #bind that reads the key $3,
+# --until TEXT to wait for powwow to print TEXT before quitting, and
+# --args ARGS to give powwow the arguments ARGS, split at spaces
 run() {
-    bind= until=
+    bind= until= args=
     while :; do
         case $1 in
+            --args) args=$2; shift 2 ;;
             --bind) bind=1; shift ;;
             --until) until=$2; shift 2 ;;
             *) break ;;
@@ -80,7 +82,7 @@ run() {
         fi
         [ -z "$until" ] || wait_for "$until"
         printf '#quit\n'
-    } | "$POWWOW" > "$tmp/raw" 2>&1 &
+    } | "$POWWOW" $args > "$tmp/raw" 2>&1 &
     pid=$!
     (sleep 20; kill -9 $pid) > /dev/null 2>&1 &
     watchdog=$!
@@ -1203,6 +1205,11 @@ run 'action pattern longer than a buffer' '#($v = "x" * 5000)
 has 'y'
 lacks 'matched'
 has 'alive'
+
+printf '#alias t=#print loaded\n' > "$tmp/def"
+run --args "$tmp/def 127.0.0.1 1" 'definition file, host and port' 't'
+has '#cannot connect to 127.0.0.1:1: Connection refused'
+has 'loaded'
 
 # a line longer than the memory limit is still processed as a line, not
 # again as a prompt

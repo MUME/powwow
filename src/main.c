@@ -419,7 +419,7 @@ int main(int argc, char **argv)
     hostinfo.tlsopt.use_tls = default_tls;
 
     int nargs = argc - optind;
-    if (nargs > 2) {
+    if (nargs > 3) {
         fprintf(stderr, "%s: too many arguments\n", argv[0]);
         exit(EXIT_FAILURE);
     }
