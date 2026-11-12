@@ -504,6 +504,25 @@ static void check_delete(object *obj)
 }
 
 /*
+ * add, subtract and multiply, wrapping around on overflow as in two's
+ * complement
+ */
+static long wrap_add(long a, long b)
+{
+    return (long)((unsigned long)a + (unsigned long)b);
+}
+
+static long wrap_sub(long a, long b)
+{
+    return (long)((unsigned long)a - (unsigned long)b);
+}
+
+static long wrap_mul(long a, long b)
+{
+    return (long)((unsigned long)a * (unsigned long)b);
+}
+
+/*
  * shift *num left, or else right, by count bits: the bits shifted out are
  * lost, and a right shift keeps the sign; a negative count is an error
  */
@@ -666,13 +685,13 @@ static bool exe_op(operator *op)
                 shift(l, o2.num, *op == op_lshift_eq);
                 break;
             case op_plus_eq:
-                *l += o2.num;
+                *l = wrap_add(*l, o2.num);
                 break;
             case op_minus_eq:
-                *l -= o2.num;
+                *l = wrap_sub(*l, o2.num);
                 break;
             case op_times_eq:
-                *l *= o2.num;
+                *l = wrap_mul(*l, o2.num);
                 break;
             case op_div_eq:
             case op_ampersand_eq:
@@ -801,13 +820,13 @@ static bool exe_op(operator *op)
                 shift(&o1.num, o2.num, *op == op_lshift);
                 break;
             case op_minus:
-                o1.num -= o2.num;
+                o1.num = wrap_sub(o1.num, o2.num);
                 break;
             case op_plus:
-                o1.num += o2.num;
+                o1.num = wrap_add(o1.num, o2.num);
                 break;
             case op_times:
-                o1.num *= o2.num;
+                o1.num = wrap_mul(o1.num, o2.num);
                 break;
             case op_division:
             case op_ampersand:
@@ -1263,7 +1282,7 @@ static bool exe_op(operator *op)
         }
         if (o1.type == TYPE_NUM) {
             if (*op == op_pre_minus) {
-                o1.num = -o1.num;
+                o1.num = wrap_sub(0, o1.num);
             } else if (*op == op_not) {
                 o1.num = o1.num == 0;
             } else if (*op == op_tilde) {
@@ -1377,17 +1396,17 @@ static bool exe_op(operator *op)
             o1.type = TYPE_NUM;
 
             if (*op == op_pre_plus_plus) {
-                ++*l;
+                *l = wrap_add(*l, 1);
                 o1.num = *l;
             } else if (*op == op_post_plus_plus) {
                 o1.num = *l;
-                ++*l;
+                *l = wrap_add(*l, 1);
             } else if (*op == op_pre_minus_minus) {
-                --*l;
+                *l = wrap_sub(*l, 1);
                 o1.num = *l;
             } else {
                 o1.num = *l;
-                --*l;
+                *l = wrap_sub(*l, 1);
             }
 
             p = &o1;
