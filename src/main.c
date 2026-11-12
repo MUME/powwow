@@ -941,7 +941,7 @@ static void exec_delays(void)
 
             buf = ptrmcpy(buf, dying->command, strlen(dying->command));
             if (MEM_ERROR) {
-                out_of_memory();
+                print_error(error);
             } else {
                 parse_instruction(ptrdata(buf), false, false, true);
                 history_done = 0;
@@ -1256,7 +1256,7 @@ static int grab_prompt(char *linestart, int len, bool islast)
         prompt->str = ptrmcpy(prompt->str, linestart, len);
         if (MEM_ERROR) {
             promptzero();
-            out_of_memory();
+            print_error(error);
             return 0;
         }
         effective_prompt();
@@ -1878,7 +1878,7 @@ static bool search_action_or_prompt(char *line, bool clearline, int onprompt)
             prompt->str = ptrmcpy(prompt->str, line, strlen(line));
             if (MEM_ERROR) {
                 promptzero();
-                out_of_memory();
+                print_error(error);
                 return false;
             }
         }
