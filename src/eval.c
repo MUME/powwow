@@ -1176,18 +1176,18 @@ static bool exe_op(operator *op)
         else
             error = SYNTAX_ERROR;
 
-        if (error == 0) {
-            char *found = ptrfind(src, dst);
-            int i = 0;
-            if (found != NULL)
-                i = (int)utf8_count(ptrdata(src), found - ptrdata(src)) + 1;
-            o1.type = TYPE_NUM;
-            o1.num = i;
-            p = &o1;
-            ret = true;
-        }
+        if (error != 0)
+            break;
+        char *found = ptrfind(src, dst);
+        int i = 0;
+        if (found != NULL)
+            i = (int)utf8_count(ptrdata(src), found - ptrdata(src)) + 1;
         check_delete(&o1);
         check_delete(&o2);
+        o1.type = TYPE_NUM;
+        o1.num = i;
+        p = &o1;
+        ret = true;
         break;
     }
     case op_null:
