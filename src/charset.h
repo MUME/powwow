@@ -20,7 +20,15 @@
 #define UTF8_REPLACEMENT_LEN 3
 #define UNICODE_REPLACEMENT  0xfffd
 
+#define ASCII_MAX   0x7f
+#define LATIN1_MAX  0xff
 #define UNICODE_MAX 0x10ffff    /* the last code point */
+
+/* is 'cp' a C1 control character? */
+static inline bool unicode_is_c1(uint32_t cp)
+{
+    return cp >= 0x80 && cp < 0xa0;
+}
 
 /* is 'cp' a UTF-16 surrogate, which is not a character? */
 static inline bool unicode_is_surrogate(uint32_t cp)
@@ -44,6 +52,30 @@ static inline bool unicode_is_low_surrogate(uint32_t cp)
 static inline bool unicode_is_scalar(uint32_t cp)
 {
     return cp <= UNICODE_MAX && !unicode_is_surrogate(cp);
+}
+
+/* the high surrogate of 'cp', above U+FFFF, in UTF-16 */
+static inline uint32_t utf16_high(uint32_t cp)
+{
+    return 0xd800 + ((cp - 0x10000) >> 10);
+}
+
+/* the low surrogate of 'cp', above U+FFFF, in UTF-16 */
+static inline uint32_t utf16_low(uint32_t cp)
+{
+    return 0xdc00 + ((cp - 0x10000) & 0x3ff);
+}
+
+/* the character of the surrogates 'high' and 'low' */
+static inline uint32_t utf16_join(uint32_t high, uint32_t low)
+{
+    return 0x10000 + ((high - 0xd800) << 10) + (low - 0xdc00);
+}
+
+/* is 'b' a continuation byte of UTF-8, not the first of a character? */
+static inline bool utf8_is_continuation(unsigned char b)
+{
+    return (b & 0xc0) == 0x80;
 }
 
 enum charset { CS_LATIN1, CS_UTF8, CS_ASCII };

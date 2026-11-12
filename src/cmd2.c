@@ -995,7 +995,7 @@ static char *unescape_seq(char *buf, char *seq, int *seqlen)
              * handle ^@ ^A  ... ^_ as expected:
              * ^@ == 0x00, ^A == 0x01, ... , ^_ == 0x1f
              */
-            if (c > 0x40 && c < 0x60) {
+            if (c >= 'A' && c <= '_') {
                 *(buf++) = c & 0x1f;
             } else if (c == '?') {
                 /* special case: ^? == DEL */
@@ -1102,7 +1102,7 @@ static void print_seq(char *seq, int len)
             n += sprintf(buf + n, "space ");
         else if (ch == ASCII_DEL)
             n += sprintf(buf + n, "del ");
-        else if (ch & 0x80)
+        else if (ch > ASCII_MAX)
             n += sprintf(buf + n, "\\%03o ", ch);
         else
             n += sprintf(buf + n, "%c ", ch);
@@ -1138,7 +1138,7 @@ char *seq_name(char *seq, int len)
         } else if (c == ASCII_DEL) {
             *(p++) = '^';
             *(p++) = '?';
-        } else if (c & 0x80) {
+        } else if (c > ASCII_MAX) {
             sprintf(p, "\\%03o", c);
             p += strlen(p);
         } else {

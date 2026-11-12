@@ -455,7 +455,7 @@ static char *format_command_help(char *dst, const cmdstruct *c)
     /* a command named by punctuation, as #!, needs no space: #!ls */
     int args_len = (int)(tab - c->help);
     unsigned char first = c->name[0];
-    bool punct = (first < 0x80 && ispunct(first) && c->name[1] == '\0');
+    bool punct = (first <= ASCII_MAX && ispunct(first) && c->name[1] == '\0');
     bool space = args_len > 0 && !punct;
     sprintf(dst, "#%s%s%.*s", c->name, space ? " " : "", args_len,
             c->help);
