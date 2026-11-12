@@ -10,6 +10,7 @@
 
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "defines.h"
@@ -20,6 +21,22 @@
 /* needed by ptr.c */
 int error;
 int limit_mem;
+
+void *xmalloc(size_t size)
+{
+    void *p = malloc(size);
+    if (p == NULL)
+        abort();
+    return p;
+}
+
+void *xrealloc(void *p, size_t size)
+{
+    void *res = realloc(p, size);
+    if (res == NULL)
+        abort();
+    return res;
+}
 
 static int failures;
 
@@ -131,26 +148,60 @@ static void test_overflow(void)
     ptr *p = ptrmcpy(NULL, "abc", 3);
 
     error = 0;
-    check("ptrnew(INT_MAX)", ptrnew(INT_MAX) == NULL && error == NO_MEM_ERROR);
+    check("ptrnew(INT_MAX)",
+          ptrnew(INT_MAX) == NULL && error == MEM_LIMIT_ERROR);
 
     error = 0;
     check("ptrdup2(p, INT_MAX)",
-          ptrdup2(p, INT_MAX) == NULL && error == NO_MEM_ERROR);
+          ptrdup2(p, INT_MAX) == NULL && error == MEM_LIMIT_ERROR);
 
     error = 0;
     p = ptrmcpy(p, "x", INT_MAX);
-    check("ptrmcpy(INT_MAX)", error == NO_MEM_ERROR && has_contents(p, "abc"));
+    check("ptrmcpy(INT_MAX)",
+          error == MEM_LIMIT_ERROR && has_contents(p, "abc"));
 
     error = 0;
     p = ptrmcat(p, "x", INT_MAX - 1);
     check("ptrmcat(INT_MAX - 1)",
-          error == NO_MEM_ERROR && has_contents(p, "abc"));
+          error == MEM_LIMIT_ERROR && has_contents(p, "abc"));
 
     error = 0;
     p = ptrpad(p, INT_MAX);
-    check("ptrpad(INT_MAX)", error == NO_MEM_ERROR && has_contents(p, "abc"));
+    check("ptrpad(INT_MAX)",
+          error == MEM_LIMIT_ERROR && has_contents(p, "abc"));
 
     error = 0;
+    ptrdel(&p);
+}
+
+/* #setvar mem limits the length, and a longer ptr is left as it was */
+static void test_limit(void)
+{
+    limit_mem = 200;
+    ptr *p = ptrmcpy(NULL, "abc", 3);
+
+    error = 0;
+    check("ptrnew() over the limit",
+          ptrnew(201) == NULL && error == MEM_LIMIT_ERROR);
+
+    error = 0;
+    char text[201];
+    memset(text, 'x', sizeof text);
+    p = ptrmcat(p, text, 198);
+    check("ptrmcat() over the limit",
+          error == MEM_LIMIT_ERROR && has_contents(p, "abc"));
+
+    error = 0;
+    p = ptrmcpy(p, text, 201);
+    check("ptrmcpy() over the limit",
+          error == MEM_LIMIT_ERROR && has_contents(p, "abc"));
+
+    error = 0;
+    p = ptrmcpy(p, text, 200);
+    check("ptrmcpy() up to the limit", error == 0 && ptrlen(p) == 200);
+
+    error = 0;
+    limit_mem = 0;
     ptrdel(&p);
 }
 
@@ -174,6 +225,7 @@ int main(void)
     test_overlap_shrink();
     test_overlap_grow();
     test_overflow();
+    test_limit();
     test_negative_lengths();
     if (failures != 0)
         printf("%d failures\n", failures);

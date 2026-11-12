@@ -32,6 +32,12 @@ enum {
 };
 
 /*
+ * a ptr longer than #setvar mem, or than one can be, sets error to
+ * MEM_LIMIT_ERROR, and the function gives up; running out of memory ends
+ * powwow
+ */
+
+/*
  * create a new, empty ptr.
  * return NULL if max == 0
  */
@@ -39,19 +45,11 @@ ptr *ptrnew(int max)
 {
     if (max == 0)
         return NULL;
-    if (limit_mem != 0 && max > limit_mem) {
+    if (max < 0 || max > PTR_MAX || (limit_mem != 0 && max > limit_mem)) {
         error = MEM_LIMIT_ERROR;
         return NULL;
     }
-    if (max < 0 || max > PTR_MAX) {     /* overflow! */
-        error = NO_MEM_ERROR;
-        return NULL;
-    }
-    ptr *p = malloc(max + PTR_OVERHEAD);
-    if (p == NULL) {
-        error = NO_MEM_ERROR;
-        return NULL;
-    }
+    ptr *p = xmalloc(max + PTR_OVERHEAD);
     p->max = max;
     p->len = 0;
     ptrdata(p)[0] = '\0';
@@ -68,21 +66,14 @@ ptr *ptrdup2(const ptr *src, int newmax)
 {
     if (newmax == 0)
         return NULL;
-    if (newmax < 0 || newmax > PTR_MAX) {
-        error = NO_MEM_ERROR;
-        return NULL;
-    }
-    if (limit_mem != 0 && newmax > limit_mem) {
+    if (newmax < 0 || newmax > PTR_MAX
+        || (limit_mem != 0 && newmax > limit_mem)) {
         error = MEM_LIMIT_ERROR;
         return NULL;
     }
     if (src == NULL)
         return ptrnew(newmax);
-    ptr *p = malloc(newmax + PTR_OVERHEAD);
-    if (p == NULL) {
-        error = NO_MEM_ERROR;
-        return NULL;
-    }
+    ptr *p = xmalloc(newmax + PTR_OVERHEAD);
     p->max = newmax;
     if (newmax > ptrlen(src))
         newmax = ptrlen(src);
@@ -150,8 +141,7 @@ ptr *ptrmcat(ptr *dst, const char *src, int len)
     if (src == NULL || len <= 0)
         return dst;
     if (len > PTR_MAX - (dst != NULL ? ptrlen(dst) : 0)) {
-        /* overflow! */
-        error = NO_MEM_ERROR;
+        error = MEM_LIMIT_ERROR;
         return dst;
     }
 
@@ -202,19 +192,10 @@ ptr *ptrmcat(ptr *dst, const char *src, int len)
             src = ptrdata(dst) + ptrlen(dst);
         }
         const size_t src_offset = overlap ? src - ptrdata(dst) : 0;
-        ptr *p = realloc(dst, newmax + PTR_OVERHEAD);
-        if (p != NULL) {
-            if (dst == NULL)
-                p->len = 0;
-            p->max = newmax;
-        } else {
-            p = ptrdup2(dst, newmax);
-            if (p == NULL) {
-                error = NO_MEM_ERROR;
-                return dst;
-            }
-            ptrdel(&dst);
-        }
+        ptr *p = xrealloc(dst, newmax + PTR_OVERHEAD);
+        if (dst == NULL)
+            p->len = 0;
+        p->max = newmax;
         if (overlap)
             src = ptrdata(p) + src_offset;
         dst = p;
@@ -245,8 +226,7 @@ ptr *ptrmcpy(ptr *dst, const char *src, int len)
         return dst;
     }
     if (len > PTR_MAX) {
-        /* overflow! */
-        error = NO_MEM_ERROR;
+        error = MEM_LIMIT_ERROR;
         return dst;
     }
 
@@ -294,19 +274,10 @@ ptr *ptrmcpy(ptr *dst, const char *src, int len)
             src = ptrdata(dst);
         }
         const size_t src_offset = overlap ? src - ptrdata(dst) : 0;
-        ptr *p = realloc(dst, newmax + PTR_OVERHEAD);
-        if (p != NULL) {
-            if (dst == NULL)
-                p->len = 0;
-            p->max = newmax;
-        } else {
-            p = ptrdup2(dst, newmax);
-            if (p == NULL) {
-                error = NO_MEM_ERROR;
-                return dst;
-            }
-            ptrdel(&dst);
-        }
+        ptr *p = xrealloc(dst, newmax + PTR_OVERHEAD);
+        if (dst == NULL)
+            p->len = 0;
+        p->max = newmax;
         if (overlap)
             src = ptrdata(p) + src_offset;
         dst = p;
@@ -342,8 +313,7 @@ ptr *ptrpad(ptr *p, int len)
     if (len > ptrmax(p) - ptrlen(p)) {
         /* must realloc the ptr */
         if (len > PTR_MAX - ptrlen(p)) {
-            /* overflow! */
-            error = NO_MEM_ERROR;
+            error = MEM_LIMIT_ERROR;
             return p;
         }
         len += ptrlen(p);
