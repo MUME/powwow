@@ -156,6 +156,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Fixed a connection other than the main one asking for the window
 	  size sending part of the answer to the main connection, or
 	  crashing powwow without a main connection.
+	* Fixed telnet suboptions of 256 bytes or more, such as a long
+	  list of charsets, writing past the end of their buffer.
 
 	Removed:
 	* Removed the #color command.
