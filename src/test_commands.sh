@@ -335,6 +335,12 @@ has '#substitute foo=a\;b'
 has '#substitute \^lit=c'
 has '#substitute ^beg= d'
 
+run '#load keeps a large #nice' "#nice 300
+#save $tmp/cfg
+#load $tmp/cfg
+#nice"
+has '#nice: 300'
+
 run 'substitute before mark' '#substitute foo=bar
 #mark bar=bold
 #print ("foo")'
