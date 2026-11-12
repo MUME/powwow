@@ -17,8 +17,7 @@ powwowdir = $(pkgincludedir)
 powwow_HEADERS = beam.h cmd.h log.h edit.h cmd2.h eval.h \
 		 utils.h main.h tcp.h list.h map.h tty.h \
 		 ptr.h defines.h tls.h charset.h width.h sgr.h attr.h \
-		 charname.h \
-		 feature/regex.h
+		 charname.h regexlib.h
 powwow_muc_SOURCES = powwow-muc.c
 powwow_muc_LDADD = @CURSES_LIBS@
 powwow_movieplay_SOURCES = powwow-movieplay.c
