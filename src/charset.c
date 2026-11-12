@@ -240,7 +240,7 @@ int utf8_put(uint32_t cp, char *dst)
         d[1] = 0x80 | (cp & 0x3f);
         return 2;
     }
-    if ((cp >= 0xd800 && cp <= 0xdfff) || cp > 0x10ffff)
+    if (!unicode_is_scalar(cp))
         cp = UNICODE_REPLACEMENT;
     if (cp < 0x10000) {
         d[0] = 0xe0 | (cp >> 12);

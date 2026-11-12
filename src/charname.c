@@ -18,6 +18,7 @@
 #  include <zlib.h>
 #endif
 
+#include "charset.h"
 #include "defines.h"
 #include "charname.h"
 
@@ -413,7 +414,7 @@ static bool same_name(const char *a, size_t len, const char *b)
 static bool is_typable(uint32_t cp)
 {
     return (cp >= 0x20 && cp != ASCII_DEL && (cp < 0x80 || cp >= 0xa0)
-            && (cp < 0xd800 || cp > 0xdfff) && cp <= 0x10ffff);
+            && unicode_is_scalar(cp));
 }
 
 /*
