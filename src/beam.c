@@ -196,6 +196,8 @@ void abort_edit_fd(connsess *conn)
         if (p->conn != conn)
             continue;
 
+        /* nothing can be sent to the closed connection */
+        p->conn = NULL;
         if (kill(p->pid, SIGKILL) < 0) {        /* Editicide */
             errmsg("cannot stop the editor");
             continue;
