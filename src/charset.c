@@ -180,7 +180,7 @@ size_t charset_encode(enum charset cs, const char *src, size_t len,
     while (len > 0) {
         uint32_t cp;
         int n = utf8_get(src, len, &cp);
-        *to++ = cp <= max ? (char)cp : CHARSET_REPLACEMENT;
+        *to++ = cp <= max ? (char)cp : ASCII_REPLACEMENT;
         src += n;
         len -= n;
     }
