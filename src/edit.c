@@ -577,12 +577,11 @@ static bool is_kill_cmd(function_str funct)
 
 /*
  * save the 'len' bytes at 'p' in the kill ring; if the previous command
- * also killed, add them to its kill, before it if 'before'; nothing is
- * saved in no-echo mode, so that passwords are not kept
+ * also killed, add them to its kill, before it if 'before'
  */
 static void kill_text(const char *p, int len, bool before)
 {
-    if (len <= 0 || (linemode & LM_NOECHO))
+    if (len <= 0)
         return;
     if (!is_kill_cmd(last_edit_cmd) || kill_ring[kill_last] == NULL) {
         kill_last = (kill_last + 1) % KILL_RING_SIZE;
@@ -624,7 +623,7 @@ static void kill_right(int n)
  */
 void yank(char *dummy)
 {
-    if ((linemode & LM_NOECHO) || kill_ring[kill_last] == NULL)
+    if (kill_ring[kill_last] == NULL)
         return;
     yank_index = kill_last;
     yank_start = pos;
@@ -637,8 +636,7 @@ void yank(char *dummy)
  */
 void yank_pop(char *dummy)
 {
-    if ((linemode & LM_NOECHO)
-        || (last_edit_cmd != yank && last_edit_cmd != yank_pop)
+    if ((last_edit_cmd != yank && last_edit_cmd != yank_pop)
         || yank_start > pos)
         return;
     int i = yank_index;
