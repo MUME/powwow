@@ -482,16 +482,29 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     int held = conn->mpi_headlen;
     memcpy(rawbuf, conn->mpi_head, held);
     int i;
-    while ((i = conn->fns->read(conn, rawbuf + held, maxsize - held)) < 0
-           && errno == EINTR)
-        ;
+    if (conn->ended) {
+        i = conn->end_errno == 0 ? 0 : -1;
+        errno = conn->end_errno;
+    } else {
+        while ((i = conn->fns->read(conn, rawbuf + held, maxsize - held)) < 0
+               && errno == EINTR)
+            ;
+    }
 
     /* e.g., a TLS record without data, such as a session ticket */
     if (i < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
         return 0;
-    /* the end, or an error such as a reset connection, which Cygwin
-     * also reports when a #spawn command exits: close the connection */
-    if (i <= 0) {
+    /*
+     * the end, or an error such as a reset connection, which Cygwin also
+     * reports when a #spawn command exits: show the start of an MPI
+     * message header kept as text, and report the end on the next call
+     */
+    bool ending = i <= 0;
+    if (ending && held != 0) {
+        conn->ended = true;
+        conn->end_errno = i < 0 ? errno : 0;
+        i = 0;
+    } else if (ending) {
         if (i < 0 && errno != EINVAL)
             errmsg("cannot read from connection \"%s\"", conn->id);
         conn->state = NORMAL;
@@ -558,7 +571,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                  * keep the start of an MPI message header at the end of
                  * the read for the next one, which may have the rest
                  */
-                if (!midline && p == linestart && state != GOT_R
+                if (!ending && !midline && p == linestart && state != GOT_R
                     && conn->ideditor && mpi_header_cut(s, i)) {
                     memcpy(conn->mpi_head, s, i);
                     conn->mpi_headlen = i;
@@ -572,7 +585,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                 p = put_data(conn, p, *s);
 
                 /* check for MUME MPI messages: */
-                if (!midline && p - linestart == MPILEN
+                if (!ending && !midline && p - linestart == MPILEN
                     && memcmp(linestart, MPI, MPILEN) == 0) {
                     if (!conn->ideditor) {
                         wrap_printf("#warning: ignored an MPI message"
@@ -1259,6 +1272,7 @@ void tcp_close(const char *id)
     conn->old_state = NORMAL;
     conn->mpi_headlen = 0;
     conn->midline = false;
+    conn->ended = false;
     conn->port = 0;
     free(conn->host);
     conn->host = NULL;
@@ -1368,6 +1382,7 @@ void tcp_spawn(const char *id, char *cmd)
     CONN_INDEX(i).old_state = NORMAL;
     CONN_INDEX(i).mpi_headlen = 0;
     CONN_INDEX(i).midline = false;
+    CONN_INDEX(i).ended = false;
     CONN_INDEX(i).port = 0;
     CONN_INDEX(i).fd = sockets[0];
     CONN_INDEX(i).fns = &tcp_io_fns;

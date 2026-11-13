@@ -76,6 +76,8 @@ typedef struct connsess {
     char mpi_head[MPI_HEAD_MAX]; /* start of an MPI message header */
     int mpi_headlen;            /* that ended the last read, or 0 */
     bool midline;               /* the last read ended inside a line */
+    bool ended;                 /* a read found the end, to report */
+    int end_errno;              /* and its error, or 0 */
     unsigned char cs_flags;	/* CHARSET option state */
     bool prefer_utf8;		/* starts as and prefers UTF-8 */
     enum charset charset;	/* current encoding of this link */
