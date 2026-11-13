@@ -94,6 +94,8 @@ function_signal sig_permanent(int signum, function_signal sighandler);
 #endif
 
 void signal_start(void);
+int  sig_wake_fd(void);
+void sig_wake_clear(void);
 void sig_bottomhalf(void);
 void errmsg(const char *format, ...) PRINTF_FUNCTION(1, 2);
 noreturn void syserr(const char *msg);
