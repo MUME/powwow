@@ -208,6 +208,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  as running out of memory.
 	* MPI messages cut short by the connection closing no longer make
 	  powwow print `got N chars out of M' forever.
+	* Connections closed in the middle of an MPI message report it on
+	  a line of its own, instead of after `got N chars out of M'.
 	* MPI messages longer than `#setvar mem' are rejected as text, and
 	  the others take memory as their text arrives, instead of all
 	  that their header claims at once.

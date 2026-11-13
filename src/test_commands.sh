@@ -1644,6 +1644,19 @@ run --until '#connection on "n" closed.' 'MPI message cut short' \
 ##n #request editor"
 has '#connection "n" closed in the middle of an MPI message'
 
+# the same, after a part of the text that comes later than the header
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE100\n'
+sleep 1
+printf 'abc'
+EOF
+run --until '#connection on "n" closed.' \
+    'MPI message cut short after a part of its text' \
+    "#spawn n sh $tmp/server
+##n #request editor"
+has '#connection "n" closed in the middle of an MPI message'
+
 # MPI messages whose header is split across writes, after \n\r, after
 # other text, and in the introducer, the length and before the \n
 cat > "$tmp/server" <<'EOF'

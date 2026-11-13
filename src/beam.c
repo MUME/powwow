@@ -132,6 +132,7 @@ int process_message(connsess *conn, char *buf, int len)
     i = to - text;
     int used = from - buf;
 
+    bool progress = false;      /* "got N chars out of M" shown */
     while (i < msglen) {
         if (i == size) {
             size = size > msglen / 2 ? msglen : 2 * size;
@@ -146,6 +147,8 @@ int process_message(connsess *conn, char *buf, int len)
                    || errno == EWOULDBLOCK))
             ;
         if (l <= 0) {
+            if (progress)
+                tty_putc('\n');
             /* Cygwin reports the end of a #spawn command as a reset or
              * aborted connection */
             if (l == 0 || errno == ECONNRESET || errno == ECONNABORTED)
@@ -174,6 +177,7 @@ int process_message(connsess *conn, char *buf, int len)
         i = to - text;
         tty_printf("\rgot %d chars out of %d", i, msglen);
         tty_flush();
+        progress = true;
     }
     tty_printf("\rread all %d chars.%s\n", msglen, tty_clreoln);
 
