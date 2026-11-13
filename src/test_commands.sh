@@ -514,6 +514,12 @@ run 'a window of the default size uses its last column' '' \
 grep -Fq "$(printf '%080d' 0)" "$tmp/raw" \
     || fail "wrapped before the last column"
 
+# C-b C-f move the cursor, so that the next character redraws the line
+run 'the cursor stays in the last column after blanking it' '' \
+    "$(printf '%078d\002\006' 0)b$(printf '\025')"
+grep -Eq 'b <ESC>\[[0-9]+;80H' "$tmp/out" \
+    || fail "left the cursor after the blank in the last column"
+
 run 'Tab does not draw the start of the word that it completes again' '' \
     "#hilite mess	$(printf '\025')"
 grep -Fq 'ages ' "$tmp/out" || fail "messages not completed"
