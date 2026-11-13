@@ -1703,6 +1703,18 @@ has '[prompt> ~$#EE15]'
 lacks '#cancelled session descr1 (1)'
 has '#cancelled session descr2 (2)'
 
+# the start of an MPI message header ends the last read of a connection
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf 'x\n~$#EE1'
+EOF
+run --until '#connection on "n" closed.' \
+    'start of an MPI message header at the end of a connection' \
+    "#spawn n sh $tmp/server
+##n #request editor"
+has '#warning: ##n: unterminated line [~$#EE1]'
+lacks '#warning: bad MPI message header'
+
 # the command run when an editing session starts closes the connection
 # that sent it, with more text in the same read
 cat > "$tmp/server" <<'EOF'
