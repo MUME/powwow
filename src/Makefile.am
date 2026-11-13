@@ -1,7 +1,8 @@
 # Default help file directory
-AM_CPPFLAGS=-D_XOPEN_SOURCE=700 @feature_cppflags@ -DPOWWOW_DIR=\"$(pkgdatadir)\" \
-	-DPLUGIN_DIR=\"$(plugindir)\" -DPOWWOW_BUILD_DIR=\"$(abs_builddir)\" \
-	-DPOWWOW_SOURCE_DIR=\"$(abs_top_srcdir)\"
+AM_CPPFLAGS = -D_XOPEN_SOURCE=700 @feature_cppflags@ \
+    -DPOWWOW_DIR=\"$(pkgdatadir)\" -DPLUGIN_DIR=\"$(plugindir)\" \
+    -DPOWWOW_BUILD_DIR=\"$(abs_builddir)\" \
+    -DPOWWOW_SOURCE_DIR=\"$(abs_top_srcdir)\"
 AM_CFLAGS = $(WARN_CFLAGS)
 
 bin_PROGRAMS = powwow powwow-movieplay
@@ -9,16 +10,16 @@ if HAVE_CURSES
 bin_PROGRAMS += powwow-muc
 endif
 powwow_SOURCES = beam.c cmd.c log.c edit.c cmd2.c eval.c \
-		 utils.c main.c tcp.c list.c map.c tty.c \
-		 ptr.c tls.c charset.c width.c sgr.c attr.c charname.c \
-                 secret.c sha256.c
+    utils.c main.c tcp.c list.c map.c tty.c \
+    ptr.c tls.c charset.c width.c sgr.c attr.c charname.c \
+    secret.c sha256.c
 nodist_powwow_SOURCES = gitversion.h
 powwow_LDFLAGS = @dl_ldflags@
 powwowdir = $(pkgincludedir)
 powwow_HEADERS = beam.h cmd.h log.h edit.h cmd2.h eval.h \
-		 utils.h main.h tcp.h list.h map.h tty.h \
-		 ptr.h defines.h tls.h charset.h width.h sgr.h attr.h \
-		 charname.h regexlib.h secret.h sha256.h
+    utils.h main.h tcp.h list.h map.h tty.h \
+    ptr.h defines.h tls.h charset.h width.h sgr.h attr.h \
+    charname.h regexlib.h secret.h sha256.h
 powwow_muc_SOURCES = powwow-muc.c
 powwow_muc_LDADD = @CURSES_LIBS@
 powwow_movieplay_SOURCES = powwow-movieplay.c
@@ -33,15 +34,16 @@ test_sgr_SOURCES = test_sgr.c sgr.c
 test_attr_SOURCES = test_attr.c attr.c
 test_secret_SOURCES = test_secret.c secret.c sha256.c
 TESTS = test_charset test_ptr test_sgr test_attr test_secret \
-        test_commands.sh
+    test_commands.sh
 
 EXTRA_DIST = plugtest.c test_commands.sh
 
 plugtest.so: plugtest.c
 	$(CC) -c -fPIC $(DEFS) $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) \
-		$(CPPFLAGS) $(WARN_CFLAGS) $(CFLAGS) -o plugtest.o $(srcdir)/plugtest.c
+	    $(CPPFLAGS) $(WARN_CFLAGS) $(CFLAGS) -o plugtest.o \
+	    $(srcdir)/plugtest.c
 	$(CC) -shared $(CFLAGS) $(plugin_ldflags) $(LDFLAGS) \
-		-o plugtest.so plugtest.o
+	    -o plugtest.so plugtest.o
 
 CLEANFILES = plugtest.so gitversion.h
 
@@ -50,11 +52,11 @@ CLEANFILES = plugtest.so gitversion.h
 # Made on each make, but written only when it changes
 BUILT_SOURCES = gitversion.h
 gitversion.h: FORCE
-	@commit=; \
-	if test -e $(top_srcdir)/.git; then \
-	    commit=`git -C $(top_srcdir) rev-parse --short=8 HEAD 2>/dev/null`; \
+	@commit=; top=$(top_srcdir); \
+	if test -e "$$top/.git"; then \
+	    commit=`git -C "$$top" rev-parse --short=8 HEAD 2>/dev/null`; \
 	    if test -n "$$commit" \
-	       && ! git -C $(top_srcdir) diff --quiet HEAD -- 2>/dev/null; then \
+	       && ! git -C "$$top" diff --quiet HEAD -- 2>/dev/null; then \
 	        commit=$$commit-dirty; \
 	    fi; \
 	fi; \
@@ -69,9 +71,9 @@ FORCE:
 
 SUFFIXES = .tidy
 .c.tidy:
-	$(AM_V_at)$(CLANG_TIDY) --quiet --config-file=$(top_srcdir)/.clang-tidy \
-		$(CLANG_TIDY_FLAGS) $< \
-		-- $(DEFS) $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS)
+	$(AM_V_at)$(CLANG_TIDY) --quiet \
+	    --config-file=$(top_srcdir)/.clang-tidy $(CLANG_TIDY_FLAGS) $< \
+	    -- $(DEFS) $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS)
 
 # "make -j8 tidy" checks everything, "make foo.tidy" checks only foo.c
 tidy: $(SOURCES:.c=.tidy) plugtest.tidy
