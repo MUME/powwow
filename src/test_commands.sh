@@ -371,6 +371,14 @@ hunter22
 "
 has '#secret added.'
 
+run '#secret: a line entered with a secret is left as <redacted>' \
+    '#hilite messages bold
+#secret add
+hunter22
+say password=hunter22'
+grep -Fq '<ESC>[1m<redacted><ESC>[m' "$tmp/out" \
+    || fail 'expected <redacted> drawn as the messages'
+
 run '#secret: Backspace deletes, and moving the cursor does nothing' \
     "#secret add
 hunter23$(printf '\010')2
