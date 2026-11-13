@@ -1644,6 +1644,35 @@ run --until '#connection on "n" closed.' 'MPI message cut short' \
 ##n #request editor"
 has '#connection "n" closed in the middle of an MPI message'
 
+# MPI messages whose header is split across writes, after \n\r, after
+# other text, and in the introducer, the length and before the \n
+cat > "$tmp/server" <<'EOF'
+read -r identify
+for parts in '\n\r~$#|EE15\nM1\ndescr1\ntext\n' \
+             'x~$|#EE15\nM2\ndescr2\ntext\n' \
+             '~|$#EE15\nM3\ndescr3\ntext\n' \
+             '~$#E|E15\nM4\ndescr4\ntext\n' \
+             '~$#EE1|5\nM5\ndescr5\ntext\n' \
+             '~$#EE15\r|\nM6\ndescr6\ntext\n'; do
+    printf "${parts%%|*}"
+    sleep 1
+    printf "${parts#*|}"
+done
+cat > /dev/null
+EOF
+run --until '#cancelled session descr6 (6)' \
+    'MPI messages split across writes' \
+    "#option editor=&true
+#spawn n sh $tmp/server
+##n #request editor"
+has '#warning: ignored an MPI message that may be spoofed'
+lacks '#cancelled session descr1 (1)'
+lacks '#cancelled session descr2 (2)'
+has '#cancelled session descr3 (3)'
+has '#cancelled session descr4 (4)'
+has '#cancelled session descr5 (5)'
+has '#cancelled session descr6 (6)'
+
 # the command run when an editing session starts closes the connection
 # that sent it, with more text in the same read
 cat > "$tmp/server" <<'EOF'
