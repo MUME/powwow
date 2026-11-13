@@ -614,7 +614,8 @@ A secret matches anywhere in a line, and is at least 4 bytes long.
 An empty line or C-g cancels typing a secret, and `&insert-char` and
 `&insert-emoji` add a character by its name, which is shown. Adding a
 secret also deletes the lines of the history and the words that contain
-it.
+it. A line entered with a secret is left on the screen as `<redacted>`,
+drawn as the messages of powwow (see `#hilite`).
 
 Powwow keeps only a salted hash of each secret, which `#save` writes as
 `#secret =<hash>`. It has only 32 bits: too few to tell a strong password
