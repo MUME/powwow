@@ -511,10 +511,13 @@ static void show_help_text(char *text, bool use_pager)
     free(text);
 }
 
+/* the width of the line of dashes in COPYING */
+#define RULE_WIDTH 79
+
 /*
- * append the file 'path' to the 'len' bytes of '*text', after an empty
- * line if 'sep', ending it with '\0'; return false, and leave '*text' as
- * it was, if it cannot be read
+ * append the file 'path' to the 'len' bytes of '*text', if 'sep' after a
+ * line of RULE_WIDTH dashes between empty lines, ending it with '\0';
+ * return false, and leave '*text' as it was, if it cannot be read
  */
 static bool append_file(char **text, size_t *len, const char *path,
                         bool sep)
@@ -526,11 +529,13 @@ static bool append_file(char **text, size_t *len, const char *path,
             fclose(f);
         return false;
     }
-    size_t gap = sep ? 1 : 0;
+    char rule[RULE_WIDTH + 4] = "\n";
+    memset(rule + 1, '-', RULE_WIDTH);
+    strcpy(rule + 1 + RULE_WIDTH, "\n\n");
+    size_t gap = sep ? strlen(rule) : 0;
     char *new_text = xrealloc(*text, *len + gap + st.st_size + 1);
     *text = new_text;
-    if (sep)
-        new_text[*len] = '\n';
+    memcpy(new_text + *len, rule, gap);
     size_t got = fread(new_text + *len + gap, 1, st.st_size, f);
     bool ok = ferror(f) == 0;
     fclose(f);
@@ -557,7 +562,7 @@ static const char *file_beside(char *buf, const char *path,
  * show the license of powwow, with a title as the help texts have, and
  * then the licenses of what comes with it: those that LICENSES.txt
  * beside COPYING lists, if there is one, and that of the Unicode data of
- * the names
+ * the names, with a line of dashes between them
  */
 static void show_copyright(bool use_pager)
 {
