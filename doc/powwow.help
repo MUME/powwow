@@ -910,7 +910,8 @@ least 4 bytes long.
      #secret delete      delete a secret, typed without being shown
      #secret delete <n>  delete secret number n of the list
 
-An empty line or C-g cancels typing a secret.
+An empty line or C-g cancels typing a secret. &insert-char and
+&insert-emoji add a character by its name, which is shown.
 
 Powwow keeps only a salted hash of each secret, which #save writes as
 #secret =<hash>. It has only 32 bits: too few to tell a strong password

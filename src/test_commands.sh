@@ -379,6 +379,30 @@ hunter22"
 [ "$(grep -c '^#secret deleted\.$' "$tmp/out")" -eq 2 ] \
     || fail 'expected both secrets to be deleted'
 
+cx8=$(printf '\0308\r')
+cx8e=$(printf '\0308ee')
+run '#secret: &insert-char and &insert-emoji add characters' "#secret add
+hunt${cx8}u+e9
+r22${cx8e}thumbs up
+${cx8}nosuch
+$(printf '\007')
+#secret delete
+hunter22
+#secret delete
+hunt${cx8}u+e9
+r22
+#secret delete
+hunt${cx8}u+e9
+r22${cx8e}thumbs up
+
+#secret"
+# the input line, erased with CR and ESC [ K, is before the messages
+grep -q '#secret added\.$' "$tmp/out" || fail 'expected the secret added'
+[ "$(grep -c '#no such secret\.$' "$tmp/out")" -eq 2 ] \
+    || fail 'expected two secrets not found'
+grep -q '#secret deleted\.$' "$tmp/out" || fail 'expected the secret deleted'
+has '#no secrets.'
+
 run '#secret: C-g cancels, and a short secret is added with a warning' \
     "#secret add
 hunt$(printf '\007')
@@ -1600,17 +1624,21 @@ EOF
     {
         printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
         wait_for 'Password: '
-        # Backspace deletes; Left and C-a do nothing
-        printf 'hunter2X\177%s[D\0012\r' "$esc"
+        # Backspace deletes, Left and C-a do nothing, and &insert-char and
+        # &insert-emoji add characters
+        printf 'hunter2X\177%s[D\0012\0308\ru+e9\r\0308eethumbs up\r\r' \
+            "$esc"
         wait_for 'Welcome'
         printf '#quit\n'
     } | "$POWWOW" > "$tmp/raw" 2>&1
     wait $server
     sed -e "s/$esc/<ESC>/g" "$tmp/raw" > "$tmp/out"
-    printf '\377\375\001hunter22\n' > "$tmp/expected"
+    printf '\377\375\001hunter22\303\251\360\237\221\215\n' > "$tmp/expected"
     cmp -s "$tmp/got" "$tmp/expected" \
         || fail "unexpected line: $(od -c "$tmp/got")"
     grep -q 'hunter' "$tmp/out" && fail 'the password was shown'
+    grep -Fq '(insert-emoji) name: ' "$tmp/out" \
+        || fail 'expected the name of the emoji to be read'
 fi
 
 # a spawned command is a connection that uses the telnet protocol too:
