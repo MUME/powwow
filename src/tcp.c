@@ -11,6 +11,7 @@
  */
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -440,6 +441,26 @@ static byte *flush_data(connsess *conn, byte *p)
 }
 
 /*
+ * return true if the 'len' bytes at 's' are the start of an MPI message
+ * header without its end: the introducer, the type, the digits of the
+ * length and \r, without the \n
+ */
+static bool mpi_header_cut(const byte *s, size_t len)
+{
+    if (len > MPI_HEAD_MAX || memcmp(s, MPI, len < MPILEN ? len : MPILEN) != 0)
+        return false;
+    for (size_t i = MPILEN + 1; i < len; ++i) {
+        if (!isdigit(s[i]) && !(s[i] == '\r' && i == len - 1))
+            return false;
+    }
+    return true;
+}
+
+static_assert(((TCP_READ_MIN - 1 - CHARSET_DECODE_MAX) / TCP_READ_EXPANSION
+               > MPI_HEAD_MAX),
+              "tcp_read() has no room to read after an MPI header kept");
+
+/*
  * read from remote host using the telnet protocol, and store at most
  * maxsize bytes of UTF-8 text in buffer. return bytes stored.
  */
@@ -457,8 +478,11 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     if (maxsize > sizeof rawbuf)
         maxsize = sizeof rawbuf;
 
+    /* read after the start of an MPI message header kept */
+    int held = conn->mpi_headlen;
+    memcpy(rawbuf, conn->mpi_head, held);
     int i;
-    while ((i = conn->fns->read(conn, rawbuf, maxsize)) < 0
+    while ((i = conn->fns->read(conn, rawbuf + held, maxsize - held)) < 0
            && errno == EINTR)
         ;
 
@@ -474,6 +498,8 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
         tcp_close(NULL);
         return 0;
     }
+    i += held;
+    conn->mpi_headlen = 0;
 
     char state = conn->state;
     char old_state = conn->old_state;
@@ -525,6 +551,17 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                 p = flush_data(conn, p);
                 break;
             default:
+                /*
+                 * keep the start of an MPI message header at the end of
+                 * the read for the next one, which may have the rest
+                 */
+                if (p == linestart && state != GOT_R && conn->ideditor
+                    && mpi_header_cut(s, i)) {
+                    memcpy(conn->mpi_head, s, i);
+                    conn->mpi_headlen = i;
+                    goto end;
+                }
+
                 /* first, flush any missing \r */
                 if (state == GOT_R)
                     *p++ = '\r';
@@ -735,6 +772,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             break;
         }
     }
+ end:
     conn->state = state;
     conn->old_state = old_state;
 
@@ -1215,6 +1253,7 @@ void tcp_close(const char *id)
     conn->ideditor_utf8 = false;
     conn->state = NORMAL;
     conn->old_state = NORMAL;
+    conn->mpi_headlen = 0;
     conn->port = 0;
     free(conn->host);
     conn->host = NULL;
@@ -1322,6 +1361,7 @@ void tcp_spawn(const char *id, char *cmd)
     CONN_INDEX(i).ideditor_utf8 = false;
     CONN_INDEX(i).state = NORMAL;
     CONN_INDEX(i).old_state = NORMAL;
+    CONN_INDEX(i).mpi_headlen = 0;
     CONN_INDEX(i).port = 0;
     CONN_INDEX(i).fd = sockets[0];
     CONN_INDEX(i).fns = &tcp_io_fns;
