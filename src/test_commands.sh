@@ -191,6 +191,10 @@ if grep -q 'define USE_REGEXP 1' ../config.h 2>/dev/null; then
     has 'alive'
 fi
 
+run '#bind lists the keys that run commands, also the default ones' '#bind'
+has '#keys that run commands:'
+has '#bind KP7 ^[Ow=look'
+
 run 'bind tells a new key from a redefined one' '#bind zzz ^X^Z=#print ("a")
 #bind zzz ^X^Z=#print ("b")'
 has '#new key binding: zzz ^X^Z=#print ("a")'

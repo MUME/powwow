@@ -1274,7 +1274,7 @@ void show_binds(bool edit)
                 if (edit) {
                     message_printf("#line-editing keys:\n");
                 } else {
-                    message_printf("#user-defined keys:\n");
+                    message_printf("#keys that run commands:\n");
                 }
             }
             show_single_bind("bind", p);
