@@ -66,6 +66,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* #secret keeps lines with a password or other secret out of the
 	  history, the completion words and the logs, keeping only a
 	  salted hash of each secret.
+	* #bind lists the keys that run commands as such, not as
+	  user-defined keys, since the default keypad keys are among them.
 	* #mark and #hilite attributes accept the styles dim, italic,
 	  hidden, strike and overline, the 256-color palette (0-255)
 	  and RGB colors (#rrggbb).
