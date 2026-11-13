@@ -6,6 +6,7 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
+#include <signal.h>
 #include <stdbool.h>
 
 #include "defines.h"
@@ -78,7 +79,7 @@ extern int edlabel;		/* length of a label at the start of edbuf */
 extern char edattrbeg[], edattrend[];
 extern bool edattrbg;
 
-extern volatile int sig_pending, sig_winch_got, sig_chld_got;
+extern volatile sig_atomic_t sig_pending, sig_winch_got, sig_chld_got;
 
 extern long received, sent;
 
