@@ -231,6 +231,9 @@ run 'help copyright shows all of COPYING, with and without the pager' \
       -eq 2 ] || fail "missing the last line of COPYING"
 [ "$(grep -c '^UNICODE LICENSE V3$' "$tmp/out")" -eq 2 ] \
     || fail "missing the license of the Unicode data"
+# the line in COPYING, and that between the licenses
+[ "$(grep -c '^-\{79\}$' "$tmp/out")" -eq 4 ] \
+    || fail "expected lines of dashes before the licenses"
 
 POWWOWSHELL='printf "[%s]\n"'
 export POWWOWSHELL
