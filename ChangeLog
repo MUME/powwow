@@ -52,7 +52,7 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 
 	Completion and Unicode input:
 	* Tab completes the names of commands and their arguments, such as
-	  file names, also after the < of #send <file and the like.
+	  file names, also after the < of `#send <file' and the like.
 	* C-x 8 Ret (&insert-char) inserts a character by its Unicode name,
 	  such as `em dash', or code point, such as `U+2014', which can be
 	  edited like the input line, including Tab completion.
@@ -67,9 +67,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* #secret keeps lines with a password or other secret out of the
 	  history, the completion words and the logs, keeping only a
 	  salted hash of each secret.
-	* #option reprint prints a password, typed while the MUD does not
-	  echo, and a line with a secret as <redacted>, instead of the
-	  password itself.
+	* `#option reprint' prints <redacted> in place of a password typed
+	  while the MUD does not echo, and of a line with a secret.
 	* #bind lists the keys that run commands as such, not as
 	  user-defined keys, since the default keypad keys are among them.
 	* #mark and #hilite attributes accept the styles dim, italic,
@@ -79,7 +78,7 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  letter in uppercase, as in White, instead of WHITE.
 	* `#hilite messages' sets the attribute of the messages of powwow,
 	  and #hilite is saved in the definition file.
-	* #help -P shows help on the screen instead of in the pager.
+	* `#help -P' shows help on the screen instead of in the pager.
 	* Output from background editors (starting with `&') is shown
 	  as `#editor:' lines.
 	* Error messages say what failed and why, such as `#cannot connect
