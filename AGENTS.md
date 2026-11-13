@@ -18,7 +18,11 @@ committed, understand it, and take responsibility for it as its author.
   `README`; the code must work on all of them. Use POSIX interfaces, and keep
   system-specific code behind the checks of `configure`.
 - **Encoding:** source files are UTF-8. Non-ASCII characters may appear in
-  comments and character literals, such as `U'ß'`; identifiers are ASCII.
+  comments, character literals, such as `U'ß'`, and UTF-8 string literals,
+  such as `u8"©"`.
+- **C23:** the code must also compile as C23, where a `u8` string literal
+  is an array of `unsigned char`: write both branches of a `?:` as `u8`
+  literals, `utf8 ? u8"©" : u8"(c)"`.
 
 ## Testing
 

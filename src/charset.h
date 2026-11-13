@@ -16,7 +16,7 @@
 #define CHARSET_REPLACEMENT '?'
 
 /* U+FFFD REPLACEMENT CHARACTER, for invalid input */
-#define UTF8_REPLACEMENT     "\xef\xbf\xbd"
+#define UTF8_REPLACEMENT     u8"\uFFFD"
 #define UTF8_REPLACEMENT_LEN 3
 #define UNICODE_REPLACEMENT  0xfffd
 
