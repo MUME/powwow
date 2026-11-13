@@ -77,8 +77,10 @@ void put_static_word(char *s);
 void input_label_start(const char *label);
 void input_label_show(void);
 void input_label_end(void);
-/* whether a line is typed without being shown, and the keys typed of it */
+/* whether a line is typed without being shown, whether the keys are for
+ * it and not for reading the name of a character for it, and the keys */
 bool hidden_typing(void);
+bool hidden_keys(void);
 void hidden_insert(char c);
 void hidden_command(function_str funct);
 /* delete the history lines and completion words that contain a secret */

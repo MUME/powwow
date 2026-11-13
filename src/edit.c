@@ -49,6 +49,7 @@
 #endif
 
 static void insert_string(char *arg);
+static bool charin_hidden(void);
 
 /* history buffer */
 char *hist[MAX_HIST];   /* saved history lines */
@@ -325,7 +326,7 @@ void clear_line(char *dummy)
  */
 void draw_input_line(void)
 {
-    if (line_status == 0 || linemode & LM_NOECHO)
+    if (line_status == 0 || ((linemode & LM_NOECHO) && !charin_hidden()))
         return;
 
     tty_puts(edattrbeg);
@@ -2291,8 +2292,15 @@ static struct {
     char name[BUFSIZE / 2];
     int name_at;                /* where the name starts in the text */
     char saved[BUFSIZE];
-    int saved_pos;
+    int saved_pos, saved_label;
+    bool hidden;                /* for a line typed without being shown */
 } charin;
+
+/* reading the name of a character for a line typed without being shown */
+static bool charin_hidden(void)
+{
+    return charin.active && charin.hidden && hidden_typing();
+}
 
 /* the names that Tab lists at most */
 enum { CHARIN_LIST_MAX = 20 };
@@ -2385,17 +2393,29 @@ static void group_list_add(const char *group, const char *subgroup, int count,
     }
 }
 
-/* stop reading the name, and edit the line as it was */
+/*
+ * stop reading the name, and edit the line as it was; for a line typed
+ * without being shown, it is drawn again only if it was before
+ */
 static void charin_end(void)
 {
+    bool hidden = charin_hidden();
     charin.active = false;
     undo_clear(&name_undo.undo);
     undo_clear(&name_undo.redo);
     undos = &line_undo;
     edstart = 0;
-    edlabel = 0;
-    input_replace(0, edlen, charin.saved, strlen(charin.saved));
-    input_moveto(charin.saved_pos);
+    edlabel = charin.saved_label;
+    if (hidden) {
+        clear_input_line(false);
+        strcpy(edbuf, charin.saved);
+        edlen = (int)strlen(edbuf);
+        pos = charin.saved_pos;
+        line_status = 1;
+    } else {
+        input_replace(0, edlen, charin.saved, strlen(charin.saved));
+        input_moveto(charin.saved_pos);
+    }
 }
 
 /* start reading a name in 'file' after 'label' */
@@ -2405,9 +2425,11 @@ static void charin_start(const char *file, const char *label)
         return;
     charin.active = true;
     charin.tabbed = false;
+    charin.hidden = false;
     charin.file = file;
     strcpy(charin.saved, edbuf);
     charin.saved_pos = pos;
+    charin.saved_label = edlabel;
     edlabel = (int)strlen(label);
     input_replace(0, edlen, label, strlen(label));
     edstart = edlen;
@@ -2473,6 +2495,21 @@ bool hidden_typing(void)
             || (linemode & (LM_NOECHO | LM_CHAR)) == LM_NOECHO);
 }
 
+bool hidden_keys(void)
+{
+    return hidden_typing() && !charin_hidden();
+}
+
+/* add the 'len' bytes at 's', as many as fit */
+static void hidden_add(const char *s, int len)
+{
+    size_t n = sizeof(hidden_buf) - 1 - hidden_len;
+    if ((size_t)len < n)
+        n = len;
+    memcpy(hidden_buf + hidden_len, s, n);
+    hidden_len += n;
+}
+
 /* clear the line typed, deleted characters too, even if not read again */
 static void hidden_clear(void)
 {
@@ -2486,8 +2523,8 @@ void hidden_insert(char c)
 {
     if ((unsigned char)c < ' ' || c == ASCII_DEL)
         tty_putc(ASCII_BEL);
-    else if (hidden_len < sizeof(hidden_buf) - 1)
-        hidden_buf[hidden_len++] = c;
+    else
+        hidden_add(&c, 1);
 }
 
 void hidden_command(function_str funct)
@@ -2512,6 +2549,10 @@ void hidden_command(function_str funct)
         hidden_buf[hidden_len] = '\0';
     } else if (funct == kill_to_bol) {
         hidden_clear();
+    } else if (funct == insert_named_char || funct == insert_emoji) {
+        /* read the name of a character, shown, to add to the line */
+        funct(NULL);
+        charin.hidden = true;
     } else {
         tty_putc(ASCII_BEL);
     }
@@ -2895,12 +2936,17 @@ static void charin_insert(void)
         tty_putc(ASCII_BEL);
         return;
     }
-    charin_end();
-    undo_record(charin.saved, charin.saved_pos);
     char buf[CHARNAME_MAX * UTF8_MAX];
     int len = 0;
     for (int i = 0; i < n; ++i)
         len += utf8_put(cps[i], buf + len);
+    if (charin_hidden()) {
+        charin_end();
+        hidden_add(buf, len);
+        return;
+    }
+    charin_end();
+    undo_record(charin.saved, charin.saved_pos);
     input_insert_follow_chars(buf, len);
 }
 
@@ -2952,7 +2998,7 @@ void edit_mode_cancel(void)
 {
     if (isearch.active)
         isearch_end(false);
-    if (charin.active)
+    if (charin.active && !charin_hidden())
         charin_end();
 }
 

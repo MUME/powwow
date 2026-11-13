@@ -2053,7 +2053,7 @@ static void get_user_input(void)
                         tty_putc(ASCII_BEL);
                     } else {
                         skip = 1;
-                        if (hidden_typing())
+                        if (hidden_keys())
                             hidden_insert(typed[0]);
                         else
                             insert_char(typed[0]);
@@ -2064,7 +2064,7 @@ static void get_user_input(void)
                     nchars = rest;
                     if (nchars > 0)
                         done = false;
-                } else if (p->seqlen == nchars && hidden_typing()) {
+                } else if (p->seqlen == nchars && hidden_keys()) {
                     hidden_command(p->funct);
                     nchars = 0;
                 } else if (p->seqlen == nchars) {
