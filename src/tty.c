@@ -23,12 +23,10 @@
 
 #include "defines.h"
 
-#ifdef USE_LOCALE
 #include <langinfo.h>
 #include <locale.h>
 #include <strings.h>
 #include <wchar.h>
-#endif
 
 #include "main.h"
 #include "edit.h"
@@ -114,7 +112,6 @@ const char *tty_clreoscr = clreoscr;
 int tty_read_fd = 0;
 static bool wrapglitch = false;
 
-#ifdef USE_LOCALE
 static FILE *tty_read_stream;
 static int orig_read_fd_fl;
 static struct {
@@ -129,14 +126,11 @@ static struct {
 } tty_write_state = {
     .fd = 1                         /* also before tty_start() */
 };
-#endif  /* USE_LOCALE */
 
 /* tell tty_putc whether it is drawing the input line */
 static void tty_set_input(bool input)
 {
-#ifdef USE_LOCALE
     tty_write_state.input = input;
-#endif
 }
 
 static struct termios ttybsave;
@@ -180,13 +174,9 @@ static void disable_special_keys(struct termios *ttyb)
 /* does the terminal take UTF-8, as the locale says? */
 bool tty_locale_utf8(void)
 {
-#ifdef USE_LOCALE
     const char *codeset = nl_langinfo(CODESET);
     return (strcasecmp(codeset, "UTF-8") == 0
             || strcasecmp(codeset, "UTF8") == 0);
-#else
-    return false;
-#endif
 }
 
 /*
@@ -207,27 +197,17 @@ void tty_start(void)
     disable_special_keys(&ttyb);
     tcsetattr(tty_read_fd, TCSANOW, &ttyb);
 
-#ifdef USE_LOCALE
     orig_read_fd_fl = fcntl(tty_read_fd, F_GETFL);
     fcntl(tty_read_fd, F_SETFL, O_NONBLOCK | orig_read_fd_fl);
-#endif
 
     tty_puts(kpadstart);
     tty_flush();
 
-#ifdef USE_LOCALE
     tty_write_state.utf8 = tty_locale_utf8();
     if (wcrtomb(NULL, L'\0', &tty_write_state.mbstate) == (size_t)-1) {
         perror("wcrtomb()");
         abort();
     }
-#else  /* ! USE_LOCALE */
- #ifdef DEBUG_TTY
-    setvbuf(stdout, NULL, _IONBF, BUFSIZ);
- #else
-    setvbuf(stdout, NULL, _IOFBF, BUFSIZ);
- #endif
-#endif  /* ! USE_LOCALE */
 }
 
 /*
@@ -243,9 +223,7 @@ void tty_quit(void)
     tcsetattr(tty_read_fd, TCSANOW, &ttybsave);
     tty_puts(kpadend);
     tty_flush();
-#ifdef USE_LOCALE
     fcntl(tty_read_fd, F_SETFL, orig_read_fd_fl);
-#endif
 }
 
 /*
@@ -318,11 +296,9 @@ void tty_sig_winch_bottomhalf(void)
  */
 void tty_bootstrap(void)
 {
-#ifdef USE_LOCALE
     tty_read_stream = stdin;
     /* already for the banner, before tty_start() */
     tty_write_state.utf8 = tty_locale_utf8();
-#endif
 
 #ifdef USE_VT100
     cols = 80;
@@ -1141,9 +1117,6 @@ void input_replace(int from, int len, const char *str, int n)
         input_redraw_from(start);
 }
 
-#ifdef USE_LOCALE
-/* curses wide character support by Dain */
-
 void tty_puts(const char *s)
 {
     while (*s != '\0')
@@ -1491,5 +1464,3 @@ void tty_raw_write(char *data, size_t len)
         tty_flush();
     }
 }
-
-#endif /* USE_LOCALE */

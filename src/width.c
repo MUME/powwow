@@ -12,10 +12,8 @@
 
 #include <ctype.h>
 #include <stdbool.h>
-#ifdef USE_LOCALE
-#  include <wchar.h>
-#  include <wctype.h>
-#endif
+#include <wchar.h>
+#include <wctype.h>
 #ifdef HAVE_LIBGRAPHEME
 #  include <grapheme.h>
 #endif
@@ -27,7 +25,6 @@
 /* the characters that join or widen a grapheme cluster */
 enum {
     UNICODE_COMBINING_FIRST = 0x300,    /* COMBINING DIACRITICAL MARKS */
-    UNICODE_COMBINING_LAST = 0x36f,
     UNICODE_ZWJ = 0x200d,               /* ZERO WIDTH JOINER */
     UNICODE_VS16 = 0xfe0f,              /* VARIATION SELECTOR-16 */
     UNICODE_REGIONAL_A = 0x1f1e6,       /* REGIONAL INDICATOR SYMBOL */
@@ -38,7 +35,6 @@ int cp_width(uint32_t cp)
 {
     if (cp < ' ' || cp == ASCII_DEL)
         return 0;               /* control characters */
-#ifdef USE_LOCALE
 #if WCHAR_MAX < UNICODE_MAX
     /* a wchar_t of 16 bits, as on Cygwin, cannot hold the characters
      * above U+FFFF, such as most emoji: wcswidth() takes them as their
@@ -57,13 +53,6 @@ int cp_width(uint32_t cp)
     if (unicode_is_c1(cp))
         return 0;               /* C1 control characters */
     return 1;                   /* shown as '?' by the tty layer */
-#else
-    if (unicode_is_c1(cp))
-        return 0;
-    if (cp >= UNICODE_COMBINING_FIRST && cp <= UNICODE_COMBINING_LAST)
-        return 0;               /* combining diacritical marks */
-    return 1;
-#endif
 }
 
 /* a combining character, or one not shown, as a zero width space */

@@ -49,21 +49,6 @@ void input_draw(void);
 int  input_line(int p);
 int  input_col(int p);
 
-#ifndef USE_LOCALE
-
-#define tty_puts(s)             fputs((s), stdout)
-#define tty_putc(c)             fputc((unsigned char)(c), stdout)
-#define tty_printf(...)         printf(__VA_ARGS__)
-#define tty_read(buf, cnt)      read(tty_read_fd, (buf), (cnt))
-#define tty_gets(s, size)       fgets((s), (size), stdin)
-#define tty_flush()             fflush(stdout)
-#define tty_raw_write(s,size)   do { tty_flush(); write(1, (s), (size)); } while (0)
-#define tty_has_chars()         false
-/* after tty_read() returned 0, which read() does only at the end */
-#define tty_at_eof()            true
-
-#else /* USE_LOCALE */
-
 void tty_puts(const char *s);
 void tty_putc(char c);
 int  tty_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);
@@ -73,7 +58,5 @@ void tty_flush(void);
 void tty_raw_write(char *data, size_t len);
 bool tty_has_chars(void);
 bool tty_at_eof(void);
-
-#endif /* USE_LOCALE */
 
 #endif /* _TTY_H_ */

@@ -182,11 +182,6 @@ AS_IF([test "x${with_zlib}" != xno], [
 AM_CONDITIONAL([HAVE_ZLIB], [test "x${with_zlib}" = xyes])
 
 # Checks for header files.
-AC_CHECK_HEADER([locale.h],
-    [ AC_CHECK_FUNC([putwc],
-          [ AC_DEFINE(USE_LOCALE, 1, [
-                Enable locale support for wide characters.])])])
-
 if test "x${enable_regex}" = "xno"; then
     AC_MSG_RESULT([Regex support disabled])
     enable_regex_using="disabled"

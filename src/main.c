@@ -45,9 +45,7 @@
 
 #include "defines.h"
 
-#ifdef USE_LOCALE
 #include <locale.h>
-#endif
 
 #include "beam.h"
 #include "cmd.h"
@@ -345,10 +343,8 @@ static bool in_build_dir(const char *argv0)
 
 int main(int argc, char **argv)
 {
-#ifdef USE_LOCALE
     if (setlocale(LC_ALL, "") == NULL)
         fprintf(stderr, "Failed setlocale(LC_ALL, \"\")\n");
-#endif
 
 #ifdef HAVE_GETOPT_LONG
     static const struct option longopts[] = {
@@ -643,9 +639,6 @@ void printver(int level)
   #endif
 #else
                  ", no regexp"
-#endif
-#ifdef USE_LOCALE
-                 ", locale"
 #endif
 #ifdef USE_TLS
                  ", tls"

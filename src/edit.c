@@ -41,9 +41,7 @@
 #include "tls.h"
 #include "secret.h"
 
-#ifdef USE_LOCALE
-#  include <wctype.h>
-#endif
+#include <wctype.h>
 #ifdef HAVE_LIBGRAPHEME
 #  include <grapheme.h>
 #endif
@@ -1811,20 +1809,12 @@ enum case_change { CASE_UPPER, CASE_LOWER, CASE_CAPITALIZE };
 /* the case mappings of one character */
 static uint32_t to_upper(uint32_t cp)
 {
-#ifdef USE_LOCALE
     return towupper(cp);
-#else
-    return cp <= ASCII_MAX ? (uint32_t)toupper(cp) : cp;
-#endif
 }
 
 static uint32_t to_lower(uint32_t cp)
 {
-#ifdef USE_LOCALE
     return towlower(cp);
-#else
-    return cp <= ASCII_MAX ? (uint32_t)tolower(cp) : cp;
-#endif
 }
 
 /* the titlecase differs from the uppercase only for these letters */
@@ -1848,11 +1838,7 @@ static uint32_t to_title(uint32_t cp)
 
 static bool is_letter(uint32_t cp)
 {
-#ifdef USE_LOCALE
     return iswalpha(cp);
-#else
-    return cp <= ASCII_MAX && isalpha(cp);
-#endif
 }
 
 /*
