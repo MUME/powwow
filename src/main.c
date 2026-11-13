@@ -609,8 +609,8 @@ void printver(int level)
     message_wrap(VER_CONT, "Powwow version %s%s%s%s, %s 1998%s2026 by the "
                  "powwow authors", VERSION, commit ? " (" : "",
                  commit ? GIT_COMMIT : "", commit ? ")" : "",
-                 utf8 ? "\302\251" : "Copyright",
-                 utf8 ? "\342\200\223" : "-");
+                 utf8 ? u8"©" : u8"Copyright",
+                 utf8 ? u8"–" : u8"-");
     if (level < 1)
         return;
     message_wrap(VER_CONT, "https://github.com/MUME/powwow");
@@ -620,14 +620,14 @@ void printver(int level)
     /* as in README, spelled in ASCII if the terminal cannot show them */
     message_wrap(VER_CONT, "%s",
                  (utf8
-                  ? "\nAuthors: Massimiliano Ghilardi (Cosmos), "
-                    "Steve Slaven (bpk), Fr\303\263r, D\303\241in and "
-                    "others\nBased on Cancan by Mattias Engdeg\303\245rd "
-                    "(Yorick), Vivriel, Thuzzle and Ilie"
-                  : "\nAuthors: Massimiliano Ghilardi (Cosmos), "
-                    "Steve Slaven (bpk), Fror, Dain and others\n"
-                    "Based on Cancan by Mattias Engdegard (Yorick), "
-                    "Vivriel, Thuzzle and Ilie"));
+                  ? u8"\nAuthors: Massimiliano Ghilardi (Cosmos), "
+                    u8"Steve Slaven (bpk), Frór, Dáin and others\n"
+                    u8"Based on Cancan by Mattias Engdegård (Yorick), "
+                    u8"Vivriel, Thuzzle and Ilie"
+                  : u8"\nAuthors: Massimiliano Ghilardi (Cosmos), "
+                    u8"Steve Slaven (bpk), Fror, Dain and others\n"
+                    u8"Based on Cancan by Mattias Engdegard (Yorick), "
+                    u8"Vivriel, Thuzzle and Ilie"));
 
     message_wrap(VER_CONT, "\nOptions: "
 #ifdef USE_VT100
