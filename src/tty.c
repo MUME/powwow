@@ -911,10 +911,12 @@ static void input_erase_below(int line, int col)
         /*
          * iTerm2 erases the character before the last column too, if
          * the last column held the right half of a wide character
-         * whose left half was overwritten: overwrite that half first
-         * (the cursor stays in the last column)
+         * whose left half was overwritten: overwrite that half first.
+         * That leaves the terminal about to wrap, which some show with
+         * the cursor past the last column: move it back there
          */
         tty_putc(' ');
+        tty_gotoxy(col, line);
     }
     tty_puts(line < lines - 1 ? tty_clreoscr : tty_clreoln);
     if (edattrbg)
