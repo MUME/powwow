@@ -1415,6 +1415,9 @@ Alas, you cannot go that way.
 *>
 ```
 
+A password, typed while the mud does not echo, and a line with a
+`#secret` are printed again as `<redacted>`.
+
 ### Show current version
 
 ```

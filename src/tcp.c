@@ -902,13 +902,16 @@ void tcp_write(connsess *conn, const char *data)
     size_t len = strlen(data);
 
     if (main_connection != NULL && main_connection == conn) {
-        bool secret = secret_in(data);
-        if ((linemode & LM_NOECHO) || secret)
-            log_write("", 0, true, conn->charset); /* log a newline only */
-        else
+        /* a password or a secret is logged as an empty line, and
+         * reprinted as <redacted>, which keeps the next lines reprinted
+         * after the prompts that come before their answers */
+        if ((linemode & LM_NOECHO) || secret_in(data)) {
+            log_write("", 0, true, conn->charset);
+            reprint_writeline("<redacted>");
+        } else {
             log_write(data, len, true, conn->charset);
-        if (!secret)
             reprint_writeline(data);
+        }
     }
 
     /* the encoded data is never longer than the original */

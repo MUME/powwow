@@ -1643,6 +1643,55 @@ EOF
     grep -q 'hunter' "$tmp/out" && fail 'the password was shown'
     grep -Fq '(insert-emoji) name: ' "$tmp/out" \
         || fail 'expected the name of the emoji to be read'
+
+    # a MUD that answers three lines, each with a prompt
+    cat > "$tmp/server.py" <<'EOF'
+import os, socket, sys, time
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+got = b''
+c.sendall(b'HP:0>')
+while got.count(b'\n') < 3:
+    data = c.recv(1024)
+    if not data:
+        break
+    got += data
+for answer in (b'X.', b'You say it.', b'A room.'):
+    c.sendall(b'\r\n' + answer + b'\r\nHP:>')
+    time.sleep(0.2)
+c.sendall(b'\r\nBye\r\n')
+c.close()
+EOF
+    name='#option reprint shows a line with a secret as <redacted>'
+    rm -f "$tmp/port"
+    python3 -I "$tmp/server.py" "$tmp/port" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+    : > "$tmp/raw"
+    {
+        printf '#secret add\nhunter22\n#option +reprint\n'
+        printf '#prompt >p ^HP:=#isprompt\n'
+        printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
+        wait_for 'HP:0>'
+        printf 'x\rsay hunter22\rlook\r'
+        wait_for 'Bye'
+        printf '#quit\n'
+    } | "$POWWOW" > "$tmp/raw" 2>&1
+    wait $server
+    sed -e "s/$esc\[[0-9;?]*[A-Za-z]//g" -e "s/$cr//g" "$tmp/raw" \
+        > "$tmp/out"
+    has 'HP:>(<redacted>)'
+    has 'HP:>(look)'
+    grep -q '(hunter22\|(say' "$tmp/out" && fail 'the secret was reprinted'
 fi
 
 # a spawned command is a connection that uses the telnet protocol too:
