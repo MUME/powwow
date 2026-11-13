@@ -2461,7 +2461,8 @@ void input_label_end(void)
 }
 
 /*
- * a line typed without being shown, a secret for #secret; the keys go
+ * a line typed without being shown: a secret for #secret, or a line in
+ * no-echo mode, where the MUD echoes, such as a password; the keys go
  * through the key bindings, but only those that end, cancel or delete
  * the line do anything, and control characters are not typed
  */
@@ -2470,7 +2471,8 @@ static size_t hidden_len;
 
 bool hidden_typing(void)
 {
-    return secret_reading();
+    return (secret_reading()
+            || (linemode & (LM_NOECHO | LM_CHAR)) == LM_NOECHO);
 }
 
 /* clear the line typed, deleted characters too, even if not read again */
@@ -2493,11 +2495,18 @@ void hidden_insert(char c)
 void hidden_command(function_str funct)
 {
     if (funct == enter_line) {
-        secret_entered(hidden_buf, hidden_len);
+        if (secret_reading()) {
+            secret_entered(hidden_buf, hidden_len);
+        } else {
+            if (edattrbg)
+                tty_puts(edattrend);
+            tcp_write(current_connection, hidden_buf);
+        }
         hidden_clear();
     } else if (funct == abort_edit) {
         hidden_clear();
-        secret_entered(hidden_buf, 0);
+        if (secret_reading())
+            secret_entered(hidden_buf, 0);
     } else if (funct == del_char_left) {
         while (hidden_len > 0
                && utf8_is_continuation(hidden_buf[--hidden_len]))

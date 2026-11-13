@@ -1561,6 +1561,58 @@ run 'marked prompt longer than the memory limit' "#setvar mem=120
 has '#error: text/string longer than limit, discarded.'
 grep -q 'after$' "$tmp/out" || fail 'the second #prompt did not run'
 
+# the fake MUDs below need python3 to run: on Windows, the python3 found
+# can be an alias that only offers to install it
+if python3 -c "" > /dev/null 2>&1; then
+    # a MUD that asks for a password in no-echo mode, and keeps the first
+    # line it gets in the file $2
+    cat > "$tmp/server.py" <<'EOF'
+import os, socket, sys
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+c.sendall(b'\xff\xfb\x01Password: ')
+got = b''
+while b'\n' not in got:
+    data = c.recv(1024)
+    if not data:
+        break
+    got += data
+with open(sys.argv[2], 'wb') as f:
+    f.write(got)
+c.sendall(b'\xff\xfc\x01\r\nWelcome\r\n')
+c.close()
+EOF
+    name='no-echo mode sends the line edited, without the keys bound'
+    rm -f "$tmp/port" "$tmp/got"
+    python3 -I "$tmp/server.py" "$tmp/port" "$tmp/got" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+    : > "$tmp/raw"
+    {
+        printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
+        wait_for 'Password: '
+        # Backspace deletes; Left and C-a do nothing
+        printf 'hunter2X\177%s[D\0012\r' "$esc"
+        wait_for 'Welcome'
+        printf '#quit\n'
+    } | "$POWWOW" > "$tmp/raw" 2>&1
+    wait $server
+    sed -e "s/$esc/<ESC>/g" "$tmp/raw" > "$tmp/out"
+    printf '\377\375\001hunter22\n' > "$tmp/expected"
+    cmp -s "$tmp/got" "$tmp/expected" \
+        || fail "unexpected line: $(od -c "$tmp/got")"
+    grep -q 'hunter' "$tmp/out" && fail 'the password was shown'
+fi
+
 # a spawned command is a connection that uses the telnet protocol too:
 # what the command prints is received, and what is sent is its input
 cat > "$tmp/server" <<'EOF'

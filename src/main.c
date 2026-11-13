@@ -701,8 +701,7 @@ enum { TYPED_HINT_DELAY = 1000 };
 /* the milliseconds left before showing the keys typed so far, or -1 */
 static int typed_hint_wait(void)
 {
-    if (nchars == 0 || typed_shown || (linemode & (LM_CHAR | LM_NOECHO))
-        || hidden_typing())
+    if (nchars == 0 || typed_shown || (linemode & LM_CHAR) || hidden_typing())
         return -1;
     update_now();
     long waited = diff_vtime(&now, &typed_time);
@@ -1992,27 +1991,11 @@ static void get_user_input(void)
         if (!(linemode & LM_NOECHO))
             tty_putc(*c);
         last_edit_cmd = NULL;
-    } else if ((linemode & LM_NOECHO) && !hidden_typing()) {
-        /* sending password (line mode, no echo). chunk == 1 */
-        if ((*c != '\n' && *c != '\r') && edlen < BUFSIZE - 2) {
-            edbuf[edlen++] = *c;
-        } else {
-            edbuf[edlen] = '\0';
-            if (edattrbg)
-                tty_puts(edattrend);
-            tcp_write(current_connection, edbuf);
-            edlen = 0;
-            nchars = 0;
-            typed[0] = '\0';
-        }
-        pos = edlen;
-        edbuf[pos] = '\0';
-        last_edit_cmd = NULL;
     } else {
         /*
-         * normal mode (line mode, echo). chunk == BUFSIZE; the keys of a
-         * secret for #secret also come here in the other modes, one at
-         * a time
+         * line mode: the keys edit the input line, or a line typed
+         * without being shown, as in no-echo mode, where they come one
+         * at a time (chunk == 1), and for #secret also in char mode
          */
         for (; j > 0; ++c, --j) {
             /* search function key strings for match */
