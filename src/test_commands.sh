@@ -294,6 +294,143 @@ run '#save saves #setvar mem=0' "#file =$tmp/mem.pw
 run --args "$tmp/mem.pw" 'loading #setvar mem=0' '#setvar'
 has '#setvar mem=0'
 
+# the lines of #history must have the line $1, or none that contain $1
+has_history() {
+    grep -Fxq -e "$1" "$tmp/history" || fail "not in the history: $1"
+}
+lacks_history() {
+    grep -Fq -e "$1" "$tmp/history" && fail "in the history: $1"
+}
+# the lines of #history in the output, without their numbers
+history() {
+    sed -n 's/^# *[0-9]*: //p' "$tmp/out" > "$tmp/history"
+}
+
+run '#secret keeps lines with a secret out of the history' "#secret add
+hunter22
+#put say hunter22 now
+#put keep this
+#add hunter22x hunter21x
+say password=hunter22!
+#history
+#file =$tmp/secret.pw
+#option +history
+#option +words
+#save"
+history
+has '#secret added.'
+lacks 'hunter22'
+lacks_history hunter22
+has_history '#secret add'
+has_history 'keep this'
+has_history '#put keep this'
+grep -q '^#secret =[0-9a-f]\{16\}:8:[0-9a-f]\{8\}$' "$tmp/secret.pw" \
+    || fail 'expected the hash of the secret in the file'
+grep -q 'hunter22' "$tmp/secret.pw" && fail 'the secret is in the file'
+grep -Fxq '#put keep this' "$tmp/secret.pw" \
+    || fail 'expected the other lines in the file'
+grep -q 'hunter21x' "$tmp/secret.pw" \
+    || fail 'expected the other words in the file'
+
+run --args "$tmp/secret.pw" 'loading #secret' '#secret
+#put say hunter22
+#history'
+history
+has '#1: 8 bytes'
+lacks_history hunter22
+has_history 'keep this'
+
+run '#secret add deletes the lines and words with the secret' \
+    "#put say hunter22
+#put keep this
+#add hunter22x hunter21x
+#secret add
+hunter22
+#history
+#file =$tmp/purged.pw
+#option +words
+#save"
+history
+lacks_history hunter22
+has_history 'keep this'
+grep -q 'hunter22' "$tmp/purged.pw" && fail 'the secret is in the file'
+grep -q 'hunter21x' "$tmp/purged.pw" \
+    || fail 'expected the other words in the file'
+
+run --eof --until '(secret to add, not shown): ' \
+    '#secret add shows a label instead of the input line' '#secret add'
+grep -Fq '(secret to add, not shown): ' "$tmp/out" \
+    || fail 'expected the label'
+
+run 'Tab completes the subcommands of #secret' '' "#secret ad	
+hunter22
+"
+has '#secret added.'
+
+run '#secret: Backspace deletes, and moving the cursor does nothing' \
+    "#secret add
+hunter23$(printf '\010')2
+#secret delete
+hunter22
+#secret add
+hunt$(printf '\002')er22
+#secret delete
+hunter22"
+[ "$(grep -c '^#secret deleted\.$' "$tmp/out")" -eq 2 ] \
+    || fail 'expected both secrets to be deleted'
+
+run '#secret: C-g cancels, and a short secret is added with a warning' \
+    "#secret add
+hunt$(printf '\007')
+#secret add
+abcd
+#secret"
+has '#secret: cancelled.'
+warning='#warning: a secret shorter than 8 bytes may match other text,'
+has "$warning and is easy to find from its hash"
+has '#1: 4 bytes'
+lacks '#2: 4 bytes'
+
+run '#secret delete and its errors' '#secret add
+hunter22
+#secret add
+hunter22
+#secret add
+abc
+#secret add
+
+#secret delete
+hunter23
+#secret delete
+hunter22
+#secret
+#secret add
+hunter22
+#secret delete 2
+#secret delete 1
+#secret delete x
+#secret nosuch
+#secret =0123'
+has '#secret already kept.'
+has '#secret too short: at least 4 bytes.'
+has '#secret: cancelled.'
+has '#no such secret.'
+has '#secret deleted.'
+has '#no secrets.'
+has '#no secret 2.'
+has '#secret 1 deleted.'
+has '#syntax: #secret [add|delete [<number>]|=<hash>]'
+has '#secret: invalid hash "0123"'
+
+run '#secret keeps lines out of #record' "#record $tmp/secret.rec
+#secret add
+hunter22
+#print (\"hunter\" + \"22\")
+#print (\"kept\")
+#record"
+grep -q 'hunter22' "$tmp/secret.rec" && fail 'the secret is in the file'
+grep -Fq 'kept' "$tmp/secret.rec" || fail 'expected the other lines'
+
 run 'Tab completes #option editor= without a space' '' "#option ed	vi
 "
 has '#option editor is now: vi'

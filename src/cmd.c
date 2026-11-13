@@ -49,6 +49,8 @@
 #include "tty.h"
 #include "eval.h"
 #include "log.h"
+#include "charset.h"
+#include "secret.h"
 
 /*           local function declarations            */
 #define F(name) cmd_ ## name(char *arg)
@@ -66,7 +68,7 @@ static void F(help), F(action), F(add),
   F(qui), F(quit), F(quote),
   F(rawsend), F(rawprint), F(rebind), F(rebindall), F(rebindALL),
   F(record), F(request), F(reset), F(retrace),
-  F(save), F(send), F(setvar), F(snoop), F(spawn), F(stop),
+  F(save), F(secret), F(send), F(setvar), F(snoop), F(spawn), F(stop),
   F(substitute), F(time), F(var), F(ver), F(while), F(write),
   F(eval), F(zap), F(group), F(speedwalk), F(groupdelim);
 #ifdef USE_SHELL
@@ -228,6 +230,9 @@ static cmdstruct default_commands[] =
       "[<number>]\tretrace the last number steps"),
     C("save",       cmd_save,
       "[<filename>]\tsave powwow settings to file"),
+    C("secret",     cmd_secret,
+      "[add|delete [<number>]|=<hash>]\tlist, add or delete secrets kept"
+      " out of history"),
     C("send",       cmd_send,
       "[<|!]{<text>|(<expr>)}\teval expression, sending result to the MUD"),
     C("setvar",     cmd_setvar,
@@ -3133,6 +3138,106 @@ static void cmd_put(char *arg)
     if (!REAL_ERROR && *arg != '\0')
         put_history(arg);
     ptrdel(&pbuf);
+}
+
+/* what #secret is reading a secret for */
+static enum { SECRET_NONE, SECRET_ADD, SECRET_DELETE } secret_mode;
+
+bool secret_reading(void)
+{
+    return secret_mode != SECRET_NONE;
+}
+
+void secret_entered(const char *s, size_t len)
+{
+    int mode = secret_mode;
+    secret_mode = SECRET_NONE;
+    input_label_end();
+    if (len == 0) {
+        message_printf("#secret: cancelled.\n");
+    } else if (mode == SECRET_ADD) {
+        if (len < SECRET_MIN_LEN) {
+            message_printf("#secret too short: at least %d bytes.\n",
+                           SECRET_MIN_LEN);
+        } else if (secret_find(s, len) >= 0) {
+            message_printf("#secret already kept.\n");
+        } else {
+            struct secret_salt salt = secret_new_salt();
+            struct secret sec = secret_make(&salt, s, len);
+            secret_add(&sec);
+            purge_secrets();
+            message_printf("#secret added.\n");
+            if (len < SECRET_WARN_LEN)
+                wrap_printf("#warning: a secret shorter than %d bytes may"
+                            " match other text, and is easy to find from"
+                            " its hash", SECRET_WARN_LEN);
+        }
+    } else {
+        int i = secret_find(s, len);
+        if (i < 0) {
+            message_printf("#no such secret.\n");
+        } else {
+            secret_delete(i);
+            message_printf("#secret deleted.\n");
+        }
+    }
+}
+
+static void read_secret(int mode)
+{
+    secret_mode = mode;
+    input_label_start(mode == SECRET_ADD
+                      ? "(secret to add, not shown): "
+                      : "(secret to delete, not shown): ");
+}
+
+static void list_secrets(void)
+{
+    if (secret_count() == 0)
+        message_printf("#no secrets.\n");
+    for (int i = 0; i < secret_count(); ++i)
+        message_printf("#%d: %zu bytes\n", i + 1, secret_get(i)->len);
+}
+
+static void delete_secret(const char *arg)
+{
+    char *end;
+    long n = strtol(arg, &end, 10);
+    if (end == arg || *skipspace(end) != '\0') {
+        message_printf("#syntax: #secret [add|delete [<number>]|=<hash>]\n");
+    } else if (n < 1 || n > secret_count()) {
+        message_printf("#no secret %s.\n", arg);
+    } else {
+        secret_delete((int)n - 1);
+        message_printf("#secret %ld deleted.\n", n);
+    }
+}
+
+static void cmd_secret(char *arg)
+{
+    arg = skipspace(arg);
+    for (size_t len = strlen(arg); len > 0 && arg[len - 1] == ' '; --len)
+        arg[len - 1] = '\0';
+
+    char word[BUFSIZE];
+    char *rest = skipspace(split_first_word(word, BUFSIZE, arg));
+    if (*arg == '\0') {
+        list_secrets();
+    } else if (*arg == '=') {
+        struct secret sec;
+        if (!secret_parse(&sec, arg + 1))
+            wrap_printf("#secret: invalid hash \"%s\"", arg + 1);
+        else if (secret_add(&sec) && opt_info)
+            message_printf("#new secret of %zu bytes.\n", sec.len);
+    } else if (strcmp(word, "add") == 0 && *rest == '\0') {
+        read_secret(SECRET_ADD);
+    } else if (strcmp(word, "delete") == 0 && *rest == '\0') {
+        read_secret(SECRET_DELETE);
+    } else if (strcmp(word, "delete") == 0) {
+        delete_secret(rest);
+    } else {
+        message_printf("#syntax: #secret [add|delete [<number>]|=<hash>]\n");
+    }
 }
 
 

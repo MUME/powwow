@@ -45,6 +45,7 @@
 #include "edit.h"
 #include "beam.h"
 #include "log.h"
+#include "secret.h"
 
 #ifdef TELOPTS
 /* the name of the telnet option 'n' */
@@ -901,11 +902,13 @@ void tcp_write(connsess *conn, const char *data)
     size_t len = strlen(data);
 
     if (main_connection != NULL && main_connection == conn) {
-        if (linemode & LM_NOECHO)
+        bool secret = secret_in(data);
+        if ((linemode & LM_NOECHO) || secret)
             log_write("", 0, true, conn->charset); /* log a newline only */
         else
             log_write(data, len, true, conn->charset);
-        reprint_writeline(data);
+        if (!secret)
+            reprint_writeline(data);
     }
 
     /* the encoded data is never longer than the original */

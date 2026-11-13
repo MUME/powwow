@@ -25,6 +25,7 @@
 #include "tty.h"
 #include "list.h"
 #include "utils.h"
+#include "secret.h"
 
 vtime movie_last;                   /* time movie_file was last written */
 FILE *capturefile = NULL;           /* capture file or NULL */
@@ -292,11 +293,12 @@ void log_write(const char *str, int len, bool newline, enum charset cs)
 }
 
 /*
- * write a line to the #record file, in the main connection's charset
+ * write a line to the #record file, in the main connection's charset,
+ * unless it contains a secret
  */
 void log_record_line(const char *line)
 {
-    if (recordfile == NULL)
+    if (recordfile == NULL || secret_in(line))
         return;
     log_fwrite(line, strlen(line),
                main_connection != NULL ? main_connection->charset : CS_LATIN1,
