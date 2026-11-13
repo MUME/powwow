@@ -2519,6 +2519,12 @@ static void hidden_clear(void)
     hidden_len = 0;
 }
 
+void hidden_mode_changed(void)
+{
+    if (!hidden_typing() && hidden_len > 0)
+        hidden_clear();
+}
+
 void hidden_insert(char c)
 {
     if ((unsigned char)c < ' ' || c == ASCII_DEL)

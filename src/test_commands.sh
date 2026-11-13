@@ -1692,6 +1692,55 @@ EOF
     has 'HP:>(<redacted>)'
     has 'HP:>(look)'
     grep -q '(hunter22\|(say' "$tmp/out" && fail 'the secret was reprinted'
+
+    # a MUD that echoes again before the password is typed, and asks again
+    cat > "$tmp/server.py" <<'EOF'
+import os, socket, sys, time
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+c.sendall(b'\xff\xfb\x01Password: ')
+time.sleep(0.5)
+c.sendall(b'\xff\xfc\x01\r\nToo slow.\r\n\xff\xfb\x01Password again: ')
+got = b''
+while b'\n' not in got:
+    data = c.recv(1024)
+    if not data:
+        break
+    got += data
+with open(sys.argv[2], 'wb') as f:
+    f.write(got)
+c.sendall(b'\xff\xfc\x01\r\nWelcome\r\n')
+c.close()
+EOF
+    name='a password not ended when the MUD echoes again is forgotten'
+    rm -f "$tmp/port" "$tmp/got"
+    python3 -I "$tmp/server.py" "$tmp/port" "$tmp/got" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+    : > "$tmp/raw"
+    {
+        printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
+        wait_for 'Password: '
+        printf 'abc'
+        wait_for 'Password again: '
+        printf 'hunter22\r'
+        wait_for 'Welcome'
+        printf '#quit\n'
+    } | "$POWWOW" > "$tmp/raw" 2>&1
+    wait $server
+    tr -d '\377\373\374\375\376\001' < "$tmp/got" > "$tmp/line"
+    printf 'hunter22\n' > "$tmp/expected"
+    cmp -s "$tmp/line" "$tmp/expected" \
+        || fail "unexpected line: $(od -c "$tmp/got")"
 fi
 
 # a spawned command is a connection that uses the telnet protocol too:
