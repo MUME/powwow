@@ -39,6 +39,7 @@
 #include "charname.h"
 #include "width.h"
 #include "tls.h"
+#include "secret.h"
 
 #ifdef USE_LOCALE
 #  include <wctype.h>
@@ -731,11 +732,13 @@ void to_history(char *dummy)
 }
 
 /*
- * put string in history at current position
+ * put string in history at current position, unless it contains a secret
  * (string is assumed to be trashable)
  */
 void put_history(char *str)
 {
+    if (secret_in(str))
+        return;
     if (hist[curline] != NULL)
         free(hist[curline]);
     hist[curline] = xstrdup(str);
@@ -873,6 +876,15 @@ static void complete_ver(struct word_list *l, int arg, const char *args,
                          const char *word)
 {
     static const char *const names[] = { "-v", NULL };
+    if (arg == 0)
+        add_words(l, names);
+}
+
+/* the subcommands of #secret */
+static void complete_secret(struct word_list *l, int arg, const char *args,
+                            const char *word)
+{
+    static const char *const names[] = { "add", "delete", NULL };
     if (arg == 0)
         add_words(l, names);
 }
@@ -1193,6 +1205,7 @@ static const struct {
     { "request", complete_request, "" },
     { "reset", complete_reset, "" },
     { "save", complete_file, "" },
+    { "secret", complete_secret, "" },
     { "setvar", complete_setvar, "" },
     { "snoop", complete_session, "" },
     { "var", complete_var, "" },
@@ -1558,6 +1571,8 @@ static void default_completions(void)
 
 void put_static_word(char *s)
 {
+    if (secret_in(s))
+        return;
     if (static_words.used >= static_words.size) {
         int size = static_words.size;
         do {
@@ -1571,10 +1586,12 @@ void put_static_word(char *s)
 }
 
 /*
- * put word in word completion ring
+ * put word in word completion ring, unless it contains a secret
  */
 void put_word(char *s)
 {
+    if (secret_in(s))
+        return;
     int r = wordindex;
     words[r].word = xstrdup(s);
     words[r].flags = 0;
@@ -1585,6 +1602,49 @@ void put_word(char *s)
         free(words[r].word);
         words[r].word = NULL;
     }
+}
+
+/*
+ * delete the history lines and the completion words that contain a
+ * secret; the other history lines keep their order, before the line
+ * being typed
+ */
+void purge_secrets(void)
+{
+    int to = curline;
+    int from = curline;
+    for (int n = 0; n < MAX_HIST; ++n) {
+        from = (from + MAX_HIST - 1) % MAX_HIST;
+        char *line = hist[from];
+        if (line == NULL)
+            continue;
+        hist[from] = NULL;
+        if (secret_in(line)) {
+            free(line);
+        } else {
+            to = (to + MAX_HIST - 1) % MAX_HIST;
+            hist[to] = line;
+        }
+    }
+    pickline = curline;
+
+    for (int i = 0; i < MAX_WORDS; ++i) {
+        if (words[i].word != NULL && secret_in(words[i].word)) {
+            free(words[i].word);
+            words[i].word = NULL;
+            /* the empty words are the last, before wordindex */
+            demote_word(i);
+        }
+    }
+
+    int kept = 0;
+    for (int i = 0; i < static_words.used; ++i) {
+        if (secret_in(static_words.words[i]))
+            free(static_words.words[i]);
+        else
+            static_words.words[kept++] = static_words.words[i];
+    }
+    static_words.used = kept;
 }
 
 /*
@@ -1882,14 +1942,27 @@ void capitalize_word(char *dummy)
  * edit history line 'i', keeping the line edited in its place in the
  * history, so that it can be edited again
  */
+/*
+ * keep 'line', edited from history line 'i', in its place; a line with a
+ * secret is dropped, leaving the history line as it was, or the line
+ * being typed empty
+ */
+static void keep_history_edit(int i, const char *line)
+{
+    if (secret_in(line)) {
+        if (i != curline)
+            return;
+        line = "";
+    }
+    if (hist[i] == NULL || strcmp(hist[i], line) != 0) {
+        free(hist[i]);
+        hist[i] = xstrdup(line);
+    }
+}
+
 static void goto_history_line(int i)
 {
-    if (hist[pickline] != NULL && strcmp(hist[pickline], edbuf) != 0) {
-        free(hist[pickline]);
-        hist[pickline] = NULL;
-    }
-    if (hist[pickline] == NULL)
-        hist[pickline] = xstrdup(edbuf);
+    keep_history_edit(pickline, edbuf);
     pickline = i;
     clear_input_line(false);
     strcpy(edbuf, hist[pickline]);
@@ -2093,11 +2166,7 @@ static void isearch_end(bool accept)
         new_pos = isearch.offset;
         if (isearch.index != isearch.origin) {
             /* keep the line edited before in the history, like C-p */
-            int o = isearch.origin;
-            if (hist[o] == NULL || strcmp(hist[o], isearch.saved) != 0) {
-                free(hist[o]);
-                hist[o] = xstrdup(isearch.saved);
-            }
+            keep_history_edit(isearch.origin, isearch.saved);
             pickline = isearch.index;
             line = hist[pickline];
         }
@@ -2345,6 +2414,100 @@ static void charin_start(const char *file, const char *label)
     input_replace(0, edlen, label, strlen(label));
     edstart = edlen;
     undos = &name_undo;
+}
+
+/*
+ * a label of powwow shown instead of the input line while reading what
+ * is not shown, as a secret for #secret; it is shown by the main loop,
+ * as the command that asks for it may still be reading edbuf
+ */
+static struct {
+    const char *pending;        /* the label to show, or NULL */
+    bool shown;
+    char saved[BUFSIZE];        /* the input line it replaces */
+    int saved_pos;
+} input_label;
+
+void input_label_start(const char *label)
+{
+    input_label.pending = label;
+}
+
+void input_label_show(void)
+{
+    if (input_label.pending == NULL || input_label.shown)
+        return;
+    clear_input_line(false);
+    strcpy(input_label.saved, edbuf);
+    input_label.saved_pos = pos;
+    strcpy(edbuf, input_label.pending);
+    edlen = edlabel = pos = (int)strlen(edbuf);
+    line_status = 1;
+    input_label.shown = true;
+}
+
+void input_label_end(void)
+{
+    input_label.pending = NULL;
+    if (!input_label.shown)
+        return;
+    input_label.shown = false;
+    clear_input_line(false);
+    strcpy(edbuf, input_label.saved);
+    edlen = (int)strlen(edbuf);
+    pos = input_label.saved_pos;
+    edlabel = 0;
+    line_status = 1;
+}
+
+/*
+ * a line typed without being shown, a secret for #secret; the keys go
+ * through the key bindings, but only those that end, cancel or delete
+ * the line do anything, and control characters are not typed
+ */
+static char hidden_buf[BUFSIZE];
+static size_t hidden_len;
+
+bool hidden_typing(void)
+{
+    return secret_reading();
+}
+
+/* clear the line typed, deleted characters too, even if not read again */
+static void hidden_clear(void)
+{
+    volatile char *v = hidden_buf;
+    for (size_t i = 0; i < sizeof(hidden_buf); ++i)
+        v[i] = '\0';
+    hidden_len = 0;
+}
+
+void hidden_insert(char c)
+{
+    if ((unsigned char)c < ' ' || c == ASCII_DEL)
+        tty_putc(ASCII_BEL);
+    else if (hidden_len < sizeof(hidden_buf) - 1)
+        hidden_buf[hidden_len++] = c;
+}
+
+void hidden_command(function_str funct)
+{
+    if (funct == enter_line) {
+        secret_entered(hidden_buf, hidden_len);
+        hidden_clear();
+    } else if (funct == abort_edit) {
+        hidden_clear();
+        secret_entered(hidden_buf, 0);
+    } else if (funct == del_char_left) {
+        while (hidden_len > 0
+               && utf8_is_continuation(hidden_buf[--hidden_len]))
+            hidden_buf[hidden_len] = '\0';
+        hidden_buf[hidden_len] = '\0';
+    } else if (funct == kill_to_bol) {
+        hidden_clear();
+    } else {
+        tty_putc(ASCII_BEL);
+    }
 }
 
 /*

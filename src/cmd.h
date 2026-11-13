@@ -27,5 +27,10 @@ int print_all_options(FILE *file);
 const char *option_name(int i);
 const char *command_option_name(int i);
 
+/* whether #secret is reading a secret, and the 'len' bytes at 's' read,
+ * none if cancelled */
+bool secret_reading(void);
+void secret_entered(const char *s, size_t len);
+
 #endif /* _CMD_H_ */
 

@@ -701,7 +701,8 @@ enum { TYPED_HINT_DELAY = 1000 };
 /* the milliseconds left before showing the keys typed so far, or -1 */
 static int typed_hint_wait(void)
 {
-    if (nchars == 0 || typed_shown || (linemode & (LM_CHAR | LM_NOECHO)))
+    if (nchars == 0 || typed_shown || (linemode & (LM_CHAR | LM_NOECHO))
+        || hidden_typing())
         return -1;
     update_now();
     long waited = diff_vtime(&now, &typed_time);
@@ -799,6 +800,7 @@ static noreturn void mainloop(void)
                 pos = edlen;
             }
 
+            input_label_show();
             redraw_everything();
             tty_flush();
 
@@ -1974,7 +1976,7 @@ static void get_user_input(void)
     if (linemode & (LM_CHAR | LM_NOECHO))
         edit_mode_cancel();
 
-    if (linemode & LM_CHAR) {
+    if ((linemode & LM_CHAR) && !hidden_typing()) {
         /* char mode. chunk == 1; send complete UTF-8 characters */
         static char pend[UTF8_MAX];
         static int npend;
@@ -1990,7 +1992,7 @@ static void get_user_input(void)
         if (!(linemode & LM_NOECHO))
             tty_putc(*c);
         last_edit_cmd = NULL;
-    } else if (linemode & LM_NOECHO) {
+    } else if ((linemode & LM_NOECHO) && !hidden_typing()) {
         /* sending password (line mode, no echo). chunk == 1 */
         if ((*c != '\n' && *c != '\r') && edlen < BUFSIZE - 2) {
             edbuf[edlen++] = *c;
@@ -2007,7 +2009,11 @@ static void get_user_input(void)
         edbuf[pos] = '\0';
         last_edit_cmd = NULL;
     } else {
-        /* normal mode (line mode, echo). chunk == BUFSIZE */
+        /*
+         * normal mode (line mode, echo). chunk == BUFSIZE; the keys of a
+         * secret for #secret also come here in the other modes, one at
+         * a time
+         */
         for (; j > 0; ++c, --j) {
             /* search function key strings for match */
             /* sequences may contain \0 */
@@ -2059,7 +2065,10 @@ static void get_user_input(void)
                         tty_putc(ASCII_BEL);
                     } else {
                         skip = 1;
-                        insert_char(typed[0]);
+                        if (hidden_typing())
+                            hidden_insert(typed[0]);
+                        else
+                            insert_char(typed[0]);
                     }
                     int rest = nchars - skip;   /* the keys after them */
                     assert(rest >= 0);
@@ -2067,6 +2076,9 @@ static void get_user_input(void)
                     nchars = rest;
                     if (nchars > 0)
                         done = false;
+                } else if (p->seqlen == nchars && hidden_typing()) {
+                    hidden_command(p->funct);
+                    nchars = 0;
                 } else if (p->seqlen == nchars) {
                     insert_flush();
                     if (flashback)
