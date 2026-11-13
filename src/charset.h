@@ -12,8 +12,8 @@
  * and the encoding used on a remote link, and help handling UTF-8.
  */
 
-/* replacement for characters that cannot be represented */
-#define CHARSET_REPLACEMENT '?'
+/* replacement for characters that ISO 8859-1 or US-ASCII cannot represent */
+#define ASCII_REPLACEMENT '?'
 
 /* U+FFFD REPLACEMENT CHARACTER, for invalid input */
 #define UTF8_REPLACEMENT     u8"\uFFFD"
@@ -114,7 +114,7 @@ size_t utf8_sanitize(const char *src, size_t len, char *dst);
  * bytes; returns the number of bytes stored */
 size_t latin1_to_utf8(const char *src, size_t len, char *dst);
 /* encode 'len' bytes of UTF-8 text as 'cs' into 'dst', replacing
- * characters 'cs' cannot represent by CHARSET_REPLACEMENT; the result
+ * characters 'cs' cannot represent by ASCII_REPLACEMENT; the result
  * is never longer than the input; returns the number of bytes stored */
 size_t charset_encode(enum charset cs, const char *src, size_t len,
                       char *dst);
