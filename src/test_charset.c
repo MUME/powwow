@@ -50,8 +50,9 @@ static void check_to_utf8(const char *what, enum charset cs,
         for (size_t i = 0; i < inlen; i += chunk) {
             for (size_t j = i; j < i + chunk && j < inlen; ++j) {
                 int k = charset_decode_byte(cs, &d, in[j], out + n);
-                if (k > CHARSET_DECODE_MAX) {
-                    printf("FAIL %s: %d > CHARSET_DECODE_MAX\n", what, k);
+                if (k < 0 || (size_t)k > CHARSET_DECODE_MAX) {
+                    printf("FAIL %s: %d bytes, not 0 to CHARSET_DECODE_MAX\n",
+                           what, k);
                     ++failures;
                 }
                 n += k;
