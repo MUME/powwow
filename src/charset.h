@@ -78,7 +78,8 @@ static inline bool utf8_is_continuation(unsigned char b)
     return (b & 0xc0) == 0x80;
 }
 
-enum charset { CS_LATIN1, CS_UTF8, CS_ASCII };
+/* CS_UNKNOWN: a charset name that charset_lookup() does not know */
+enum charset { CS_LATIN1, CS_UTF8, CS_ASCII, CS_UNKNOWN };
 
 struct utf8_decoder {
     uint32_t      cp;           /* code point being assembled */
@@ -87,8 +88,8 @@ struct utf8_decoder {
 };
 
 const char *charset_name(enum charset cs);
-/* look up an IANA charset name (case insensitive); returns -1 if unknown */
-int charset_lookup(const char *name, size_t len);
+/* look up an IANA charset name (case insensitive), or CS_UNKNOWN */
+enum charset charset_lookup(const char *name, size_t len);
 
 void utf8_decoder_reset(struct utf8_decoder *d);
 /*

@@ -22,7 +22,7 @@ const char *charset_name(enum charset cs)
     }
 }
 
-int charset_lookup(const char *name, size_t len)
+enum charset charset_lookup(const char *name, size_t len)
 {
     static const struct {
         const char *name;
@@ -57,7 +57,7 @@ int charset_lookup(const char *name, size_t len)
             && strncasecmp(names[i].name, name, len) == 0)
             return names[i].cs;
     }
-    return -1;
+    return CS_UNKNOWN;
 }
 
 void utf8_decoder_reset(struct utf8_decoder *d)
