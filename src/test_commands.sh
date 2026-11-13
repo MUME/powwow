@@ -509,6 +509,11 @@ grep -Fq 'xyz' "$tmp/out" || fail "xyz not shown"
 ! grep -Eq 'xyz<ESC>\[[0-9;]*H[xyz]' "$tmp/out" \
     || fail "drew the typed characters again"
 
+run 'a window of the default size uses its last column' '' \
+    "$(printf '%080d\025' 0)"
+grep -Fq "$(printf '%080d' 0)" "$tmp/raw" \
+    || fail "wrapped before the last column"
+
 run 'Tab does not draw the start of the word that it completes again' '' \
     "#hilite mess	$(printf '\025')"
 grep -Fq 'ages ' "$tmp/out" || fail "messages not completed"
