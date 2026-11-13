@@ -811,11 +811,19 @@ static noreturn void mainloop(void)
 
             readfds = fdset;
             int max_fd = edit_output_fds(&readfds, tcp_max_fd);
+            /* wake up for a signal arriving after sig_pending was checked */
+            FD_SET(sig_wake_fd(), &readfds);
+            if (max_fd < sig_wake_fd())
+                max_fd = sig_wake_fd();
             err = select(max_fd + 1, &readfds, NULL, NULL, timeout);
         } while (err < 0 && errno == EINTR);
 
         if (err < 0)
             syserr("cannot wait for input");
+        if (FD_ISSET(sig_wake_fd(), &readfds)) {
+            sig_wake_clear();
+            --err;
+        }
         if (typed_hint_wait() == 0)
             show_typed_hint();
         if (tty_has_chars() && !FD_ISSET(tty_read_fd, &readfds)) {

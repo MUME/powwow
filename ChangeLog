@@ -257,6 +257,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Editing sessions already cancelled, whose editor has not ended
 	  yet, are left alone by #cancel, instead of being killed and
 	  reported as `#killed' again.
+	* Editors that end quickly, and changes of the window size, are
+	  noticed at once, instead of sometimes only after the next key
+	  or text from a connection.
 	* Keys typed after an invalid character, in a multibyte locale
 	  other than UTF-8 such as GB18030, are no longer lost on systems
 	  such as macOS.

@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -1218,16 +1219,44 @@ static void sig_pipe_handler(int signum)
     tty_puts("\n#broken pipe.\n");
 }
 
+/* a pipe that the signal handlers write to, to wake up select() */
+static int sig_wake_fds[2] = { -1, -1 };
+
+static void sig_wake(void)
+{
+    int err = errno;
+    /* if the pipe is full, select() has something to read already */
+    while (write(sig_wake_fds[1], "", 1) < 0 && errno == EINTR)
+        ;
+    errno = err;
+}
+
+/* the end of the pipe that becomes readable when a signal arrives */
+int sig_wake_fd(void)
+{
+    return sig_wake_fds[0];
+}
+
+/* empty the pipe that wakes up select() */
+void sig_wake_clear(void)
+{
+    char buf[64];
+    while (read(sig_wake_fds[0], buf, sizeof buf) > 0)
+        ;
+}
+
 static void sig_winch_handler(int signum)
 {
     sig_winch_got = 1;
     sig_pending = 1;
+    sig_wake();
 }
 
 static void sig_chld_handler(int signum)
 {
     sig_chld_got = 1;
     sig_pending = 1;
+    sig_wake();
 }
 
 static noreturn void sig_term_handler(int signum)
@@ -1322,6 +1351,14 @@ function_signal sig_oneshot(int signum, function_signal sighandler)
  */
 void signal_start(void)
 {
+    if (sig_wake_fds[0] < 0) {
+        if (pipe(sig_wake_fds) < 0)
+            syserr("cannot create a pipe for signals");
+        for (int i = 0; i < 2; ++i) {
+            fcntl(sig_wake_fds[i], F_SETFL, O_NONBLOCK);
+            fcntl(sig_wake_fds[i], F_SETFD, FD_CLOEXEC);
+        }
+    }
     if (sig_permanent(SIGTSTP, SIG_IGN) == SIG_DFL) {
         sig_permanent(SIGTSTP, suspend_powwow);
         can_suspend = true;
@@ -1338,16 +1375,19 @@ void signal_start(void)
     sig_oneshot(SIGINT, sig_intr_handler);
 }
 
+/* handle the signals that arrived; clear each flag before handling it,
+ * so that a signal arriving meanwhile is handled next time */
 void sig_bottomhalf(void)
 {
-    if (sig_chld_got != 0)
-        sig_chld_bottomhalf();
-    if (sig_winch_got != 0)
-        tty_sig_winch_bottomhalf();
-
-    sig_winch_got = 0;
-    sig_chld_got = 0;
     sig_pending = 0;
+    if (sig_chld_got != 0) {
+        sig_chld_got = 0;
+        sig_chld_bottomhalf();
+    }
+    if (sig_winch_got != 0) {
+        sig_winch_got = 0;
+        tty_sig_winch_bottomhalf();
+    }
 }
 
 /* start a message on a line of its own */
