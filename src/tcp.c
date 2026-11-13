@@ -510,6 +510,8 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
      */
     byte *p = buffer;
     byte *linestart = p;
+    /* MPI messages are accepted only at the start of a line */
+    bool midline = conn->midline;
     for (byte *s = rawbuf; i != 0; ++s, --i) {
         switch (state) {
         case NORMAL:
@@ -545,6 +547,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                 state = GOT_N;
                 *p++ = *s;
                 linestart = p;
+                midline = false;
                 break;
             case '\0':
                 /* skip NULs */
@@ -555,8 +558,8 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                  * keep the start of an MPI message header at the end of
                  * the read for the next one, which may have the rest
                  */
-                if (p == linestart && state != GOT_R && conn->ideditor
-                    && mpi_header_cut(s, i)) {
+                if (!midline && p == linestart && state != GOT_R
+                    && conn->ideditor && mpi_header_cut(s, i)) {
                     memcpy(conn->mpi_head, s, i);
                     conn->mpi_headlen = i;
                     goto end;
@@ -569,7 +572,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                 p = put_data(conn, p, *s);
 
                 /* check for MUME MPI messages: */
-                if (p - linestart == MPILEN
+                if (!midline && p - linestart == MPILEN
                     && memcmp(linestart, MPI, MPILEN) == 0) {
                     if (!conn->ideditor) {
                         wrap_printf("#warning: ignored an MPI message"
@@ -775,6 +778,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
  end:
     conn->state = state;
     conn->old_state = old_state;
+    conn->midline = midline || p != linestart || state == GOT_R;
 
     if (!conn->spawn)
         log_write(buffer, (char *)p - (char *)buffer, false, conn->charset);
@@ -1254,6 +1258,7 @@ void tcp_close(const char *id)
     conn->state = NORMAL;
     conn->old_state = NORMAL;
     conn->mpi_headlen = 0;
+    conn->midline = false;
     conn->port = 0;
     free(conn->host);
     conn->host = NULL;
@@ -1362,6 +1367,7 @@ void tcp_spawn(const char *id, char *cmd)
     CONN_INDEX(i).state = NORMAL;
     CONN_INDEX(i).old_state = NORMAL;
     CONN_INDEX(i).mpi_headlen = 0;
+    CONN_INDEX(i).midline = false;
     CONN_INDEX(i).port = 0;
     CONN_INDEX(i).fd = sockets[0];
     CONN_INDEX(i).fns = &tcp_io_fns;
