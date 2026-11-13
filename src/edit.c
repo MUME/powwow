@@ -1677,6 +1677,17 @@ void fmt_next_edit(const char *fmt, ...)
  */
 void enter_line(char *dummy)
 {
+    /* a line with a secret is left on the screen as <redacted>, drawn
+     * as a label, as the messages of powwow */
+    static const char redacted[] = "<redacted>";
+    char line[BUFSIZE];
+    bool secret = secret_in(edbuf);
+    if (secret) {
+        strcpy(line, edbuf);
+        edlabel = (int)strlen(redacted);
+        input_replace(0, edlen, redacted, edlabel);
+    }
+
     if (line_status == 0) {
         input_moveto(edlen);
     } else {
@@ -1689,6 +1700,12 @@ void enter_line(char *dummy)
     line0 = CURLINE(edlen);
     if (line0 < lines - 1)
         ++line0;
+
+    if (secret) {
+        strcpy(edbuf, line);
+        edlen = (int)strlen(edbuf);
+        edlabel = 0;
+    }
 
     log_record_line(edbuf);
 
