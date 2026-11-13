@@ -126,6 +126,13 @@ static struct {
 } tty_write_state = {
     .fd = 1                         /* also before tty_start() */
 };
+static size_t tty_flushed;          /* bytes written to the terminal */
+
+/* bytes written to the terminal so far, including those in the buffer */
+static size_t tty_output_count(void)
+{
+    return tty_flushed + tty_write_state.used;
+}
 
 /* tell tty_putc whether it is drawing the input line */
 static void tty_set_input(bool input)
@@ -924,11 +931,32 @@ static void input_erase_below(int line, int col)
 }
 
 /*
- * redraw the input line from byte offset 'from' to its end, clear the
- * rest of the screen, and put the cursor at pos; the cursor must be
- * where the text before 'from' ends (see input_redraw_goto)
+ * after drawing the input line, the cursor is where the layout puts its
+ * end and the screen after that is blank, as long as nothing has been
+ * written since and the line is as long: typing at the end can then
+ * draw just what is typed (see input_insert_follow_chars)
  */
-static void input_redraw_from(int from)
+static struct {
+    bool   valid;
+    size_t output;              /* tty_output_count() then */
+    int    len;                 /* edlen then */
+} input_synced;
+
+static bool input_is_synced(void)
+{
+    return (input_synced.valid && line_status == 0
+            && input_synced.output == tty_output_count()
+            && input_synced.len == edlen);
+}
+
+/*
+ * redraw the input line from byte offset 'from' to its end, clear the
+ * rest of the screen, unless 'erase' is false because it is known to be
+ * blank, and put the cursor at pos.  The cursor must be where the text
+ * before 'from' ends (see input_redraw_goto); 'placed' tells whether
+ * powwow put it there, or assumes it is there after the prompt
+ */
+static void input_redraw_from(int from, bool placed, bool erase)
 {
     int line, col;
     input_layout_end(from, &line, &col);
@@ -936,6 +964,8 @@ static void input_redraw_from(int from)
 
     const char *s = edbuf + from, *end = edbuf + edlen;
     bool in_label = false;      /* drawing a label, as a message */
+    /* do the terminal and the layout agree where the cursor is? */
+    bool synced = placed;
     while (s < end) {
         size_t n = utf8_input_cell_len(s, end - s);
         int w = utf8_input_cell_width(s, n);
@@ -972,6 +1002,8 @@ static void input_redraw_from(int from)
          */
         bool on_space = utf8_input_cell_on_space(s, n);
         bool resync = on_space || w == 0 || n > (size_t)utf8_seqlen(*s);
+        /* all terminals draw printable ASCII one column wide */
+        bool ascii = n == 1 && *s >= ' ' && *s <= '~';
         if (on_space)
             tty_putc(' ');
         while (n-- > 0)
@@ -979,6 +1011,8 @@ static void input_redraw_from(int from)
         col += w;
         if (resync && col < cols)
             tty_gotoxy(col, line);
+        else if (!ascii)
+            synced = false;
     }
     tty_set_input(false);
     if (in_label)
@@ -988,11 +1022,16 @@ static void input_redraw_from(int from)
         col = 0;
     }
 
-    input_erase_below(line, col);
+    if (erase)
+        input_erase_below(line, col);
 
     int pline, pcol;
     input_layout(pos, &pline, &pcol);
     tty_gotoxy_opt(col, line, pcol, pline);
+
+    input_synced.valid = synced && pos == edlen;
+    input_synced.output = tty_output_count();
+    input_synced.len = edlen;
 }
 
 /*
@@ -1001,7 +1040,7 @@ static void input_redraw_from(int from)
  */
 void input_draw(void)
 {
-    input_redraw_from(0);
+    input_redraw_from(0, false, true);
 }
 
 /*
@@ -1069,7 +1108,7 @@ void input_delete_nofollow_chars(int n)
     input_redraw_goto(from);
 
     if (line_status == 0)
-        input_redraw_from(from);
+        input_redraw_from(from, true, true);
 }
 
 /*
@@ -1084,15 +1123,22 @@ void input_insert_follow_chars(char *str, int n)
     if (n <= 0)
         return;
 
+    /* typing at the end, with the cursor there already? */
+    bool append = p == edlen && input_is_synced();
     memmove(edbuf + p + n, edbuf + p, edlen + 1 - p);
     memmove(edbuf + p, str, n);
     edlen += n;
     pos = p + n;
     int from = input_redraw_start(p);
+    if (append && from == p) {
+        /* the cursor is at 'from' and the screen after it is blank */
+        input_redraw_from(from, true, false);
+        return;
+    }
     input_redraw_goto(from);
 
     if (line_status == 0)
-        input_redraw_from(from);
+        input_redraw_from(from, true, true);
 }
 
 /*
@@ -1118,7 +1164,7 @@ void input_replace(int from, int len, const char *str, int n)
     input_redraw_goto(start);
 
     if (line_status == 0)
-        input_redraw_from(start);
+        input_redraw_from(start, true, true);
 }
 
 void tty_puts(const char *s)
@@ -1447,6 +1493,7 @@ void tty_flush(void)
         n -= r;
         data += r;
     }
+    tty_flushed += tty_write_state.used;
     tty_write_state.used = 0;
 }
 
