@@ -239,6 +239,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Commands started by #spawn that close their own connection, as
 	  with `#zap', no longer have the lines that follow in the same
 	  read run as from a connection named `(null)'.
+	* Unterminated lines of commands started by #spawn are no longer
+	  lost when what they send next, such as a telnet command, has no
+	  text.
 	* MPI messages over TLS no longer fail with `cannot read from
 	  connection' when a TLS record without text, such as a key
 	  update, arrives in the middle of them.

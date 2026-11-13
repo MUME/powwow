@@ -1433,6 +1433,19 @@ run --until '#connection on "n" closed.' \
 joined | grep -Eqx 'got 255 251 31 255 250 31( [0-9]+){4} 255 240' \
     || fail "missing the window size"
 
+# an unterminated line of a spawned command, then a read without text
+cat > "$tmp/server" <<'EOF'
+printf '#print ("a" + '
+sleep 1
+printf '\377\361'
+sleep 1
+printf '"b")\n'
+EOF
+run --until '#connection on "n" closed.' \
+    'unterminated line of a spawned command over a read without text' \
+    "#spawn n sh $tmp/server"
+has 'ab'
+
 # a suboption that fills the buffer, overflowing it without the fix when
 # built with -fsanitize=address
 cat > "$tmp/server" <<'EOF'
