@@ -1686,6 +1686,23 @@ has '#cancelled session descr4 (4)'
 has '#cancelled session descr5 (5)'
 has '#cancelled session descr6 (6)'
 
+# an MPI header after text that a previous write left without a newline
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf 'prompt> '
+sleep 1
+printf '~$#EE15\nM1\ndescr1\ntext\n\n~$#EE15\nM2\ndescr2\ntext\n'
+cat > /dev/null
+EOF
+run --until '#cancelled session descr2 (2)' \
+    'MPI message after the text of a previous write' \
+    "#option editor=&true
+#spawn n sh $tmp/server
+##n #request editor"
+has '[prompt> ~$#EE15]'
+lacks '#cancelled session descr1 (1)'
+has '#cancelled session descr2 (2)'
+
 # the command run when an editing session starts closes the connection
 # that sent it, with more text in the same read
 cat > "$tmp/server" <<'EOF'

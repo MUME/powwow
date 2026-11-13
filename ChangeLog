@@ -250,6 +250,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* MPI messages whose header arrives in several parts, as the
 	  network or the server may split it, start an editing session,
 	  instead of being shown as text or rejected as a bad header.
+	* MPI messages are recognized only at the start of a line, also
+	  when the text before them on that line came in an earlier read.
 	* Temporary files of editing sessions get a name that other users
 	  cannot guess, and are in $TMPDIR if set, instead of /tmp; another
 	  user could make powwow write the text to any file of the user.
