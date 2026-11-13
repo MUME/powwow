@@ -39,6 +39,7 @@
 #include "width.h"
 #include "sgr.h"
 #include "charname.h"
+#include "secret.h"
 
 enum {
     SAVEFILEVER = 9,            /* current version */
@@ -1779,6 +1780,13 @@ int save_settings(void)
         int size = log_getsize();
         if (size != 0)
             failed = fprintf(f, "#setvar buffer=%d\n", size);
+    }
+
+    /* before the history, which they keep lines out of when loaded */
+    for (int i = 0; i < secret_count() && failed > 0; ++i) {
+        char buf[SECRET_STR_MAX];
+        secret_format(secret_get(i), buf);
+        failed = fprintf(f, "#secret =%s\n", buf);
     }
 
     for (aliasnode *alp = sortedaliases; alp != NULL && failed > 0;

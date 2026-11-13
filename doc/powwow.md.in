@@ -592,6 +592,36 @@ cursor-up (which gets the last command in history) and `<RETURN>` key.
 When you finally manage to flee, the message above is put in history,
 so that further attempts to flee do not lead you again in danger)
 
+### Keep secrets, such as passwords, out of history
+
+```
+#secret [add|delete [<number>]|=<hash>]
+```
+
+`#secret` keeps the lines that contain a secret out of the history, the
+word completion list, `#record` files and the lines sent that `#capture`
+and `#movie` write. This keeps a password typed before the MUD asks for
+it, or before it stops echoing, from being saved.
+A secret matches anywhere in a line, and is at least 4 bytes long.
+
+```
+#secret                         (list the secrets: their number and length)
+#secret add                     (add a secret, typed without being shown)
+#secret delete                  (delete a secret, typed without being shown)
+#secret delete 2                (delete the second secret of the list)
+```
+
+An empty line or C-g cancels typing a secret. Adding a secret also
+deletes the lines of the history and the words that contain it.
+
+Powwow keeps only a salted hash of each secret, which `#save` writes as
+`#secret =<hash>`. It has only 32 bits: too few to tell a strong password
+from the many others with the same hash, but a weak one, such as a word
+of a dictionary, can be found from it, and so can a password kept in
+several definition files.
+Powwow warns about a secret shorter than 8 bytes, which may also match
+other text.
+
 ### Bind keys to enter commands
 
 ```

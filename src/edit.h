@@ -73,6 +73,16 @@ void complete_word(char *dummy);
 void complete_line(char *dummy);
 void put_word(char *s);
 void put_static_word(char *s);
+/* show 'label' instead of the input line until input_label_end() */
+void input_label_start(const char *label);
+void input_label_show(void);
+void input_label_end(void);
+/* whether a line is typed without being shown, and the keys typed of it */
+bool hidden_typing(void);
+void hidden_insert(char c);
+void hidden_command(function_str funct);
+/* delete the history lines and completion words that contain a secret */
+void purge_secrets(void);
 void set_custom_delimeters(char *s);
 void to_input_line(char *str);
 void clear_line(char *dummy);

@@ -896,6 +896,28 @@ or left blank, walk all the way back to where automapping started.
 Set the definition file and save settings to it. Powwow also saves them
 automatically before exiting. The definition file is overwritten only if
 writing succeeds.
+@secret
+#secret [add|delete [<number>]|=<hash>]
+
+Keep the lines that contain a secret, such as a password, out of the
+history, the word completion list, #record files and the lines sent that
+#capture and #movie write. A secret matches anywhere in a line, and is at
+least 4 bytes long.
+
+     #secret             list the secrets: their number and length
+     #secret add         add a secret, typed without being shown; the
+                         lines and words that contain it are deleted
+     #secret delete      delete a secret, typed without being shown
+     #secret delete <n>  delete secret number n of the list
+
+An empty line or C-g cancels typing a secret.
+
+Powwow keeps only a salted hash of each secret, which #save writes as
+#secret =<hash>. It has only 32 bits: too few to tell a strong password
+from the many others with the same hash, but a weak one, such as a word of
+a dictionary, can be found from it, and so can a password kept in several
+definition files. Powwow warns about a secret shorter than 8 bytes, which
+may also match other text.
 @setvar
 #setvar <name>[={<number>|(<expr>)}]
 
