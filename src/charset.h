@@ -17,8 +17,8 @@
 
 /* U+FFFD REPLACEMENT CHARACTER, for invalid input */
 #define UTF8_REPLACEMENT     u8"\uFFFD"
-#define UTF8_REPLACEMENT_LEN 3
-#define UNICODE_REPLACEMENT  0xfffd
+#define UTF8_REPLACEMENT_LEN (sizeof UTF8_REPLACEMENT - 1)
+#define UNICODE_REPLACEMENT  U'\uFFFD'
 
 #define ASCII_MAX   0x7f
 #define LATIN1_MAX  0xff
