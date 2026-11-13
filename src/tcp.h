@@ -50,6 +50,12 @@ struct io_fns {
     bool (*can_read)(struct connsess *conn);
 };
 
+/*
+ * longest start of an MPI message header kept from one read to the next:
+ * the introducer, the type, 10 digits of the length and \r
+ */
+#define MPI_HEAD_MAX (MPILEN + 12)
+
 typedef struct connsess {
     char *id;			/* session id */
     unsigned generation;        /* changes when the connection closes */
@@ -67,6 +73,8 @@ typedef struct connsess {
     char old_state;
     unsigned char subopt[MAX_SUBOPT]; /* telnet suboption being read */
     int subchars;               /* and its length so far */
+    char mpi_head[MPI_HEAD_MAX]; /* start of an MPI message header */
+    int mpi_headlen;            /* that ended the last read, or 0 */
     unsigned char cs_flags;	/* CHARSET option state */
     bool prefer_utf8;		/* starts as and prefers UTF-8 */
     enum charset charset;	/* current encoding of this link */
