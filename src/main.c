@@ -233,7 +233,7 @@ char edattrend[ATTR_SGR_MAX];   /* ending input line attributes */
 bool edattrbg;            /* input line attributes do change bg color */
 
 /* signals handling */
-volatile int sig_pending, sig_winch_got, sig_chld_got;
+volatile sig_atomic_t sig_pending, sig_winch_got, sig_chld_got;
 
 /* different ID characters for different action types */
 /*
