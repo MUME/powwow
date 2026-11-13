@@ -150,6 +150,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  character before them to join, are drawn on a space as a cell of
 	  their own, instead of on the prompt, on the next character or not
 	  at all.
+	* Windows of 80 columns and 24 lines, the size powwow assumes when
+	  it cannot get one, use the last column for the input line, as
+	  other windows do where the terminal allows it.
 	* Fixed repeating the text of a variable whose name is given by an
 	  expression, as in `$$s * 0', emptying another variable or
 	  crashing powwow.

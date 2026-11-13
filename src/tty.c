@@ -379,6 +379,8 @@ void tty_bootstrap(void)
 
     /* this must be before getting window size */
     wrapglitch = tgetflag("xn");
+    /* for the default size, kept if the window has it or has none */
+    cols_1 = wrapglitch ? cols : cols - 1;
 
     tty_sig_winch_bottomhalf(); /* get window size */
 #endif  /* not USE_VT100 */
