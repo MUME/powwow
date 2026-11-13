@@ -45,6 +45,23 @@ wait_for() {
     done
 }
 
+# type the keys in $1 one at a time, each once powwow has drawn the one
+# before, so that it reads them one at a time
+type_one_by_one() {
+    keys=$1
+    while [ -n "$keys" ]; do
+        rest=${keys#?}
+        size=$(wc -c < "$tmp/raw")
+        printf '%s' "${keys%"$rest"}"
+        i=0
+        until [ "$(wc -c < "$tmp/raw")" -gt "$size" ] || [ $i -ge 500 ]; do
+            sleep 0.01
+            i=$((i + 1))
+        done
+        keys=$rest
+    done
+}
+
 # wait until powwow has run everything sent so far, by sending a command
 # that prints the text "<sync$1>"; the input line must be empty
 sync_powwow() {
@@ -59,15 +76,17 @@ sync_powwow() {
 #
 # options: --bind when $2 ends with a #bind that reads the key $3,
 # --until TEXT to wait for powwow to print TEXT before quitting,
-# --args ARGS to give powwow the arguments ARGS, split at spaces, and
-# --eof to end the input without a #quit
+# --args ARGS to give powwow the arguments ARGS, split at spaces,
+# --eof to end the input without a #quit, and --one-by-one to type the
+# keys in $3 one at a time
 run() {
-    bind= until= args= quit=1
+    bind= until= args= quit=1 one_by_one=
     while :; do
         case $1 in
             --args) args=$2; shift 2 ;;
             --bind) bind=1; shift ;;
             --eof) quit=; shift ;;
+            --one-by-one) one_by_one=1; shift ;;
             --until) until=$2; shift 2 ;;
             *) break ;;
         esac
@@ -83,7 +102,11 @@ run() {
                 wait_for '#new key binding'
             else
                 sync_powwow 1
-                printf '%s' "$3"
+                if [ -n "$one_by_one" ]; then
+                    type_one_by_one "$3"
+                else
+                    printf '%s' "$3"
+                fi
             fi
             sync_powwow 2
             if [ $# -gt 3 ]; then
@@ -513,6 +536,10 @@ run 'a window of the default size uses its last column' '' \
     "$(printf '%080d\025' 0)"
 grep -Fq "$(printf '%080d' 0)" "$tmp/raw" \
     || fail "wrapped before the last column"
+
+run --one-by-one 'typing at the end draws just the characters typed' '' \
+    "abcd$(printf '\025')"
+grep -Fq 'bcd' "$tmp/raw" || fail "moved the cursor between the characters"
 
 # C-b C-f move the cursor, so that the next character redraws the line
 run 'the cursor stays in the last column after blanking it' '' \
