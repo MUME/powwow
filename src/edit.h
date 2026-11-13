@@ -81,6 +81,9 @@ void input_label_end(void);
  * it and not for reading the name of a character for it, and the keys */
 bool hidden_typing(void);
 bool hidden_keys(void);
+/* the line mode changed: forget the line typed if it is no longer typed
+ * without being shown, so that it is not sent with the next one */
+void hidden_mode_changed(void);
 void hidden_insert(char c);
 void hidden_command(function_str funct);
 /* delete the history lines and completion words that contain a secret */

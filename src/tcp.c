@@ -662,13 +662,16 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                  * subsidiary connection password entries to block anything
                  * in the main connection
                  */
-                if (conn == main_connection)
+                if (conn == main_connection) {
                     linemode |= LM_NOECHO;
+                    hidden_mode_changed();
+                }
                 sendopt(conn, DO, *s);
                 break;
             case TELOPT_SGA:
                 /* this can't hurt */
                 linemode |= LM_CHAR;
+                hidden_mode_changed();
                 tty_special_keys();
                 sendopt(conn, DO, *s);
                 break;
@@ -698,6 +701,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             if (*s == TELOPT_ECHO) {
                 /* host no longer echoes, we do it instead */
                 linemode &= ~LM_NOECHO;
+                hidden_mode_changed();
             }
             if (*s == TELOPT_CHARSET) {
                 /* only acknowledge if it was enabled */
@@ -719,6 +723,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             switch (*s) {
             case TELOPT_SGA:
                 linemode |= LM_CHAR;
+                hidden_mode_changed();
                 tty_special_keys();
                 /* FALLTHROUGH */
             case TELOPT_TTYPE:
@@ -748,6 +753,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 #endif
             if (*s == TELOPT_SGA) {
                 linemode &= ~LM_CHAR;
+                hidden_mode_changed();
                 tty_special_keys();
             }
             if (*s == TELOPT_CHARSET) {
@@ -1095,6 +1101,7 @@ void tcp_set_main(connsess *conn)
     } else {
         linemode = 0;
     }
+    hidden_mode_changed();
     status(-1);
     reprint_clear();
 }
