@@ -248,16 +248,17 @@ int main(void)
 
     static const struct {
         const char *name;
-        int cs;
+        enum charset cs;
     } names[] = {
         { "UTF-8", CS_UTF8 }, { "utf-8", CS_UTF8 },
         { "iso-8859-1", CS_LATIN1 }, { "ISO_8859-1:1987", CS_LATIN1 },
         { "Latin1", CS_LATIN1 }, { "US-ASCII", CS_ASCII },
-        { "ansi_x3.4-1968", CS_ASCII }, { "UTF-16", -1 }, { "UTF-8x", -1 },
-        { "", -1 },
+        { "ansi_x3.4-1968", CS_ASCII }, { "UTF-16", CS_UNKNOWN },
+        { "UTF-8x", CS_UNKNOWN }, { "", CS_UNKNOWN },
     };
     for (size_t i = 0; i < sizeof names / sizeof names[0]; ++i) {
-        int cs = charset_lookup(names[i].name, strlen(names[i].name));
+        enum charset cs = charset_lookup(names[i].name,
+                                         strlen(names[i].name));
         if (cs != names[i].cs) {
             printf("FAIL lookup \"%s\": got %d\n", names[i].name, cs);
             ++failures;

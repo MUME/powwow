@@ -100,16 +100,16 @@ static void charset_request_subopt(connsess *conn, const char *str,
     conn->cs_flags &= ~CS_REQ_PENDING;
 
     /* take the server's first known charset, unless it also offers ours */
-    const int want = conn->prefer_utf8 ? CS_UTF8 : CS_LATIN1;
+    const enum charset want = conn->prefer_utf8 ? CS_UTF8 : CS_LATIN1;
     const char *chosen = NULL;
     size_t chosen_len = 0;
-    int chosen_cs = -1;
+    enum charset chosen_cs = CS_UNKNOWN;
     for (const char *start = str, *end = str + len; start < end; ) {
         const char *next = memchr(start, sep, end - start);
         if (next == NULL)
             next = end;
-        int cs = charset_lookup(start, next - start);
-        if (cs >= 0
+        enum charset cs = charset_lookup(start, next - start);
+        if (cs != CS_UNKNOWN
             && (chosen == NULL || (cs == want && chosen_cs != want))) {
             chosen = start;
             chosen_len = next - start;
@@ -148,8 +148,8 @@ static void charset_reply_subopt(connsess *conn, byte type,
 
     switch (type) {
     case CHARSET_ACCEPTED: {
-        int cs = charset_lookup(str, len);
-        if (cs < 0)
+        enum charset cs = charset_lookup(str, len);
+        if (cs == CS_UNKNOWN)
             wrap_printf("#warning: server accepted unknown charset \"%.*s\"",
                         (int)len, str);
         else
