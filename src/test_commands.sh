@@ -1328,6 +1328,14 @@ run 'an old save-file keeps its own C-w' "#load $tmp/old
 has '#bind C-w ^W=&clear-line'
 lacks '#C-w now deletes back to the previous space; M-q puts the line in history'
 
+# a key bound with its sequence replaces the key with that sequence
+run '#bind with a sequence replaces the key with that sequence' \
+    '#bind ^S ^S=#capture
+#bind edit'
+has '#deleting key binding: C-s ^S=&forward-search'
+has '#new key binding: ^S ^S=#capture'
+lacks '#bind C-s ^S=&forward-search'
+
 run '#reset bind resets one key' '#bind M-c ^[c=&upcase-word
 #reset bind M-c
 #bind KP8 ^[Ox=north

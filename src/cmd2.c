@@ -1345,6 +1345,17 @@ static void parse_bind_noninteractive(char *arg)
     bool redefined = kp != NULL && *kp != NULL;
     if (redefined)
         delete_keynode(kp);
+    /* another key with the same sequence would hide this one */
+    for (kp = &keydefs; *kp != NULL; ) {
+        if ((*kp)->seqlen == seqlen
+            && memcmp((*kp)->sequence, rawseq, seqlen) == 0) {
+            if (opt_info)
+                show_single_bind("deleting key binding:", *kp);
+            delete_keynode(kp);
+        } else {
+            kp = &(*kp)->next;
+        }
+    }
 
     char *params;
     int function = lookup_edit_name(p, &params);
