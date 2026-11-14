@@ -1328,6 +1328,16 @@ run 'an old save-file keeps its own C-w' "#load $tmp/old
 has '#bind C-w ^W=&clear-line'
 lacks '#C-w now deletes back to the previous space; M-q puts the line in history'
 
+run '#(expression) warns about text after it' '#(1)x
+#(@1 = 2) 
+# (3)\;(y)
+#print (@1)'
+has '#warning: text after the expression ignored: "x"'
+has '#warning: text after the expression ignored: "\;(y)"'
+[ "$(grep -c '^#warning: text after' "$tmp/out")" -eq 2 ] \
+    || fail 'expected no warning about the spaces after an expression'
+has '2'
+
 # "# " starts a comment, up to the next ;, typed, in a definition file and
 # in a file that #exe reads
 printf '%s\n' '#savefile-version 9' '#reset bind' '# a comment; #alias good=x' \
