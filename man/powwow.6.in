@@ -169,7 +169,8 @@ the editor and the pager run as
 .B #!
 runs its commands, with the shell of
 .BR "#option shell" ,
-followed by the Windows path of the file
+followed by the Windows path of the file; and Tab completes file names
+in any case, with a backslash after folders
 .TP
 .BI \-\-completion " shell"
 print the completion of the arguments of

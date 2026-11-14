@@ -1225,15 +1225,26 @@ static void complete_var(struct word_list *l, int arg, const char *args,
 
 /*
  * the files in the directory of 'word', with that directory before them,
- * and directories with a / after them; those starting with a dot only if
- * the name typed does
+ * and directories with a / after them, in Windows mode a \\; those starting
+ * with a dot only if the name typed does
  */
 static void complete_file(struct word_list *l, int arg, const char *args,
                           const char *word)
 {
     if (arg != 0)
         return;
-    const char *slash = strrchr(word, '/');
+    const char *slash = NULL;
+    for (const char *p = word; *p != '\0'; ++p) {
+        if (is_path_sep(*p))
+            slash = p;
+    }
+    if (windows_mode && slash == NULL && isalpha((unsigned char)word[0])
+        && word[1] == ':' && word[2] == '\0') {
+        /* a drive, as C: */
+        char drive[] = { word[0], ':', '\\', '\0' };
+        word_list_add(l, drive);
+        return;
+    }
     const char *base = slash != NULL ? slash + 1 : word;
     int dir_len = slash != NULL ? (int)(slash - word) + 1 : 0;
     char dir[BUFSIZE];
@@ -1242,11 +1253,15 @@ static void complete_file(struct word_list *l, int arg, const char *args,
     DIR *d = opendir(open_dir);
     if (d == NULL)
         return;
-    /* only macOS and Cygwin tell whether a file system ignores case */
+    /* in any case in Windows mode, as on Windows; otherwise only macOS
+     * and Cygwin tell whether a file system ignores case */
+    l->ignore_case = windows_mode;
 #if defined(_PC_CASE_SENSITIVE)
-    l->ignore_case = pathconf(open_dir, _PC_CASE_SENSITIVE) == 0;
+    if (!l->ignore_case)
+        l->ignore_case = pathconf(open_dir, _PC_CASE_SENSITIVE) == 0;
 #elif defined(_PC_CASE_INSENSITIVE)
-    l->ignore_case = pathconf(open_dir, _PC_CASE_INSENSITIVE) > 0;
+    if (!l->ignore_case)
+        l->ignore_case = pathconf(open_dir, _PC_CASE_INSENSITIVE) > 0;
 #endif
     for (const struct dirent *e = readdir(d); e != NULL; e = readdir(d)) {
         if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0
@@ -1259,7 +1274,7 @@ static void complete_file(struct word_list *l, int arg, const char *args,
         struct stat st;
         bool is_dir = stat(path, &st) == 0 && S_ISDIR(st.st_mode);
         if (is_dir && strlen(path) + 1 < sizeof(path))
-            strcat(path, "/");
+            strcat(path, windows_mode ? "\\" : "/");
         word_list_add(l, path);
     }
     closedir(d);
@@ -1314,10 +1329,11 @@ static const struct {
 };
 
 /*
- * where the name of a file starts in the word at 'word', of a command
- * 'name' that reads one after a <, as #send <file and #var $x=<file, or -1
+ * where the name of a file starts in the arguments at 'args', of a command
+ * 'name' that reads one after a <, as #send <file and #var $x=<file, or -1;
+ * the name is the rest of the line, which may have spaces
  */
-static int redirect_file(const char *name, int word)
+static int redirect_file(const char *name, int args)
 {
     static const char *const readers[] = {
         "emulate", "exe", "print", "send", "var"
@@ -1328,11 +1344,11 @@ static int redirect_file(const char *name, int word)
         ++i;
     if (i == sizeof(readers) / sizeof(*readers))
         return -1;
-    int p = word;
+    int p = args;
     if (strcmp(name, "var") == 0) {
         while (p < pos && edbuf[p] != '=')
             ++p;
-        p = p < pos ? p + 1 : word;
+        p = p < pos ? p + 1 : args;
     }
     return p < pos && edbuf[p] == '<' ? p + 1 : -1;
 }
@@ -1444,7 +1460,10 @@ static bool complete_command(void)
         const cmdstruct *c = find_command(edbuf + start + 1, name_len);
         if (c == NULL)
             return false;
-        int file = redirect_file(c->name, word);
+        int args = start + 1 + name_len;
+        while (args < pos && edbuf[args] == ' ')
+            ++args;
+        int file = redirect_file(c->name, args);
         if (file >= 0) {
             word = file;
             char typed[BUFSIZE];
@@ -1460,9 +1479,9 @@ static bool complete_command(void)
             if (i == sizeof(arg_completions) / sizeof(*arg_completions))
                 return false;
 
-            int args = start + 1 + name_len;
-            while (args < word && edbuf[args] == ' ')
-                ++args;
+            /* a file name is the rest of the line, which may have spaces */
+            if (arg_completions[i].complete == complete_file)
+                word = args;
             int arg = 0;
             for (int p = args; p < word; ++p) {
                 if (edbuf[p] == ' ' && edbuf[p + 1] != ' ')
@@ -1515,7 +1534,7 @@ static bool complete_command(void)
         size_t only_len = strlen(only);
         bool go_on = (last
                       || (only_len > 0
-                          && (only[only_len - 1] == '/'
+                          && (is_path_sep(only[only_len - 1])
                               || only[only_len - 1] == '=')));
         snprintf(text, sizeof(text), go_on ? "%s" : "%s ", only);
         input_replace(word, len, text, strlen(text));
@@ -1529,7 +1548,7 @@ static bool complete_command(void)
         /* file names without their directory, which they all have */
         int skip = 0;
         for (int j = 0; file_names && j < len; ++j) {
-            if (edbuf[word + j] == '/')
+            if (is_path_sep(edbuf[word + j]))
                 skip = j + 1;
         }
         word_list_show(&l, edbuf + word, len, skip);

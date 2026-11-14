@@ -1865,6 +1865,30 @@ else
     lacks 'uppercase'
 fi
 
+# a file name is the rest of the line, so Tab completes past its spaces
+mkdir -p "$tmp/with space"
+echo '#print ("lo" + "aded2")' > "$tmp/with space/mud.powwow"
+run 'Tab completes file names with spaces' '' \
+    "#load $tmp/with sp	mu	
+#print <$tmp/with sp	mu	
+"
+has 'loaded2'
+has '#print ("lo" + "aded2")'
+
+# with --windows, Tab completes file names in any case, as on Windows,
+# folders with a \ after them, and a drive; here, the \ is part of the name
+# of the file
+mkdir -p "$tmp/win/Some Dir"
+run --args --windows \
+    '--windows: Tab completes file names in any case, with a \' '' \
+    "#capture $tmp/win/SOME D	x.txt
+#capture
+#print <C:	nonexistent
+"
+[ -f "$tmp/win/Some Dir\\x.txt" ] \
+    || fail "expected $tmp/win/Some Dir\\x.txt, got: $(ls "$tmp/win")"
+has "#print: #error opening 'C:\\nonexistent'"
+
 run 'Tab completes the arguments of #hilite' '' \
     "#hil	inp	un	Ye	o	cy	
 #hil	me	b		
