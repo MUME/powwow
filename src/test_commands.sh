@@ -1328,6 +1328,13 @@ run 'an old save-file keeps its own C-w' "#load $tmp/old
 has '#bind C-w ^W=&clear-line'
 lacks '#C-w now deletes back to the previous space; M-q puts the line in history'
 
+run '#(expression) needs its closing parenthesis' '#(@1 = 1
+#(@1 = (2)
+#(@1 = 3;#print ("not run")'
+[ "$(grep -c '^#error: missing right parenthesis\.$' "$tmp/out")" -eq 3 ] \
+    || fail 'expected three missing parentheses'
+lacks 'not run'
+
 run '#(expression) warns about text after it' '#(1)x
 #(@1 = 2) 
 # (3)\;(y)
