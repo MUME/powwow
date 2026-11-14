@@ -8,10 +8,10 @@
 
 typedef struct
 {
-    int len;			/* chars in data, excluding the final '\0' */
-    int max;			/* capacity of data, excluding the final '\0' */
-    char data[];		/* the contents, which may contain '\0';
-				   data[len] is always '\0' */
+    int len;                    /* chars in data, excluding the final '\0' */
+    int max;                    /* capacity of data, without the final '\0' */
+    char data[];                /* the contents, which may contain '\0';
+                                   data[len] is always '\0' */
 } ptr;
 
 static inline int ptrlen(const ptr *p)
@@ -33,27 +33,27 @@ static inline char *ptrdata(const ptr *p)
     return (char *)p->data;
 }
 
-ptr  *ptrnew(int max);
-ptr  *ptrdup2(const ptr *src, int newmax);
-ptr  *ptrdup(const ptr *src);
+ptr *ptrnew(int max);
+ptr *ptrdup2(const ptr *src, int newmax);
+ptr *ptrdup(const ptr *src);
 
 /* free *p and set it to NULL */
-void  ptrdel(ptr **p);
+void ptrdel(ptr **p);
 
-void  ptrzero(ptr *p);
-void  ptrshrink(ptr *p, int len);
-void  ptrtrunc(ptr *p, int len);
-ptr  *ptrpad(ptr *p, int len);
-ptr  *ptrsetlen(ptr *p, int len);
+void ptrzero(ptr *p);
+void ptrshrink(ptr *p, int len);
+void ptrtrunc(ptr *p, int len);
+ptr *ptrpad(ptr *p, int len);
+ptr *ptrsetlen(ptr *p, int len);
 
-ptr  *ptrcpy(ptr *dst, const ptr *src);
-ptr  *ptrmcpy(ptr *dst, const char *src, int len);
+ptr *ptrcpy(ptr *dst, const ptr *src);
+ptr *ptrmcpy(ptr *dst, const char *src, int len);
 
-ptr  *ptrcat(ptr *dst, const ptr *src);
-ptr  *ptrmcat(ptr *dst, const char *src, int len);
+ptr *ptrcat(ptr *dst, const ptr *src);
+ptr *ptrmcat(ptr *dst, const char *src, int len);
 
-int   ptrcmp(const ptr *p, const ptr *q);
-int   ptrmcmp(const ptr *p, const char *q, int lenq);
+int ptrcmp(const ptr *p, const ptr *q);
+int ptrmcmp(const ptr *p, const char *q, int lenq);
 
 /*
  * like strchr(), the functions below return modifiable pointers

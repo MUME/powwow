@@ -4,8 +4,8 @@
 #define _EDIT_H_
 
 typedef struct {
-  const char *name;
-  function_str funct;
+    const char *name;
+    function_str funct;
   const char *group;            /* for #bind functions: the group */
   const char *help;             /* and the description */
 } edit_function;
@@ -18,7 +18,7 @@ extern const edit_function internal_functions[];
  *     words[wordindex].prev is last (least interesting)
  *     words[wordindex].next is 2nd (first to search for completion)
  */
-#define WORD_UNIQUE	1		/* word is unique in list */
+#define WORD_UNIQUE     1               /* word is unique in list */
 typedef struct {
     char *word;
     int  next, prev;
@@ -35,8 +35,8 @@ extern int wordindex;
 /*         public function declarations         */
 void edit_bootstrap(void);
 
-int  lookup_edit_name(char *name, char **arg);
-int  lookup_edit_function(function_str funct);
+int lookup_edit_name(char *name, char **arg);
+int lookup_edit_function(function_str funct);
 void draw_prompt(void);
 void clear_input_line(bool deleteprompt);
 bool prompt_row_ended(void);

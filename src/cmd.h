@@ -8,7 +8,7 @@ typedef struct cmdstruct {
                                  * command name */
     const char *name;           /* command name */
     const char *help;           /* short help */
-    function_str funct;		/* function to call */
+    function_str funct;         /* function to call */
     struct cmdstruct *next;
 } cmdstruct;
 

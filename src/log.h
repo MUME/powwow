@@ -12,14 +12,14 @@ extern vtime movie_last;
 
 void log_clearsleep(void);
 void log_flush(void);
-int  log_getsize(void);
+int log_getsize(void);
 void log_resize(long newsize);
 void log_write(const char *str, int len, bool newline, enum charset cs);
 void log_record_line(const char *line);
 
-void  reprint_writeline(const char *line);
+void reprint_writeline(const char *line);
 char *reprint_getline(void);
-void  reprint_clear(void);
+void reprint_clear(void);
 
 #endif /* _LOG_H_ */
 

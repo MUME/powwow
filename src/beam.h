@@ -10,7 +10,8 @@ void mpi_identify(struct connsess *conn);
 void message_edit(struct connsess *conn, char *text, int msglen, bool view,
                   bool builtin);
 void sig_chld_bottomhalf(void);
-/* add the output fds of background editors to 'set'; return the new maximum fd */
+/* add the output fds of background editors to 'set'; return the new
+ * maximum fd */
 int edit_output_fds(fd_set *set, int max_fd);
 /* show the output of background editors ready in 'set'; return how many */
 int edit_read_output(const fd_set *set);

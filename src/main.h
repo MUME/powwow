@@ -33,17 +33,17 @@ ptr **text_var(int n);
 
 
 /* shared vars from main.c */
-extern int  prompt_status, line_status;
-extern int  limit_mem;
+extern int prompt_status, line_status;
+extern int limit_mem;
 extern volatile bool confirm;
-extern int  history_done;
-extern int  linemode;
+extern int history_done;
+extern int linemode;
 
 struct hostinfo {
     char name[BUFSIZE];
     int port;
     struct tls_options tlsopt;
-    bool utf8;			/* UTF-8, else ISO-8859-1 */
+    bool utf8;                  /* UTF-8, else ISO-8859-1 */
 };
 extern struct hostinfo hostinfo;
 /* the charset of connections without --utf8 or --latin1: UTF-8, unless
@@ -59,24 +59,24 @@ extern bool default_tls;
 
 extern char deffile[], helpfile[], copyfile[];
 
-extern int cols, lines, cols_1;	/* terminal window size */
-extern int olines;		/* previous terminal window size */
-extern int line0, col0;		/* origin of input line */
+extern int cols, lines, cols_1; /* terminal window size */
+extern int olines;              /* previous terminal window size */
+extern int line0, col0;         /* origin of input line */
 
-extern varnode *prompt;		/* $prompt is always set */
-extern ptr *marked_prompt;	/* $prompt with marks added */
+extern varnode *prompt;         /* $prompt is always set */
+extern ptr *marked_prompt;      /* $prompt with marks added */
 
 #define promptstr    (ptrdata(prompt->str))
 #define promptlen    (ptrlen(prompt->str))
 #define promptzero() (prompt_status = 0, ptrzero(prompt->str))
 
 extern int isprompt_len;        /* see main.c */
-extern char edbuf[];		/* input line buffer */
-extern int edlen;		/* characters in edbuf */
-extern int pos;			/* cursor position in edbuf */
-extern int edstart;		/* start of the editable text in edbuf */
-extern int edlabel;		/* length of a label at the start of edbuf */
-extern const bool *edlabels;	/* which bytes of edbuf are labels, or NULL */
+extern char edbuf[];            /* input line buffer */
+extern int edlen;               /* characters in edbuf */
+extern int pos;                 /* cursor position in edbuf */
+extern int edstart;             /* start of the editable text in edbuf */
+extern int edlabel;             /* length of a label at the start of edbuf */
+extern const bool *edlabels;    /* which bytes of edbuf are labels, or NULL */
 extern char edattrbeg[], edattrend[];
 extern bool edattrbg;
 
@@ -130,9 +130,9 @@ extern char *opt_editor, *opt_pager, *opt_shell;
 extern function_str last_edit_cmd;
 
 extern const char *delim_list[];
-extern int   delim_len[];
+extern int delim_len[];
 extern const char *const delim_name[];
-extern int   delim_mode;
+extern int delim_mode;
 
 /* Group delimiter for actions/aliases, defaults to @ */
 extern char *group_delim;

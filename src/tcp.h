@@ -8,40 +8,40 @@
 #include "defines.h"
 #include "charset.h"
 
-extern int tcp_max_fd;		/* highest used fd */
+extern int tcp_max_fd;          /* highest used fd */
 
-extern int tcp_count;		/* number of open connections */
-extern int tcp_attachcount;	/* number of spawned or attached commands */
+extern int tcp_count;           /* number of open connections */
+extern int tcp_attachcount;     /* number of spawned or attached commands */
 
-extern int conn_max_index;	/* 1 + highest used conn_list[] index */
+extern int conn_max_index;      /* 1 + highest used conn_list[] index */
 
 
 /* multiple connections control */
 
 /* state of telnet connection */
-#define NORMAL		0
-#define ALTNORMAL	1
-#define GOT_N		2
-#define GOT_R		3
-#define GOTIAC		4
-#define GOTWILL		5
-#define GOTWONT		6
-#define GOTDO		7
-#define GOTDONT		8
-#define GOTSB		9
+#define NORMAL          0
+#define ALTNORMAL       1
+#define GOT_N           2
+#define GOT_R           3
+#define GOTIAC          4
+#define GOTWILL         5
+#define GOTWONT         6
+#define GOTDO           7
+#define GOTDONT         8
+#define GOTSB           9
 #define GOTSBIAC       10
 
 /* telnet CHARSET option state (RFC 2066): */
-/* CS_WILL_SENT:   we sent WILL CHARSET			*/
-/* CS_DO_RCVD:     got DO CHARSET; we may send REQUEST	*/
-/* CS_SRV_WILL:    got WILL CHARSET; server may send REQUEST	*/
-/* CS_REQ_PENDING: our REQUEST awaits an answer		*/
-/* CS_REQ_SENT:    we sent a REQUEST on this connection	*/
-#define CS_WILL_SENT	 1
-#define CS_DO_RCVD	 2
-#define CS_SRV_WILL	 4
-#define CS_REQ_PENDING	 8
-#define CS_REQ_SENT	16
+/* CS_WILL_SENT:   we sent WILL CHARSET                 */
+/* CS_DO_RCVD:     got DO CHARSET; we may send REQUEST  */
+/* CS_SRV_WILL:    got WILL CHARSET; server may send REQUEST    */
+/* CS_REQ_PENDING: our REQUEST awaits an answer         */
+/* CS_REQ_SENT:    we sent a REQUEST on this connection */
+#define CS_WILL_SENT     1
+#define CS_DO_RCVD       2
+#define CS_SRV_WILL      4
+#define CS_REQ_PENDING   8
+#define CS_REQ_SENT     16
 
 struct io_fns {
     ssize_t (*read)(struct connsess *conn, void *buf, size_t count);
@@ -57,14 +57,14 @@ struct io_fns {
 #define MPI_HEAD_MAX (MPILEN + 12)
 
 typedef struct connsess {
-    char *id;			/* session id */
+    char *id;                   /* session id */
     unsigned generation;        /* changes when the connection closes */
-    char *host;			/* address of remote host */
+    char *host;                 /* address of remote host */
     int fd;
-    int port;			/* port number of remote host */
+    int port;                   /* port number of remote host */
     struct tls *tls;            /* NULL unless TLS in use */
     const struct io_fns *fns;
-    char *fragment;		/* for SPAWN connections: unprocessed text */
+    char *fragment;             /* for SPAWN connections: unprocessed text */
     bool active;                /* display what it sends */
     bool spawn;                 /* a command that #spawn runs, not a MUD */
     bool ideditor;              /* sent #request editor */
@@ -78,10 +78,10 @@ typedef struct connsess {
     bool midline;               /* the last read ended inside a line */
     bool ended;                 /* a read found the end, to report */
     int end_errno;              /* and its error, or 0 */
-    unsigned char cs_flags;	/* CHARSET option state */
-    bool prefer_utf8;		/* starts as and prefers UTF-8 */
-    enum charset charset;	/* current encoding of this link */
-    struct utf8_decoder u8dec;	/* partial sequence across reads */
+    unsigned char cs_flags;     /* CHARSET option state */
+    bool prefer_utf8;           /* starts as and prefers UTF-8 */
+    enum charset charset;       /* current encoding of this link */
+    struct utf8_decoder u8dec;  /* partial sequence across reads */
 } connsess;
 
 extern connsess conn_list[MAX_CONNECTS];     /* connection list */
@@ -97,7 +97,7 @@ extern fd_set fdset;               /* set of descriptors to select() on */
 #define TCP_READ_MIN 64
 /* tcp_read() stores up to about this many bytes per byte read */
 #define TCP_READ_EXPANSION 3
-int  tcp_read(connsess *conn, void *buffer, size_t maxsize);
+int tcp_read(connsess *conn, void *buffer, size_t maxsize);
 void tcp_raw_write(connsess *conn, const void *data, size_t len);
 void tcp_write_escape_iac(connsess *conn, const void *data, size_t len);
 void tcp_write_chars(connsess *conn, const char *data, size_t len);
@@ -114,7 +114,7 @@ void tcp_show(void);
 void tcp_close(const char *id);
 void tcp_togglesnoop(const char *id);
 void tcp_spawn(const char *id, char *cmd);
-int  tcp_unIAC(char *buffer, int len);
+int tcp_unIAC(char *buffer, int len);
 
 #endif /* _TCP_H_ */
 
