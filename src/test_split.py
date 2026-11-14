@@ -151,6 +151,7 @@ IAC, GA, EOR, NOP = b'\xff', b'\xf9', b'\xef', b'\xf1'
 DO, SB, SE = b'\xfd', b'\xfa', b'\xf0'
 TTYPE, NAWS = b'\x18', b'\x1f'
 EMOJI = '\N{GRINNING FACE}'.encode()            # 4 bytes
+WIDE = '\N{CJK UNIFIED IDEOGRAPH-65E5}'.encode()  # 2 columns
 ZWJ_SEQ = '\N{WOMAN}‍\N{PERSONAL COMPUTER}'.encode()
 HEART_PROMPT = 'HP:\N{BLACK HEART SUIT}'.encode()
 LONG = (b'This line is long enough to wrap at eighty columns, so the '
@@ -241,6 +242,28 @@ SCENARIOS = {
         scenario([b'dev ' + ZWJ_SEQ[:7], ['a'], ZWJ_SEQ[7:] + b' ok\r\n']),
     'UTF-8 split in a prompt':
         scenario([HEART_PROMPT[:4], ['a'], HEART_PROMPT[4:] + b'> ', ['b'],
+                  b'\r\nYou see.\r\n']),
+    # text that reaches the last column, or wraps
+    'line split at the last column':
+        scenario([LONG[:80], LONG[80:] + b'\r\n']),
+    'line split at the last column, typing':
+        scenario([LONG[:80], ['abc'], LONG[80:] + b'\r\n']),
+    'line split after the last column':
+        scenario([LONG[:81], LONG[81:] + b'\r\n']),
+    'prompt up to the last column, then output':
+        scenario([LONG[:80], ['abc'], b'\r\nYou see.\r\n']),
+    'prompt longer than a row, then output':
+        scenario([LONG[:81], ['abc'], b'\r\nYou see.\r\n']),
+    'prompt of two rows in a wider window, then output':
+        scenario([(LONG * 2)[:200], ['abc'], b'\r\nYou see.\r\n'],
+                 cols=100),
+    'prompt with a wide character in the last column':
+        scenario([b'x' * 78 + WIDE, ['abc'], b'\r\nYou see.\r\n']),
+    'prompt with a wide character that does not fit':
+        scenario([b'x' * 79 + WIDE, ['abc', LEFT, 'q'],
+                  b'\r\nYou see.\r\n']),
+    'wide character that does not fit, split inside it':
+        scenario([b'x' * 79 + WIDE[:1], ['a'], WIDE[1:], ['bc'],
                   b'\r\nYou see.\r\n']),
 }
 

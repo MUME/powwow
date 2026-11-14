@@ -752,6 +752,66 @@ bool tty_cell_fits(int col, const char *s, size_t n, int w)
 }
 
 /*
+ * write the prompt 's' from the start of a row, and return where the
+ * cursor is after it, as rows * cols_1 + column (see input_layout_end):
+ * the terminal starts a new row where a character, such as a wide one,
+ * does not fit; a row that the prompt fills up to the last column used
+ * by the input line is ended here, as the input line starts on the next
+ */
+int tty_put_prompt(const char *s)
+{
+    tty_puts(s);
+    int rows = 0, col = 0;
+    enum { NORM, ESCAPE, BRACKET } state = NORM;
+    const char *end = s + strlen(s);
+    while (s < end) {
+        uint32_t cp;
+        size_t n = utf8_cell_len(s, end - s);
+        utf8_get(s, n, &cp);
+        int w = utf8_cell_width(s, n);
+        s += n;
+        switch (state) {
+        case NORM:
+            if (cp == ASCII_ESC) {
+                state = ESCAPE;
+            } else if (cp == '\b') {
+                if (col > 0)
+                    --col;
+            } else if (cp == '\r') {
+                col = 0;
+            } else if (w > 0) {
+                if (col + w > cols) {
+                    ++rows;
+                    col = 0;
+                }
+                col += w;
+                /* without the wrap glitch, the last column wraps */
+                if (!wrapglitch && col == cols) {
+                    ++rows;
+                    col = 0;
+                }
+            }
+            break;
+
+        case ESCAPE:
+            state = (cp == '[') ? BRACKET : NORM;
+            break;
+
+        case BRACKET:
+            if (is_csi_final(cp))
+                state = NORM;
+            break;
+        }
+    }
+    if (col >= cols_1) {
+        tty_putc('\n');
+        ++rows;
+        col = 0;
+    }
+    return rows * cols_1 + col;
+}
+
+/*
  * screen position where the text before byte offset 'p' of the input
  * line ends; p <= 0 refers to the prompt
  */

@@ -38,6 +38,7 @@ enum { READLINE_KEYS_SAVEFILEVER = 9 };
 void tty_gotoxy(int col, int line);
 void tty_gotoxy_opt(int fromcol, int fromline, int tocol, int toline);
 bool tty_cell_fits(int col, const char *s, size_t n, int w);
+int tty_put_prompt(const char *s);
 
 void input_delete_nofollow_chars(int n);
 void input_insert_follow_chars(char *str, int n);
