@@ -713,7 +713,7 @@ Examples:
 ```
 
 `#rebindall` runs `#rebind` on most key bindings (skips trivial ones like
-`^A`, `^B`, etc.), asking you to press each corresponding key.
+`C-a`, `C-b`, etc.), asking you to press each corresponding key.
 
 `#rebindALL` does the same, but for really every key binding.
 
@@ -1010,7 +1010,7 @@ Example:
 Note that semicolons, escapes and braces need to be escaped if they
 are to be sent to the shell.
 If your shell has job control, you can also suspend powwow
-with `^Z` as usual.
+with `C-z` as usual.
 
 ### Put a string in the edit buffer automatically
 
@@ -1761,9 +1761,8 @@ Example:
 ```
 #exe ("sigh")       is the same as typing sigh from keyboard.
 
-#bind control_s=#exe ("#capture emergency" + %(@-7++))
-		(control_s must be a user defined key)
-		safe capture to file: each time you press control_s,
+#bind f9=#exe ("#capture emergency" + %(@-7++))
+		safe capture to file: each time you press f9,
 		a different file is opened as capture.
 
 #exe <mytext	read the file mytext and execute all the
@@ -2272,7 +2271,7 @@ Notes for IBM PC and compatibles with VGA or SVGA cards in text mode:
 
 Powwow keeps in memory the last 2048 lines you typed from keyboard.
 If you want to recall one of them (to correct a mistake for example)
-you just need to press your arrow-up key or control-p to scroll through
+you just need to press your arrow-up key or `C-p` to scroll through
 the whole history, one step at time (see "Command line editing" below
 in the text for details about editing keys).
 
@@ -2400,18 +2399,18 @@ For example, say you don't have `{` and `}` on you keyboard
 Obviously, typing `{` or `}` gets quite difficult. A solution is:
 
 ```
-#bind F11=&insert-string \173
-#bind F12=&insert-string \175
+#bind f11=&insert-string \173
+#bind f12=&insert-string \175
 ```
 
 where `\173` and `\175` are typed normally: a backslash and three digits.
-Once you defined these two bindings, hitting F11 will be exactly like
-typing `{` and hitting F12 will be exactly like typing `}` .
+Once you defined these two bindings, hitting f11 will be exactly like
+typing `{` and hitting f12 will be exactly like typing `}` .
 
 Another possible use is to enter strange characters or strings:
 
 ```
-#bind F10=&insert-string Ro\353ntgen
+#bind f10=&insert-string Ro\353ntgen
 ```
 
 does exactly what you expect: insert "Roëntgen" on the input line

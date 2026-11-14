@@ -483,9 +483,9 @@ keyboard. If < or ! is specified, #exe behaves exactly like #print, but
 executes the final text as if typed. Examples:
 
 #exe ("sigh")                   (is the same as typing sigh from keyboard)
-#bind control_s=#exe ("#capture emergency" + %(@-7++))
-                                (each time you press control_s, a different
-                                 file is opened as capture)
+#bind f9=#exe ("#capture emergency" + %(@-7++))
+                                (each time you press f9, a different file
+                                 is opened as capture)
 #exe <mytext                    (read the file mytext and execute it)
 @emulate
 #emulate [<|!]{<text>|(<expr>)}
@@ -873,7 +873,7 @@ Without a sequence, you are asked to press the key.
 #rebindALL
 
 #rebindall runs #rebind on most key bindings (skipping trivial ones like
-^A, ^B, etc.), asking you to press each key. #rebindALL does the same for
+C-a, C-b, etc.), asking you to press each key. #rebindALL does the same for
 really every key binding.
 @record
 #record [<filename>]
