@@ -111,6 +111,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  @1 to 0, and the same for the other unnamed variables.
 	* Fixed #action and #prompt reporting any error in a pattern given
 	  as an expression, such as `(1+)', as `string expected'.
+	* Fixed #(<expr>) without its closing parenthesis, such as `#(1',
+	  being run without an error.
 	* Fixed a #prompt with a group crashing powwow, or changing the group
 	  of the action with the same label.
 	* Fixed deleting a #prompt crashing powwow on some systems.

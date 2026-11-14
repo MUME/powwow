@@ -2316,13 +2316,13 @@ static void run_instruction(char *line, bool silent, bool subs,
             /* #(expression) */
             ++end;
             evaln(&end);
+            if (!REAL_ERROR && *end != ')')
+                error = MISSING_PAREN_ERROR;
             if (REAL_ERROR) {
                 print_error(error);
             } else {
                 /* such as a comment written after it */
-                if (*end == ')')
-                    ++end;
-                end = skipspace(end);
+                end = skipspace(end + 1);
                 if (*end != '\0')
                     wrap_printf("#warning: text after the expression"
                                 " ignored: \"%s\"", end);
