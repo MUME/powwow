@@ -38,7 +38,7 @@ is first searched for definition files and new files are
 created there rather than in the current directory, unless
 definition-file contains a slash ("/").
 
-The file `Config.demo` is a demonstrative definition file provided
+The file `demo.powwow` is a demonstrative definition file provided
 together with powwow to help you building your own configuration.
 Look at it: there are many useful examples and non-trivial code
 to fully use powwow.

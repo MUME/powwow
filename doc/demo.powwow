@@ -4,7 +4,7 @@
 #init ={#(@oldxp=0);mapend;#option +compact -info -echo}
 
 #("Connect to MUME")
-#host mume.pvv.org 4242
+#host mume.org 4242
 
 #("Some aliases to use labeled #actions")
 #alias ac=#action $0
