@@ -233,9 +233,9 @@
 #alias glc={get all.coins;get all.copper}
 #action >-greed is dead! R.I.P.={#print;gc}
 
-#alias ldh=#if (*($1)) lead $1.horse; #else lead horse
-#alias rdh=#if (*$(1)) ride $0.horse; #else ride horse
-#alias ldp=#if (*($1)) lead $1.pony; #else lead pony
+#alias ldh=#if (*$(1)) lead $1.horse; #else lead horse
+#alias rdh=#if (*$(1)) ride $1.horse; #else ride horse
+#alias ldp=#if (*$(1)) lead $1.pony; #else lead pony
 #alias rdp=#if (*$(1)) ride $1.pony; #else ride pony
 #alias ds=dismount
 #action >-Ct ^Clip-clop...the riding horse=
@@ -247,7 +247,7 @@
 
 #alias re=t Alsbreth $0
 #action >+reply ^$1 tells you '={#print;#alias re=t $1 \$0}
-#action >-xeval ^$1 tells you 'calc &2'={#print;#alias re=t $1 \$0;if (\$2?";" || \$2?"$" || \$2?"@") {tell $1 *grin*;#()}; #else #send ("t $1 "+%($2))}
+#action >-xeval ^$1 tells you 'calc &2'={#print;#alias re=t $1 \$0;#if (\$2?";" || \$2?"$" || \$2?"@") {tell $1 *grin*}; #else #send ("t $1 "+%($2))}
 
 #alias rep={+ report;score}
 #action >-report $1 hit, $2 mana and $3 moves.={#print;, has $1 hit, $2 mana and $3 moves.;- report}
@@ -293,7 +293,7 @@
 #alias macintosh={#bind ~home ^[OH=eq;#bind ~~home ^[O@=eq;#bind ~F01 ^[OP=#key F01;#bind ~F02 ^[OQ=ww;#bind ~F03 ^[OR=wq;#bind ~F04 ^[OS=examine;#bind ~F05 ^[m=now;#bind ~+ ^[Ok=open patch;#bind ~~F05 ^[[16~=now}
 
 
-#alias listadd=#for (\@0=1; *$$1:\@0 && $$1:\@0!=*13; \@0++) #exe ("#mark "+$$1:\\@0+"="+$$2)}
+#alias listadd=#for (\@0=1; *$$1:\@0 && $$1:\@0!=*13; \@0++) #exe ("#mark "+$$1:\\@0+"="+$$2)
 #alias listclear={#for (\@0=1; *$$1:\@0 && $$1:\@0!=*13; \@0++) #exe ("#mark "+$$1:\\@0+"=");#($$1="")}
 #alias elb={listclear Elbereth;#ac +elbereth;t elbereth list}
 #alias elblist=#print ("Elf Enemies: "+$Elbereth)
@@ -348,54 +348,26 @@
 #bind A-left ^[[160q=&begin-of-line
 #bind A-return ^[[100q=&to-history
 #bind A-right ^[[169q=&end-of-line
-#bind M-B ^[b=&prev-word
-#bind M-D ^[d=&del-word-right
-#bind M-F ^[f=&next-word
-#bind M-backsp ^[=&del-word-left
-#bind M-bs ^[^H=&del-word-left
-#bind M-tab ^[^I=&complete-line
 #bind ^2 ^[[186q={s;hide}
 #bind ^3 ^[[194q={d;hide}
 #bind ^4 ^[[174q={w;hide}
 #bind ^6 ^[[192q={e;hide}
 #bind ^8 ^[[182q={n;hide}
 #bind ^9 ^[[190q={u;hide}
-#bind ^A ^A=&begin-of-line
-#bind ^B ^B=&prev-char
-#bind ^D ^D=&del-char-right
-#bind ^E ^E=&end-of-line
-#bind ^F ^F=&next-char
-#bind ^K ^K=&kill-to-eol
-#bind ^L ^L=&redraw-line
-#bind ^N ^N=&next-line
-#bind ^P ^P=&prev-line
 #bind ^Q ^Q=&clear-line
-#bind ^S ^S=#capture
-#bind ^T ^T=&transpose
+#bind C-s ^S=#capture
 #bind ^V ^V=#stop
-#bind ^W ^W=&to-history
-#bind ^X ^X=#exe ("#capture emergency"+%@emergency++)
-#bind ^Z ^Z=&suspend
 #bind ^bs ^[[085q=&del-word-left
 #bind ^del ^[[142q=&del-word-right
 #bind ^left ^[[159q=&prev-word
 #bind ^right ^[[168q=&next-word
 #bind ^tab ^[[072q=&complete-line
-#bind backsp =&del-char-left
-#bind bs ^H=&del-char-left
-#bind del ^[[3~=jo
-#bind down ^[OB=&next-line
+#bind Delete ^[[3~=jo
 #bind end ^[[4~=jt
 #bind enter ^[OM=flee
 #bind home ^[[1~=stat
 #bind ins ^[[2~=time
-#bind left ^[OD=&prev-char
-#bind lf ^J=&enter-line
 #bind pgdwn ^[[6~=jh
 #bind pgup ^[[5~=score
-#bind return ^M=&enter-line
-#bind right ^[OC=&next-char
-#bind tab ^I=&complete-word
-#bind up ^[OA=&prev-line
 #bind ~^Q ^[~q=&clear-line
 #bind ~^S ^[~s=#capture
