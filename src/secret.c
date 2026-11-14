@@ -173,9 +173,9 @@ int secret_find(const char *s, size_t len)
 
 bool secret_in(const char *line)
 {
-    if (nsecrets == 0)
-        return false;
     size_t line_len = strlen(line);
+    if (nsecrets == 0 || line_len < SECRET_MIN_LEN)
+        return false;
     for (int i = 0; i < nsecrets; ++i) {
         const struct secret *sec = &secrets[i];
         for (size_t start = 0; start + sec->len <= line_len; ++start) {
