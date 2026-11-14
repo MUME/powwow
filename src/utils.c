@@ -1632,7 +1632,7 @@ int read_settings(void)
         if (*cmd == '\0')
             continue;
 
-        error = 0;
+        error = NO_ERROR;
         char *p = first_regular(cmd, ' ');
         if (*p != '\0') {
             *p = '\0';
@@ -1649,14 +1649,14 @@ int read_settings(void)
             default_tls = false;
         parse_user_input(cmd, true);
         default_tls = saved_default_tls;
-        if (error != 0) {
+        if (error != NO_ERROR) {
             wrap_printf("#error: loading save-file failed");
             break;
         }
     }
 
     int failed = 1;
-    if (error != 0) {
+    if (error != NO_ERROR) {
         failed = -1;
     } else if (ferror(f) && !feof(f)) {
         wrap_printf("#error: cannot read file \"%s\": %s", deffile,
@@ -1707,7 +1707,7 @@ int save_settings(void)
         message_printf("#will not save after an error!\n");
         return -1;
     }
-    error = 0;
+    error = NO_ERROR;
 
     if (*deffile == '\0') {
         wrap_printf("#warning: no save-file defined");
@@ -1947,7 +1947,7 @@ int save_settings(void)
 
     fclose(f);
 
-    if (error != 0) {
+    if (error != NO_ERROR) {
         print_error(error);
     } else if (failed <= 0) {
         fail_msg();

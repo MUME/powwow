@@ -872,7 +872,7 @@ static void cmd_do(char *arg)
     }
 
     if (result >= 0)
-        while (error == 0 && result-- != 0)
+        while (error == NO_ERROR && result-- != 0)
             parse_instruction(arg, true, false, true);
     else {
         message_printf("#do: bogus repeat count \"%ld\"\n", result);
@@ -1430,7 +1430,7 @@ static void cmd_rebindall(char *arg)
             ;
         else {
             parse_rebind(kp->name);
-            if (error != 0)
+            if (error != NO_ERROR)
                 break;
         }
     }
@@ -1440,7 +1440,7 @@ static void cmd_rebindALL(char *arg)
 {
     for (keynode *kp = keydefs; kp != NULL; kp = kp->next) {
         parse_rebind(kp->name);
-        if (error != 0)
+        if (error != NO_ERROR)
             break;
     }
 }
@@ -1620,7 +1620,7 @@ static void cmd_emulate(char *arg)
         }
         status(-1); /* we're pretending we got something from the MUD */
         long i = 1;
-        while (error == 0 && (start == 0 || i <= end)
+        while (error == NO_ERROR && (start == 0 || i <= end)
                && utf8_fgets(buf, BUFSIZE, fp) != NULL)
             if (start == 0 || i++ >= start)
                 process_remote_input(buf, strlen(buf));
@@ -1680,7 +1680,7 @@ static void cmd_exe(char *arg)
         /* We may go in to a loop if a single function is more than 4k, but
          * if that's the case then maybe you should break it down a little
          * bit :p */
-        while (error == 0 && (start == 0 || i <= end)
+        while (error == NO_ERROR && (start == 0 || i <= end)
                && utf8_fgets(buf + offset, BUFSIZE - offset, fp) != NULL)
             /* If it ends with \\\n then it's a line continuation, so clear
              * the \\\n and do another fgets */
@@ -1730,7 +1730,7 @@ static void cmd_print(char *arg)
             return;
         }
         long i = 1;
-        while (error == 0 && (start == 0 || i <= end)
+        while (error == NO_ERROR && (start == 0 || i <= end)
                && utf8_fgets(buf, BUFSIZE, fp) != NULL)
             if (start == 0 || i++ >= start)
                 tty_puts(buf);
@@ -1762,7 +1762,7 @@ static void cmd_send(char *arg)
             return;
         }
         long i = 1;
-        while (error == 0 && (start == 0 || i <= end)
+        while (error == NO_ERROR && (start == 0 || i <= end)
                && utf8_fgets(buf, BUFSIZE, fp) != NULL) {
             char *newline = strchr(buf, '\n');
             if (newline != NULL)
@@ -2130,7 +2130,8 @@ static void cmd_var(char *arg)
          * which would never end */
         int len = 0;
         long i = 1;
-        while (error == 0 && (start == 0 || i <= end) && len < BUFSIZE - 1
+        while (error == NO_ERROR && (start == 0 || i <= end)
+               && len < BUFSIZE - 1
                && utf8_fgets(buf2 + len, BUFSIZE - len, fp) != NULL)
             if (start == 0 || i++ >= start)
                 len += strlen(buf2 + len);
@@ -2317,10 +2318,10 @@ static void cmd_for(char *arg)
         message_printf("#for: ");
         error = MISSING_SEPARATOR_ERROR;
         print_error(error);
-    } else while (error == 0 && loop != 0
+    } else while (error == NO_ERROR && loop != 0
                 && (increm = check,
                     ((type = evall(&buf, &increm)) == TYPE_NUM
-                     && error == 0 && *increm == CMDSEP && buf != 0))) {
+                     && error == NO_ERROR && *increm == CMDSEP && buf != 0))) {
 
         char *tmp = first_regular(increm + 1, ')');
         if (*tmp != '\0')
@@ -2331,7 +2332,7 @@ static void cmd_for(char *arg)
             print_error(error);
         }
 
-        if (error == 0) {
+        if (error == NO_ERROR) {
             tmp = increm + 1;
             if (*tmp != ')')
                 evaln(&tmp);
@@ -2369,10 +2370,10 @@ static void cmd_while(char *arg)
     char *check = ++arg;   /* skip the '(' */
     int type = TYPE_NUM, loop = MAX_LOOP;
     long buf;
-    while (error == 0 && loop != 0
+    while (error == NO_ERROR && loop != 0
            && (arg = check,
                ((type = evall(&buf, &arg)) == TYPE_NUM
-                && error == 0 && *arg == ')' && buf != 0))) {
+                && error == NO_ERROR && *arg == ')' && buf != 0))) {
 
         char *tmp = arg + 1;
         if (*tmp == ' ')          /* skip the ')' */

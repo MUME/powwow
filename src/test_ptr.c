@@ -19,7 +19,7 @@
 #include "utils.h"
 
 /* needed by ptr.c */
-int error;
+enum eval_error error;
 int limit_mem;
 
 void *xmalloc(size_t size)
@@ -147,30 +147,30 @@ static void test_overflow(void)
 {
     ptr *p = ptrmcpy(NULL, "abc", 3);
 
-    error = 0;
+    error = NO_ERROR;
     check("ptrnew(INT_MAX)",
           ptrnew(INT_MAX) == NULL && error == MEM_LIMIT_ERROR);
 
-    error = 0;
+    error = NO_ERROR;
     check("ptrdup2(p, INT_MAX)",
           ptrdup2(p, INT_MAX) == NULL && error == MEM_LIMIT_ERROR);
 
-    error = 0;
+    error = NO_ERROR;
     p = ptrmcpy(p, "x", INT_MAX);
     check("ptrmcpy(INT_MAX)",
           error == MEM_LIMIT_ERROR && has_contents(p, "abc"));
 
-    error = 0;
+    error = NO_ERROR;
     p = ptrmcat(p, "x", INT_MAX - 1);
     check("ptrmcat(INT_MAX - 1)",
           error == MEM_LIMIT_ERROR && has_contents(p, "abc"));
 
-    error = 0;
+    error = NO_ERROR;
     p = ptrpad(p, INT_MAX);
     check("ptrpad(INT_MAX)",
           error == MEM_LIMIT_ERROR && has_contents(p, "abc"));
 
-    error = 0;
+    error = NO_ERROR;
     ptrdel(&p);
 }
 
@@ -180,27 +180,27 @@ static void test_limit(void)
     limit_mem = 200;
     ptr *p = ptrmcpy(NULL, "abc", 3);
 
-    error = 0;
+    error = NO_ERROR;
     check("ptrnew() over the limit",
           ptrnew(201) == NULL && error == MEM_LIMIT_ERROR);
 
-    error = 0;
+    error = NO_ERROR;
     char text[201];
     memset(text, 'x', sizeof text);
     p = ptrmcat(p, text, 198);
     check("ptrmcat() over the limit",
           error == MEM_LIMIT_ERROR && has_contents(p, "abc"));
 
-    error = 0;
+    error = NO_ERROR;
     p = ptrmcpy(p, text, 201);
     check("ptrmcpy() over the limit",
           error == MEM_LIMIT_ERROR && has_contents(p, "abc"));
 
-    error = 0;
+    error = NO_ERROR;
     p = ptrmcpy(p, text, 200);
-    check("ptrmcpy() up to the limit", error == 0 && ptrlen(p) == 200);
+    check("ptrmcpy() up to the limit", error == NO_ERROR && ptrlen(p) == 200);
 
-    error = 0;
+    error = NO_ERROR;
     limit_mem = 0;
     ptrdel(&p);
 }

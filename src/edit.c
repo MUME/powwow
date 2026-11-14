@@ -241,8 +241,8 @@ static bool word_at(int p)
 void draw_prompt(void)
 {
     if (promptlen != 0 && prompt_status == 1) {
-        int e = error;
-        error = 0;
+        enum eval_error e = error;
+        error = NO_ERROR;
         marked_prompt = ptraddsubst_and_marks(marked_prompt, prompt->str);
         if (MEM_ERROR) {
             promptzero();
@@ -1750,7 +1750,7 @@ void enter_line(char *dummy)
     log_record_line(edbuf);
 
     col0 = 0;
-    error = 0;
+    error = NO_ERROR;
     pos = 0;
     line_status = 0;
 
@@ -3226,7 +3226,7 @@ void key_run_command(char *cmd)
     }
 
     status(1);
-    error = 0;
+    error = NO_ERROR;
 
     log_record_line(edbuf);
 

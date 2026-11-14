@@ -234,7 +234,7 @@ static const operator_list op_list[] = {
 static stack stk;
 static char *line;
 static int depth;
-int error;
+enum eval_error error;
 
 /* return a uniformly distributed random number from 0 to n - 1 */
 static long random_below(long n)
@@ -255,10 +255,10 @@ static long random_below(long n)
     return (long)(r % un);
 }
 
-void print_error(int err_num)
+void print_error(enum eval_error err)
 {
     clear_input_line(true);
-    tty_message("#error: %s.\n", error_msg[err_num]);
+    tty_message("#error: %s.\n", error_msg[err]);
 }
 
 static bool push_op(operator *op)
@@ -1221,7 +1221,7 @@ static bool exe_op(operator *op)
         else
             error = SYNTAX_ERROR;
 
-        if (error != 0)
+        if (error != NO_ERROR)
             break;
         char *found = ptrfind(src, dst);
         int i = 0;
@@ -1566,19 +1566,19 @@ static bool _eval(int mindepth)
 
         while (check_operator(LEFT, &op, mindepth) && push_op(&op)
                && !endreached) {
-            if (error != 0)
+            if (error != NO_ERROR)
                 return false;
             while (*line == ' ')
                 ++line;
             if (*line == '\0' || *line == CMDSEP)
                 endreached = true;
         }
-        if (error != 0)
+        if (error != NO_ERROR)
             return false;
 
         if (!endreached && check_object(&obj) && !push_obj(&obj))
             check_delete(&obj);
-        if (error != 0)
+        if (error != NO_ERROR)
             return false;
 
         while (*line == ' ')
@@ -1588,14 +1588,14 @@ static bool _eval(int mindepth)
 
         while (check_operator(RIGHT, &op, mindepth) && compare_and_unload(&op)
                && exe_op(&op) && depth >= mindepth && !endreached) {
-            if (error != 0)
+            if (error != NO_ERROR)
                 return false;
             while (*line == ' ')
                 ++line;
             if (*line == '\0' || *line == CMDSEP)
                 endreached = true;
         }
-        if (error != 0)
+        if (error != NO_ERROR)
             return false;
 
         if (endreached || depth < mindepth)
@@ -1603,7 +1603,7 @@ static bool _eval(int mindepth)
 
         if (!(check_operator(BINARY, &op, mindepth) && compare_and_unload(&op)
               && push_op(&op))
-            && error != 0)
+            && error != NO_ERROR)
             return false;
     }
     return true;
@@ -1619,7 +1619,7 @@ int eval_any(long *lres, ptr **pres, char **what)
     else
         printmode = PRINT_NOTHING;
 
-    error = 0;
+    error = NO_ERROR;
     stk.curr_obj = -1;
     stk.curr_op = -1;
     line = *what;
@@ -1628,13 +1628,13 @@ int eval_any(long *lres, ptr **pres, char **what)
     _eval(0);
 
     /* an empty expression, such as in "#(" */
-    if (error == 0 && stk.curr_obj < 0)
+    if (error == NO_ERROR && stk.curr_obj < 0)
         error = NO_VALUE_ERROR;
     object res = { 0 };
-    if (error == 0)
+    if (error == NO_ERROR)
         pop_obj(&res);
     bool handed_over = false;   /* res.txt is now *pres */
-    if (error != 0) {
+    if (error != NO_ERROR) {
         if (opt_debug)
             message_printf("#result not available\n");
     } else if (printmode != PRINT_NOTHING || opt_debug) {
@@ -1652,7 +1652,7 @@ int eval_any(long *lres, ptr **pres, char **what)
             }
 
             if (opt_debug) {
-                if (error != 0)
+                if (error != NO_ERROR)
                     message_printf("#result not available\n");
                 else
                     message_printf("#result: %ld\n", val);
@@ -1673,7 +1673,7 @@ int eval_any(long *lres, ptr **pres, char **what)
                 }
             }
             if (opt_debug) {
-                if (error != 0)
+                if (error != NO_ERROR)
                     message_printf("#result not available\n");
                 else if (txt != NULL && *ptrdata(txt) != '\0')
                     message_printf("#result: %s\n", ptrdata(txt));
@@ -1684,7 +1684,7 @@ int eval_any(long *lres, ptr **pres, char **what)
     }
     *what = line;
 
-    if (error == 0) {
+    if (error == NO_ERROR) {
         if (!handed_over)
             check_delete(&res);
     } else {
