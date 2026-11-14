@@ -244,7 +244,7 @@ void draw_prompt(void)
         enum eval_error e = error;
         error = NO_ERROR;
         marked_prompt = ptraddsubst_and_marks(marked_prompt, prompt->str);
-        if (MEM_ERROR) {
+        if (mem_error()) {
             promptzero();
             print_error(error);
             error = e;

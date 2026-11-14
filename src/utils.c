@@ -588,7 +588,7 @@ ptr *ptrmescape(ptr *dst, const char *src, int srclen, bool append)
     int len = dst != NULL && append ? ptrlen(dst) : 0;
 
     dst = ptrsetlen(dst, len + srclen * 4); /* worst case */
-    if (MEM_ERROR)
+    if (mem_error())
         return dst;
 
     dst->len = len;
@@ -848,29 +848,29 @@ static ptr *ptrmaddmarks(ptr *dst, const char *line, int len)
             assert(mfirst->b.start != NULL);
             int matchlen = mfirst->b.start - line;
             dst = ptrmcat(dst, line, matchlen);
-            if (MEM_ERROR)
+            if (mem_error())
                 break;
             line += matchlen;
             len -= matchlen;
 
             dst = ptrmcat(dst, begin, strlen(begin));
-            if (MEM_ERROR)
+            if (mem_error())
                 break;
 
             matchlen = mfirst->b.end - mfirst->b.start;
             dst = ptrmcat(dst, line, matchlen);
-            if (MEM_ERROR)
+            if (mem_error())
                 break;
             line += matchlen;
             len -= matchlen;
 
             dst = ptrmcat(dst, end, strlen(end));
-            if (MEM_ERROR)
+            if (mem_error())
                 break;
         }
     } while (mfirst != NULL);
 
-    if (!MEM_ERROR)
+    if (!mem_error())
         dst = ptrmcat(dst, line, len);
 
     return dst;
@@ -915,20 +915,20 @@ static ptr *ptrmaddsubst(ptr *dst, const char *line, int len)
         assert(sfirst->b.start != NULL);
         int matchlen = sfirst->b.start - line;
         dst = ptrmcat(dst, line, matchlen);
-        if (MEM_ERROR)
+        if (mem_error())
             break;
         line += matchlen;
         len -= matchlen;
 
         dst = ptrmcat(dst, sfirst->replacement, strlen(sfirst->replacement));
-        if (MEM_ERROR)
+        if (mem_error())
             break;
         matchlen = sfirst->b.end - sfirst->b.start;
         line += matchlen;
         len -= matchlen;
     }
 
-    if (!MEM_ERROR)
+    if (!mem_error())
         dst = ptrmcat(dst, line, len);
 
     return dst;
@@ -946,7 +946,7 @@ ptr *ptrmaddsubst_and_marks(ptr *dst, const char *line, int len)
 
     static ptr *ptrbuf = NULL;
     ptrbuf = ptrmaddsubst(ptrbuf, line, len);
-    if (MEM_ERROR || ptrbuf == NULL) {
+    if (mem_error() || ptrbuf == NULL) {
         ptrzero(dst);
         return dst;
     }
@@ -964,14 +964,14 @@ ptr *ptrsubstdef(ptr *dst, bool mbeg, char *pattern, char *replacement)
         dst = ptrmcpy(dst, "\\", 1);
     else
         ptrzero(dst);
-    if (MEM_ERROR)
+    if (mem_error())
         return dst;
 
     dst = ptrmescape(dst, pattern, strlen(pattern), true);
-    if (MEM_ERROR)
+    if (mem_error())
         return dst;
     dst = ptrmcat(dst, "=", 1);
-    if (MEM_ERROR)
+    if (mem_error())
         return dst;
     return ptrmescape(dst, replacement, strlen(replacement), true);
 }
@@ -1156,11 +1156,11 @@ void smart_print(const char *line, bool newline)
     do {
         if (ptrbuf == NULL) {
             ptrbuf = ptrnew(PARAMLEN);
-            if (MEM_ERROR)
+            if (mem_error())
                 break;
         }
         ptrbuf = ptrmaddsubst_and_marks(ptrbuf, line, strlen(line));
-        if (MEM_ERROR || ptrbuf == NULL)
+        if (mem_error() || ptrbuf == NULL)
             break;
 
         char *buf = ptrdata(ptrbuf);
@@ -1177,7 +1177,7 @@ void smart_print(const char *line, bool newline)
         }
     } while (false);
 
-    if (MEM_ERROR) {
+    if (mem_error()) {
         print_error(error);
     } else if (newline) {
         col0 = 0;
@@ -1528,7 +1528,7 @@ int read_settings(void)
     }
 
     ptr *ptrbuf = ptrnew(PARAMLEN);
-    if (MEM_ERROR) {
+    if (mem_error()) {
         print_error(error);
         fclose(f);
         return 0;
@@ -1600,7 +1600,7 @@ int read_settings(void)
             }
             /* no newline yet. increase line size and try again */
             ptrbuf = ptrpad(ptrbuf, ptrlen(ptrbuf) >> 1);
-            if (MEM_ERROR) {
+            if (mem_error()) {
                 limit_mem_hit = true;
                 print_error(error);
                 break;
@@ -1703,7 +1703,7 @@ static void fail_msg(void)
  */
 int save_settings(void)
 {
-    if (REAL_ERROR) {
+    if (real_error()) {
         message_printf("#will not save after an error!\n");
         return -1;
     }
@@ -1734,7 +1734,7 @@ int save_settings(void)
 
     int failed = 1;
     ptr *pp = ptrnew(PARAMLEN);
-    if (MEM_ERROR)
+    if (mem_error())
         failed = -1;
 
     if (failed > 0)
@@ -1748,7 +1748,7 @@ int save_settings(void)
     if (failed > 0) {
         if (delim_mode == DELIM_CUSTOM) {
             pp = ptrmescape(pp, DELIM, strlen(DELIM), false);
-            if (MEM_ERROR)
+            if (mem_error())
                 failed = -1;
         }
         if (failed > 0) {
@@ -1792,7 +1792,7 @@ int save_settings(void)
     for (aliasnode *alp = sortedaliases; alp != NULL && failed > 0;
          alp = alp->snext) {
         pp = ptrmescape(pp, alp->name, strlen(alp->name), false);
-        if (MEM_ERROR) {
+        if (mem_error()) {
             failed = -1;
             break;
         }
@@ -1821,7 +1821,7 @@ int save_settings(void)
 
     for (marknode *mp = markers; mp != NULL && failed > 0; mp = mp->next) {
         pp = ptrmescape(pp, mp->b.pattern, strlen(mp->b.pattern), false);
-        if (MEM_ERROR) {
+        if (mem_error()) {
             failed = -1;
             break;
         }
@@ -1832,7 +1832,7 @@ int save_settings(void)
     for (substnode *sp = substitutions; sp != NULL && failed > 0;
          sp = sp->next) {
         pp = ptrsubstdef(pp, sp->b.mbeg, sp->b.pattern, sp->replacement);
-        if (MEM_ERROR) {
+        if (mem_error()) {
             failed = -1;
             break;
         }
@@ -1854,7 +1854,7 @@ int save_settings(void)
     for (int n = -GLOBAL_VAR_COUNT; n < 0 && failed > 0; ++n) {
         if (*text_var(n) != NULL && ptrlen(*text_var(n)) != 0) {
             pp = ptrescape(pp, *text_var(n), false);
-            if (MEM_ERROR) {
+            if (mem_error()) {
                 failed = -1;
                 break;
             }
@@ -1879,7 +1879,7 @@ int save_settings(void)
         if (!is_permanent_variable(vp) && vp->str != NULL
             && ptrlen(vp->str) != 0) {
             pp = ptrescape(pp, vp->str, false);
-            if (MEM_ERROR) {
+            if (mem_error()) {
                 failed = -1;
                 break;
             }
@@ -1892,7 +1892,7 @@ int save_settings(void)
         while (failed > 0 && l != curline) {
             if (hist[l] != NULL && *hist[l] != '\0') {
                 pp = ptrmescape(pp, hist[l], strlen(hist[l]), false);
-                if (MEM_ERROR) {
+                if (mem_error()) {
                     failed = -1;
                     break;
                 }

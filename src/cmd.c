@@ -852,7 +852,7 @@ static void cmd_do(char *arg)
 
     long result;
     int type = evall(&result, &arg);
-    if (REAL_ERROR) return;
+    if (real_error()) return;
 
     if (type != TYPE_NUM) {
         message_printf("#do: ");
@@ -939,9 +939,9 @@ static void cmd_history(char *arg)
         ++arg;
         long buf;
         num = evall(&buf, &arg);
-        if (!REAL_ERROR && num != TYPE_NUM)
+        if (!real_error() && num != TYPE_NUM)
             error = NO_NUM_VALUE_ERROR;
-        if (REAL_ERROR) {
+        if (real_error()) {
             message_printf("#history: ");
             error = NO_NUM_VALUE_ERROR;
             print_error(error);
@@ -1099,13 +1099,13 @@ static void cmd_in(char *arg)
 
     long buf;
     int type = evall(&buf, &arg);
-    if (!REAL_ERROR) {
+    if (!real_error()) {
         if (type != TYPE_NUM)
             error = NO_NUM_VALUE_ERROR;
         else if (*arg != ')')
             error = MISSING_PAREN_ERROR;
     }
-    if (REAL_ERROR) {
+    if (real_error()) {
         message_printf("#in: ");
         print_error(error);
         return;
@@ -1168,7 +1168,7 @@ static void cmd_at(char *arg)
 
     ptr *pbuf = NULL;
     evalp(&pbuf, &arg);
-    if (REAL_ERROR) {
+    if (real_error()) {
         print_error(error);
         ptrdel(&pbuf);
         return;
@@ -1270,13 +1270,13 @@ static void cmd_isprompt(char *arg)
             ++arg;
             long l;
             i = evall(&l, &arg);
-            if (!REAL_ERROR) {
+            if (!real_error()) {
                 if (i != TYPE_NUM)
                   error = NO_NUM_VALUE_ERROR;
                 else if (*arg != ')')
                   error = MISSING_PAREN_ERROR;
             }
-            if (REAL_ERROR) {
+            if (real_error()) {
                 message_printf("#isprompt: ");
                 print_error(error);
                 return;
@@ -1369,11 +1369,11 @@ static void cmd_nice(char *arg)
     } else if (*arg++ == '(') {
         long buf;
         int type = evall(&buf, &arg);
-        if (!REAL_ERROR && type != TYPE_NUM)
+        if (!real_error() && type != TYPE_NUM)
             error = NO_NUM_VALUE_ERROR;
-        else if (!REAL_ERROR && *arg++ != ')')
+        else if (!real_error() && *arg++ != ')')
             error = MISSING_PAREN_ERROR;
-        if (REAL_ERROR) {
+        if (real_error()) {
             message_printf("#nice: ");
             print_error(error);
             return;
@@ -1604,7 +1604,7 @@ static void cmd_emulate(char *arg)
     ptr *pbuf = NULL;
 
     arg = redirect(arg, &pbuf, &kind, "emulate", false, &start, &end);
-    if (REAL_ERROR || arg == NULL)
+    if (real_error() || arg == NULL)
         return;
 
     if (kind != 0) {
@@ -1662,7 +1662,7 @@ static void cmd_exe(char *arg)
     ptr *pbuf = NULL;
 
     arg = redirect(arg, &pbuf, &kind, "exe", false, &start, &end);
-    if (REAL_ERROR || arg == NULL)
+    if (real_error() || arg == NULL)
         return;
 
     if (kind != 0) {
@@ -1717,7 +1717,7 @@ static void cmd_print(char *arg)
     long start, end;
     ptr *pbuf = NULL;
     arg = redirect(arg, &pbuf, &kind, "print", true, &start, &end);
-    if (REAL_ERROR || arg == NULL)
+    if (real_error() || arg == NULL)
         return;
 
     if (kind != 0) {
@@ -1749,7 +1749,7 @@ static void cmd_send(char *arg)
     ptr *pbuf = NULL;
 
     arg = redirect(arg, &pbuf, &kind, "send", false, &start, &end);
-    if (REAL_ERROR ||arg == NULL)
+    if (real_error() ||arg == NULL)
         return;
 
     if (kind != 0) {
@@ -1795,7 +1795,7 @@ static void cmd_rawsend(char *arg)
         raw_escapes = true;
         evalp(&pbuf, &arg);
         raw_escapes = false;
-        if (REAL_ERROR) {
+        if (real_error()) {
             print_error(error);
             ptrdel(&pbuf);
         } else if (pbuf != NULL)
@@ -1817,7 +1817,7 @@ static void cmd_rawprint(char *arg)
         raw_escapes = true;
         evalp(&pbuf, &arg);
         raw_escapes = false;
-        if (REAL_ERROR) {
+        if (real_error()) {
             print_error(error);
             ptrdel(&pbuf);
         } else if (pbuf != NULL)
@@ -1844,15 +1844,15 @@ static void cmd_write(char *arg)
     if (*tmp == '(') {
         arg = tmp + 1;
         evalp(&p1, &arg);
-        if (REAL_ERROR)
+        if (real_error())
             goto write_cleanup;
 
         if (*arg == CMDSEP) {
             ++arg;
             evalp(&p2, &arg);
-            if (!REAL_ERROR && p2 == NULL)
+            if (!real_error() && p2 == NULL)
                 error = NO_STRING_ERROR;
-            if (REAL_ERROR)
+            if (real_error())
                 goto write_cleanup;
         } else {
             message_printf("#write: ");
@@ -1883,7 +1883,7 @@ static void cmd_write(char *arg)
     }
 
  write_cleanup:
-    if (REAL_ERROR)
+    if (real_error())
         print_error(error);
  write_cleanup2:
     ptrdel(&p1);
@@ -1960,7 +1960,7 @@ static void cmd_var(char *arg)
              * as text, is the name or the number of the variable */
             arg = tmp + 1;
             idx = evalp(&pbuf, &arg);
-            if (REAL_ERROR) {
+            if (real_error()) {
                 message_printf("#var: ");
                 print_error(error);
                 ptrdel(&pbuf);
@@ -2025,9 +2025,9 @@ static void cmd_var(char *arg)
             long buf2;
 
             idx = evall(&buf2, &arg);
-            if (!REAL_ERROR && idx != TYPE_NUM)
+            if (!real_error() && idx != TYPE_NUM)
                 error = NO_STRING_ERROR;
-            if (REAL_ERROR) {
+            if (real_error()) {
                 message_printf("#var: ");
                 print_error(error);
                 return;
@@ -2047,7 +2047,7 @@ static void cmd_var(char *arg)
 
     if (kind == VAR_TEXT && right && *var_text == NULL) {
         *var_text = ptrnew(PARAMLEN);
-        if (MEM_ERROR) {
+        if (mem_error()) {
             print_error(error);
             ptrdel(&pbuf);
             return;
@@ -2083,7 +2083,7 @@ static void cmd_var(char *arg)
         if (named_var != NULL) {
             if (kind == VAR_TEXT) {
                 pbuf = ptrescape(pbuf, *var_text, false);
-                if (REAL_ERROR) {
+                if (real_error()) {
                     print_error(error);
                     ptrdel(&pbuf);
                     return;
@@ -2114,7 +2114,7 @@ static void cmd_var(char *arg)
     char from;
     long start, end;
     arg = redirect(expr, &pbuf, &from, "var", true, &start, &end);
-    if (REAL_ERROR || arg == NULL)
+    if (real_error() || arg == NULL)
         return;
 
     if (from != 0) {
@@ -2162,7 +2162,7 @@ static void cmd_var(char *arg)
         }
     } else {
         *var_text = ptrmcpy(*var_text, arg, strlen(arg));
-        if (MEM_ERROR)
+        if (mem_error())
             print_error(error);
     }
     ptrdel(&pbuf);
@@ -2182,16 +2182,16 @@ static void cmd_setvar(char *arg)
             if (*arg == '(') {
                 ++arg;
                 int i = evall(&buf, &arg);
-                if (!REAL_ERROR && i != TYPE_NUM)
+                if (!real_error() && i != TYPE_NUM)
                     error = NO_NUM_VALUE_ERROR;
-                else if (!REAL_ERROR && *arg != ')')
+                else if (!real_error() && *arg != ')')
                     error = MISSING_PAREN_ERROR;
             } else
                 buf = strtol(arg, NULL, 0);
         } else
             buf = 0;
 
-        if (REAL_ERROR) {
+        if (real_error()) {
             message_printf("#setvar: ");
             print_error(error);
             return;
@@ -2264,7 +2264,7 @@ static void cmd_if(char *arg)
 
     long buf;
     int type = evall(&buf, &arg);
-    if (!REAL_ERROR) {
+    if (!real_error()) {
         if (type != TYPE_NUM)
             error = NO_NUM_VALUE_ERROR;
         if (*arg != ')')
@@ -2274,7 +2274,7 @@ static void cmd_if(char *arg)
                 ++arg;
         }
     }
-    if (REAL_ERROR) {
+    if (real_error()) {
         message_printf("#if: ");
         print_error(error);
         return;
@@ -2300,7 +2300,7 @@ static void cmd_for(char *arg)
         return;
     }
     push_params();
-    if (REAL_ERROR)
+    if (real_error())
         return;
 
     arg = skipspace(arg + 1);    /* skip the '(' */
@@ -2312,7 +2312,7 @@ static void cmd_for(char *arg)
     long buf;
     char *increm = 0;
 
-    if (REAL_ERROR)
+    if (real_error())
         ;
     else if (*arg != CMDSEP) {
         message_printf("#for: ");
@@ -2340,7 +2340,7 @@ static void cmd_for(char *arg)
 
         --loop;
     }
-    if (REAL_ERROR)
+    if (real_error())
         ;
     else if (increm != NULL && *increm != CMDSEP)
         error = MISSING_SEPARATOR_ERROR;
@@ -2348,7 +2348,7 @@ static void cmd_for(char *arg)
         error = MAX_LOOP_ERROR;
     else if (type != TYPE_NUM)
         error = NO_NUM_VALUE_ERROR;
-    if (REAL_ERROR) {
+    if (real_error()) {
         message_printf("#for: ");
         print_error(error);
     }
@@ -2382,7 +2382,7 @@ static void cmd_while(char *arg)
             parse_instruction(tmp, true, true, true);
         --loop;
     }
-    if (REAL_ERROR)
+    if (real_error())
         ;
     else if (*arg != ')')
         error = MISSING_PAREN_ERROR;
@@ -2390,7 +2390,7 @@ static void cmd_while(char *arg)
         error = MAX_LOOP_ERROR;
     else if (type != TYPE_NUM)
         error = NO_NUM_VALUE_ERROR;
-    if (REAL_ERROR) {
+    if (real_error()) {
         message_printf("#while: ");
         print_error(error);
     }
@@ -3080,9 +3080,9 @@ static char *trivial_eval(ptr **pbuf, char *arg, const char *name)
     if (*tmp == '(') {
         arg = tmp + 1;
         evalp(pbuf, &arg);
-        if (!REAL_ERROR && *arg != ')')
+        if (!real_error() && *arg != ')')
             error = MISSING_PAREN_ERROR;
-        if (REAL_ERROR) {
+        if (real_error()) {
             message_printf("#%s: ", name);
             print_error(error);
             return NULL;
@@ -3102,7 +3102,7 @@ static void do_cmd_add(char *arg, bool is_static)
     ptr *pbuf = NULL;
 
     arg = trivial_eval(&pbuf, arg, "add");
-    if (!REAL_ERROR)
+    if (!real_error())
         while (*arg != '\0') {
             char buf[BUFSIZE];
             arg = split_first_word(buf, BUFSIZE, arg);
@@ -3126,7 +3126,7 @@ static void cmd_put(char *arg)
 {
     ptr *pbuf = NULL;
     arg = trivial_eval(&pbuf, arg, "put");
-    if (!REAL_ERROR && *arg != '\0')
+    if (!real_error() && *arg != '\0')
         put_history(arg);
     ptrdel(&pbuf);
 }

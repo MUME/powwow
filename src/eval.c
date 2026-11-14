@@ -421,7 +421,7 @@ static bool check_object(object *obj)
         if (*end != '\0') {
             obj->type = TYPE_TXT;
             obj->txt = ptrmcpy(obj->txt, line, end - line);
-            if (!REAL_ERROR) {
+            if (!real_error()) {
                 ptrunescape(obj->txt);
                 found = true;
                 line = end + 1;
@@ -470,7 +470,7 @@ static bool check_object(object *obj)
         map_sprintf(buf);
         obj->type = TYPE_TXT;
         obj->txt = ptrmcpy(obj->txt, buf, strlen(buf));
-        if (!REAL_ERROR) {
+        if (!real_error()) {
             line += 3;
             found = true;
         }
@@ -479,7 +479,7 @@ static bool check_object(object *obj)
         obj->txt = ptrmcpy(obj->txt, tty_modestandoff,
                            strlen(tty_modestandoff));
         obj->txt = ptrmcat(obj->txt, tty_modenorm, strlen(tty_modenorm));
-        if (!REAL_ERROR) {
+        if (!real_error()) {
             line += 6;
             found = true;
         }
@@ -569,7 +569,7 @@ static ptr *repeat_text(ptr *dst, long n)
         return dst;
     }
     dst = ptrsetlen(dst, (int)(delta * n));
-    if (REAL_ERROR)
+    if (real_error())
         return dst;
     char *tmp = ptrdata(dst);
     for (long i = 1; i < n; ++i)
@@ -586,14 +586,14 @@ static bool exe_op(operator *op)
 
     switch (*op) {
     case op_comma:
-        if (!(pop_obj(&o2) && pop_obj(&o1)) && REAL_ERROR)
+        if (!(pop_obj(&o2) && pop_obj(&o1)) && real_error())
             break;
         check_delete(&o1);
         p = &o2;
         ret = true;
         break;
     case op_eq:
-        if (!(pop_obj(&o2) && pop_obj(&o1)) && REAL_ERROR)
+        if (!(pop_obj(&o2) && pop_obj(&o1)) && real_error())
             break;
 
         if (o2.type == TYPE_NUM_VAR) {
@@ -609,13 +609,13 @@ static bool exe_op(operator *op)
                    && (o2.type == TYPE_TXT || o2.type == TYPE_TXT_VAR)) {
             if (o2.type == TYPE_TXT_VAR) {
                 o2.txt = ptrdup(*o2.txt_ref);
-                if (REAL_ERROR)
+                if (real_error())
                     break;
                 o2.type = TYPE_TXT;
             }
 
             *o1.txt_ref = ptrcpy(*o1.txt_ref, o2.txt);
-            if (REAL_ERROR)
+            if (real_error())
                 break;
             p = &o2;
             ret = true;
@@ -636,7 +636,7 @@ static bool exe_op(operator *op)
     case op_times_eq:
     case op_div_eq:
     case op_ampersand_eq:
-        if (!(pop_obj(&o2) && pop_obj(&o1)) && REAL_ERROR)
+        if (!(pop_obj(&o2) && pop_obj(&o1)) && real_error())
             break;
 
         if (o2.type == TYPE_NUM_VAR) {
@@ -706,7 +706,7 @@ static bool exe_op(operator *op)
             check_delete(&o2);
 
             ptr *dst = ptrdup(*o1.txt_ref);
-            if (REAL_ERROR)
+            if (real_error())
                 break;
 
             o1.type = TYPE_TXT;
@@ -730,7 +730,7 @@ static bool exe_op(operator *op)
 
             check_delete(&o2);
             ptr *dst = ptrdup(*o1.txt_ref);
-            if (REAL_ERROR)
+            if (real_error())
                 break;
 
             o1.type = TYPE_TXT;
@@ -760,7 +760,7 @@ static bool exe_op(operator *op)
     case op_times:
     case op_division:
     case op_ampersand:
-        if (!(pop_obj(&o2) && pop_obj(&o1)) && REAL_ERROR)
+        if (!(pop_obj(&o2) && pop_obj(&o1)) && real_error())
             break;
 
         if (o1.type == TYPE_NUM_VAR) {
@@ -838,7 +838,7 @@ static bool exe_op(operator *op)
             if (o1.type == TYPE_TXT_VAR) {
                 o1.txt = ptrdup(*o1.txt_ref);
                 o1.type = TYPE_TXT; /* not a var anymore */
-                if (REAL_ERROR)
+                if (real_error())
                     break;
             }
             ptr *dst = o1.txt;
@@ -881,7 +881,7 @@ static bool exe_op(operator *op)
                 o1.type = TYPE_NUM;
             }
             check_delete(&o2);
-            if (!REAL_ERROR) {
+            if (!real_error()) {
                 o1.txt = dst;
                 p = &o1;
                 ret = true;
@@ -893,7 +893,7 @@ static bool exe_op(operator *op)
                 /* the result is a copy, not the text of the variable */
                 o1.txt = o2.num > 0 ? ptrdup(*o1.txt_ref) : NULL;
                 o1.type = TYPE_TXT;
-                if (REAL_ERROR)
+                if (real_error())
                     break;
             }
             ptr *dst = o1.txt;
@@ -906,7 +906,7 @@ static bool exe_op(operator *op)
                 dst = repeat_text(dst, o2.num);
             }
             check_delete(&o2);
-            if (REAL_ERROR)
+            if (real_error())
                 break;
 
             o1.type = TYPE_TXT;
@@ -927,7 +927,7 @@ static bool exe_op(operator *op)
     case op_less_point:
     case op_greater_point:
     case op_point: {
-        if (!(pop_obj(&o2) && pop_obj(&o1)) && REAL_ERROR)
+        if (!(pop_obj(&o2) && pop_obj(&o1)) && real_error())
             break;
 
         if (o2.type == TYPE_NUM_VAR) {
@@ -966,7 +966,7 @@ static bool exe_op(operator *op)
             /* src == empty string. just return it */
             check_delete(&o2);
             o1.txt = src;
-            if (!REAL_ERROR) {
+            if (!real_error()) {
                 p = &o1;
                 ret = true;
             }
@@ -1133,7 +1133,7 @@ static bool exe_op(operator *op)
 #undef BYTES
         check_delete(&o2);
         o1.txt = dst;
-        if (!REAL_ERROR) {
+        if (!real_error()) {
             p = &o1;
             ret = true;
         }
@@ -1141,7 +1141,7 @@ static bool exe_op(operator *op)
     }
     case op_colon_question:
     case op_point_question: {
-        if (!pop_obj(&o1) && REAL_ERROR)
+        if (!pop_obj(&o1) && real_error())
             break;
 
         ptr *src;
@@ -1202,7 +1202,7 @@ static bool exe_op(operator *op)
         break;
     }
     case op_question: {
-        if (!(pop_obj(&o2) && pop_obj(&o1)) && REAL_ERROR)
+        if (!(pop_obj(&o2) && pop_obj(&o1)) && real_error())
             break;
 
         ptr *src = NULL;
@@ -1237,7 +1237,7 @@ static bool exe_op(operator *op)
     }
     case op_null:
     case op_another_null:
-        if (!(pop_obj(&o2) && pop_obj(&o1)) && REAL_ERROR)
+        if (!(pop_obj(&o2) && pop_obj(&o1)) && real_error())
             break;
 
         check_delete(&o1);
@@ -1254,7 +1254,7 @@ static bool exe_op(operator *op)
         error = MISSING_PAREN_ERROR;
         break;
     case op_right_paren:
-        if (!pop_op(op) && REAL_ERROR)
+        if (!pop_op(op) && real_error())
             break;
 
         if (*op != op_left_paren)
@@ -1268,7 +1268,7 @@ static bool exe_op(operator *op)
     case op_pre_minus:
     case op_not:
     case op_tilde:
-        if (!pop_obj(&o1) && REAL_ERROR)
+        if (!pop_obj(&o1) && real_error())
             break;
 
         if (o1.type == TYPE_NUM_VAR) {
@@ -1296,12 +1296,12 @@ static bool exe_op(operator *op)
         }
         break;
     case op_attr:
-        if (!pop_obj(&o1) && REAL_ERROR)
+        if (!pop_obj(&o1) && real_error())
             break;
 
         if (o1.type == TYPE_TXT_VAR) {
             o1.txt = ptrdup(*o1.txt_ref);
-            if (REAL_ERROR)
+            if (real_error())
                 break;
             o1.type = TYPE_TXT;
         }
@@ -1314,7 +1314,7 @@ static bool exe_op(operator *op)
                 error = BAD_ATTR_ERROR;
             } else {
                 o1.txt = ptrsetlen(o1.txt, ATTR_SGR_MAX);
-                if (REAL_ERROR)
+                if (real_error())
                     break;
                 attr_string(&attr, ptrdata(o1.txt), dummy);
                 ptrtrunc(o1.txt, strlen(ptrdata(o1.txt)));
@@ -1328,7 +1328,7 @@ static bool exe_op(operator *op)
 
     case op_star:
     case op_print:
-        if (!pop_obj(&o1) && REAL_ERROR)
+        if (!pop_obj(&o1) && real_error())
             break;
 
         if (o1.type == TYPE_NUM_VAR)
@@ -1350,7 +1350,7 @@ static bool exe_op(operator *op)
                                : (uint32_t)o1.num);
                 o1.txt = ptrmcpy(o1.txt, buf, utf8_put(cp, buf));
             }
-            if (REAL_ERROR)
+            if (real_error())
                 break;
             o1.type = TYPE_TXT;
             p = &o1;
@@ -1375,7 +1375,7 @@ static bool exe_op(operator *op)
                 }
             }
             check_delete(&o1);
-            if (REAL_ERROR)
+            if (real_error())
                 break;
             o1.type = TYPE_NUM;
             p = &o1;
@@ -1388,7 +1388,7 @@ static bool exe_op(operator *op)
     case op_post_plus_plus:
     case op_pre_minus_minus:
     case op_post_minus_minus:
-        if (!pop_obj(&o1) && REAL_ERROR)
+        if (!pop_obj(&o1) && real_error())
             break;
 
         if (o1.type == TYPE_NUM_VAR) {
@@ -1417,7 +1417,7 @@ static bool exe_op(operator *op)
         break;
     case op_a_circle:
     case op_dollar: {
-        if (!pop_obj(&o1) && REAL_ERROR)
+        if (!pop_obj(&o1) && real_error())
             break;
 
         enum var_kind kind = *op == op_dollar ? VAR_TEXT : VAR_NUM;
@@ -1494,12 +1494,12 @@ static bool exe_op(operator *op)
         break;
     }
 
-    if (REAL_ERROR) {
+    if (real_error()) {
         check_delete(&o2);
         check_delete(&o1);
     }
 
-    if (!REAL_ERROR) {
+    if (!real_error()) {
         if (!ret) {
             error = NOT_DONE_ERROR;
         } else if (p != NULL) {
@@ -1511,7 +1511,7 @@ static bool exe_op(operator *op)
         }
     }
 
-    if (REAL_ERROR)
+    if (real_error())
         return false;
 
     return ret;
@@ -1529,13 +1529,13 @@ static int whichfirst(operator *op1, operator *op2)
 
 static bool compare_and_unload(operator *op)
 {
-    if (REAL_ERROR || stk.curr_op < 0)
+    if (real_error() || stk.curr_op < 0)
         return true;
 
     /* execute the operators on the stack that go before op */
     bool put_back = false;
     operator new = op_null;
-    while (stk.curr_op >= 0 && pop_op(&new) && !REAL_ERROR) {
+    while (stk.curr_op >= 0 && pop_op(&new) && !real_error()) {
         if (whichfirst(&new, op) != -1) {
             put_back = true;
             break;
@@ -1544,7 +1544,7 @@ static bool compare_and_unload(operator *op)
             break;
     }
 
-    if (REAL_ERROR)
+    if (real_error())
         return false;
     if (!put_back)
         return true;
@@ -1643,7 +1643,7 @@ int eval_any(long *lres, ptr **pres, char **what)
 
             if (printmode == PRINT_AS_PTR) {
                 *pres = ptrsetlen(*pres, LONGLEN);
-                if (!MEM_ERROR) {
+                if (!mem_error()) {
                     sprintf(ptrdata(*pres), "%ld", val);
                     (*pres)->len = strlen(ptrdata(*pres));
                 }
