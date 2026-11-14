@@ -47,15 +47,15 @@ class Window:
     counter = itertools.count()
     lock = threading.Lock()
 
-    def __init__(self, powwow, locale, cols):
+    def __init__(self, powwow, locale, cols, term):
         with Window.lock:
             n = next(Window.counter)
         self.tmux = ['tmux', '-L', 'powwow-test-%d-%d' % (os.getpid(), n),
                      '-f', '/dev/null']
         self.home = tempfile.TemporaryDirectory()
         self.env = {k: v for k, v in os.environ.items() if k != 'TMUX'}
-        command = ('env -i HOME=%s TERM=screen LC_ALL=%s PATH=/usr/bin:/bin'
-                   ' %s' % (self.home.name, locale, powwow))
+        command = ('env -i HOME=%s TERM=%s LC_ALL=%s PATH=/usr/bin:/bin'
+                   ' %s' % (self.home.name, term, locale, powwow))
         self.run('new-session', '-d', '-s', 't', '-x', str(cols),
                  '-y', str(ROWS), command)
         self.run('set', '-t', 't', 'history-limit', '10000')
@@ -115,7 +115,8 @@ def run(powwow, locale, scenario, steps):
     srv.listen(1)
     srv.settimeout(10)
     port = srv.getsockname()[1]
-    win = Window(powwow, locale, scenario.get('cols', 80))
+    win = Window(powwow, locale, scenario.get('cols', 80),
+                 scenario.get('term', 'screen'))
     try:
         if not win.wait_for('#help'):
             raise NotStarted()
@@ -276,6 +277,15 @@ SCENARIOS = {
     'wide character that does not fit, split inside it':
         scenario([b'x' * 79 + WIDE[:1], ['a'], WIDE[1:], ['bc'],
                   b'\r\nYou see.\r\n']),
+    # a terminal that waits to wrap, as tmux does, though its terminfo
+    # entry says that it wraps at the last column
+    'line split at the last column, no wrap glitch':
+        scenario([LONG[:80], ['abc'], LONG[80:] + b'\r\n'], term='cygwin'),
+    'prompt up to the last column, no wrap glitch':
+        scenario([LONG[:80], ['abc'], b'\r\nYou see.\r\n'], term='cygwin'),
+    'wide character in the last column, no wrap glitch':
+        scenario([b'x' * 78 + WIDE, ['abc'], b'\r\nYou see.\r\n'],
+                 term='cygwin'),
 }
 
 
@@ -283,7 +293,13 @@ class NotStarted(Exception):
     pass
 
 
+def has_terminfo(term):
+    return subprocess.run(['infocmp', term], capture_output=True).returncode == 0
+
+
 def check(powwow, locale, name, sc):
+    if not has_terminfo(sc.get('term', 'screen')):
+        return 'skip %s: no terminfo for %s\n' % (name, sc['term']), True
     try:
         got = run(powwow, locale, sc, sc['steps'])
         want = run(powwow, locale, sc, reference(sc['steps']))

@@ -769,6 +769,7 @@ int tty_put_prompt(const char *s)
 {
     tty_puts(s);
     int rows = 0, col = 0;
+    bool filled = false;        /* the last character filled the row */
     enum { NORM, ESCAPE, BRACKET } state = NORM;
     const char *end = s + strlen(s);
     while (s < end) {
@@ -782,11 +783,14 @@ int tty_put_prompt(const char *s)
             if (cp == ASCII_ESC) {
                 state = ESCAPE;
             } else if (cp == '\b') {
+                filled = false;
                 if (col > 0)
                     --col;
             } else if (cp == '\r') {
+                filled = false;
                 col = 0;
             } else if (w > 0) {
+                filled = false;
                 if (col + w > cols) {
                     ++rows;
                     col = 0;
@@ -794,6 +798,7 @@ int tty_put_prompt(const char *s)
                 col += w;
                 /* without the wrap glitch, the last column wraps */
                 if (!wrapglitch && col == cols) {
+                    filled = true;
                     ++rows;
                     col = 0;
                 }
@@ -810,7 +815,13 @@ int tty_put_prompt(const char *s)
             break;
         }
     }
-    if (col >= cols_1) {
+    if (filled) {
+        /*
+         * some terminals, such as Windows Terminal, wait to wrap all
+         * the same: a space wraps the row there too, and is erased
+         */
+        tty_puts(" \b");
+    } else if (col >= cols_1) {
         tty_putc('\n');
         ++rows;
         col = 0;
