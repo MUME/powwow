@@ -2878,7 +2878,8 @@ tail -c 19 "$tmp/got" | cmp -s "$tmp/want" - \
     || fail "expected the text as written, got: $(od -c "$tmp/got")"
 
 # with --windows, the editor runs as #! runs a command, with #option shell,
-# and the path of the file in double quotes after it
+# and the path of the file in double quotes after it; a \\ in double quotes
+# is a \, as for sh, and others are kept
 cat > "$tmp/server" <<'EOF'
 read -r identify
 printf '~$#EE18\nM5\nthe title\ntext\n'
@@ -2893,11 +2894,11 @@ if python3 -c "" > /dev/null 2>&1; then
     run --args --windows --until '#cancelled session' \
         '--windows: the editor runs with #option shell' \
         "#option shell=sh $tmp/shell
-#option editor=&true
+#option editor=&true \"a\\\\b\" c\\\\d
 #connect n --no-tls 127.0.0.1 $(cat "$tmp/port")
 ##n #request editor"
     wait $server
-    grep -q '^true ".*powwow-edit-5-[^"]*"$' "$tmp/shell-got" \
+    grep -q '^true "a\\b" c\\\\d ".*powwow-edit-5-[^"]*"$' "$tmp/shell-got" \
         || fail "expected the editor and the file, got: $(cat "$tmp/shell-got")"
     sed -n 2p "$tmp/shell-got" | grep -qx 'the title' \
         || fail "expected TITLE, got: $(cat "$tmp/shell-got")"
