@@ -1374,9 +1374,14 @@ run '#hilite sets the attributes of messages and input, and saves them' \
 #substitute
 #hilite input red
 #help -P beep
+#option editor=vi
+#option
 #save $tmp/cfg"
 has '<ESC>[1m#no substitutions are defined.<ESC>[m'
 has '<ESC>[1m#beep<ESC>[m'
+grep -q '^<ESC>\[1m#option +autoclear -autoprint .*<ESC>\[m$' "$tmp/out" \
+    || fail 'expected #option to list the options as messages'
+has '<ESC>[1m#option editor=vi<ESC>[m'
 grep -Fxq '#hilite input red' "$tmp/cfg" || fail "#hilite input not saved"
 grep -Fxq '#hilite messages bold' "$tmp/cfg" || fail "#hilite messages not saved"
 

@@ -2795,8 +2795,8 @@ static const struct {
 };
 
 /* write "#option <name>=<command>" for the command options set to 'file',
- * or the tty if it is NULL: as typed, with its escapes, which #option
- * keeps; return -1 on error */
+ * or the tty, as messages, if it is NULL: as typed, with its escapes,
+ * which #option keeps; return -1 on error */
 static int print_command_options(FILE *file)
 {
     for (int i = 0; command_options[i].name != NULL; ++i) {
@@ -2806,46 +2806,34 @@ static int print_command_options(FILE *file)
         int res = (file != NULL
                    ? fprintf(file, "#option %s=%s\n",
                              command_options[i].name, value)
-                   : tty_printf("#option %s=%s\n",
-                                command_options[i].name, value));
+                   : tty_message("#option %s=%s\n",
+                                 command_options[i].name, value));
         if (res < 0)
             return -1;
     }
     return 1;
 }
 
-/* print all options to 'file', or tty if file is NULL; return -1 on
- * error, 1 on success */
+/* print all options to 'file', or the tty, as messages, if it is NULL;
+ * return -1 on error, 1 on success */
 int print_all_options(FILE *file)
 {
-    const char *prefix = "#option";
     int width = (file != NULL ? WRAP_COLUMNS : wrap_width() + 1) - 16;
+    char line[BUFSIZE];
     int len = 0;
     for (int i = 0; options[i].name != NULL; ++i) {
-        int res;
-        if (file != NULL)
-            res = fprintf(file, "%s %c%s", prefix,
-                          *options[i].option ? '+' : '-',
-                          options[i].name);
-        else
-            res = tty_printf("%s %c%s", prefix,
-                             *options[i].option ? '+' : '-',
-                             options[i].name);
-        if (res < 0)
-            return -1;
-        /* don't rely on printf() return value */
-        len += strlen(prefix) + strlen(options[i].name) + 2;
-        if (len >= width) {
-            prefix = "\n#option";
-            len = -1;
-        } else {
-            prefix = "";
+        if (len == 0)
+            len = sprintf(line, "#option");
+        len += snprintf(line + len, sizeof line - len, " %c%s",
+                        *options[i].option ? '+' : '-', options[i].name);
+        /* each line whole, so that messages have their attributes once */
+        if (len >= width || options[i + 1].name == NULL) {
+            if ((file != NULL ? fprintf(file, "%s\n", line)
+                 : tty_message("%s\n", line)) < 0)
+                return -1;
+            len = 0;
         }
     }
-    if (file != NULL)
-        fputc('\n', file);
-    else
-        tty_putc('\n');
     if (print_command_options(file) < 0)
         return -1;
     if (file == NULL)
