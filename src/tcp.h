@@ -18,18 +18,21 @@ extern int conn_max_index;      /* 1 + highest used conn_list[] index */
 
 /* multiple connections control */
 
-/* state of telnet connection */
-#define NORMAL          0
-#define ALTNORMAL       1
-#define GOT_N           2
-#define GOT_R           3
-#define GOTIAC          4
-#define GOTWILL         5
-#define GOTWONT         6
-#define GOTDO           7
-#define GOTDONT         8
-#define GOTSB           9
-#define GOTSBIAC       10
+/* the state of reading a connection: its telnet commands and line ends */
+enum telnet_state {
+    TELNET_NORMAL,
+    TELNET_ALT_NORMAL,          /* as normal, but after LF CR, where no MPI
+                                 * message may start */
+    TELNET_GOT_LF,
+    TELNET_GOT_CR,
+    TELNET_GOT_IAC,
+    TELNET_GOT_WILL,
+    TELNET_GOT_WONT,
+    TELNET_GOT_DO,
+    TELNET_GOT_DONT,
+    TELNET_GOT_SB,
+    TELNET_GOT_SB_IAC,
+};
 
 /* telnet CHARSET option state (RFC 2066):                   */
 /* CS_WILL_SENT:   we sent WILL CHARSET                      */
@@ -69,8 +72,8 @@ typedef struct connsess {
     bool spawn;                 /* a command that #spawn runs, not a MUD */
     bool ideditor;              /* sent #request editor */
     bool ideditor_utf8;         /* and announced UTF-8 support in it */
-    char state;
-    char old_state;
+    enum telnet_state state;
+    enum telnet_state old_state;
     unsigned char subopt[MAX_SUBOPT]; /* telnet suboption being read */
     int subchars;               /* and its length so far */
     char mpi_head[MPI_HEAD_MAX]; /* start of an MPI message header */

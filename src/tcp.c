@@ -508,15 +508,15 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     } else if (ending) {
         if (i < 0 && errno != EINVAL)
             errmsg("cannot read from connection \"%s\"", conn->id);
-        conn->state = NORMAL;
+        conn->state = TELNET_NORMAL;
         tcp_close(NULL);
         return 0;
     }
     i += held;
     conn->mpi_headlen = 0;
 
-    char state = conn->state;
-    char old_state = conn->old_state;
+    enum telnet_state state = conn->state;
+    enum telnet_state old_state = conn->old_state;
 
     /*
      * scan through the buffer,
@@ -528,10 +528,10 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     bool midline = conn->midline;
     for (byte *s = rawbuf; i != 0; ++s, --i) {
         switch (state) {
-        case NORMAL:
-        case ALTNORMAL:
-        case GOT_R:
-        case GOT_N:
+        case TELNET_NORMAL:
+        case TELNET_ALT_NORMAL:
+        case TELNET_GOT_CR:
+        case TELNET_GOT_LF:
             /*
              * Some servers like to send NULs and other funny chars.
              * Clean up as much as possible.
@@ -540,25 +540,26 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             case IAC:
                 /* remember state to return to after IAC processing */
                 old_state = state;
-                state = GOTIAC;
+                state = TELNET_GOT_IAC;
                 break;
             case '\r':
                 p = flush_data(conn, p);
                 /* start counting \r, unless just got \n */
-                if (state == NORMAL || state == ALTNORMAL) {
+                if (state == TELNET_NORMAL || state == TELNET_ALT_NORMAL) {
                     /*
-                     * ALTNORMAL is safe here: \r cannot be in MPI header,
-                     * and any previous MPI header has already been rejected
+                     * TELNET_ALT_NORMAL is safe here: \r cannot be in an MPI
+                     * header, and any previous MPI header has already been
+                     * rejected
                      */
-                    state = GOT_R;
-                } else if (state == GOT_N) {
+                    state = TELNET_GOT_CR;
+                } else if (state == TELNET_GOT_LF) {
                     /* after \n\r, we forbid MPI messages */
-                    state = ALTNORMAL;
+                    state = TELNET_ALT_NORMAL;
                 }
                 break;
             case '\n':
                 p = flush_data(conn, p);
-                state = GOT_N;
+                state = TELNET_GOT_LF;
                 *p++ = *s;
                 linestart = p;
                 midline = false;
@@ -572,15 +573,16 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                  * keep the start of an MPI message header at the end of
                  * the read for the next one, which may have the rest
                  */
-                if (!ending && !midline && p == linestart && state != GOT_R
-                    && conn->ideditor && mpi_header_cut(s, i)) {
+                if (!ending && !midline && p == linestart
+                    && state != TELNET_GOT_CR && conn->ideditor
+                    && mpi_header_cut(s, i)) {
                     memcpy(conn->mpi_head, s, i);
                     conn->mpi_headlen = i;
                     goto end;
                 }
 
                 /* first, flush any missing \r */
-                if (state == GOT_R)
+                if (state == TELNET_GOT_CR)
                     *p++ = '\r';
 
                 p = put_data(conn, p, *s);
@@ -591,7 +593,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                     if (!conn->ideditor) {
                         wrap_printf("#warning: ignored an MPI message"
                                     " without #request editor");
-                    } else if (state == ALTNORMAL) {
+                    } else if (state == TELNET_ALT_NORMAL) {
                         /* no MPI messages after \n\r */
                         wrap_printf("#warning: ignored an MPI message that"
                                     " may be spoofed");
@@ -609,28 +611,28 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                     }
                 }
 
-                if (state != ALTNORMAL)
-                    state = NORMAL;
+                if (state != TELNET_ALT_NORMAL)
+                    state = TELNET_NORMAL;
                 break;
             }
             break;
 
-        case GOTIAC:
+        case TELNET_GOT_IAC:
             switch (*s) {
             case WILL:
-                state = GOTWILL;
+                state = TELNET_GOT_WILL;
                 break;
             case WONT:
-                state = GOTWONT;
+                state = TELNET_GOT_WONT;
                 break;
             case DO:
-                state = GOTDO;
+                state = TELNET_GOT_DO;
                 break;
             case DONT:
-                state = GOTDONT;
+                state = TELNET_GOT_DONT;
                 break;
             case SB:
-                state = GOTSB;
+                state = TELNET_GOT_SB;
                 conn->subchars = 0;
                 break;
             case IAC:
@@ -651,7 +653,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             }
             break;
 
-        case GOTWILL:
+        case TELNET_GOT_WILL:
 #ifdef TELOPTS
             tty_printf("[got WILL %s]\n", telopt_name(*s));
 #endif
@@ -694,7 +696,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             state = old_state;
             break;
 
-        case GOTWONT:
+        case TELNET_GOT_WONT:
 #ifdef TELOPTS
             tty_printf("[got WONT %s]\n", telopt_name(*s));
 #endif
@@ -716,7 +718,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             state = old_state;
             break;
 
-        case GOTDO:
+        case TELNET_GOT_DO:
 #ifdef TELOPTS
             tty_printf("[got DO %s]\n", telopt_name(*s));
 #endif
@@ -747,7 +749,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             state = old_state;
             break;
 
-        case GOTDONT:
+        case TELNET_GOT_DONT:
 #ifdef TELOPTS
             tty_printf("[got DONT %s]\n", telopt_name(*s));
 #endif
@@ -770,18 +772,18 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             state = old_state;
             break;
 
-        case GOTSB:
+        case TELNET_GOT_SB:
             if (*s == IAC)
-                state = GOTSBIAC;
+                state = TELNET_GOT_SB_IAC;
             else if (conn->subchars < MAX_SUBOPT)
                 conn->subopt[conn->subchars++] = *s;
             break;
 
-        case GOTSBIAC:
+        case TELNET_GOT_SB_IAC:
             if (*s == IAC) {
                 if (conn->subchars < MAX_SUBOPT)
                     conn->subopt[conn->subchars++] = IAC;
-                state = GOTSB;
+                state = TELNET_GOT_SB;
             } else if (*s == SE) {
                 dosubopt(conn, conn->subopt, conn->subchars);
                 state = old_state;
@@ -798,7 +800,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
  end:
     conn->state = state;
     conn->old_state = old_state;
-    conn->midline = midline || p != linestart || state == GOT_R;
+    conn->midline = midline || p != linestart || state == TELNET_GOT_CR;
 
     if (!conn->spawn)
         log_write(buffer, (char *)p - (char *)buffer, false, conn->charset);
@@ -1179,8 +1181,8 @@ void tcp_open(const char *id, char *initstring, const char *host,
         .host        = conn_host,
         .id          = conn_id,
         .active      = true,
-        .state       = NORMAL,
-        .old_state   = NORMAL,
+        .state       = TELNET_NORMAL,
+        .old_state   = TELNET_NORMAL,
         .port        = port,
         .fd          = newtcp_fd,
         .fns         = &tcp_io_fns,
@@ -1287,8 +1289,8 @@ void tcp_close(const char *id)
     conn->spawn = false;
     conn->ideditor = false;
     conn->ideditor_utf8 = false;
-    conn->state = NORMAL;
-    conn->old_state = NORMAL;
+    conn->state = TELNET_NORMAL;
+    conn->old_state = TELNET_NORMAL;
     conn->mpi_headlen = 0;
     conn->midline = false;
     conn->ended = false;
@@ -1397,8 +1399,8 @@ void tcp_spawn(const char *id, char *cmd)
     CONN_INDEX(i).spawn = true;
     CONN_INDEX(i).ideditor = false;
     CONN_INDEX(i).ideditor_utf8 = false;
-    CONN_INDEX(i).state = NORMAL;
-    CONN_INDEX(i).old_state = NORMAL;
+    CONN_INDEX(i).state = TELNET_NORMAL;
+    CONN_INDEX(i).old_state = TELNET_NORMAL;
     CONN_INDEX(i).mpi_headlen = 0;
     CONN_INDEX(i).midline = false;
     CONN_INDEX(i).ended = false;
