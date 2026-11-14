@@ -182,9 +182,20 @@ SCENARIOS = {
                   b'rt\r\n']),
     'line split before LF':
         scenario([b'line one\r', ['c'], b'\nline two\r\n']),
+    'line split before LF, compact':
+        scenario([b'line one\r', ['c'], b'\nline two\r\n'],
+                 setup=COMPACT),
+    'line split before CR LF, compact, with a #prompt':
+        scenario([b'line one', ['c'], b'\r\nline two\r\n'],
+                 setup=COMPACT + ['#prompt >p ^HP:=#isprompt']),
+    'prompt, then output while typing, compact':
+        scenario([b'HP:> ', ['say hi'], b'\r\nA rat arrives.\r\nHP:> '],
+                 setup=COMPACT),
     'byte by byte, typing':
         scenario([x for i, c in enumerate(b'Typing in\r\n')
                   for x in [bytes([c])] + ([['k']] if i % 3 == 0 else [])]),
+    'byte by byte, compact':
+        scenario([bytes([c]) for c in b'Byte by byte\r\n'], setup=COMPACT),
     'long line split':
         scenario([LONG[:70], ['abc'], LONG[70:100], [BS],
                   LONG[100:] + b'\r\n']),

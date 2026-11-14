@@ -1382,8 +1382,9 @@ static int process_first_fragment(char *buf, int got)
         /* the text from the MUD continues after the prompt */
         sgr_prompt_commit(promptstr, promptlen);
 
-        if (opt_compact) {
-            /* in compact mode, skip the first \n */
+        if (opt_compact && isprompt_len != 0) {
+            /* in compact mode, delete a prompt that #isprompt recognized,
+             * and skip the first \n */
             deleteprompt = true;
             ++processed;
         } else if (prompt_row_ended()) {

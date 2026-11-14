@@ -1306,9 +1306,9 @@ Normally, powwow does not touch the prompts on screen while you play.
 In `compact` mode, instead, lines containing only a prompt are deleted
 when further messages arrive from the remote host.
 
-*Warning*: this command works correctly only if you have `#prompts` which
-correctly run `#isprompt`. Otherwise it may occasionally erase
-some lines from the screen.
+Only the prompts that a `#prompt` recognizes with `#isprompt` are
+deleted, so `compact` mode needs `#prompts` which correctly run
+`#isprompt`.
 
 #### `#option debug`
 
