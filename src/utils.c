@@ -422,6 +422,25 @@ const char *windows_path(const char *path, char *buf, size_t size)
     return path;
 }
 
+/* is the program 'name' in one of the folders of PATH? */
+bool in_path(const char *name)
+{
+    const char *path = getenv("PATH");
+    if (path == NULL || *name == '\0')
+        return false;
+    for (;;) {
+        size_t len = strcspn(path, ":");
+        char file[BUFSIZE];
+        if (snprintf(file, sizeof file, "%.*s/%s", len > 0 ? (int)len : 1,
+                     len > 0 ? path : ".", name) < (int)sizeof file
+            && access(file, X_OK) == 0)
+            return true;
+        if (path[len] == '\0')
+            return false;
+        path += len + 1;
+    }
+}
+
 /*
  * the value of the environment variable 'name', or NULL; on Cygwin, which
  * makes TEMP, HOME and the like Cygwin paths, a path as on Windows

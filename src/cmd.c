@@ -759,8 +759,10 @@ static void cmd_clear(char *arg)
 
 /*
  * the shell of #!, as for editor_command(): #option shell, or
- * POWWOWSHELL, with 'from' set to NULL or "POWWOWSHELL"; NULL for none,
- * as /bin/sh runs the commands then
+ * POWWOWSHELL, with 'from' set to NULL or "POWWOWSHELL"; else in Windows
+ * mode powwow-cmd, which the installer for Windows has to run the
+ * commands with cmd, if it is found, with 'from' set to ""; NULL for
+ * none, as /bin/sh runs the commands then
  */
 static const char *shell_choice(const char **from)
 {
@@ -768,7 +770,12 @@ static const char *shell_choice(const char **from)
     if (opt_shell != NULL)
         return opt_shell;
     *from = "POWWOWSHELL";
-    return getenv("POWWOWSHELL");
+    const char *shell = getenv("POWWOWSHELL");
+    if (shell == NULL && windows_mode && in_path("powwow-cmd")) {
+        *from = "";
+        shell = "powwow-cmd";
+    }
+    return shell;
 }
 
 /*

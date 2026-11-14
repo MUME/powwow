@@ -169,7 +169,9 @@ the editor and the pager run as
 .B #!
 runs its commands, with the shell of
 .BR "#option shell" ,
-followed by the Windows path of the file; and Tab completes file names
+followed by the Windows path of the file, and are Notepad by default,
+or nano in an ssh session, with the shell powwow-cmd, which runs
+the commands with cmd, where they are found; and Tab completes file names
 in any case, with a backslash after folders
 .TP
 .BI \-\-completion " shell"

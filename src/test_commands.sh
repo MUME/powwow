@@ -1693,6 +1693,42 @@ has '#option editor=nano (from %EDITOR%)'
 has '#option pager=cat (from %POWWOWPAGER%)'
 unset EDITOR
 
+# with --windows, the default editor and pager are Notepad, or nano in an
+# ssh session, and the shell powwow-cmd, if they are found in PATH; not
+# in the ssh session that the tests may be run in
+mkdir "$tmp/winbin"
+for f in notepad.exe nano powwow-cmd; do
+    printf '#! /bin/sh\n' > "$tmp/winbin/$f"
+    chmod +x "$tmp/winbin/$f"
+done
+unset POWWOWPAGER SSH_CONNECTION
+saved_path=$PATH
+PATH=$tmp/winbin:$PATH
+run --args --windows '--windows: Notepad and powwow-cmd by default' \
+    '#option list'
+has '#option editor=&notepad.exe (the default)'
+has '#option pager=&notepad.exe (the default)'
+has '#option help-pager=&notepad.exe (the default)'
+has '#option shell=powwow-cmd (the default)'
+SSH_CONNECTION='192.0.2.1 50000 192.0.2.2 22'
+export SSH_CONNECTION
+run --args --windows '--windows: nano by default in an ssh session' \
+    '#option list'
+has '#option editor=nano (the default)'
+has '#option pager=nano -v (the default)'
+unset SSH_CONNECTION
+run 'no Windows defaults without --windows' '#option list'
+has '#option editor=vi (the default)'
+has '#option pager=more (the default)'
+has '#option shell=/bin/sh (the default)'
+PATH=$saved_path
+run --args --windows '--windows: no Windows defaults not found in PATH' \
+    '#option list'
+has '#option editor=vi (the default)'
+has '#option shell=/bin/sh (the default)'
+POWWOWPAGER=cat
+export POWWOWPAGER
+
 run --args --windows '--windows: #help names variables as %NAME%' \
     '#help option'
 has "others; they come before '%POWWOWEDITOR%', '%POWWOWPAGER%',"

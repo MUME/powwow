@@ -86,7 +86,7 @@ COMPILING
 WINDOWS INSTALLER
 
 	On Cygwin, powwow can be built into a directory, powwow-win, with
-	the Cygwin DLLs it needs, sh, less, nano, and the CA certificates,
+	the Cygwin DLLs it needs, sh, nano, and the CA certificates,
 	which runs without Cygwin installed, and into a Windows installer of
 	that directory, with the prefix /usr or /usr/local, the default:
 
@@ -106,7 +106,7 @@ WINDOWS INSTALLER
 
 	setup-x86_64.exe -q -P gcc-core,make,autoconf,automake,pkg-config ^
 	    -P libgnutls-devel,libpcre2-devel,libncurses-devel,zlib-devel ^
-	    -P less,nano,ca-certificates,xz,zstd,bzip2,lzip
+	    -P nano,ca-certificates,xz,zstd,bzip2,lzip
 
 	The installer needs Inno Setup 6.3 or later
 	(https://jrsoftware.org/isinfo.php); cygwin/installer.sh finds its
@@ -129,12 +129,28 @@ WINDOWS INSTALLER
 	licenses in cygwin-licenses there.  make update-cygwin-licenses
 	updates them all.
 
-	The shortcuts run cygwin/powwow-start, which, unless they are set
-	already, sets POWWOWSHELL to cygwin/powwow-cmd, which runs cmd.exe
-	in UTF-8, so that #! dir and #var $x=!dir run Windows commands, as
-	lines of a batch file, where %NAME% is expanded and a % is written
-	%%, POWWOWEDITOR to Notepad, in another window, or to nano in an ssh
-	session, and POWWOWPAGER to less.
+	The shortcuts run cygwin/powwow-start, which runs powwow with
+	--windows: file names are written as on Windows, such as
+	C:\Users\Me\Documents\mud.powwow or %USERPROFILE%\mud.powwow, and the
+	commands of #!, of #var $x=!... and the like, and of the editor and
+	the pager, are commands of cmd.exe.  It also sets TMPDIR to the
+	temporary folder of Windows.  With --windows, unless the settings or
+	the environment choose others, the shell is cygwin/powwow-cmd, which
+	runs cmd.exe in UTF-8, with each command as a line of a batch file,
+	where %NAME% is expanded and a % is written %%; the editor is
+	Notepad, in another window, or nano in an ssh session; and the pager
+	is the same, with nano -v, which only views.
+
+	To edit with another program, give its command as in cmd.exe; the
+	editor gets the path of the file after it, and the description of the
+	text from the MUD in %TITLE%:
+
+	#option editor=&"C:\Program Files\Notepad++\notepad++.exe" -multiInst
+
+	The program must not end before the text is saved and closed, or
+	powwow ends the editing session at once: Notepad++ needs -multiInst,
+	which opens a window of its own instead of passing the file to one
+	that is open already.
 
 INSTALLING
 
