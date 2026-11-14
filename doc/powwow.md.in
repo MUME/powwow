@@ -30,6 +30,10 @@ use powwow) you are asked for a host name and port number.
 This will then be stored in the file. The file will be updated
 every time you type `#save` or when powwow terminates.
 The file is in plain text, so you can edit it if you want.
+A command that is `#` followed by a space, or only `#`, is a comment,
+which powwow skips up to the next `;` as any command; but a command such
+as `# (@1=5)` is an expression. `#save` writes the definitions without
+comments.
 It makes sense to have one file for each mud you play, or for
 each set of definitions you use in the same mud.
 
@@ -1030,12 +1034,13 @@ This is handy when you are talking to someone, for example.
 ### Help
 
 ```
-#help [-P|--no-pager] [keys|math|<command>]
+#help [-P|--no-pager] [keys|math|comment|<command>]
 ```
 
 Shows a list of powwow's commands.
 `#help keys` shows the editing keys.
 `#help math` show help on inline calculator.
+`#help comment` shows how to write comments.
 You can also have help on specific commands, using for example
 `#help alias` or in general `#help <command-name>`.
 The text is shown with the pager in `POWWOWPAGER` or `PAGER`, or `more`;

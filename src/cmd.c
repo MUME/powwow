@@ -90,7 +90,7 @@ cmdstruct *commands = NULL;
 static cmdstruct default_commands[] =
 {
     C("help",       cmd_help,
-      "[-P|--no-pager] [keys|math|<command>]\tthis text, or help on"
+      "[-P|--no-pager] [keys|math|comment|<command>]\tthis text, or help on"
       " specified topic"),
     C("17", (function_str)0,
       "<command>\trepeat <command> 17 times"),

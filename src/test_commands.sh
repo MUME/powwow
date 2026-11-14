@@ -1328,6 +1328,22 @@ run 'an old save-file keeps its own C-w' "#load $tmp/old
 has '#bind C-w ^W=&clear-line'
 lacks '#C-w now deletes back to the previous space; M-q puts the line in history'
 
+# "# " starts a comment, up to the next ;, typed, in a definition file and
+# in a file that #exe reads
+printf '%s\n' '#savefile-version 9' '#reset bind' '# a comment; #alias good=x' \
+    '#' '  # indented' > "$tmp/comments"
+printf '%s\n' '# a comment, "not run"' '# (@1 = 5)' \
+    '# then; #print ("run" + %@1)' > "$tmp/cmds"
+run 'comments end at a semicolon' \
+    "#load $tmp/comments
+#alias
+#exe <$tmp/cmds
+# xyz;#print (\"typed\")"
+has '#alias good@*=x'
+has 'run5'
+lacks 'not run'
+has 'typed'
+
 # a key bound with its sequence replaces the key with that sequence
 run '#bind with a sequence replaces the key with that sequence' \
     '#bind ^S ^S=#capture
@@ -1423,7 +1439,7 @@ run 'help without the pager' '#help -P help
 #help -P'
 POWWOWPAGER=cat
 lacks 'PAGER USED'
-has '#help [-P|--no-pager] [keys|math|<command>]'
+has '#help [-P|--no-pager] [keys|math|comment|<command>]'
 has '#addstatic {<text>|(<expr>)}    add the string to the static completion list'
 lacks "Help on 'help'"
 
@@ -1544,6 +1560,12 @@ for f in "${srcdir:-.}/../COPYING" "${srcdir:-.}/../doc/unicode-license.txt" \
         | LC_ALL=C grep -n "$high" | sed "s|^|${f##*/}:|" >> "$tmp/out"
 done
 [ -s "$tmp/out" ] && fail "replace these, or write them as ASCII in tty_put_wc()"
+
+# the help fits in a terminal of 80 columns
+name='the lines of #help are below 80 columns'
+awk 'length > 79 { print "powwow.help:" FNR ": " $0 }' \
+    "${srcdir:-.}/../doc/powwow.help" > "$tmp/out"
+[ -s "$tmp/out" ] && fail "wrap these lines"
 
 # powwow-movieplay -a converts a movie to text, without its pauses
 name='powwow-movieplay -a'
