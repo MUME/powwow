@@ -379,16 +379,12 @@ int memunescape(char *p, int lenp, bool raw)
 }
 
 /*
- * does 'c' separate the folders of a path: '/', and on Cygwin also '\\', of
- * the Windows paths that Explorer gives, such as of a .powwow file opened
+ * does 'c' separate the folders of a path: '/', and in Windows mode also
+ * '\\', as in the paths that Explorer gives, such as of a .powwow file
  */
 bool is_path_sep(char c)
 {
-#ifdef __CYGWIN__
-    if (c == '\\')
-        return true;
-#endif
-    return c == '/';
+    return c == '/' || (windows_mode && c == '\\');
 }
 
 /* does 'path' have a folder in it, such as dir/file? */
