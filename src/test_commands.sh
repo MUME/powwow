@@ -2202,6 +2202,21 @@ has "#settings saved to '$wtmp/saved.pw'."
 has "#print: #error opening '%POWWOW_TEST_UNSET%/x'"
 [ -e "$tmp/cap.txt" ] && [ -e "$tmp/saved.pw" ] \
     || fail 'expected the files in the directory of %POWWOW_TEST_DIR%'
+# with --windows, a backslash in the name of the definition file is a
+# folder, so the file is not in POWWOWDIR
+mkdir "$tmp/pwdir"
+[ -z "$cygwin" ] || mkdir -p a "$tmp/pwdir/a"
+POWWOWDIR=$tmp/pwdir/
+export POWWOWDIR
+run --args --windows \
+    '--windows: a backslash is a folder in the name of the definition file' \
+    '#save a\b.pw'
+has "#settings saved to 'a\\b.pw'."
+rm -rf 'a\b.pw' a
+run 'a backslash is part of the name of the definition file' '#save a\b.pw'
+has "#settings saved to '$tmp/pwdir/a\\b.pw'."
+unset POWWOWDIR
+
 run 'no %NAME% in file names without --windows' \
     '#print <%POWWOW_TEST_DIR%/x'
 has "#print: #error opening '%POWWOW_TEST_DIR%/x'"
