@@ -11,7 +11,7 @@ Files you should have received:
 	doc/powwow.md	    Complete documentation. Read this.
 	doc/powwow.help	    Online help file (in plain ASCII).
 	man/powwow.6	    Man page.
-	doc/Config.demo	    A demonstrative definition file for powwow
+	doc/demo.powwow	    A demonstrative definition file for powwow
 	doc/README.follow   Documentation for the 'follow' mini-program.
 	autogen.sh	    A shell script that creates the configure
 			    script, which creates Makefiles suitable for

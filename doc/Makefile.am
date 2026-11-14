@@ -9,7 +9,7 @@ else
 pkgdata_DATA += unicode-names.txt emoji-names.txt
 endif
 EXTRA_DIST = README.follow README.modules \
-		Hacking Config.demo \
+		Hacking demo.powwow \
 		powwow.md powwow.help unicode-names.txt unicode-names.sh \
 		emoji-names.txt emoji-names.sh update-unicode.sh \
                 unicode-license.txt

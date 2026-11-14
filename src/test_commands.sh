@@ -1478,7 +1478,7 @@ run 'the spaces after a file name are not part of it' "#save $tmp/saved "
 [ -f "$tmp/saved" ] || fail "expected $tmp/saved"
 
 mkdir -p "$tmp/defs/sub"
-echo '#print ("load" + "ed")' > "$tmp/defs/mud.cfg"
+echo '#print ("load" + "ed")' > "$tmp/defs/mud.powwow"
 run 'Tab completes file names, and directories without a space' '' \
     "#load $tmp/def	mu	
 #capture >$tmp/defs/s	
@@ -1486,7 +1486,7 @@ run 'Tab completes file names, and directories without a space' '' \
 "
 has 'loaded'
 has "#error writing file \"$tmp/defs/sub/\""
-has 'mud.cfg  sub/'
+has 'mud.powwow  sub/'
 
 run 'Tab completes the arguments of #hilite' '' \
     "#hil	inp	un	Ye	o	cy	
