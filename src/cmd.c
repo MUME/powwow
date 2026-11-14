@@ -2947,21 +2947,25 @@ static void cmd_option(char *arg)
         }
         if (varp == NULL) {
             if (strncmp("list", p, len) == 0) {
+                /* the descriptions in a column, also where they wrap,
+                 * after a command option set to a longer command */
+                static const char cont[] = "#                        ";
+                int col = (int)strlen(cont) - 1;
+                char opt[BUFSIZE];
                 tty_message("#list of options:\n");
                 for (i = 0; options[i].name != NULL; ++i) {
                     assert(options[i].option != NULL);
-                    tty_message("#option %c%-12s    %s\n",
-                               *options[i].option ? '+' : '-',
-                               options[i].name,
-                               options[i].doc);
+                    snprintf(opt, sizeof opt, "#option %c%s",
+                             *options[i].option ? '+' : '-', options[i].name);
+                    message_wrap(cont, "%-*s %s", col, opt, options[i].doc);
                 }
                 for (i = 0; command_options[i].name != NULL; ++i) {
                     const char *value = *command_options[i].value;
-                    tty_message("#option %s=%-*s %s\n",
-                                command_options[i].name,
-                                (int)(12 - strlen(command_options[i].name)),
-                                value != NULL ? value : "",
-                                command_options[i].doc);
+                    snprintf(opt, sizeof opt, "#option %s=%s",
+                             command_options[i].name,
+                             value != NULL ? value : "");
+                    message_wrap(cont, "%-*s %s", col, opt,
+                                 command_options[i].doc);
                 }
             } else {
                 tty_message("#syntax: #option [[+|-|=]<option>|list]..."
