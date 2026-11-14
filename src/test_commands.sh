@@ -2186,6 +2186,26 @@ run 'a file name after < loses its backslashes without --windows' \
     "#print <$tmp/back\\slash"
 has "#print: #error opening '$tmp/backslash'"
 
+# --windows replaces each %NAME% in a file name by the value of the
+# environment variable, as cmd does, but not one that is not set
+POWWOW_TEST_DIR=$tmp
+export POWWOW_TEST_DIR
+run --args --windows '--windows: %NAME% in file names' \
+    "#print <%POWWOW_TEST_DIR%/back\\slash
+#capture %POWWOW_TEST_DIR%/cap.txt
+#capture
+#save %POWWOW_TEST_DIR%/saved.pw
+#print <%POWWOW_TEST_UNSET%/x"
+has 'from the file'
+has "#end of capture to '$wtmp/cap.txt'."
+has "#settings saved to '$wtmp/saved.pw'."
+has "#print: #error opening '%POWWOW_TEST_UNSET%/x'"
+[ -e "$tmp/cap.txt" ] && [ -e "$tmp/saved.pw" ] \
+    || fail 'expected the files in the directory of %POWWOW_TEST_DIR%'
+run 'no %NAME% in file names without --windows' \
+    '#print <%POWWOW_TEST_DIR%/x'
+has "#print: #error opening '%POWWOW_TEST_DIR%/x'"
+
 # a line longer than the memory limit is still processed as a line, not
 # again as a prompt
 awk 'BEGIN { s = sprintf("%150s", ""); gsub(/ /, "x", s); print s

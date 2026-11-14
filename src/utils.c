@@ -27,6 +27,9 @@
 #ifdef HAVE_FLOCK
 #  include <sys/file.h>
 #endif
+#ifdef HAVE_CYGWIN_CONV_PATH
+#include <sys/cygwin.h>
+#endif
 
 #include "main.h"
 #include "utils.h"
@@ -405,6 +408,58 @@ bool has_path_sep(const char *path)
 const char *env_name(const char *name, char *buf, size_t size)
 {
     snprintf(buf, size, windows_mode ? "%%%s%%" : "$%s", name);
+    return buf;
+}
+
+/*
+ * the value of the environment variable 'name', or NULL; on Cygwin, which
+ * makes TEMP, HOME and the like Cygwin paths, a path as on Windows
+ */
+static const char *windows_getenv(const char *name, char *buf, size_t size)
+{
+    const char *value = getenv(name);
+#ifdef HAVE_CYGWIN_CONV_PATH
+    if (value != NULL && value[0] == '/'
+        && cygwin_conv_path(CCP_POSIX_TO_WIN_A | CCP_ABSOLUTE, value, buf,
+                            size) == 0)
+        return buf;
+#endif
+    return value;
+}
+
+/*
+ * the file name 'name': in Windows mode, with each %NAME% of an environment
+ * variable replaced by its value, as cmd does, in 'buf' of 'size' bytes; a
+ * % that names none, as in 100%, stays; 'name' itself if it has nothing to
+ * replace or the result does not fit
+ */
+const char *file_name(const char *name, char *buf, size_t size)
+{
+    if (!windows_mode || strchr(name, '%') == NULL)
+        return name;
+    size_t n = 0;
+    for (const char *p = name; *p != '\0';) {
+        const char *end = *p == '%' ? strchr(p + 1, '%') : NULL;
+        const char *value = NULL;
+        char var[BUFSIZE], path[BUFSIZE];
+        if (end != NULL && end > p + 1 && end - p - 1 < (int)sizeof(var)) {
+            snprintf(var, sizeof(var), "%.*s", (int)(end - p - 1), p + 1);
+            value = windows_getenv(var, path, sizeof(path));
+        }
+        if (value != NULL) {
+            size_t len = strlen(value);
+            if (n + len >= size)
+                return name;
+            memcpy(buf + n, value, len);
+            n += len;
+            p = end + 1;
+        } else {
+            if (n + 1 >= size)
+                return name;
+            buf[n++] = *p++;
+        }
+    }
+    buf[n] = '\0';
     return buf;
 }
 

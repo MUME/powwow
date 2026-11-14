@@ -47,6 +47,7 @@ void ptrunescape(ptr *p);
 int memunescape(char *p, int lenp, bool raw);
 extern bool raw_escapes;
 char *strip_end(char *s);
+const char *file_name(const char *name, char *buf, size_t size);
 bool is_path_sep(char c);
 bool has_path_sep(const char *path);
 const char *env_name(const char *name, char *buf, size_t size);
