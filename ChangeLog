@@ -18,11 +18,14 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	  and the pager run as #! runs its commands, followed by the
 	  Windows path of the file, and are Notepad by default, or nano
 	  in an ssh session, with powwow-cmd, which runs the commands with
-	  cmd, as the shell.  Tab completes file names in any case,
-	  with a \ after folders.  Edited texts are sent without the
-	  byte order mark and the CR of CR LF that editors with Windows
-	  settings write.  #spawn is not available, as Windows programs
-	  cannot talk through its connection.
+	  cmd, as the shell; as for sh, a \\ in double quotes in
+	  those commands and in those of #! is one \, so that
+	  "C:\\Program Files\\..." is the same in an #alias.  Tab
+	  completes file names in any case, with a \ after folders.
+	  Edited texts are sent without the byte order mark and the CR of
+	  CR LF that editors with Windows settings write.  #spawn is not
+	  available, as Windows programs cannot talk through its
+	  connection.
 
 Changes from 1.3.1 to 1.3.2
 

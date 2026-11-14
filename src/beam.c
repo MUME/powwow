@@ -655,10 +655,8 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
             /* as on Windows: run as #! runs a command, such as by cmd,
              * with the Windows path of the file */
             char path[BUFSIZE];
-            const char *file = windows_path(s->file, path, sizeof path);
-            char *line = xmalloc(strlen(editor) + strlen(file) + 4);
-            sprintf(line, "%s \"%s\"", editor, file);
-            command = shell_command(line);
+            command = shell_command(editor,
+                                    windows_path(s->file, path, sizeof path));
         } else {
             /* any character of $TMPDIR is safe in "$1" */
             command = xmalloc(strlen(editor) + 6);

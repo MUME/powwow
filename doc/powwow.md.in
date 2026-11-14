@@ -1328,6 +1328,15 @@ double quotes; and a byte order mark at the start of the edited text, and
 the CR of each CR LF, as editors with Windows settings write, are not
 sent.
 
+With `--windows` and a shell, which is cmd through powwow-cmd for the
+installer for Windows, a `\\` in double quotes in the commands of `#!`,
+`!`, the editor and the pager is one `\`, as it is for sh, so a path in
+double quotes is written as a powwow string, the same in an `#alias`:
+`#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst`.
+The editor must not end before the text is saved and closed, or powwow
+ends the editing session at once: Notepad++ needs `-multiInst` to open a
+window of its own instead of passing the file to one already open.
+
 ```
 #option editor=&emacsclient
 #option shell=zsh -c

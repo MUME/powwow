@@ -779,25 +779,46 @@ static const char *shell_choice(const char **from)
 }
 
 /*
- * the command for /bin/sh that #!, and the ! of #var and others, run
- * 'arg' with: 'arg' itself, or, if POWWOWSHELL is set, such as to
- * "zsh -c", that shell with 'arg' as its last argument, to be freed
+ * the command for /bin/sh that #!, the ! of #var and others, and in
+ * Windows mode the editor and the pager, run 'arg' with, followed by
+ * 'file' in double quotes unless it is NULL: that line itself, or, if
+ * POWWOWSHELL is set, such as to "zsh -c", that shell with the line as its
+ * last argument, to be freed.  In Windows mode, where that shell is cmd,
+ * a \\ in double quotes in 'arg' is a \, as it is for sh, so that a
+ * Windows path in double quotes is written as a powwow string
  */
-char *shell_command(const char *arg)
+char *shell_command(const char *arg, const char *file)
 {
     const char *from;
     const char *shell = shell_choice(&from);
-    if (shell == NULL || *shell == '\0')
-        return xstrdup(arg);
+    bool has_shell = shell != NULL && *shell != '\0';
 
-    /* exec $POWWOWSHELL 'arg', with each ' of 'arg' as '\'' */
+    char *line = xmalloc(strlen(arg) + (file != NULL ? strlen(file) + 3 : 0)
+                         + 1);
+    char *l = line;
+    bool quoted = false;
+    for (const char *p = arg; *p != '\0'; ++p) {
+        if (*p == '"')
+            quoted = !quoted;
+        else if (windows_mode && has_shell && quoted && p[0] == '\\'
+                 && p[1] == '\\')
+            ++p;
+        *l++ = *p;
+    }
+    if (file != NULL)
+        l += sprintf(l, " \"%s\"", file);
+    *l = '\0';
+    if (!has_shell)
+        return line;
+
+    /* exec $POWWOWSHELL 'line', with each ' of 'line' as '\'' */
     static const char quote[] = "'\\''";
     size_t len = strlen("exec  ''") + strlen(shell);
-    for (const char *p = arg; *p != '\0'; ++p)
+    for (const char *p = line; *p != '\0'; ++p)
         len += *p == '\'' ? sizeof quote - 1 : 1;
     char *command = xmalloc(len + 1);
     char *q = command + sprintf(command, "exec %s '", shell);
-    for (const char *p = arg; *p != '\0'; ++p) {
+    for (const char *p = line; *p != '\0'; ++p) {
         if (*p == '\'') {
             memcpy(q, quote, sizeof quote - 1);
             q += sizeof quote - 1;
@@ -806,6 +827,7 @@ char *shell_command(const char *arg)
         }
     }
     strcpy(q, "'");
+    free(line);
     return command;
 }
 
@@ -815,7 +837,7 @@ char *shell_command(const char *arg)
  */
 static FILE *shell_popen(const char *command, const char *mode)
 {
-    char *line = shell_command(command);
+    char *line = shell_command(command, NULL);
     FILE *fp = popen(line, mode);
     free(line);
     return fp;
@@ -829,7 +851,7 @@ static void cmd_shell(char *arg)
             message_printf("#that's easy.\n");
         }
     } else {
-        char *command = shell_command(arg);
+        char *command = shell_command(arg, NULL);
         tty_quit();
         int wstatus = system(command);
         free(command);

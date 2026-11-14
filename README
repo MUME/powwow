@@ -141,11 +141,13 @@ WINDOWS INSTALLER
 	Notepad, in another window, or nano in an ssh session; and the pager
 	is the same, with nano -v, which only views.
 
-	To edit with another program, give its command as in cmd.exe; the
-	editor gets the path of the file after it, and the description of the
-	text from the MUD in %TITLE%:
+	To edit with another program, give its command as in cmd.exe, but
+	with each \ in double quotes written \\, as in sh and in the
+	strings of powwow, also in an #alias; the editor gets the path of the
+	file after it, and the description of the text from the MUD in
+	%TITLE%:
 
-	#option editor=&"C:\Program Files\Notepad++\notepad++.exe" -multiInst
+	#option editor=&"C:\\Program Files\\Notepad++\\notepad++" -multiInst
 
 	The program must not end before the text is saved and closed, or
 	powwow ends the editing session at once: Notepad++ needs -multiInst,
