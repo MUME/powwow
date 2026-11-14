@@ -232,6 +232,12 @@ const bool *edlabels;     /* if not NULL, which bytes of edbuf are labels
 int isprompt_len = 0;     /* set by #isprompt: 0 if not a prompt, -1 if a
                            * prompt of unknown length, else its length */
 bool verbatim = false;    /* don't expand aliases or process semicolons */
+/*
+ * --windows, which the powwow of the installer for Windows runs with:
+ * file names and commands are written as on Windows, so a file name after
+ * < and a command after ! keep their backslashes, which are not escapes
+ */
+bool windows_mode = false;
 char prefixstr[BUFSIZE];  /* inserted in the editing buffer each time */
 char inserted_next[BUFSIZE]; /* inserted in buffer just once */
 bool flashback = false;   /* cursor is on excursion and should be put back */
@@ -278,6 +284,9 @@ static void show_help(const char *prog)
     "  --completion SHELL     print the completion of the arguments of" \
     " powwow\n"                                                         \
     "                         in SHELL, bash or zsh, and exit\n"
+#ifdef __CYGWIN__
+#define WIN_ARG  "--windows, -w      "
+#endif
 #else
 #define HELP_ARG "-h                 "
 #define TLS_ARG  "-t, -T TLS-OPTIONS "
@@ -287,6 +296,9 @@ static void show_help(const char *prog)
 #define VER_ARG  "-v                 "
 #define VER_DESC "display the powwow version (-vv: with details)"
 #define COMPL_HELP ""
+#ifdef __CYGWIN__
+#define WIN_ARG  "-w                 "
+#endif
 #endif
 
 #ifdef USE_TLS
@@ -297,6 +309,15 @@ static void show_help(const char *prog)
     " is HOST"
 #else
 #define TLS_DESC " (not supported)"
+#endif
+
+    /* --windows listed only on Cygwin, where it is of use, though powwow
+     * takes it everywhere, so that its tests run on every system */
+#ifdef __CYGWIN__
+#define WIN_HELP                                                        \
+    "  " WIN_ARG "    take file names and commands as on Windows\n"
+#else
+#define WIN_HELP ""
 #endif
 
     printf("Usage:\n"
@@ -310,6 +331,7 @@ static void show_help(const char *prog)
            " (default)\n"
            "  " LAT1_ARG "    assume and prefer ISO-8859-1 on the connection\n"
            "  " VER_ARG  "    " VER_DESC "\n"
+           WIN_HELP
            COMPL_HELP,
            prog);
 #undef HELP_ARG
@@ -320,6 +342,10 @@ static void show_help(const char *prog)
 #undef VER_ARG
 #undef VER_DESC
 #undef COMPL_HELP
+#ifdef __CYGWIN__
+#undef WIN_ARG
+#endif
+#undef WIN_HELP
 #undef TLS_DESC
 }
 
@@ -412,13 +438,14 @@ static const struct option longopts[] = {
     { "latin1",     no_argument,       NULL, 'l' },
     { "utf8",       no_argument,       NULL, 'u' },
     { "version",    no_argument,       NULL, 'v' },
+    { "windows",    no_argument,       NULL, 'w' },
     { NULL }
 };
 
 /*
  * print the script of --completion for 'shell', with the long options,
- * and those with an optional argument also with =; return false if there
- * is none for 'shell'
+ * and those with an optional argument also with =; --windows only on
+ * Cygwin, as --help lists it; return false if there is none for 'shell'
  */
 static bool print_completion_of(const char *shell)
 {
@@ -426,6 +453,10 @@ static bool print_completion_of(const char *shell)
     char names[2 * sizeof longopts / sizeof *longopts][32];
     size_t count = 0;
     for (const struct option *o = longopts; o->name != NULL; ++o) {
+#ifndef __CYGWIN__
+        if (o->val == 'w')
+            continue;
+#endif
         snprintf(names[count], sizeof names[count], "--%s", o->name);
         options[count] = names[count];
         ++count;
@@ -497,9 +528,9 @@ int main(int argc, char **argv)
     int nversion = 0;           /* number of --version */
     for (int c;;) {
 #ifdef HAVE_GETOPT_LONG
-        c = getopt_long(argc, argv, "hlnt::uv", longopts, NULL);
+        c = getopt_long(argc, argv, "hlnt::uvw", longopts, NULL);
 #else
-        c = getopt(argc, argv, "hlntT:uv");
+        c = getopt(argc, argv, "hlntT:uvw");
 #endif
         if (c == -1)
             break;
@@ -535,6 +566,9 @@ int main(int argc, char **argv)
             break;
         case 'v':
             ++nversion;
+            break;
+        case 'w':
+            windows_mode = true;
             break;
 #ifdef HAVE_GETOPT_LONG
         case OPT_COMPLETION:

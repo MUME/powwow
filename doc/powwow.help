@@ -443,13 +443,12 @@ other lines.
 
 An editor or pager that starts with ‘&’ runs in another window: powwow
 goes on without waiting for it. Both get the description of the text from
-the MUD in the environment variable ‘TITLE’: ‘$TITLE’ in sh, ‘%TITLE%’ in
-cmd on Windows.
+the MUD in the environment variable ‘$TITLE’.
 
      #option editor=&emacsclient  edit in another window
      #option help-pager=less      show ‘#help’ with less
      #option pager=-              print the texts to view
-     #option shell=               clear it: use ‘$POWWOWSHELL’, or /bin/sh
+     #option shell=               clear it: ‘$POWWOWSHELL’ or the default
 @put
 #put {<text>|(<expr>)}
 

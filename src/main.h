@@ -111,6 +111,7 @@ extern char inserted_next[BUFSIZE];
 extern bool flashback;
 extern int excursion;
 extern bool verbatim;
+extern bool windows_mode;      /* --windows: see main.c */
 
 extern bool opt_exit;
 extern bool opt_history;
