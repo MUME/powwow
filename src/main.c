@@ -240,8 +240,8 @@ bool verbatim = false;    /* don't expand aliases or process semicolons */
  * them (see file_name()); the editor and the pager run as #! runs its
  * commands, with the Windows path of the file, edited texts are sent
  * without what editors with Windows settings add (see
- * strip_windows_format()), and Tab completes file names in any case, with
- * a \ after folders
+ * strip_windows_format()), Tab completes file names in any case, with
+ * a \ after folders, and #spawn is not available
  */
 bool windows_mode = false;
 char prefixstr[BUFSIZE];  /* inserted in the editing buffer each time */

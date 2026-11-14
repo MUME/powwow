@@ -2806,6 +2806,36 @@ has '#edited text too long, not sent'
 [ "$(grep -c '^C5$' "$tmp/got")" -eq 1 ] \
     || fail "expected a cancel message, got: $(od -c "$tmp/got")"
 
+run --args --windows '--windows: no #spawn' '#spawn n sh -c true'
+has '#spawn: #error: not available with --windows'
+
+# with --windows, where there is no #spawn, a fake MUD runs the script $1
+# with the arguments after it, connected to the first connection to the
+# port of 127.0.0.1 it writes in $tmp/port; it needs python3, as the fake
+# MUDs above do
+mud_server() {
+    cat > "$tmp/mud.py" <<'EOF'
+import os, socket, subprocess, sys
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+subprocess.run(['sh'] + sys.argv[2:], stdin=c.fileno(), stdout=c.fileno())
+c.close()
+EOF
+    rm -f "$tmp/port"
+    python3 -I "$tmp/mud.py" "$tmp/port" "$@" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+}
+
 # an editor with Windows settings: with --windows, its byte order mark
 # and the CRs of its CR LF line endings are not sent, but a CR without LF
 # is; without --windows, the text is sent as it is
@@ -2815,21 +2845,25 @@ printf '~$#EE14\nM5\ndescr\ntext\n'
 cat > "$1/got"
 touch "$1/done"
 EOF
-run --args --windows --until '#completed session' \
-    '--windows: edited text with a BOM and CR LF' \
-    "#option editor=&printf '\\357\\273\\277one\\r\\ntwo\\rthree\\r\\n' >
-#spawn n sh $tmp/server $tmp
+if python3 -c "" > /dev/null 2>&1; then
+    mud_server "$tmp/server" "$tmp"
+    run --args --windows --until '#completed session' \
+        '--windows: edited text with a BOM and CR LF' \
+        "#option editor=&printf '\\357\\273\\277one\\r\\ntwo\\rthree\\r\\n' >
+#connect n --no-tls 127.0.0.1 $(cat "$tmp/port")
 ##n #request editor"
-i=0
-until [ -e "$tmp/done" ] || [ $i -ge 500 ]; do
-    sleep 0.01
-    i=$((i + 1))
-done
-printf '~$#EE17\nE5\none\ntwo\rthree\n' > "$tmp/want"
-# after the rest of the identification, the message
-tail -c 25 "$tmp/got" | cmp -s "$tmp/want" - \
-    || fail "expected no BOM, and LF for CR LF, got: $(od -c "$tmp/got")"
-rm -f "$tmp/done"
+    i=0
+    until [ -e "$tmp/done" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+    wait $server
+    printf '~$#EE17\nE5\none\ntwo\rthree\n' > "$tmp/want"
+    # after the rest of the identification, the message
+    tail -c 25 "$tmp/got" | cmp -s "$tmp/want" - \
+        || fail "expected no BOM, and LF for CR LF, got: $(od -c "$tmp/got")"
+    rm -f "$tmp/done"
+fi
 run --until '#completed session' 'edited text sent as it is' \
     "#option editor=&printf '\\357\\273\\277one\\r\\n' >
 #spawn n sh $tmp/server $tmp
@@ -2854,16 +2888,20 @@ cat > "$tmp/shell" <<'EOF'
 printf '%s\n%s\n' "$1" "$TITLE" > "${0%/*}/shell-got"
 exec sh -c "$1"
 EOF
-run --args --windows --until '#cancelled session' \
-    '--windows: the editor runs with #option shell' \
-    "#option shell=sh $tmp/shell
+if python3 -c "" > /dev/null 2>&1; then
+    mud_server "$tmp/server"
+    run --args --windows --until '#cancelled session' \
+        '--windows: the editor runs with #option shell' \
+        "#option shell=sh $tmp/shell
 #option editor=&true
-#spawn n sh $tmp/server
+#connect n --no-tls 127.0.0.1 $(cat "$tmp/port")
 ##n #request editor"
-grep -q '^true ".*powwow-edit-5-[^"]*"$' "$tmp/shell-got" \
-    || fail "expected the editor and the file, got: $(cat "$tmp/shell-got")"
-sed -n 2p "$tmp/shell-got" | grep -qx 'the title' \
-    || fail "expected TITLE, got: $(cat "$tmp/shell-got")"
+    wait $server
+    grep -q '^true ".*powwow-edit-5-[^"]*"$' "$tmp/shell-got" \
+        || fail "expected the editor and the file, got: $(cat "$tmp/shell-got")"
+    sed -n 2p "$tmp/shell-got" | grep -qx 'the title' \
+        || fail "expected TITLE, got: $(cat "$tmp/shell-got")"
+fi
 
 # an editing session with a long description
 cat > "$tmp/server" <<'EOF'

@@ -1016,6 +1016,7 @@ Writing to ##<session-id> sends data to the command's standard input, and
 its standard output is executed as if typed from the keyboard. Each command
 it outputs must end with a newline or a semicolon, and the last one with a
 newline. See ‘#option autoclear’ and ‘#clear’ for printing to the screen.
+Not available with ‘--windows’, as the installer for Windows runs powwow.
 @speedwalk
 #speedwalk [<walk-sequence>]
 

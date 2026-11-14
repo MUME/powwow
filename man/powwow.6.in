@@ -171,8 +171,10 @@ runs its commands, with the shell of
 .BR "#option shell" ,
 followed by the Windows path of the file, and are Notepad by default,
 or nano in an ssh session, with the shell powwow-cmd, which runs
-the commands with cmd, where they are found; and Tab completes file names
-in any case, with a backslash after folders
+the commands with cmd, where they are found; Tab completes file names
+in any case, with a backslash after folders; and
+.B #spawn
+is not available
 .TP
 .BI \-\-completion " shell"
 print the completion of the arguments of
