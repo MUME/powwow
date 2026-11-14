@@ -15,35 +15,17 @@
 PATH=/usr/bin:/bin:$PATH
 export PATH
 
-# less pages #help and the texts that the MUD shows, unless the user
-# chose another pager
-if [ -z "${POWWOWPAGER:-}" ] && command -v less > /dev/null; then
-    POWWOWPAGER=less
-    export POWWOWPAGER
-fi
-
-# the programs of Windows for #! and for editing, unless the user chose
-# others: cmd, through powwow-cmd, in UTF-8, so that #! dir and
-# #var $x=!dir work, and Notepad, through powwow-notepad,
-# in another window, so that powwow goes on; but nano in the terminal in
-# an ssh session, which has no desktop to show Notepad on
-sys=$(cygpath -S 2> /dev/null)
-if [ -z "${POWWOWSHELL:-}" ] && [ -x "$sys/cmd.exe" ]; then
-    POWWOWSHELL=powwow-cmd
-    export POWWOWSHELL
-fi
-if [ -z "${POWWOWEDITOR:-}${EDITOR:-}" ]; then
-    if [ -n "${SSH_CONNECTION:-}" ] && command -v nano > /dev/null; then
-        POWWOWEDITOR=nano
-        export POWWOWEDITOR
-    elif [ -x "$sys/notepad.exe" ]; then
-        POWWOWEDITOR='&powwow-notepad'
-        export POWWOWEDITOR
-    fi
+# the temporary files, such as of the texts to edit, in the temporary
+# folder of Windows, which the user can write, unlike /tmp of a bundle
+# installed for all users
+if [ -z "${TMPDIR:-}" ] && [ -n "${TEMP:-}" ]; then
+    TMPDIR=$(cygpath -w "$TEMP")
+    export TMPDIR
 fi
 
 if [ $# -eq 0 ]; then
     docs=$(cygpath -O 2> /dev/null)
+    sys=$(cygpath -S 2> /dev/null)
     # the bundle has no mkdir, but cmd has
     if [ -n "$docs" ] && [ ! -d "$docs/powwow" ]; then
         "$sys/cmd.exe" /c mkdir "$(cygpath -w "$docs/powwow")" \
@@ -58,4 +40,4 @@ elif [ -f "$1" ]; then
         */*) cd "${file%/*}" 2> /dev/null || true ;;
     esac
 fi
-exec /bin/powwow "$@"
+exec /bin/powwow --windows "$@"

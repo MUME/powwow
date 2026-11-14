@@ -378,10 +378,27 @@ static const char *env_command(const char *name)
 }
 
 /*
+ * the editor, or the pager if 'view', that Windows mode uses when nothing
+ * else is chosen, as for the installer for Windows: nano, only viewing
+ * for the pager, in an ssh session, which has no desktop to show Notepad
+ * on, else Notepad, in another window so that powwow goes on; NULL
+ * without Windows mode or if neither is found
+ */
+static const char *windows_editor(bool view)
+{
+    if (!windows_mode)
+        return NULL;
+    if (getenv("SSH_CONNECTION") != NULL && in_path("nano"))
+        return view ? "nano -v" : "nano";
+    return in_path("notepad.exe") ? "&notepad.exe" : NULL;
+}
+
+/*
  * the command that edits a text, or shows it if 'view', or shows #help if
  * 'builtin': #help first uses #option help-pager, then $POWWOWHELPPAGER;
- * then #option pager and editor come first, then the environment; "-" is
- * no pager. If 'from' is not NULL, set it to where the command comes from:
+ * then #option pager and editor come first, then the environment, then
+ * the default, which windows_editor() gives in Windows mode; "-" is no
+ * pager. If 'from' is not NULL, set it to where the command comes from:
  * NULL for the option asked for itself, "#option pager" for that option
  * for #help, the name of an environment variable, or "" for the default
  */
@@ -407,7 +424,9 @@ const char *editor_command(bool view, bool builtin, const char **from)
     }
     if (editor == NULL) {
         source = "";
-        editor = view ? "more" : "vi";
+        editor = windows_editor(view);
+        if (editor == NULL)
+            editor = view ? "more" : "vi";
     }
     if (from != NULL)
         *from = source;

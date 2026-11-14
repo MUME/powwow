@@ -67,20 +67,11 @@ for p in sh cygpath; do
 done
 
 # what the shortcuts and .powwow files run in Windows Terminal, and the
-# shell and editor it sets
-cp "$(dirname "$0")/powwow-start" "$(dirname "$0")/powwow-cmd" \
-    "$(dirname "$0")/powwow-notepad" "$stage/bin/"
+# shell of powwow with --windows
+cp "$(dirname "$0")/powwow-start" "$(dirname "$0")/powwow-cmd" "$stage/bin/"
 
-# less, the pager of #help and of the texts that the MUD shows, which
-# powwow-start sets in POWWOWPAGER; without one, the more.com of Windows
-# is found, which cannot page in a Cygwin program
-if [ ! -e /usr/bin/less.exe ]; then
-    echo "$0: no /usr/bin/less.exe; install the Cygwin package less" >&2
-    exit 1
-fi
-cp -L /usr/bin/less.exe "$stage/bin/"
-# nano, the editor that powwow-start sets in an ssh session, where Notepad
-# would not be seen
+# nano, the editor of powwow with --windows in an ssh session, where
+# Notepad would not be seen
 if [ ! -e /usr/bin/nano.exe ]; then
     echo "$0: no /usr/bin/nano.exe; install the Cygwin package nano" >&2
     exit 1

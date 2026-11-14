@@ -1,7 +1,7 @@
 #! /bin/sh
 #
 # run the command $1 with the cmd of Windows, in UTF-8: the shell of #!
-# and #var $x=!... that powwow-start sets for the bundle. The command is
+# and #var $x=!... of powwow with --windows, in the bundle. The command is
 # a line of a batch file, so that cmd reads it as written, with %NAME%
 # expanded and a % written %%: as an argument, Cygwin would quote it as
 # C programs read arguments, with \" for each ", which cmd does not. The
@@ -12,6 +12,14 @@
 
 cmd=$(cygpath -S)/cmd.exe
 "$cmd" /c "chcp 65001 >nul"
-file=/tmp/powwow-cmd-$$.cmd
+
+# the description of the text that the editor gets in %TITLE%, which the
+# MUD sends, without the characters that would make it part of the command
+if [ -n "${TITLE:-}" ]; then
+    TITLE=${TITLE//[\"%!^&|<>()]/}
+    export TITLE
+fi
+
+file=${TMPDIR:-/tmp}/powwow-cmd-$$.cmd
 printf '@(goto) 2>nul & del "%%~f0" & %s\r\n' "$1" > "$file" || exit 1
 exec "$cmd" /c "$(cygpath -w "$file")"

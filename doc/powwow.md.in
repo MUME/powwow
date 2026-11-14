@@ -1311,7 +1311,10 @@ the texts that the MUD sends to edit, `pager` shows texts such as
 runs `#!` and the commands after `!` of `#var` and others. Each comes
 before its environment variable, `POWWOWEDITOR`, `POWWOWPAGER`,
 `POWWOWHELPPAGER` and `POWWOWSHELL`, and they are saved with the other
-options. An empty command clears one, and
+options. With `--windows`, as the installer for Windows runs powwow,
+the editor and the pager are Notepad by default, or nano in an ssh
+session, and the shell is powwow-cmd, which runs the commands with cmd,
+where they are found. An empty command clears one, and
 `#option =name` puts it in the input line to edit. A pager of `-` (a
 hyphen) is none: `#help` prints its text as other messages, and the texts
 that the MUD sends to view are printed as its other lines.

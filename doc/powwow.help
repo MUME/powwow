@@ -439,7 +439,10 @@ others; they come before ‘$POWWOWEDITOR’, ‘$POWWOWPAGER’,
 ‘$POWWOWHELPPAGER’ and ‘$POWWOWSHELL’, are saved, and take the rest of the
 line.  A pager of ‘-’ (a hyphen) is none: ‘#help’ prints its text as other
 messages, and the texts that the MUD sends to view are printed as its
-other lines.
+other lines.  With ‘--windows’, as the installer for Windows runs
+powwow, the editor and the pager are Notepad by default, or nano in an
+ssh session, and the shell powwow-cmd, which runs the commands with cmd,
+where they are found.
 
 An editor or pager that starts with ‘&’ runs in another window: powwow
 goes on without waiting for it. Both get the description of the text from
@@ -807,8 +810,8 @@ what a line-editing function does, and the keys bound to it.
 
 The text is shown with the pager in ‘#option help-pager’,
 ‘$POWWOWHELPPAGER’, ‘#option pager’, ‘$POWWOWPAGER’ or ‘$PAGER’, or
-more(1). With ‘-P’ or ‘--no-pager’, or a pager of ‘-’ (a hyphen), it is
-printed on the screen instead.
+more(1), or Notepad with ‘--windows’. With ‘-P’ or ‘--no-pager’, or a
+pager of ‘-’ (a hyphen), it is printed on the screen instead.
 @identify
 #identify [<startedit> [<endedit>]]
 
