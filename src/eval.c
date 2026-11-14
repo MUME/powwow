@@ -52,11 +52,11 @@
  *   put when assigning reallocates the text.
  */
 typedef struct {
-    int type;
-    long num;                   /* the value of TYPE_NUM */
-    ptr *txt;                   /* the value of TYPE_TXT */
-    long *num_ref;              /* the variable of TYPE_NUM_VAR */
-    ptr **txt_ref;              /* the variable of TYPE_TXT_VAR */
+    enum eval_type type;
+    long num;                   /* the value of EVAL_TYPE_NUM */
+    ptr *txt;                   /* the value of EVAL_TYPE_TXT */
+    long *num_ref;              /* the variable of EVAL_TYPE_NUM_VAR */
+    ptr **txt_ref;              /* the variable of EVAL_TYPE_TXT_VAR */
 } object;
 
 #define LEFT  1
@@ -412,14 +412,14 @@ static bool check_object(object *obj)
             ++line;
             c = *line;
         }
-        obj->type = TYPE_NUM;
+        obj->type = EVAL_TYPE_NUM;
         obj->num = num;
         found = true;
     } else if (c == '\"') {
         ++line;
         char *end = first_valid(line, '\"');
         if (*end != '\0') {
-            obj->type = TYPE_TXT;
+            obj->type = EVAL_TYPE_TXT;
             obj->txt = ptrmcpy(obj->txt, line, end - line);
             if (!real_error()) {
                 ptrunescape(obj->txt);
@@ -433,10 +433,10 @@ static bool check_object(object *obj)
         enum var_kind kind;
         if (*line == '@') {
             kind = VAR_NUM;
-            obj->type = TYPE_NUM_VAR;
+            obj->type = EVAL_TYPE_NUM_VAR;
         } else {
             kind = VAR_TEXT;
-            obj->type = TYPE_TXT_VAR;
+            obj->type = EVAL_TYPE_TXT_VAR;
         }
         ++line;
         char *end = line + 1;
@@ -460,7 +460,7 @@ static bool check_object(object *obj)
             obj->num_ref = &named_var->num;
         found = true;
     } else if (strncmp(line, "timer", 5) == 0) {
-        obj->type = TYPE_NUM;
+        obj->type = EVAL_TYPE_NUM;
         update_now();
         obj->num = diff_vtime(&now, &ref_time);
         line += 5;
@@ -468,14 +468,14 @@ static bool check_object(object *obj)
     } else if (strncmp(line, "map", 3) == 0) {
         char buf[MAX_MAPLEN + 1];
         map_sprintf(buf);
-        obj->type = TYPE_TXT;
+        obj->type = EVAL_TYPE_TXT;
         obj->txt = ptrmcpy(obj->txt, buf, strlen(buf));
         if (!real_error()) {
             line += 3;
             found = true;
         }
     } else if (strncmp(line, "noattr", 6) == 0) {
-        obj->type = TYPE_TXT;
+        obj->type = EVAL_TYPE_TXT;
         obj->txt = ptrmcpy(obj->txt, tty_modestandoff,
                            strlen(tty_modestandoff));
         obj->txt = ptrmcat(obj->txt, tty_modenorm, strlen(tty_modenorm));
@@ -492,7 +492,7 @@ static bool check_object(object *obj)
 
 static void check_delete(object *obj)
 {
-    if (obj->type == TYPE_TXT && obj->txt != NULL) {
+    if (obj->type == EVAL_TYPE_TXT && obj->txt != NULL) {
         ptrdel(&obj->txt);
         obj->txt = NULL;
     }
@@ -596,22 +596,23 @@ static bool exe_op(operator *op)
         if (!(pop_obj(&o2) && pop_obj(&o1)) && real_error())
             break;
 
-        if (o2.type == TYPE_NUM_VAR) {
+        if (o2.type == EVAL_TYPE_NUM_VAR) {
             o2.num = *o2.num_ref;
-            o2.type = TYPE_NUM;
+            o2.type = EVAL_TYPE_NUM;
         }
 
-        if (o1.type == TYPE_NUM_VAR && o2.type == TYPE_NUM) {
+        if (o1.type == EVAL_TYPE_NUM_VAR && o2.type == EVAL_TYPE_NUM) {
             *o1.num_ref = o2.num;
             p = &o2;
             ret = true;
-        } else if (o1.type == TYPE_TXT_VAR
-                   && (o2.type == TYPE_TXT || o2.type == TYPE_TXT_VAR)) {
-            if (o2.type == TYPE_TXT_VAR) {
+        } else if (o1.type == EVAL_TYPE_TXT_VAR
+                   && (o2.type == EVAL_TYPE_TXT
+                       || o2.type == EVAL_TYPE_TXT_VAR)) {
+            if (o2.type == EVAL_TYPE_TXT_VAR) {
                 o2.txt = ptrdup(*o2.txt_ref);
                 if (real_error())
                     break;
-                o2.type = TYPE_TXT;
+                o2.type = EVAL_TYPE_TXT;
             }
 
             *o1.txt_ref = ptrcpy(*o1.txt_ref, o2.txt);
@@ -639,12 +640,12 @@ static bool exe_op(operator *op)
         if (!(pop_obj(&o2) && pop_obj(&o1)) && real_error())
             break;
 
-        if (o2.type == TYPE_NUM_VAR) {
+        if (o2.type == EVAL_TYPE_NUM_VAR) {
             o2.num = *o2.num_ref;
-            o2.type = TYPE_NUM;
+            o2.type = EVAL_TYPE_NUM;
         }
 
-        if (o1.type == TYPE_NUM_VAR && o2.type == TYPE_NUM) {
+        if (o1.type == EVAL_TYPE_NUM_VAR && o2.type == EVAL_TYPE_NUM) {
             long *l = o1.num_ref;
 
             switch (*op) {
@@ -698,9 +699,10 @@ static bool exe_op(operator *op)
             o2.num = *l;
             p = &o2;
             ret = true;
-        } else if (*op == op_plus_eq && o1.type == TYPE_TXT_VAR
-                   && (o2.type == TYPE_TXT || o2.type == TYPE_TXT_VAR)) {
-            ptr *src = o2.type == TYPE_TXT ? o2.txt : *o2.txt_ref;
+        } else if (*op == op_plus_eq && o1.type == EVAL_TYPE_TXT_VAR
+                   && (o2.type == EVAL_TYPE_TXT
+                       || o2.type == EVAL_TYPE_TXT_VAR)) {
+            ptr *src = o2.type == EVAL_TYPE_TXT ? o2.txt : *o2.txt_ref;
 
             *o1.txt_ref = ptrcat(*o1.txt_ref, src);
             check_delete(&o2);
@@ -709,15 +711,16 @@ static bool exe_op(operator *op)
             if (real_error())
                 break;
 
-            o1.type = TYPE_TXT;
+            o1.type = EVAL_TYPE_TXT;
             o1.txt = dst;
             p = &o1;
             ret = true;
-        } else if (*op == op_times_eq && o1.type == TYPE_TXT_VAR
-                   && (o2.type == TYPE_NUM || o2.type == TYPE_NUM_VAR)) {
-            if (o2.type == TYPE_NUM_VAR) {
+        } else if (*op == op_times_eq && o1.type == EVAL_TYPE_TXT_VAR
+                   && (o2.type == EVAL_TYPE_NUM
+                       || o2.type == EVAL_TYPE_NUM_VAR)) {
+            if (o2.type == EVAL_TYPE_NUM_VAR) {
                 o2.num = *o2.num_ref;
-                o2.type = TYPE_NUM;
+                o2.type = EVAL_TYPE_NUM;
             }
 
             if (o2.num < 0) {
@@ -733,7 +736,7 @@ static bool exe_op(operator *op)
             if (real_error())
                 break;
 
-            o1.type = TYPE_TXT;
+            o1.type = EVAL_TYPE_TXT;
             o1.txt = dst;
             p = &o1;
             ret = true;
@@ -763,16 +766,16 @@ static bool exe_op(operator *op)
         if (!(pop_obj(&o2) && pop_obj(&o1)) && real_error())
             break;
 
-        if (o1.type == TYPE_NUM_VAR) {
+        if (o1.type == EVAL_TYPE_NUM_VAR) {
             o1.num = *o1.num_ref;
-            o1.type = TYPE_NUM;
+            o1.type = EVAL_TYPE_NUM;
         }
-        if (o2.type == TYPE_NUM_VAR) {
+        if (o2.type == EVAL_TYPE_NUM_VAR) {
             o2.num = *o2.num_ref;
-            o2.type = TYPE_NUM;
+            o2.type = EVAL_TYPE_NUM;
         }
 
-        if (o1.type == TYPE_NUM && o2.type == TYPE_NUM) {
+        if (o1.type == EVAL_TYPE_NUM && o2.type == EVAL_TYPE_NUM) {
             switch (*op) {
             case op_less:
                 o1.num = o1.num < o2.num ? 1 : 0;
@@ -833,20 +836,21 @@ static bool exe_op(operator *op)
 
             p = &o1;
             ret = true;
-        } else if ((o1.type == TYPE_TXT || o1.type == TYPE_TXT_VAR)
-                   && (o2.type == TYPE_TXT || o2.type == TYPE_TXT_VAR)) {
-            if (o1.type == TYPE_TXT_VAR) {
+        } else if ((o1.type == EVAL_TYPE_TXT || o1.type == EVAL_TYPE_TXT_VAR)
+                   && (o2.type == EVAL_TYPE_TXT
+                       || o2.type == EVAL_TYPE_TXT_VAR)) {
+            if (o1.type == EVAL_TYPE_TXT_VAR) {
                 o1.txt = ptrdup(*o1.txt_ref);
-                o1.type = TYPE_TXT; /* not a var anymore */
+                o1.type = EVAL_TYPE_TXT; /* not a var anymore */
                 if (real_error())
                     break;
             }
             ptr *dst = o1.txt;
-            ptr *src = o2.type == TYPE_TXT ? o2.txt : *o2.txt_ref;
+            ptr *src = o2.type == EVAL_TYPE_TXT ? o2.txt : *o2.txt_ref;
 
             if (*op == op_plus) {
                 dst = ptrcat(dst, src);
-                o1.type = TYPE_TXT;
+                o1.type = EVAL_TYPE_TXT;
             } else {
                 o1.num = ptrcmp(dst, src);
                 switch (*op) {
@@ -878,7 +882,7 @@ static bool exe_op(operator *op)
                 }
                 check_delete(&o1);
                 /* only after check_delete(&o1), so that it frees dst */
-                o1.type = TYPE_NUM;
+                o1.type = EVAL_TYPE_NUM;
             }
             check_delete(&o2);
             if (!real_error()) {
@@ -887,12 +891,13 @@ static bool exe_op(operator *op)
                 ret = true;
             }
         } else if (*op == op_times
-                   && (o1.type == TYPE_TXT_VAR || o1.type == TYPE_TXT)
-                   && o2.type == TYPE_NUM) {
-            if (o1.type == TYPE_TXT_VAR) {
+                   && (o1.type == EVAL_TYPE_TXT_VAR
+                       || o1.type == EVAL_TYPE_TXT)
+                   && o2.type == EVAL_TYPE_NUM) {
+            if (o1.type == EVAL_TYPE_TXT_VAR) {
                 /* the result is a copy, not the text of the variable */
                 o1.txt = o2.num > 0 ? ptrdup(*o1.txt_ref) : NULL;
-                o1.type = TYPE_TXT;
+                o1.type = EVAL_TYPE_TXT;
                 if (real_error())
                     break;
             }
@@ -909,7 +914,7 @@ static bool exe_op(operator *op)
             if (real_error())
                 break;
 
-            o1.type = TYPE_TXT;
+            o1.type = EVAL_TYPE_TXT;
             o1.txt = dst;
             p = &o1;
             ret = true;
@@ -930,13 +935,13 @@ static bool exe_op(operator *op)
         if (!(pop_obj(&o2) && pop_obj(&o1)) && real_error())
             break;
 
-        if (o2.type == TYPE_NUM_VAR) {
+        if (o2.type == EVAL_TYPE_NUM_VAR) {
             o2.num = *o2.num_ref;
-            o2.type = TYPE_NUM;
+            o2.type = EVAL_TYPE_NUM;
         }
 
-        if ((o1.type != TYPE_TXT_VAR && o1.type != TYPE_TXT)
-            || o2.type != TYPE_NUM) {
+        if ((o1.type != EVAL_TYPE_TXT_VAR && o1.type != EVAL_TYPE_TXT)
+            || o2.type != EVAL_TYPE_NUM) {
             error = SYNTAX_ERROR;
             break;
         }
@@ -949,8 +954,8 @@ static bool exe_op(operator *op)
         ptr *start;
         ptr *dst;
         bool danger = false;
-        if (o1.type == TYPE_TXT_VAR) {
-            o1.type = TYPE_TXT;
+        if (o1.type == EVAL_TYPE_TXT_VAR) {
+            o1.type = EVAL_TYPE_TXT;
             o1.txt = NULL;
             dst = NULL;
             start = *o1.txt_ref;
@@ -1145,9 +1150,9 @@ static bool exe_op(operator *op)
             break;
 
         ptr *src;
-        if (o1.type == TYPE_TXT) {
+        if (o1.type == EVAL_TYPE_TXT) {
             src = o1.txt;
-        } else if (o1.type == TYPE_TXT_VAR) {
+        } else if (o1.type == EVAL_TYPE_TXT_VAR) {
             src = *o1.txt_ref;
         } else {
             error = SYNTAX_ERROR;
@@ -1156,7 +1161,7 @@ static bool exe_op(operator *op)
         if (src == NULL) {
             /* empty string. return 0 */
             check_delete(&o1);
-            o1.type = TYPE_NUM;
+            o1.type = EVAL_TYPE_NUM;
             o1.num = 0;
             p = &o1;
             ret = true;
@@ -1196,7 +1201,7 @@ static bool exe_op(operator *op)
         }
 
         check_delete(&o1);
-        o1.type = TYPE_NUM;
+        o1.type = EVAL_TYPE_NUM;
         p = &o1;
         ret = true;
         break;
@@ -1206,17 +1211,17 @@ static bool exe_op(operator *op)
             break;
 
         ptr *src = NULL;
-        if (o1.type == TYPE_TXT)
+        if (o1.type == EVAL_TYPE_TXT)
             src = o1.txt;
-        else if (o1.type == TYPE_TXT_VAR)
+        else if (o1.type == EVAL_TYPE_TXT_VAR)
             src = *o1.txt_ref;
         else
             error = SYNTAX_ERROR;
 
         ptr *dst = NULL;
-        if (o2.type == TYPE_TXT)
+        if (o2.type == EVAL_TYPE_TXT)
             dst = o2.txt;
-        else if (o2.type == TYPE_TXT_VAR)
+        else if (o2.type == EVAL_TYPE_TXT_VAR)
             dst = *o2.txt_ref;
         else
             error = SYNTAX_ERROR;
@@ -1229,7 +1234,7 @@ static bool exe_op(operator *op)
             i = (int)utf8_count(ptrdata(src), found - ptrdata(src)) + 1;
         check_delete(&o1);
         check_delete(&o2);
-        o1.type = TYPE_NUM;
+        o1.type = EVAL_TYPE_NUM;
         o1.num = i;
         p = &o1;
         ret = true;
@@ -1243,7 +1248,7 @@ static bool exe_op(operator *op)
         check_delete(&o1);
         check_delete(&o2);
 
-        o1.type = 0;
+        o1.type = EVAL_TYPE_NONE;
         o1.num = 0;
         o1.txt = NULL;
 
@@ -1271,11 +1276,11 @@ static bool exe_op(operator *op)
         if (!pop_obj(&o1) && real_error())
             break;
 
-        if (o1.type == TYPE_NUM_VAR) {
+        if (o1.type == EVAL_TYPE_NUM_VAR) {
             o1.num = *o1.num_ref;
-            o1.type = TYPE_NUM;
+            o1.type = EVAL_TYPE_NUM;
         }
-        if (o1.type == TYPE_NUM) {
+        if (o1.type == EVAL_TYPE_NUM) {
             if (*op == op_pre_minus) {
                 o1.num = wrap_sub(0, o1.num);
             } else if (*op == op_not) {
@@ -1299,14 +1304,14 @@ static bool exe_op(operator *op)
         if (!pop_obj(&o1) && real_error())
             break;
 
-        if (o1.type == TYPE_TXT_VAR) {
+        if (o1.type == EVAL_TYPE_TXT_VAR) {
             o1.txt = ptrdup(*o1.txt_ref);
             if (real_error())
                 break;
-            o1.type = TYPE_TXT;
+            o1.type = EVAL_TYPE_TXT;
         }
 
-        if (o1.type == TYPE_TXT) {
+        if (o1.type == EVAL_TYPE_TXT) {
             char dummy[ATTR_SGR_MAX]; /* attr_string must write somewhere */
             struct attr attr = { 0 };
 
@@ -1331,12 +1336,12 @@ static bool exe_op(operator *op)
         if (!pop_obj(&o1) && real_error())
             break;
 
-        if (o1.type == TYPE_NUM_VAR)
+        if (o1.type == EVAL_TYPE_NUM_VAR)
             o1.num = *o1.num_ref;
-        else if (o1.type == TYPE_TXT_VAR)
+        else if (o1.type == EVAL_TYPE_TXT_VAR)
             o1.txt = *o1.txt_ref;
 
-        if (o1.type == TYPE_NUM || o1.type == TYPE_NUM_VAR) {
+        if (o1.type == EVAL_TYPE_NUM || o1.type == EVAL_TYPE_NUM_VAR) {
             o1.txt = NULL;
             if (*op == op_print) {
                 char buf[LONGLEN];
@@ -1352,10 +1357,10 @@ static bool exe_op(operator *op)
             }
             if (real_error())
                 break;
-            o1.type = TYPE_TXT;
+            o1.type = EVAL_TYPE_TXT;
             p = &o1;
             ret = true;
-        } else if (o1.type == TYPE_TXT || o1.type == TYPE_TXT_VAR) {
+        } else if (o1.type == EVAL_TYPE_TXT || o1.type == EVAL_TYPE_TXT_VAR) {
             if (*op == op_print) {
                 o1.num = 0;
                 if (o1.txt != NULL && ptrlen(o1.txt) != 0) {
@@ -1377,7 +1382,7 @@ static bool exe_op(operator *op)
             check_delete(&o1);
             if (real_error())
                 break;
-            o1.type = TYPE_NUM;
+            o1.type = EVAL_TYPE_NUM;
             p = &o1;
             ret = true;
         } else {
@@ -1391,9 +1396,9 @@ static bool exe_op(operator *op)
         if (!pop_obj(&o1) && real_error())
             break;
 
-        if (o1.type == TYPE_NUM_VAR) {
+        if (o1.type == EVAL_TYPE_NUM_VAR) {
             long *l = o1.num_ref;
-            o1.type = TYPE_NUM;
+            o1.type = EVAL_TYPE_NUM;
 
             if (*op == op_pre_plus_plus) {
                 *l = wrap_add(*l, 1);
@@ -1422,29 +1427,29 @@ static bool exe_op(operator *op)
 
         enum var_kind kind = *op == op_dollar ? VAR_TEXT : VAR_NUM;
 
-        if (o1.type == TYPE_NUM_VAR) {
-            o1.type = TYPE_NUM;
+        if (o1.type == EVAL_TYPE_NUM_VAR) {
+            o1.type = EVAL_TYPE_NUM;
             o1.num = *o1.num_ref;
         }
 
-        if (o1.type == TYPE_NUM) {
+        if (o1.type == EVAL_TYPE_NUM) {
             if (o1.num < -GLOBAL_VAR_COUNT || o1.num >= PARAM_COUNT) {
                 error = OUT_RANGE_ERROR;
                 break;
             }
             if (kind == VAR_TEXT) {
-                o1.type = TYPE_TXT_VAR;
+                o1.type = EVAL_TYPE_TXT_VAR;
                 o1.txt_ref = text_var(o1.num);
             } else {
-                o1.type = TYPE_NUM_VAR;
+                o1.type = EVAL_TYPE_NUM_VAR;
                 o1.num_ref = num_var(o1.num);
             }
             p = &o1;
             ret = true;
         } else {
-            if (o1.type == TYPE_TXT_VAR) {
+            if (o1.type == EVAL_TYPE_TXT_VAR) {
                 o1.txt = *o1.txt_ref;
-            } else if (o1.type != TYPE_TXT) {
+            } else if (o1.type != EVAL_TYPE_TXT) {
                 error = SYNTAX_ERROR;
                 break;
             }
@@ -1475,10 +1480,10 @@ static bool exe_op(operator *op)
             }
             check_delete(&o1);
             if (kind == VAR_TEXT) {
-                o1.type = TYPE_TXT_VAR;
+                o1.type = EVAL_TYPE_TXT_VAR;
                 o1.txt_ref = &named_var->str;
             } else {
-                o1.type = TYPE_NUM_VAR;
+                o1.type = EVAL_TYPE_NUM_VAR;
                 o1.num_ref = &named_var->num;
             }
             p = &o1;
@@ -1503,8 +1508,9 @@ static bool exe_op(operator *op)
         if (!ret) {
             error = NOT_DONE_ERROR;
         } else if (p != NULL) {
-            /* txt is the value of TYPE_TXT only; elsewhere it may be stale */
-            if (p->type != TYPE_TXT)
+            /* txt is the value of EVAL_TYPE_TXT only; elsewhere it may be
+             * stale */
+            if (p->type != EVAL_TYPE_TXT)
                 p->txt = NULL;
             if (!push_obj(p))
                 check_delete(p);
@@ -1609,9 +1615,12 @@ static bool _eval(int mindepth)
     return true;
 }
 
-int eval_any(long *lres, ptr **pres, char **what)
+/* what eval_any() does with the result */
+enum print_mode { PRINT_NOTHING, PRINT_AS_PTR, PRINT_AS_LONG };
+
+enum eval_type eval_any(long *lres, ptr **pres, char **what)
 {
-    int printmode;
+    enum print_mode printmode;
     if (pres != NULL)
         printmode = PRINT_AS_PTR;
     else if (lres != NULL)
@@ -1638,8 +1647,8 @@ int eval_any(long *lres, ptr **pres, char **what)
         if (opt_debug)
             message_printf("#result not available\n");
     } else if (printmode != PRINT_NOTHING || opt_debug) {
-        if (res.type == TYPE_NUM || res.type == TYPE_NUM_VAR) {
-            long val = res.type == TYPE_NUM ? res.num : *res.num_ref;
+        if (res.type == EVAL_TYPE_NUM || res.type == EVAL_TYPE_NUM_VAR) {
+            long val = res.type == EVAL_TYPE_NUM ? res.num : *res.num_ref;
 
             if (printmode == PRINT_AS_PTR) {
                 *pres = ptrsetlen(*pres, LONGLEN);
@@ -1658,10 +1667,10 @@ int eval_any(long *lres, ptr **pres, char **what)
                     message_printf("#result: %ld\n", val);
             }
         } else {
-            ptr *txt = res.type == TYPE_TXT ? res.txt : *res.txt_ref;
+            ptr *txt = res.type == EVAL_TYPE_TXT ? res.txt : *res.txt_ref;
             if (printmode == PRINT_AS_PTR) {
                 if (txt != NULL && *ptrdata(txt) != '\0') {
-                    if (res.type == TYPE_TXT) {
+                    if (res.type == EVAL_TYPE_TXT) {
                         ptrdel(pres);
                         *pres = txt; /* shortcut! */
                         handed_over = true;
@@ -1692,28 +1701,28 @@ int eval_any(long *lres, ptr **pres, char **what)
             pop_obj(&res);
             check_delete(&res);
         }
-        res.type = 0;
+        res.type = EVAL_TYPE_NONE;
     }
 
-    if (res.type == TYPE_TXT_VAR)
-        res.type = TYPE_TXT;
-    else if (res.type == TYPE_NUM_VAR)
-        res.type = TYPE_NUM;
+    if (res.type == EVAL_TYPE_TXT_VAR)
+        res.type = EVAL_TYPE_TXT;
+    else if (res.type == EVAL_TYPE_NUM_VAR)
+        res.type = EVAL_TYPE_NUM;
 
     return res.type;
 }
 
-int evalp(ptr **res, char **what)
+enum eval_type evalp(ptr **res, char **what)
 {
     return eval_any(NULL, res, what);
 }
 
-int evall(long *res, char **what)
+enum eval_type evall(long *res, char **what)
 {
     return eval_any(res, NULL, what);
 }
 
-int evaln(char **what)
+enum eval_type evaln(char **what)
 {
     return eval_any(NULL, NULL, what);
 }
