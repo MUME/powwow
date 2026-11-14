@@ -914,8 +914,7 @@ static void exec_delays(void)
         clear_input_line(opt_compact || !opt_info);
         if (!opt_compact && opt_info && prompt_status == 0
             && promptlen != 0) {
-            tty_putc('\n');
-            col0 = 0;
+            prompt_newline();
             status(1);
         }
     }
@@ -1311,8 +1310,7 @@ static void process_singleline(char **pbuf, int *psize)
          */
         if (isprompt_len != 0 && promptlen != 0 && prompt_status == 1) {
             draw_prompt();
-            tty_putc('\n');
-            col0 = 0;
+            prompt_newline();
             sgr_prompt_commit(promptstr, promptlen);
         }
         isprompt_len = 0;
@@ -1393,6 +1391,9 @@ static int process_first_fragment(char *buf, int got)
             /* in compact mode, skip the first \n */
             deleteprompt = true;
             ++processed;
+        } else if (prompt_row_ended()) {
+            /* the row of the prompt is ended already */
+            ++processed;
         }
 
         /*
@@ -1446,10 +1447,8 @@ static int process_first_fragment(char *buf, int got)
              * only if !opt_compact and we didn't get a MUME spinning bar.
              */
             clear_input_line(opt_compact);
-            if (spinning == NULL && !opt_compact) {
-                tty_putc('\n');
-                col0 = 0;
-            }
+            if (spinning == NULL && !opt_compact)
+                prompt_newline();
             sgr_prompt_commit(promptstr, promptlen);
             promptzero();
         } else {
@@ -1498,8 +1497,7 @@ static void common_clear(bool newline)
 {
     clear_input_line(opt_compact);
     if (newline) {
-        tty_putc('\n');
-        col0 = 0;
+        prompt_newline();
         status(1);
     }
 }

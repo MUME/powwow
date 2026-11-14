@@ -681,10 +681,8 @@ static void cmd_clear(char *arg)
 {
     if (line_status == 0) {
         clear_input_line(opt_compact);
-        if (!opt_compact) {
-            tty_putc('\n');
-            col0 = 0;
-        }
+        if (!opt_compact)
+            prompt_newline();
         status(1);
     }
 }
