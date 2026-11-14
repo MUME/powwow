@@ -20,6 +20,10 @@
 #define UTF8_REPLACEMENT_LEN (sizeof UTF8_REPLACEMENT - 1)
 #define UNICODE_REPLACEMENT  U'\uFFFD'
 
+/* U+FEFF BYTE ORDER MARK, which editors may write at the start of a file */
+#define UTF8_BOM     u8"\uFEFF"
+#define UTF8_BOM_LEN (sizeof UTF8_BOM - 1)
+
 #define ASCII_MAX   0x7f
 #define LATIN1_MAX  0xff
 #define UNICODE_MAX 0x10ffff    /* the last code point */

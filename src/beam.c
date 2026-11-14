@@ -36,6 +36,7 @@
 #include "tty.h"
 #include "edit.h"
 #include "eval.h"
+#include "charset.h"
 
 editsess *edit_sess;            /* head of session list */
 
@@ -262,6 +263,24 @@ static ssize_t read_file(int fd, void *buf, size_t count)
 }
 
 /*
+ * remove what editors may add to the 'len' bytes of the edited text at
+ * 'text' with Windows settings: a UTF-8 byte order mark at its start, and
+ * the CR of each CR LF; return its new length
+ */
+static int strip_windows_format(char *text, int len)
+{
+    int from = 0;
+    if (len >= (int)UTF8_BOM_LEN && memcmp(text, UTF8_BOM, UTF8_BOM_LEN) == 0)
+        from = UTF8_BOM_LEN;
+    int to = 0;
+    for (int i = from; i < len; ++i) {
+        if (text[i] != '\r' || i + 1 == len || text[i + 1] != '\n')
+            text[to++] = text[i];
+    }
+    return to;
+}
+
+/*
  * send back edited text to server, or cancel the editing session if the
  * file was not changed.
  */
@@ -301,6 +320,8 @@ static void finish_edit(editsess *sp)
         int txtlen = read_file(fd, text, sbuf.st_size);
         if (txtlen < 0)
             goto cleanup_text;
+        if (windows_mode)
+            txtlen = strip_windows_format(text, txtlen);
 
         if (txtlen != 0 && text[txtlen - 1] != '\n') {
             /* If the last line isn't LF-terminated, add an LF;
