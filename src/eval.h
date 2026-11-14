@@ -51,9 +51,9 @@ enum eval_type {
 };
 
 enum eval_type eval_any(long *lres, ptr **pres, char **what);
-enum eval_type evalp(            ptr **pres, char **what);
-enum eval_type evall(long *lres,            char **what);
-enum eval_type evaln(                       char **what);
+enum eval_type evalp(ptr **pres, char **what);
+enum eval_type evall(long *lres, char **what);
+enum eval_type evaln(char **what);
 
 void print_error(enum eval_error err);
 

@@ -33,7 +33,7 @@ void *xrealloc(void *p, size_t size);
 char *xstrdup(const char *s);
 char *xstrdup_or_null(const char *s);
 char *my_strncpy(char *dst, const char *src, int len);
-int  printstrlen(char *s);
+int printstrlen(char *s);
 char *utf8_fgets(char *buf, int size, FILE *f);
 
 void sgr_output_sync(void);
@@ -44,7 +44,7 @@ void sgr_prompt_draw(void);
 void sgr_prompt_commit(const char *text, size_t len);
 
 void ptrunescape(ptr *p);
-int  memunescape(char *p, int lenp, bool raw);
+int memunescape(char *p, int lenp, bool raw);
 extern bool raw_escapes;
 char *strip_end(char *s);
 extern struct attr input_attr, message_attr;
@@ -65,12 +65,12 @@ int wrap_width(void);
 /* like message_printf(), but wrapped as message_wrap() with WRAP_CONT */
 int wrap_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);
 
-ptr  *ptrescape(ptr *dst, ptr *src, bool append);
-ptr  *ptrmescape(ptr *dst, const char *src, int srclen, bool append);
+ptr *ptrescape(ptr *dst, ptr *src, bool append);
+ptr *ptrmescape(ptr *dst, const char *src, int srclen, bool append);
 
-ptr  *ptraddsubst_and_marks(ptr *dst, ptr *line);
-ptr  *ptrmaddsubst_and_marks(ptr *dst, const char *line, int len);
-ptr  *ptrsubstdef(ptr *dst, bool mbeg, char *pattern, char *replacement);
+ptr *ptraddsubst_and_marks(ptr *dst, ptr *line);
+ptr *ptrmaddsubst_and_marks(ptr *dst, const char *line, int len);
+ptr *ptrsubstdef(ptr *dst, bool mbeg, char *pattern, char *replacement);
 
 void put_marks(char *dst, char *line);
 void smart_print(const char *line, bool newline);
@@ -94,14 +94,14 @@ function_signal sig_permanent(int signum, function_signal sighandler);
 #endif
 
 void signal_start(void);
-int  sig_wake_fd(void);
+int sig_wake_fd(void);
 void sig_wake_clear(void);
 void sig_bottomhalf(void);
 void errmsg(const char *format, ...) PRINTF_FUNCTION(1, 2);
 noreturn void syserr(const char *msg);
 noreturn void exec_failed(const char *what);
-int  read_settings(void);
-int  save_settings(void);
+int read_settings(void);
+int save_settings(void);
 void movie_write(char *str, int newline);
 
 void update_now(void);

@@ -48,13 +48,13 @@ void input_moveto(int new_pos);
 void input_show_hint(const char *hint);
 void input_hide_hint(void);
 void input_draw(void);
-int  input_line(int p);
-int  input_col(int p);
+int input_line(int p);
+int input_col(int p);
 
 void tty_puts(const char *s);
 void tty_putc(char c);
-int  tty_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);
-int  tty_read(char *buf, size_t count);
+int tty_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);
+int tty_read(char *buf, size_t count);
 void tty_gets(char *s, int size);
 void tty_flush(void);
 void tty_raw_write(char *data, size_t len);

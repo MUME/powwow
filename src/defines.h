@@ -36,7 +36,7 @@
 
 #ifdef __GNUC__
  #define PRINTF_FUNCTION(string, first) \
-	__attribute__ ((format (printf, string, first)))
+        __attribute__ ((format (printf, string, first)))
 #else
  #define PRINTF_FUNCTION(string, first)
 #endif
@@ -47,43 +47,44 @@
 int message_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);
 int tty_message(const char *format, ...) PRINTF_FUNCTION(1, 2);
 
-#define INTLEN		(3*(1+(int)sizeof(int)))
-				/* max length of a string representation
-				 * of an int */
-#define LONGLEN		(3*(1+(int)sizeof(long)))
-				/* max length of a string representation
-				 * of a long */
-#define ESC		'\\'	/* special escape char;
-				 * update doc/powwow.md.in if changed */
-#define STRESC		"\\"
-#define ESC2		'`'	/* other special escape char;
-				 * update doc/powwow.md.in if changed */
-#define STRESC2		"`"
+#define INTLEN          (3*(1+(int)sizeof(int)))
+                                /* max length of a string representation
+                                 * of an int */
+#define LONGLEN         (3*(1+(int)sizeof(long)))
+                                /* max length of a string representation
+                                 * of a long */
+#define ESC             '\\'    /* special escape char;
+                                 * update doc/powwow.md.in if changed */
+#define STRESC          "\\"
+#define ESC2            '`'     /* other special escape char;
+                                 * update doc/powwow.md.in if changed */
+#define STRESC2         "`"
 #define ASCII_BEL       '\007'
 #define ASCII_ESC       '\033'
 #define ASCII_DEL       '\177'  /* which the Backspace key sends */
-#define CMDSEP		';'	/* command separator character;
-				 * update doc/powwow.md.in if changed */
-#define SPECIAL_CHARS	"{}();\"=" /* specials chars needing escape;
-				    * update doc/powwow.md.in if changed */
-#define MPI		"~$#E"	/* MUME protocol introducer */
-#define MPILEN		(sizeof(MPI) - 1)
+#define CMDSEP          ';'     /* command separator character;
+                                 * update doc/powwow.md.in if changed */
+#define SPECIAL_CHARS   "{}();\"=" /* specials chars needing escape;
+                                    * update doc/powwow.md.in if changed */
+#define MPI             "~$#E"  /* MUME protocol introducer */
+#define MPILEN          (sizeof(MPI) - 1)
 
-#define MAX_CONNECTS	32	/* max number of open connections. must fit in a byte;
-				 * update doc/powwow.md.in if changed */
+#define MAX_CONNECTS    32      /* max number of open connections, which
+                                 * must fit in a byte; update
+                                 * doc/powwow.md.in if changed */
 static_assert(MAX_CONNECTS <= UCHAR_MAX, "MAX_CONNECTS must fit in a byte");
 
-#define CAPLEN		20	/* max length of a terminal capability */
-#define BUFSIZE		4096	/* general buffer size;
-				 * update doc/powwow.md.in if changed */
-#define PARAMLEN	99	/* initial length of text strings */
-#define MAX_MAPLEN	1000	/* maximum length of automapped path;
-				 * update doc/powwow.md.in if changed */
-#define MIN_WORDLEN	3	/* the minimum length for history words */
-#define MAX_WORDS	4096	/* number of words kept for TAB-completion;
-				 * update doc/powwow.md.in if changed */
-#define MAX_HIST	2048	/* number of history lines kept;
-				 * update doc/powwow.md.in if changed */
+#define CAPLEN          20      /* max length of a terminal capability */
+#define BUFSIZE         4096    /* general buffer size;
+                                 * update doc/powwow.md.in if changed */
+#define PARAMLEN        99      /* initial length of text strings */
+#define MAX_MAPLEN      1000    /* maximum length of automapped path;
+                                 * update doc/powwow.md.in if changed */
+#define MIN_WORDLEN     3       /* the minimum length for history words */
+#define MAX_WORDS       4096    /* number of words kept for TAB-completion;
+                                 * update doc/powwow.md.in if changed */
+#define MAX_HIST        2048    /* number of history lines kept;
+                                 * update doc/powwow.md.in if changed */
 /* the lists in the hash tables of aliases and variables, and their bits */
 #define HASH_BITS 7
 #define MAX_HASH (1 << HASH_BITS)
@@ -93,46 +94,46 @@ static_assert(MAX_CONNECTS <= UCHAR_MAX, "MAX_CONNECTS must fit in a byte");
 /* the global numbered variables @-50..@-1 and $-50..$-1;
  * update doc/powwow.md.in if changed */
 #define GLOBAL_VAR_COUNT 50
-#define MAX_SUBOPT	256	/* max length of suboption string */
-#define MAX_ARGS	16	/* max number of arguments to editor */
-#define FLASHDELAY	500	/* time of parentheses flash in millisecs */
-#define KBD_TIMEOUT	100	/* timeout for keyboard read in millisecs;
-				 * hope it's enough also for very slow lines */
+#define MAX_SUBOPT      256     /* max length of suboption string */
+#define MAX_ARGS        16      /* max number of arguments to editor */
+#define FLASHDELAY      500     /* time of parentheses flash in millisecs */
+#define KBD_TIMEOUT     100     /* timeout for keyboard read in millisecs;
+                                 * hope it's enough also for very slow lines */
 
-#define MAX_STACK	100	/* maximum number of nested
+#define MAX_STACK       100     /* maximum number of nested
                                  * action, alias, #for or #while;
                                  * update doc/powwow.md.in if changed */
-#define MAX_LOOP	10000	/* maximum number of iterations in
+#define MAX_LOOP        10000   /* maximum number of iterations in
                                  * #for or #while;
                                  * update doc/powwow.md.in if changed */
 
-#define ACTION_WEAK	0	/* pattern with $ and & wildcards */
-#define ACTION_REGEXP	1	/* regular expression */
-#define ACTION_TYPES	(ACTION_REGEXP + 1)
+#define ACTION_WEAK     0       /* pattern with $ and & wildcards */
+#define ACTION_REGEXP   1       /* regular expression */
+#define ACTION_TYPES    (ACTION_REGEXP + 1)
 
 /* the redefinable delimeters */
-#define DELIM		(delim_list[delim_mode])
-#define DELIM_LEN	(delim_len[delim_mode])
-#define IS_DELIM(c)	(memchr(DELIM, (c), DELIM_LEN) != NULL)
+#define DELIM           (delim_list[delim_mode])
+#define DELIM_LEN       (delim_len[delim_mode])
+#define IS_DELIM(c)     (memchr(DELIM, (c), DELIM_LEN) != NULL)
 
-#define DELIM_NORMAL	0	/* normal word delimeters */
-#define DELIM_PROGRAM	1	/* ()[]{}.,;"'+/-*% */
-#define DELIM_CUSTOM	2	/* user-defined */
-#define DELIM_MODES	(DELIM_CUSTOM + 1)
+#define DELIM_NORMAL    0       /* normal word delimeters */
+#define DELIM_PROGRAM   1       /* ()[]{}.,;"'+/-*% */
+#define DELIM_CUSTOM    2       /* user-defined */
+#define DELIM_MODES     (DELIM_CUSTOM + 1)
 
 
 /* macros to find cursor position from input buffer position */
 /* screen line and column of byte offset 'pos' of the input line */
-#define CURLINE(pos)	input_line(pos)
-#define CURCOL(pos)	input_col(pos)
+#define CURLINE(pos)    input_line(pos)
+#define CURCOL(pos)     input_col(pos)
 
 #define CLIP(a, min, max) ((a)=(a)<(min) ? (min) : (a)>(max) ? (max) : (a))
 
 #define ISMARKWILDCARD(c) ((c) == '&' || (c) == '$')
 
 
-#define LM_NOECHO 1	/* no local echo */
-#define LM_CHAR 2	/* char-by-char mode (no line editing) */
+#define LM_NOECHO 1     /* no local echo */
+#define LM_CHAR 2       /* char-by-char mode (no line editing) */
 
 
 
@@ -189,10 +190,10 @@ typedef struct triggernode {
     struct triggernode *next;
     char *command, *label;
     bool active;
-    int type;				/* ACTION_WEAK or ACTION_REGEXP */
+    int type;                           /* ACTION_WEAK or ACTION_REGEXP */
     char *pattern;
 #ifdef USE_REGEXP
-    void *regexp;			/* 0 if type == ACTION_WEAK */
+    void *regexp;                       /* 0 if type == ACTION_WEAK */
 #endif
     char *group;
 } triggernode;
@@ -207,11 +208,11 @@ typedef triggernode promptnode;
 
 typedef struct keynode {
     struct keynode *next;
-    char *name;			/* key name */
-    char *sequence;		/* escape sequence sent by terminal */
-    int seqlen;			/* length of sequence, which may contain \0 */
-    function_str funct;		/* function called when key pressed */
-    char *call_data;		/* data passed to function */
+    char *name;                 /* key name */
+    char *sequence;             /* escape sequence sent by terminal */
+    int seqlen;                 /* length of sequence, which may contain \0 */
+    function_str funct;         /* function called when key pressed */
+    char *call_data;            /* data passed to function */
 } keynode;
 
 typedef struct delaynode {
@@ -219,7 +220,7 @@ typedef struct delaynode {
     char *name;
     char *command;
     vtime when;                 /* structure containing time when */
-				/* command must be executed */
+                                /* command must be executed */
 } delaynode;
 
 /* Variable struct definitions */
@@ -248,17 +249,18 @@ typedef struct {                /* for unnamed vars */
 /* editing session control */
 typedef struct editsess {
     struct editsess *next;
-    unsigned int key;	/* session identifier */
-    int pid;		/* pid of child */
-    struct connsess *conn; /* MUD conncetion to talk with (NULL if non-MUD text) */
-    char *descr;  	/* short description of what we are editing */
-    char *file;		/* name of temporary file */
-    time_t ctime; 	/* time when temp file was created (upper bound) */
-    long oldsize; 	/* original file size */
-    bool cancel;	/* true if cancelled */
-    int out_fd;		/* output of a background editor, or -1 */
-    size_t out_len;	/* characters in out_buf */
-    char out_buf[1024];	/* output not shown yet */
+    unsigned int key;   /* session identifier */
+    int pid;            /* pid of child */
+    struct connsess *conn; /* MUD connection to talk with (NULL if
+                            * non-MUD text) */
+    char *descr;        /* short description of what we are editing */
+    char *file;         /* name of temporary file */
+    time_t ctime;       /* time when temp file was created (upper bound) */
+    long oldsize;       /* original file size */
+    bool cancel;        /* true if cancelled */
+    int out_fd;         /* output of a background editor, or -1 */
+    size_t out_len;     /* characters in out_buf */
+    char out_buf[1024]; /* output not shown yet */
 } editsess;
 
 struct tls_options {
