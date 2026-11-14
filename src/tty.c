@@ -988,7 +988,9 @@ static void input_redraw_from(int from, bool placed, bool erase)
             input_newline(&line);
             col = 0;
         }
-        if ((s - edbuf < edlabel) != in_label) {
+        bool label = (s - edbuf < edlabel
+                      || (edlabels != NULL && edlabels[s - edbuf]));
+        if (label != in_label) {
             in_label = !in_label;
             if (in_label)
                 tty_printf("%s%s", edattrend, msgattrbeg);

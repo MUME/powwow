@@ -908,16 +908,22 @@ void tcp_write(connsess *conn, const char *data)
     size_t len = strlen(data);
 
     if (main_connection != NULL && main_connection == conn) {
-        /* a password or a secret is logged as an empty line, and
-         * reprinted as <redacted>, which keeps the next lines reprinted
-         * after the prompts that come before their answers */
-        if ((linemode & LM_NOECHO) || secret_in(data)) {
+        /* a line with a password or a secret is logged as an empty line,
+         * and reprinted with <redacted> in place of the password or the
+         * secrets, which keeps the next lines reprinted after the prompts
+         * that come before their answers */
+        char *redacted = xmalloc(SECRET_REDACT_SIZE(len));
+        if (linemode & LM_NOECHO) {
             log_write("", 0, true, conn->charset);
-            reprint_writeline("<redacted>");
+            reprint_writeline(SECRET_REDACTED);
+        } else if (secret_redact(data, redacted, NULL)) {
+            log_write("", 0, true, conn->charset);
+            reprint_writeline(redacted);
         } else {
             log_write(data, len, true, conn->charset);
             reprint_writeline(data);
         }
+        free(redacted);
     }
 
     /* the encoded data is never longer than the original */

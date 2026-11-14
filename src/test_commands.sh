@@ -394,13 +394,14 @@ hunter22
 "
 has '#secret added.'
 
-run '#secret: a line entered with a secret is left as <redacted>' \
+run '#secret: a secret entered is left as <redacted>' \
     '#hilite messages bold
 #secret add
 hunter22
-say password=hunter22'
-grep -Fq '<ESC>[1m<redacted><ESC>[m' "$tmp/out" \
-    || fail 'expected <redacted> drawn as the messages'
+say password=hunter22def'
+grep -Fq 'say password=<ESC>[1m<redacted><ESC>[mdef' "$tmp/out" \
+    || fail 'expected only the secret as <redacted>, drawn as the messages'
+lacks 'hunter22def'
 
 run '#secret: Backspace deletes, and moving the cursor does nothing' \
     "#secret add
@@ -1735,9 +1736,9 @@ EOF
     wait $server
     sed -e "s/$esc\[[0-9;?]*[A-Za-z]//g" -e "s/$cr//g" "$tmp/raw" \
         > "$tmp/out"
-    has 'HP:>(<redacted>)'
+    has 'HP:>(say <redacted>)'
     has 'HP:>(look)'
-    grep -q '(hunter22\|(say' "$tmp/out" && fail 'the secret was reprinted'
+    grep -q 'hunter22' "$tmp/out" && fail 'the secret was reprinted'
 
     # a MUD that echoes again before the password is typed, and asks again
     cat > "$tmp/server.py" <<'EOF'

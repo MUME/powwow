@@ -1675,15 +1675,24 @@ void fmt_next_edit(const char *fmt, ...)
  */
 void enter_line(char *dummy)
 {
-    /* a line with a secret is left on the screen as <redacted>, drawn
-     * as a label, as the messages of powwow */
-    static const char redacted[] = "<redacted>";
+    /* the secrets in a line are left on the screen as <redacted>, drawn
+     * as labels, as the messages of powwow */
     char line[BUFSIZE];
-    bool secret = secret_in(edbuf);
+    char redacted[SECRET_REDACT_SIZE(BUFSIZE)];
+    bool label[sizeof(redacted)];
+    bool secret = secret_redact(edbuf, redacted, label);
     if (secret) {
         strcpy(line, edbuf);
-        edlabel = (int)strlen(redacted);
-        input_replace(0, edlen, redacted, edlabel);
+        int len = (int)strlen(redacted);
+        if (len < BUFSIZE) {
+            edlabels = label;
+        } else {
+            /* too long for edbuf: the whole line */
+            strcpy(redacted, SECRET_REDACTED);
+            len = (int)strlen(redacted);
+            edlabel = len;
+        }
+        input_replace(0, edlen, redacted, len);
     }
 
     if (line_status == 0) {
@@ -1703,6 +1712,7 @@ void enter_line(char *dummy)
         strcpy(edbuf, line);
         edlen = (int)strlen(edbuf);
         edlabel = 0;
+        edlabels = NULL;
     }
 
     log_record_line(edbuf);

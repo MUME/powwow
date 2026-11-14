@@ -219,6 +219,8 @@ int edstart = 0;          /* where the text that can be edited starts, after
                            * a prompt in edbuf such as for C-x 8 Ret */
 int edlabel = 0;          /* the bytes at the start of edbuf that are a
                            * label of powwow, drawn as its messages */
+const bool *edlabels;     /* if not NULL, which bytes of edbuf are labels
+                           * too, as the edlabel bytes are */
 int isprompt_len = 0;     /* set by #isprompt: 0 if not a prompt, -1 if a
                            * prompt of unknown length, else its length */
 bool verbatim = false;    /* don't expand aliases or process semicolons */

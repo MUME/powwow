@@ -195,3 +195,41 @@ bool secret_in(const char *line)
     }
     return false;
 }
+
+bool secret_redact(const char *line, char *out, bool *label)
+{
+    static_assert((sizeof(SECRET_REDACTED)
+                   <= SECRET_REDACT_SIZE(SECRET_MIN_LEN)),
+                  "SECRET_REDACT_SIZE() is too small");
+    size_t line_len = strlen(line);
+    if (nsecrets == 0 || line_len < SECRET_MIN_LEN) {
+        memcpy(out, line, line_len + 1);
+        if (label != NULL)
+            memset(label, false, line_len);
+        return false;
+    }
+    size_t n = 0;
+    size_t covered = 0;         /* the end of the secrets found so far */
+    for (size_t i = 0; i < line_len; ++i) {
+        bool was_covered = i < covered;
+        for (int k = 0; k < nsecrets; ++k) {
+            const struct secret *sec = &secrets[k];
+            if (i + sec->len <= line_len && i + sec->len > covered
+                && secret_is(sec, line + i, sec->len))
+                covered = i + sec->len;
+        }
+        if (i >= covered) {
+            if (label != NULL)
+                label[n] = false;
+            out[n++] = line[i];
+        } else if (!was_covered) {
+            size_t len = sizeof(SECRET_REDACTED) - 1;
+            memcpy(out + n, SECRET_REDACTED, len);
+            if (label != NULL)
+                memset(label + n, true, len);
+            n += len;
+        }
+    }
+    out[n] = '\0';
+    return covered > 0;
+}
