@@ -31,12 +31,12 @@ extern int conn_max_index;      /* 1 + highest used conn_list[] index */
 #define GOTSB           9
 #define GOTSBIAC       10
 
-/* telnet CHARSET option state (RFC 2066): */
-/* CS_WILL_SENT:   we sent WILL CHARSET                 */
-/* CS_DO_RCVD:     got DO CHARSET; we may send REQUEST  */
-/* CS_SRV_WILL:    got WILL CHARSET; server may send REQUEST    */
-/* CS_REQ_PENDING: our REQUEST awaits an answer         */
-/* CS_REQ_SENT:    we sent a REQUEST on this connection */
+/* telnet CHARSET option state (RFC 2066):                   */
+/* CS_WILL_SENT:   we sent WILL CHARSET                      */
+/* CS_DO_RCVD:     got DO CHARSET; we may send REQUEST       */
+/* CS_SRV_WILL:    got WILL CHARSET; server may send REQUEST */
+/* CS_REQ_PENDING: our REQUEST awaits an answer              */
+/* CS_REQ_SENT:    we sent a REQUEST on this connection      */
 #define CS_WILL_SENT     1
 #define CS_DO_RCVD       2
 #define CS_SRV_WILL      4

@@ -5,8 +5,6 @@
 
 #include "charset.h"
 
-enum linetype { EMPTY = 0, LINE = 1, PROMPT = 2, SLEEP = 3 };
-
 extern FILE *capturefile, *recordfile, *moviefile;
 extern vtime movie_last;
 

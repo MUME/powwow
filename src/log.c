@@ -42,9 +42,12 @@ static int datasize  = 0;       /* size of circular string list */
      : datastart != 0 ? MAX2(datastart - 1, datasize - dataend - 1)     \
      : datasize - dataend - 1)
 
+/* the kinds of the entries of the log, as #movie writes them */
+enum linetype { LOG_EMPTY = 0, LOG_LINE = 1, LOG_PROMPT = 2, LOG_SLEEP = 3 };
+
 typedef struct logentry {
     enum linetype kind;
-    long msecs;                 /* millisecs to sleep if kind == SLEEP */
+    long msecs;                 /* millisecs to sleep if kind == LOG_SLEEP */
     char *line;                 /* pointer to string in "datalist" circular
                                    buffer */
     enum charset cs;            /* charset to write "line" in */
@@ -91,12 +94,12 @@ static void log_flushline(int i)
     const char *line = loglist[i].line;
     if (capturefile != NULL) {
         log_fwrite(line, strlen(line), loglist[i].cs, capturefile);
-        if (loglist[i].kind == LINE)
+        if (loglist[i].kind == LOG_LINE)
             fputc('\n', capturefile);
     }
     if (moviefile != NULL) {
         if (loglist[i].msecs != 0)
-            fprintf(moviefile, "%s %ld\n", names[SLEEP], loglist[i].msecs);
+            fprintf(moviefile, "%s %ld\n", names[LOG_SLEEP], loglist[i].msecs);
         fprintf(moviefile, "%s ", names[loglist[i].kind]);
         log_fwrite(line, strlen(line), loglist[i].cs, moviefile);
         fputc('\n', moviefile);
@@ -125,7 +128,7 @@ static void log_clearline(void)
 }
 
 /*
- * remove an initial SLEEP from the buffer
+ * remove an initial LOG_SLEEP from the buffer
  */
 void log_clearsleep(void)
 {
@@ -206,8 +209,8 @@ void log_resize(long newsize)
 /*
  * add a single line to the buffer
  */
-static void log_writeline(const char *line, int len, int kind, long msecs,
-                          enum charset cs)
+static void log_writeline(const char *line, int len, enum linetype kind,
+                          long msecs, enum charset cs)
 {
     if (++len >= datasize) {
         wrap_printf("#line too long, discarded from movie/capture buffer");
@@ -266,13 +269,14 @@ void log_write(const char *str, int len, bool newline, enum charset cs)
         }
 
         if (datasize != 0) {
-            log_writeline(str, i, last && !newline ? PROMPT : LINE, diff, cs);
+            log_writeline(str, i, last && !newline ? LOG_PROMPT : LOG_LINE,
+                          diff, cs);
         } else {
             if (moviefile != NULL) {
                 if (diff != 0)
-                    fprintf(moviefile, "%s %ld\n", names[SLEEP], diff);
+                    fprintf(moviefile, "%s %ld\n", names[LOG_SLEEP], diff);
                 fprintf(moviefile, "%s ",
-                        names[last && !newline ? PROMPT : LINE]);
+                        names[last && !newline ? LOG_PROMPT : LOG_LINE]);
                 log_fwrite(str, i, cs, moviefile);
                 fputc('\n', moviefile);
             }
