@@ -237,8 +237,10 @@ bool verbatim = false;    /* don't expand aliases or process semicolons */
  * file names and commands are written as on Windows, so a file name after
  * < and a command after ! keep their backslashes, which are not escapes,
  * and file names get the values of the %NAME% of environment variables in
- * them (see file_name()); edited texts are sent without what editors with
- * Windows settings add (see strip_windows_format())
+ * them (see file_name()); the editor and the pager run as #! runs its
+ * commands, with the Windows path of the file, and edited texts are sent
+ * without what editors with Windows settings add (see
+ * strip_windows_format())
  */
 bool windows_mode = false;
 char prefixstr[BUFSIZE];  /* inserted in the editing buffer each time */

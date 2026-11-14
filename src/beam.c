@@ -37,6 +37,7 @@
 #include "edit.h"
 #include "eval.h"
 #include "charset.h"
+#include "cmd.h"
 
 editsess *edit_sess;            /* head of session list */
 
@@ -516,9 +517,11 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
 #else
     static const char suffix[] = "";
 #endif
+    /* in Windows mode, a TMPDIR as on Windows takes a \\ */
+    char sep = windows_mode && strchr(tmpdir, '/') == NULL ? '\\' : '/';
     char tmpname[BUFSIZE];
-    int len = snprintf(tmpname, sizeof tmpname, "%s/powwow-%s-XXXXXX%s",
-                       tmpdir, kind, suffix);
+    int len = snprintf(tmpname, sizeof tmpname, "%s%cpowwow-%s-XXXXXX%s",
+                       tmpdir, sep, kind, suffix);
     int tmpfd = -1;
     if (len < 0 || len >= (int)sizeof tmpname)
         errno = ENAMETOOLONG;
@@ -627,11 +630,23 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
             close(out_pipe[0]);
             close(out_pipe[1]);
         }
-        /* any character of $TMPDIR is safe in "$1" */
-        char command_str[BUFSIZE];
-        snprintf(command_str, sizeof command_str, "%s \"$1\"", editor);
+        /* before setenv(), which may move 'editor' from getenv() */
+        char *command;
+        if (windows_mode) {
+            /* as on Windows: run as #! runs a command, such as by cmd,
+             * with the Windows path of the file */
+            char path[BUFSIZE];
+            const char *file = windows_path(s->file, path, sizeof path);
+            char *line = xmalloc(strlen(editor) + strlen(file) + 4);
+            sprintf(line, "%s \"%s\"", editor, file);
+            command = shell_command(line);
+        } else {
+            /* any character of $TMPDIR is safe in "$1" */
+            command = xmalloc(strlen(editor) + 6);
+            sprintf(command, "%s \"$1\"", editor);
+        }
         setenv("TITLE", title, 1);
-        execl("/bin/sh", "/bin/sh", "-c", command_str, "/bin/sh", s->file,
+        execl("/bin/sh", "/bin/sh", "-c", command, "/bin/sh", s->file,
               (char *)NULL);
         exec_failed("the editor");
         break;

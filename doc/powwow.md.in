@@ -1318,9 +1318,12 @@ that the MUD sends to view are printed as its other lines.
 
 The editor and the pager get the text in a temporary file, whose name
 is their last argument, in the directory `TMPDIR`, or `/tmp` if it is
-not set. With `--windows`, a byte order mark at the start of the edited
-text, and the CR of each CR LF, as editors with Windows settings write,
-are not sent.
+not set, and the description of the text from the MUD in the
+environment variable `TITLE`. With `--windows`, they run as `#!` runs its
+commands, with `shell`, followed by the Windows path of the file in
+double quotes; and a byte order mark at the start of the edited text, and
+the CR of each CR LF, as editors with Windows settings write, are not
+sent.
 
 ```
 #option editor=&emacsclient
