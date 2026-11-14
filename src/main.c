@@ -235,7 +235,9 @@ bool verbatim = false;    /* don't expand aliases or process semicolons */
 /*
  * --windows, which the powwow of the installer for Windows runs with:
  * file names and commands are written as on Windows, so a file name after
- * < and a command after ! keep their backslashes, which are not escapes
+ * < and a command after ! keep their backslashes, which are not escapes,
+ * and file names get the values of the %NAME% of environment variables in
+ * them (see file_name())
  */
 bool windows_mode = false;
 char prefixstr[BUFSIZE];  /* inserted in the editing buffer each time */
@@ -2970,8 +2972,10 @@ static bool jit_subst_vars(ptr **buf, char *src)
  *        if file doesn't exist, it is created there.
  * If a folder is in the name, the powwow_dir isn't used.
  */
-void set_deffile(char *arg)
+void set_deffile(const char *name)
 {
+    char buf[BUFSIZE];
+    const char *arg = file_name(name, buf, sizeof(buf));
     if (!has_path_sep(arg) && *powwow_dir != '\0') {
         strcpy(deffile, powwow_dir);
         strcat(deffile, arg);

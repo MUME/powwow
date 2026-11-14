@@ -8,8 +8,9 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	  (see README).
 	* `powwow --windows', as the installer runs it, takes file names
 	  and commands as on Windows: a file name after < and a command
-	  after ! keep their backslashes, and messages and #help write
-	  environment variables as %NAME%.
+	  after ! keep their backslashes, and %NAME% in file names is
+	  replaced by the value of the environment variable, the way
+	  messages and #help write environment variables then.
 
 Changes from 1.3.1 to 1.3.2
 

@@ -1604,9 +1604,22 @@ char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
         if (*start == 0 && *end != 0)
             *start = 1;
     } else if (!windows_mode || k == '\0') {
-        /* in Windows mode, a file name or a command keeps its
-         * backslashes, as on Windows */
         unescape(arg);
+    } else if (k == '<') {
+        /* in Windows mode, a file name keeps its backslashes, as on
+         * Windows, and gets the values of the %NAME% in it; a command
+         * after ! is left to the shell */
+        char buf[BUFSIZE];
+        const char *file = file_name(arg, buf, sizeof(buf));
+        if (file != arg) {
+            *pbuf = ptrmcpy(*pbuf, file, strlen(file));
+            if (real_error()) {
+                print_error(error);
+                ptrdel(pbuf);
+                return NULL;
+            }
+            arg = ptrdata(*pbuf);
+        }
     }
 
     *kind = k;

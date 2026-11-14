@@ -26,7 +26,7 @@ char *parse_instruction(char *line, bool silent, bool subs,
                         bool jit_subs);
 char *get_next_instr(char *p);
 void parse_user_input(char *line, bool silent);
-void set_deffile(char *arg);
+void set_deffile(const char *name);
 bool is_permanent_variable(struct varnode *v);
 /* the variable @n or $n, for n from -GLOBAL_VAR_COUNT to PARAM_COUNT - 1 */
 long *num_var(int n);

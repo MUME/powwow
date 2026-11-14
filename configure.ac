@@ -143,6 +143,10 @@ AM_CONDITIONAL([HAVE_CURSES], [test "x${have_curses}" = xyes])
 
 AC_CHECK_FUNC([getopt_long],
     AC_DEFINE(HAVE_GETOPT_LONG, 1, [Define to use getopt_long().]))
+dnl Cygwin, to show its paths, such as in TEMP, as Windows paths
+AC_CHECK_FUNC([cygwin_conv_path],
+    AC_DEFINE(HAVE_CYGWIN_CONV_PATH, 1,
+              [Define to convert Cygwin paths with cygwin_conv_path().]))
 
 # flock(), which locks the definition file of a session; without it,
 # nothing stops two sessions from saving the same file

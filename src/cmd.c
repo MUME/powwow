@@ -2536,14 +2536,16 @@ static void cmd_capture(char *arg)
                 ++arg;
                 append = true;
             }
-            capturefile = fopen(arg, append ? "a" : "w");
+            char buf[BUFSIZE];
+            const char *file = file_name(arg, buf, sizeof(buf));
+            capturefile = fopen(file, append ? "a" : "w");
             if (capturefile == NULL) {
-                wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, arg);
+                wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, file);
             } else {
-                snprintf(name, sizeof(name), "%s", arg);
+                snprintf(name, sizeof(name), "%s", file);
                 if (opt_info)
                     wrap_printf("#capture to " LQUOTE "%s" RQUOTE " active, "
-                                LQUOTE "#capture" RQUOTE " ends.", arg);
+                                LQUOTE "#capture" RQUOTE " ends.", file);
             }
         }
     }
@@ -2570,15 +2572,17 @@ static void cmd_movie(char *arg)
         if (moviefile != NULL) {
             message_printf("#movie already active.\n");
         } else {
-            moviefile = fopen(arg, "w");
+            char buf[BUFSIZE];
+            const char *file = file_name(arg, buf, sizeof(buf));
+            moviefile = fopen(file, "w");
             if (moviefile == NULL) {
-                wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, arg);
+                wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, file);
             } else {
                 if (opt_info) {
                     wrap_printf("#movie to " LQUOTE "%s" RQUOTE " active, "
-                                LQUOTE "#movie" RQUOTE " ends.", arg);
+                                LQUOTE "#movie" RQUOTE " ends.", file);
                 }
-                snprintf(name, sizeof(name), "%s", arg);
+                snprintf(name, sizeof(name), "%s", file);
                 update_now();
                 movie_last = now;
                 log_clearsleep();
@@ -2607,14 +2611,16 @@ static void cmd_record(char *arg)
         if (recordfile != NULL) {
             message_printf("#record already active.\n");
         } else {
-            recordfile = fopen(arg, "w");
+            char buf[BUFSIZE];
+            const char *file = file_name(arg, buf, sizeof(buf));
+            recordfile = fopen(file, "w");
             if (recordfile == NULL) {
-                wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, arg);
+                wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, file);
             } else {
-                snprintf(name, sizeof(name), "%s", arg);
+                snprintf(name, sizeof(name), "%s", file);
                 if (opt_info)
                     wrap_printf("#record to " LQUOTE "%s" RQUOTE " active, "
-                                LQUOTE "#record" RQUOTE " ends.", arg);
+                                LQUOTE "#record" RQUOTE " ends.", file);
             }
         }
     }

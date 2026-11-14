@@ -159,10 +159,12 @@ of the installer for Windows does: a file name after
 .B <
 and a command after
 .B !
-keep their backslashes, and messages and
-.B #help
-write environment variables as
+keep their backslashes, and the
 .BI % NAME %
+of environment variables in file names are replaced by their values,
+and messages and
+.B #help
+write them so
 .TP
 .BI \-\-completion " shell"
 print the completion of the arguments of
