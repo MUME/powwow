@@ -238,9 +238,10 @@ bool verbatim = false;    /* don't expand aliases or process semicolons */
  * < and a command after ! keep their backslashes, which are not escapes,
  * and file names get the values of the %NAME% of environment variables in
  * them (see file_name()); the editor and the pager run as #! runs its
- * commands, with the Windows path of the file, and edited texts are sent
+ * commands, with the Windows path of the file, edited texts are sent
  * without what editors with Windows settings add (see
- * strip_windows_format())
+ * strip_windows_format()), and Tab completes file names in any case, with
+ * a \ after folders
  */
 bool windows_mode = false;
 char prefixstr[BUFSIZE];  /* inserted in the editing buffer each time */
