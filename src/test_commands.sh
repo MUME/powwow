@@ -2731,6 +2731,43 @@ has '#edited text too long, not sent'
 [ "$(grep -c '^C5$' "$tmp/got")" -eq 1 ] \
     || fail "expected a cancel message, got: $(od -c "$tmp/got")"
 
+# an editor with Windows settings: with --windows, its byte order mark
+# and the CRs of its CR LF line endings are not sent, but a CR without LF
+# is; without --windows, the text is sent as it is
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EE14\nM5\ndescr\ntext\n'
+cat > "$1/got"
+touch "$1/done"
+EOF
+run --args --windows --until '#completed session' \
+    '--windows: edited text with a BOM and CR LF' \
+    "#option editor=&printf '\\357\\273\\277one\\r\\ntwo\\rthree\\r\\n' >
+#spawn n sh $tmp/server $tmp
+##n #request editor"
+i=0
+until [ -e "$tmp/done" ] || [ $i -ge 500 ]; do
+    sleep 0.01
+    i=$((i + 1))
+done
+printf '~$#EE17\nE5\none\ntwo\rthree\n' > "$tmp/want"
+# after the rest of the identification, the message
+tail -c 25 "$tmp/got" | cmp -s "$tmp/want" - \
+    || fail "expected no BOM, and LF for CR LF, got: $(od -c "$tmp/got")"
+rm -f "$tmp/done"
+run --until '#completed session' 'edited text sent as it is' \
+    "#option editor=&printf '\\357\\273\\277one\\r\\n' >
+#spawn n sh $tmp/server $tmp
+##n #request editor"
+i=0
+until [ -e "$tmp/done" ] || [ $i -ge 500 ]; do
+    sleep 0.01
+    i=$((i + 1))
+done
+printf '~$#EE11\nE5\n\357\273\277one\r\n' > "$tmp/want"
+tail -c 19 "$tmp/got" | cmp -s "$tmp/want" - \
+    || fail "expected the text as written, got: $(od -c "$tmp/got")"
+
 # an editing session with a long description
 cat > "$tmp/server" <<'EOF'
 read -r identify
