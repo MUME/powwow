@@ -8,6 +8,7 @@
  *
  */
 
+#include <assert.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -143,6 +144,7 @@ int secret_count(void)
 
 const struct secret *secret_get(int i)
 {
+    assert(0 <= i && i < nsecrets);
     return &secrets[i];
 }
 
@@ -164,6 +166,7 @@ bool secret_add(const struct secret *sec)
 
 void secret_delete(int i)
 {
+    assert(0 <= i && i < nsecrets);
     --nsecrets;
     memmove(secrets + i, secrets + i + 1,
             sizeof(secrets[0]) * (nsecrets - i));
