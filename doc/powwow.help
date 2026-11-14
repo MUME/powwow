@@ -293,7 +293,8 @@ margin to the next line. This option lets you turn it off and on.
 
 Normally, powwow does not touch the prompts on screen while you play.
 In `compact' mode, instead, lines containing only a prompt are deleted when
-further messages arrive from the remote host.
+further messages arrive from the remote host: only the prompts that a
+#prompt recognizes with #isprompt.
 @echo
 #option [+-=]echo
 
