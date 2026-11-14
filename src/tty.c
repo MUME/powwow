@@ -424,11 +424,29 @@ static const default_bind walk_binds[] = {
       .funct = key_run_command, .command = "u" },
 };
 
+/* is the key 'label' or the key sequence 'seq' bound? */
+static bool key_is_bound(const char *label, const char *seq)
+{
+    int len = strlen(seq);
+    for (const keynode *k = keydefs; k != NULL; k = k->next) {
+        if (strcmp(k->name, label) == 0
+            || (k->seqlen == len && memcmp(k->sequence, seq, len) == 0))
+            return true;
+    }
+    return false;
+}
+
+/*
+ * add the default keypad keys, but not over a key with the same name or
+ * sequence, such as one that a definition file binds
+ */
 void tty_add_walk_binds(void)
 {
-    for (size_t i = 0; i < sizeof(walk_binds) / sizeof(*walk_binds); ++i)
-        add_keynode(walk_binds[i].label, walk_binds[i].seq, 0,
-                    walk_binds[i].funct, walk_binds[i].command);
+    for (size_t i = 0; i < sizeof(walk_binds) / sizeof(*walk_binds); ++i) {
+        if (!key_is_bound(walk_binds[i].label, walk_binds[i].seq))
+            add_keynode(walk_binds[i].label, walk_binds[i].seq, 0,
+                        walk_binds[i].funct, walk_binds[i].command);
+    }
 }
 
 /*
@@ -511,26 +529,17 @@ static const default_bind default_binds[] = {
       .since = READLINE_KEYS_SAVEFILEVER },
 };
 
-/* is the key 'label' or the key sequence 'seq' bound? */
-static bool key_is_bound(const char *label, const char *seq)
-{
-    int len = strlen(seq);
-    for (const keynode *k = keydefs; k != NULL; k = k->next) {
-        if (strcmp(k->name, label) == 0
-            || (k->seqlen == len && memcmp(k->sequence, seq, len) == 0))
-            return true;
-    }
-    return false;
-}
-
 /*
- * initialize the key binding list
+ * add the default editing keys, but not over a key with the same name or
+ * sequence, such as one that an old definition file, which these keys are
+ * added after, binds
  */
 void tty_add_initial_binds(void)
 {
     for (size_t i = 0; i < sizeof(default_binds) / sizeof(*default_binds);
          ++i) {
-        if (*default_binds[i].seq != '\0')
+        if (*default_binds[i].seq != '\0'
+            && !key_is_bound(default_binds[i].label, default_binds[i].seq))
             add_keynode(default_binds[i].label, default_binds[i].seq, 0,
                         default_binds[i].funct, NULL);
     }
