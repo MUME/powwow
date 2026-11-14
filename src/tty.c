@@ -164,8 +164,8 @@ const char *tty_intr_key(void)
 
 /*
  * disable the keys that the terminal handles itself even in non-canonical
- * mode, so that they can be bound: suspend (^Z, handled by powwow), and,
- * where they exist, delayed suspend (^Y) and discard output (^O)
+ * mode, so that they can be bound: suspend (C-z, handled by powwow), and,
+ * where they exist, delayed suspend (C-y) and discard output (C-o)
  */
 static void disable_special_keys(struct termios *ttyb)
 {
@@ -203,8 +203,8 @@ void tty_start(void)
     tty_started = true;
     struct termios ttyb = ttybsave;
     ttyb.c_lflag &= ~(ECHO | ICANON);
-    /* let ^S and ^Q through instead of stopping and starting the output,
-     * and Ret (^M) and LF (^J) through as they are, like readline */
+    /* let C-s and C-q through instead of stopping and starting the output,
+     * and Ret (C-m) and LF (C-j) through as they are, like readline */
     ttyb.c_iflag &= ~(IXON | ICRNL | INLCR);
     ttyb.c_cc[VTIME] = 0;
     ttyb.c_cc[VMIN] = 1;

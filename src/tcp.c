@@ -326,7 +326,7 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
     /*
      * BSD systems do not restart an interrupted connect(), even with
      * SA_RESTART; defer the signals whose handlers only set a flag, so
-     * that only CTRL-C interrupts it
+     * that only C-c interrupts it
      */
     sigset_t deferred, old_mask;
     sigemptyset(&deferred);
