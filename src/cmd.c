@@ -851,10 +851,10 @@ static void cmd_do(char *arg)
     ++arg;
 
     long result;
-    int type = evall(&result, &arg);
+    enum eval_type type = evall(&result, &arg);
     if (real_error()) return;
 
-    if (type != TYPE_NUM) {
+    if (type != EVAL_TYPE_NUM) {
         message_printf("#do: ");
         error = NO_NUM_VALUE_ERROR;
         print_error(error);
@@ -939,7 +939,7 @@ static void cmd_history(char *arg)
         ++arg;
         long buf;
         num = evall(&buf, &arg);
-        if (!real_error() && num != TYPE_NUM)
+        if (!real_error() && num != EVAL_TYPE_NUM)
             error = NO_NUM_VALUE_ERROR;
         if (real_error()) {
             message_printf("#history: ");
@@ -1098,9 +1098,9 @@ static void cmd_in(char *arg)
     ++arg;    /* skip the '(' */
 
     long buf;
-    int type = evall(&buf, &arg);
+    enum eval_type type = evall(&buf, &arg);
     if (!real_error()) {
-        if (type != TYPE_NUM)
+        if (type != EVAL_TYPE_NUM)
             error = NO_NUM_VALUE_ERROR;
         else if (*arg != ')')
             error = MISSING_PAREN_ERROR;
@@ -1271,7 +1271,7 @@ static void cmd_isprompt(char *arg)
             long l;
             i = evall(&l, &arg);
             if (!real_error()) {
-                if (i != TYPE_NUM)
+                if (i != EVAL_TYPE_NUM)
                   error = NO_NUM_VALUE_ERROR;
                 else if (*arg != ')')
                   error = MISSING_PAREN_ERROR;
@@ -1368,8 +1368,8 @@ static void cmd_nice(char *arg)
         }
     } else if (*arg++ == '(') {
         long buf;
-        int type = evall(&buf, &arg);
-        if (!real_error() && type != TYPE_NUM)
+        enum eval_type type = evall(&buf, &arg);
+        if (!real_error() && type != EVAL_TYPE_NUM)
             error = NO_NUM_VALUE_ERROR;
         else if (!real_error() && *arg++ != ')')
             error = MISSING_PAREN_ERROR;
@@ -2025,7 +2025,7 @@ static void cmd_var(char *arg)
             long buf2;
 
             idx = evall(&buf2, &arg);
-            if (!real_error() && idx != TYPE_NUM)
+            if (!real_error() && idx != EVAL_TYPE_NUM)
                 error = NO_STRING_ERROR;
             if (real_error()) {
                 message_printf("#var: ");
@@ -2182,7 +2182,7 @@ static void cmd_setvar(char *arg)
             if (*arg == '(') {
                 ++arg;
                 int i = evall(&buf, &arg);
-                if (!real_error() && i != TYPE_NUM)
+                if (!real_error() && i != EVAL_TYPE_NUM)
                     error = NO_NUM_VALUE_ERROR;
                 else if (!real_error() && *arg != ')')
                     error = MISSING_PAREN_ERROR;
@@ -2263,9 +2263,9 @@ static void cmd_if(char *arg)
     ++arg;  /* skip the '(' */
 
     long buf;
-    int type = evall(&buf, &arg);
+    enum eval_type type = evall(&buf, &arg);
     if (!real_error()) {
-        if (type != TYPE_NUM)
+        if (type != EVAL_TYPE_NUM)
             error = NO_NUM_VALUE_ERROR;
         if (*arg != ')')
             error = MISSING_PAREN_ERROR;
@@ -2308,7 +2308,8 @@ static void cmd_for(char *arg)
         evaln(&arg);       /* execute <init> */
 
     char *check = arg + 1;
-    int type = TYPE_NUM, loop = MAX_LOOP;
+    enum eval_type type = EVAL_TYPE_NUM;
+    int loop = MAX_LOOP;
     long buf;
     char *increm = 0;
 
@@ -2320,7 +2321,7 @@ static void cmd_for(char *arg)
         print_error(error);
     } else while (error == NO_ERROR && loop != 0
                 && (increm = check,
-                    ((type = evall(&buf, &increm)) == TYPE_NUM
+                    ((type = evall(&buf, &increm)) == EVAL_TYPE_NUM
                      && error == NO_ERROR && *increm == CMDSEP && buf != 0))) {
 
         char *tmp = first_regular(increm + 1, ')');
@@ -2346,7 +2347,7 @@ static void cmd_for(char *arg)
         error = MISSING_SEPARATOR_ERROR;
     else if (loop == 0)
         error = MAX_LOOP_ERROR;
-    else if (type != TYPE_NUM)
+    else if (type != EVAL_TYPE_NUM)
         error = NO_NUM_VALUE_ERROR;
     if (real_error()) {
         message_printf("#for: ");
@@ -2368,11 +2369,12 @@ static void cmd_while(char *arg)
     push_params();
 
     char *check = ++arg;   /* skip the '(' */
-    int type = TYPE_NUM, loop = MAX_LOOP;
+    enum eval_type type = EVAL_TYPE_NUM;
+    int loop = MAX_LOOP;
     long buf;
     while (error == NO_ERROR && loop != 0
            && (arg = check,
-               ((type = evall(&buf, &arg)) == TYPE_NUM
+               ((type = evall(&buf, &arg)) == EVAL_TYPE_NUM
                 && error == NO_ERROR && *arg == ')' && buf != 0))) {
 
         char *tmp = arg + 1;
@@ -2388,7 +2390,7 @@ static void cmd_while(char *arg)
         error = MISSING_PAREN_ERROR;
     else if (loop == 0)
         error = MAX_LOOP_ERROR;
-    else if (type != TYPE_NUM)
+    else if (type != EVAL_TYPE_NUM)
         error = NO_NUM_VALUE_ERROR;
     if (real_error()) {
         message_printf("#while: ");

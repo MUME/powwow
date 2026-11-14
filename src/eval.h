@@ -41,19 +41,19 @@ enum eval_error {
     INVALID_NAME_ERROR = 28,
 };
 
-#define TYPE_NUM 1
-#define TYPE_TXT 2
-#define TYPE_NUM_VAR 3
-#define TYPE_TXT_VAR 4
+/* the type of the value of an expression, or EVAL_TYPE_NONE after an error */
+enum eval_type {
+    EVAL_TYPE_NONE = 0,
+    EVAL_TYPE_NUM = 1,
+    EVAL_TYPE_TXT = 2,
+    EVAL_TYPE_NUM_VAR = 3,
+    EVAL_TYPE_TXT_VAR = 4,
+};
 
-#define PRINT_NOTHING 0
-#define PRINT_AS_PTR  1
-#define PRINT_AS_LONG 2
-
-int  eval_any(long *lres, ptr **pres, char **what);
-int  evalp(            ptr **pres, char **what);
-int  evall(long *lres,            char **what);
-int  evaln(                       char **what);
+enum eval_type eval_any(long *lres, ptr **pres, char **what);
+enum eval_type evalp(            ptr **pres, char **what);
+enum eval_type evall(long *lres,            char **what);
+enum eval_type evaln(                       char **what);
 
 void print_error(enum eval_error err);
 
@@ -73,4 +73,3 @@ static inline bool mem_error(void)
 }
 
 #endif /* _EVAL_H_ */
-

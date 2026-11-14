@@ -511,7 +511,7 @@ void parse_action(char *str, bool onprompt)
                 ptr *pbuf = NULL;
                 ++p;
                 char kind = evalp(&pbuf, &p);
-                if (!real_error() && kind != TYPE_TXT)
+                if (!real_error() && kind != EVAL_TYPE_TXT)
                     error = NO_STRING_ERROR;
                 if (real_error()) {
                     message_printf("#%s: ", ONPROMPT);
@@ -1526,8 +1526,8 @@ char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
 
     if (*tmp == '(') {
         arg = tmp + 1;
-        int type = evalp(pbuf, &arg);
-        if (!real_error() && type != TYPE_TXT && !also_num)
+        enum eval_type type = evalp(pbuf, &arg);
+        if (!real_error() && type != EVAL_TYPE_TXT && !also_num)
             error = NO_STRING_ERROR;
         if (real_error()) {
             message_printf("#%s: ", name);
@@ -1548,7 +1548,7 @@ char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
 
                 long buf;
                 type = evall(&buf, &arg);
-                if (!real_error() && type != TYPE_NUM)
+                if (!real_error() && type != EVAL_TYPE_NUM)
                     error = NO_NUM_VALUE_ERROR;
                 if (real_error()) {
                     message_printf("#%s: ", name);
