@@ -345,7 +345,7 @@ say password=hunter22!
 #option +words
 #save"
 history
-has '#secret added.'
+has '#secret number 1 added.'
 lacks 'hunter22'
 lacks_history hunter22
 has_history '#secret add'
@@ -389,10 +389,13 @@ run --eof --until '(secret to add, not shown): ' \
 grep -Fq '(secret to add, not shown): ' "$tmp/out" \
     || fail 'expected the label'
 
-run 'Tab completes the subcommands of #secret' '' "#secret ad	
+run 'Tab completes the subcommands of #secret, and #secret add numbers them' \
+    '#secret add
+hunter21' "#secret ad	
 hunter22
 "
-has '#secret added.'
+has '#secret number 1 added.'
+has '#secret number 2 added.'
 
 run '#secret: a secret entered is left as <redacted>' \
     '#hilite messages bold
@@ -433,7 +436,8 @@ r22${cx8e}thumbs up
 
 #secret"
 # the input line, erased with CR and ESC [ K, is before the messages
-grep -q '#secret added\.$' "$tmp/out" || fail 'expected the secret added'
+grep -q '#secret number 1 added\.$' "$tmp/out" \
+    || fail 'expected the secret added'
 [ "$(grep -c '#no such secret\.$' "$tmp/out")" -eq 2 ] \
     || fail 'expected two secrets not found'
 grep -q '#secret deleted\.$' "$tmp/out" || fail 'expected the secret deleted'

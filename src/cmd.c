@@ -3156,7 +3156,7 @@ void secret_entered(const char *s, size_t len)
             struct secret sec = secret_make(&salt, s, len);
             secret_add(&sec);
             purge_secrets();
-            message_printf("#secret added.\n");
+            message_printf("#secret number %d added.\n", secret_count());
             if (len < SECRET_WARN_LEN)
                 wrap_printf("#warning: a secret shorter than %d bytes may"
                             " match other text, and is easy to find from"
