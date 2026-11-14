@@ -1336,6 +1336,15 @@ has '#deleting key binding: C-s ^S=&forward-search'
 has '#new key binding: ^S ^S=#capture'
 lacks '#bind C-s ^S=&forward-search'
 
+# a save-file older than the default editing keys gets them after its own
+# keys, but not over those it binds
+printf '%s\n' '#savefile-version 1' '#bind C-k ^K=&clear-line' > "$tmp/old"
+run 'the default keys of a very old save-file do not double its keys' \
+    "#load $tmp/old
+#bind edit"
+has '#bind C-k ^K=&clear-line'
+lacks '#bind C-k ^K=&kill-to-eol'
+
 run '#reset bind resets one key' '#bind M-c ^[c=&upcase-word
 #reset bind M-c
 #bind KP8 ^[Ox=north
