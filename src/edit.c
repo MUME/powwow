@@ -258,14 +258,43 @@ void draw_prompt(void)
         if (esc != NULL)
             *esc = '\0';
         sgr_prompt_draw();
-        tty_puts(pstr);
-        col0 = printstrlen(pstr);
+        col0 = tty_put_prompt(pstr);
+        /* a prompt longer than the last row scrolled the screen */
+        int rows = col0 / cols_1;
+        if (line0 + rows > lines - 1)
+            line0 = lines - 1 - rows;
         if (esc != NULL)
             *esc = ASCII_ESC;
 
         error = e;
     }
     prompt_status = 0;
+}
+
+/*
+ * whether the prompt on the screen ended in the last column, and
+ * draw_prompt() started a new row after it
+ */
+bool prompt_row_ended(void)
+{
+    return prompt_status == 0 && col0 != 0 && col0 % cols_1 == 0;
+}
+
+/*
+ * start a new row after the prompt, where the cursor is, unless
+ * draw_prompt() started one
+ */
+void prompt_newline(void)
+{
+    int rows = col0 / cols_1;
+    if (!prompt_row_ended()) {
+        tty_putc('\n');
+        ++rows;
+    }
+    line0 += rows;
+    if (line0 > lines - 1)
+        line0 = lines - 1;
+    col0 = 0;
 }
 
 /*
@@ -283,18 +312,23 @@ void clear_input_line(bool deleteprompt)
      */
     if ((edlen != 0 && line_status == 0)
         || (promptlen != 0 && prompt_status == 0 && deleteprompt)) {
-        int newcol = deleteprompt ? 0 : col0;
+        int newcol = 0, newline = line0;
+        if (!deleteprompt) {
+            newcol = col0 % cols_1;
+            newline = line0 + col0 / cols_1;
+        }
         int realpos = (line_status == 0
                        ? pos
                        : (prompt_status == 0 ? 0 : -col0));
 
-        tty_gotoxy_opt(CURCOL(realpos), CURLINE(realpos), newcol, line0);
+        tty_gotoxy_opt(CURCOL(realpos), CURLINE(realpos), newcol, newline);
         tty_puts(edattrend);
-        if (line0 < lines - 1)
+        if (newline < lines - 1)
             tty_puts(tty_clreoscr);
         else
             tty_puts(tty_clreoln);
-        col0 = newcol;
+        if (deleteprompt)
+            col0 = 0;
     } else {
         tty_puts(edattrend);
     }
@@ -348,9 +382,7 @@ void redraw_line(char *dummy)
 void redraw_line_noprompt(char *dummy)
 {
     clear_input_line(false);
-    tty_putc('\n');
-    if (line0 < lines - 1)
-        ++line0;
+    prompt_newline();
     status(-1);
 }
 
