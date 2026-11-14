@@ -3,6 +3,8 @@
 #ifndef _EVAL_H_
 #define _EVAL_H_
 
+#include <stdbool.h>
+
 /*
  * the errors of evaluating expressions and running commands, in 'error';
  * their numbers stay the same for plugins
@@ -58,8 +60,17 @@ void print_error(enum eval_error err);
 extern const char *const error_msg[];
 extern enum eval_error error;
 
-#define REAL_ERROR (error != NO_ERROR && error != USER_BREAK)
-#define MEM_ERROR  (error == MEM_LIMIT_ERROR)
+/* is there an error, other than the user interrupting a command? */
+static inline bool real_error(void)
+{
+    return error != NO_ERROR && error != USER_BREAK;
+}
+
+/* did a text or string get longer than the limit? */
+static inline bool mem_error(void)
+{
+    return error == MEM_LIMIT_ERROR;
+}
 
 #endif /* _EVAL_H_ */
 

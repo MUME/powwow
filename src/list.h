@@ -7,8 +7,6 @@ int cmp_vtime(vtime *t1, vtime *t2);
 void add_vtime(vtime *t1, vtime *t2);
 long diff_vtime(vtime *t1, vtime *t2);
 
-
-
 void insert_delaynode(delaynode *node, bool dead);
 
 void add_aliasnode(char *name, char *subst);

@@ -511,9 +511,9 @@ void parse_action(char *str, bool onprompt)
                 ptr *pbuf = NULL;
                 ++p;
                 char kind = evalp(&pbuf, &p);
-                if (!REAL_ERROR && kind != TYPE_TXT)
+                if (!real_error() && kind != TYPE_TXT)
                     error = NO_STRING_ERROR;
-                if (REAL_ERROR) {
+                if (real_error()) {
                     message_printf("#%s: ", ONPROMPT);
                     print_error(error);
                     ptrdel(&pbuf);
@@ -765,7 +765,7 @@ void parse_mark(char *str)
         if (n != NULL) {
             ptr *pbuf = ptrmescape(NULL, n->b.pattern,
                                    strlen(n->b.pattern), false);
-            if (MEM_ERROR) {
+            if (mem_error()) {
                 ptrdel(&pbuf);
                 return;
             }
@@ -854,7 +854,7 @@ void show_substitutions(void)
     ptr *pbuf = NULL;
     for (substnode *p = substitutions; p != NULL; p = p->next) {
         pbuf = ptrsubstdef(pbuf, p->b.mbeg, p->b.pattern, p->replacement);
-        if (MEM_ERROR)
+        if (mem_error())
             break;
         tty_message("#substitute %s\n", ptrdata(pbuf));
     }
@@ -871,7 +871,7 @@ static void subst_info(const char *what, bool mbeg, char *pattern,
         return;
 
     ptr *pbuf = ptrsubstdef(NULL, mbeg, pattern, replacement);
-    if (!MEM_ERROR)
+    if (!mem_error())
         message_printf("#%s substitution: %s\n", what, ptrdata(pbuf));
     ptrdel(&pbuf);
 }
@@ -902,7 +902,7 @@ void parse_substitute(char *str)
         }
         ptr *pbuf = ptrsubstdef(NULL, n->b.mbeg, n->b.pattern,
                                 n->replacement);
-        if (!MEM_ERROR)
+        if (!mem_error())
             fmt_next_edit("#substitute %s", ptrdata(pbuf));
         ptrdel(&pbuf);
         return;
@@ -1527,9 +1527,9 @@ char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
     if (*tmp == '(') {
         arg = tmp + 1;
         int type = evalp(pbuf, &arg);
-        if (!REAL_ERROR && type != TYPE_TXT && !also_num)
+        if (!real_error() && type != TYPE_TXT && !also_num)
             error = NO_STRING_ERROR;
-        if (REAL_ERROR) {
+        if (real_error()) {
             message_printf("#%s: ", name);
             print_error(error);
             ptrdel(pbuf);
@@ -1548,9 +1548,9 @@ char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
 
                 long buf;
                 type = evall(&buf, &arg);
-                if (!REAL_ERROR && type != TYPE_NUM)
+                if (!real_error() && type != TYPE_NUM)
                     error = NO_NUM_VALUE_ERROR;
-                if (REAL_ERROR) {
+                if (real_error()) {
                     message_printf("#%s: ", name);
                     print_error(error);
                     ptrdel(pbuf);
@@ -1573,7 +1573,7 @@ char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
             /* make space to add a final \n */
             *pbuf = ptrsetlen(*pbuf, 1);
             ptrzero(*pbuf);
-            if (REAL_ERROR) {
+            if (real_error()) {
                 print_error(error);
                 ptrdel(pbuf);
                 return NULL;
@@ -1596,14 +1596,14 @@ void show_vars(void)
 
     message_printf("#the following variables are defined:\n");
 
-    for (enum var_kind kind = VAR_NUM; !REAL_ERROR && kind < VAR_KINDS;
+    for (enum var_kind kind = VAR_NUM; !real_error() && kind < VAR_KINDS;
          ++kind) {
         for (varnode *v = named_vars[kind].sorted; v != NULL; v = v->snext) {
             if (kind == VAR_NUM) {
                 tty_message("#(@%s = %ld)\n", v->name, v->num);
             } else {
                 p = ptrescape(p, v->str, false);
-                if (REAL_ERROR) {
+                if (real_error()) {
                     print_error(error);
                     break;
                 }
@@ -1612,11 +1612,11 @@ void show_vars(void)
             }
         }
     }
-    for (int i = -GLOBAL_VAR_COUNT; !REAL_ERROR && i < PARAM_COUNT; ++i) {
+    for (int i = -GLOBAL_VAR_COUNT; !real_error() && i < PARAM_COUNT; ++i) {
         if (*num_var(i) != 0)
             tty_message("#(@%d = %ld)\n", i, *num_var(i));
     }
-    for (int i = -GLOBAL_VAR_COUNT; !REAL_ERROR && i < PARAM_COUNT; ++i) {
+    for (int i = -GLOBAL_VAR_COUNT; !real_error() && i < PARAM_COUNT; ++i) {
         if (*text_var(i) != NULL && ptrlen(*text_var(i)) != 0) {
             p = ptrescape(p, *text_var(i), false);
             if (p != NULL && ptrlen(p) != 0)

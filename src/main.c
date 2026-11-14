@@ -936,7 +936,7 @@ static void exec_delays(void)
             error = NO_ERROR;
 
             buf = ptrmcpy(buf, dying->command, strlen(dying->command));
-            if (MEM_ERROR) {
+            if (mem_error()) {
                 print_error(error);
             } else {
                 parse_instruction(ptrdata(buf), false, false, true);
@@ -1237,7 +1237,7 @@ static int grab_prompt(char *linestart, int len, bool islast)
         }
     } else if (islast) {
         prompt->str = ptrmcpy(prompt->str, linestart, len);
-        if (MEM_ERROR) {
+        if (mem_error()) {
             promptzero();
             print_error(error);
             return 0;
@@ -1325,7 +1325,7 @@ static void process_singleline(char **pbuf, int *psize)
                 /* set $last_line */
                 last_line->str = ptrmcpy(last_line->str, linestart,
                                          strlen(linestart));
-                if (MEM_ERROR) {
+                if (mem_error()) {
                     print_error(error);
                     error = NO_ERROR;
                 }
@@ -1401,7 +1401,7 @@ static int process_first_fragment(char *buf, int got)
          */
         if (isprompt_len == 0) {
             last_line->str = ptrcpy(last_line->str, prompt->str);
-            if (MEM_ERROR) {
+            if (mem_error()) {
                 print_error(error);
                 return 0;
             }
@@ -1453,7 +1453,7 @@ static int process_first_fragment(char *buf, int got)
             ptr *p = ptrcpy(NULL, prompt->str);
             p = ptrmcat(p, buf, lineend - buf);
 
-            if (MEM_ERROR) {
+            if (mem_error()) {
                 print_error(error);
                 ptrdel(&p);
                 return 0;
@@ -1696,7 +1696,7 @@ static bool match_weak_action(char *pat, char *line, int *match_s,
     /* unescape a copy, not the pattern of the action */
     if (!jit_subst_vars(&buf, pat))
         buf = ptrmcpy(buf, pat, strlen(pat));
-    if (REAL_ERROR) {
+    if (real_error()) {
         print_error(error);
         ptrdel(&buf);
         return false;
@@ -1878,7 +1878,7 @@ static bool search_action_or_prompt(char *line, bool clearline, int onprompt)
             return false;
         if (onprompt == 2) {
             prompt->str = ptrmcpy(prompt->str, line, strlen(line));
-            if (MEM_ERROR) {
+            if (mem_error()) {
                 promptzero();
                 print_error(error);
                 return false;
@@ -2096,7 +2096,7 @@ static char *split_words(char *str)
             ++end;
         *prm = ptrmcpy(*prm, str, end - str);
         str = end;
-        if (MEM_ERROR) {
+        if (mem_error()) {
             print_error(error);
             return NULL;
         }
@@ -2152,7 +2152,7 @@ static void set_params(char *line, int *match_s, int *match_e)
         if (match_e[i] > match_s[i]) {
             *text_var(i) = ptrmcpy(*text_var(i), line + match_s[i],
                                    match_e[i] - match_s[i]);
-            if (MEM_ERROR) {
+            if (mem_error()) {
                 print_error(error);
                 return;
             }
@@ -2240,7 +2240,7 @@ static void run_instruction(char *line, bool silent, bool subs,
         /* send to another connection */
         int len = strlen(arg);
         *pbuf = ptrsetlen(*pbuf, len);
-        if (REAL_ERROR) {
+        if (real_error()) {
             print_error(error);
             return;
         }
@@ -2287,7 +2287,7 @@ static void run_instruction(char *line, bool silent, bool subs,
     /* initial spaces are NOT skipped this time */
     int len = strlen(line);
     *pbuf = ptrsetlen(*pbuf, len);
-    if (REAL_ERROR) {
+    if (real_error()) {
         print_error(error);
         return;
     }
@@ -2300,7 +2300,7 @@ static void run_instruction(char *line, bool silent, bool subs,
     char *end = skipspace(line);
     if (np != NULL && np->active) {
         push_params();
-        if (REAL_ERROR)
+        if (real_error())
             return;
         /* the arguments, split into words, go in $0 ... $9 */
         split_words(arg);
@@ -2316,9 +2316,9 @@ static void run_instruction(char *line, bool silent, bool subs,
             /* #(expression) */
             ++end;
             evaln(&end);
-            if (!REAL_ERROR && *end != ')')
+            if (!real_error() && *end != ')')
                 error = MISSING_PAREN_ERROR;
-            if (REAL_ERROR) {
+            if (real_error()) {
                 print_error(error);
             } else {
                 /* such as a comment written after it */
@@ -2411,7 +2411,7 @@ char *parse_instruction(char *line, bool silent, bool subs, bool jit_subs)
         ++ret;
     }
 
-    if (REAL_ERROR) {
+    if (real_error()) {
         print_error(error);
         ptrdel(&pbuf);
         ptrdel(&pbusy);
@@ -2432,7 +2432,7 @@ char *parse_instruction(char *line, bool silent, bool subs, bool jit_subs)
         current_connection = old_conn;
     ptrdel(&pbuf);
     ptrdel(&pbusy);
-    return !REAL_ERROR ? ret : NULL;
+    return !real_error() ? ret : NULL;
 }
 
 /*
@@ -2498,7 +2498,7 @@ static bool subst_param(ptr **buf, char *src)
     int len = strlen(src);
     if (*buf == NULL || ptrlen(*buf) < len) {
         *buf = ptrsetlen(*buf, len);
-        if (REAL_ERROR)
+        if (real_error())
             return false;
     }
     char *dst = ptrdata(*buf);
@@ -2545,7 +2545,7 @@ static bool subst_param(ptr **buf, char *src)
                     if (data != NULL && max != 0) {
                         int n = dst - ptrdata(*buf);
                         *buf = ptrpad(*buf, max);
-                        if (REAL_ERROR)
+                        if (real_error())
                             return false;
                         dst = ptrdata(*buf) + n;
                         memcpy(dst, data, max);
@@ -2578,7 +2578,7 @@ static bool jit_subst_vars(ptr **buf, char *src)
     int len = strlen(src);
     if (*buf == NULL || ptrlen(*buf) < len) {
         *buf = ptrsetlen(*buf, len);
-        if (REAL_ERROR)
+        if (real_error())
             return false;
     }
     char *dst = ptrdata(*buf);
@@ -2655,7 +2655,7 @@ static bool jit_subst_vars(ptr **buf, char *src)
                     if (data != NULL && max != 0) {
                         int n = dst - ptrdata(*buf);
                         *buf = ptrpad(*buf, max);
-                        if (REAL_ERROR)
+                        if (real_error())
                             return false;
                         dst = ptrdata(*buf) + n;
                         memcpy(dst, data, max);
@@ -2672,7 +2672,7 @@ static bool jit_subst_vars(ptr **buf, char *src)
 
             src += 2;
             evalp(&pbuf, &src);
-            if (REAL_ERROR) {
+            if (real_error()) {
                 ptrdel(&pbuf);
                 return false;
             }
@@ -2680,7 +2680,7 @@ static bool jit_subst_vars(ptr **buf, char *src)
                 int max = ptrlen(pbuf);
                 int n = dst - ptrdata(*buf);
                 *buf = ptrpad(*buf, max);
-                if (REAL_ERROR) {
+                if (real_error()) {
                     ptrdel(&pbuf);
                     return false;
                 }
