@@ -444,7 +444,7 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
     /* send a edit_start message (if wanted) */
     if (edit_sess == NULL && *edit_start != '\0') {
         unsigned generation = conn != NULL ? conn->generation : 0;
-        error = 0;
+        error = NO_ERROR;
         parse_instruction(edit_start, false, false, true);
         history_done = 0;
         if (s->conn != NULL && conn->generation != generation) {
@@ -456,7 +456,7 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
             free(s->file);
             free(s);
             if (edit_sess == NULL && *edit_end != '\0') {
-                error = 0;
+                error = NO_ERROR;
                 parse_instruction(edit_end, false, false, true);
                 history_done = 0;
             }
@@ -570,7 +570,7 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
         free(s->descr);
         free(s->file);
         if (wpid != -1 && edit_sess == NULL && *edit_end != '\0') {
-            error = 0;
+            error = NO_ERROR;
             parse_instruction(edit_end, false, false, true);
             history_done = 0;
         }
@@ -713,7 +713,7 @@ void sig_chld_bottomhalf(void)
             if (edit_sess == NULL && *edit_end != '\0') {
                 connsess *old_conn = current_connection;
                 current_connection = conn;
-                error = 0;
+                error = NO_ERROR;
                 parse_instruction(edit_end, false, false, true);
                 history_done = 0;
                 current_connection = old_conn;

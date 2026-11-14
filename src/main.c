@@ -803,7 +803,7 @@ static noreturn void mainloop(void)
             compute_sleeptime(&timeout,
                               ncache_read_fds > 0 || tty_has_chars());
 
-            error = 0;
+            error = NO_ERROR;
             now_updated = false;
 
             readfds = fdset;
@@ -933,7 +933,7 @@ static void exec_delays(void)
             tty_message("#now [%s]\n", dying->command);
 
         if (*dying->command != '\0') {
-            error = 0;
+            error = NO_ERROR;
 
             buf = ptrmcpy(buf, dying->command, strlen(dying->command));
             if (MEM_ERROR) {
@@ -1327,7 +1327,7 @@ static void process_singleline(char **pbuf, int *psize)
                                          strlen(linestart));
                 if (MEM_ERROR) {
                     print_error(error);
-                    error = 0;
+                    error = NO_ERROR;
                 }
 
                 if (lineend > linestart) {
@@ -1351,7 +1351,7 @@ static void process_singleline(char **pbuf, int *psize)
      * search_prompt and search_action above
      * might set error: clear it to avoid troubles.
      */
-    error = 0;
+    error = NO_ERROR;
     if (wasn != NULL)
         *wasn = '\n';
     *pbuf += size;
@@ -1869,12 +1869,12 @@ static bool search_action_or_prompt(char *line, bool clearline, int onprompt)
             continue;
 
         push_params();
-        if (error != 0)
+        if (error != NO_ERROR)
             return false;
         ret = true;
-        error = 0;
+        error = NO_ERROR;
         set_params(line, match_s, match_e);
-        if (error != 0)
+        if (error != NO_ERROR)
             return false;
         if (onprompt == 2) {
             prompt->str = ptrmcpy(prompt->str, line, strlen(line));
@@ -1892,7 +1892,7 @@ static bool search_action_or_prompt(char *line, bool clearline, int onprompt)
             pop_params();
         break;
     }
-    if (error != 0)
+    if (error != NO_ERROR)
         return false;
     return ret;
 }
@@ -2349,7 +2349,7 @@ static void run_instruction(char *line, bool silent, bool subs,
  */
 char *parse_instruction(char *line, bool silent, bool subs, bool jit_subs)
 {
-    if (error != 0)
+    if (error != NO_ERROR)
         return NULL;
 
     char *ret = get_next_instr(line);
@@ -2444,7 +2444,7 @@ void parse_user_input(char *line, bool silent)
 {
     do {
         line = parse_instruction(line, silent, false, false);
-    } while (error == 0 && line != NULL && *line != '\0');
+    } while (error == NO_ERROR && line != NULL && *line != '\0');
 }
 
 /*
