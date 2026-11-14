@@ -142,6 +142,31 @@ static void test_match(void)
     check("secret_in() not in a short line", !secret_in("hun"));
     check("secret_in() not an empty line", !secret_in(""));
 
+    char out[SECRET_REDACT_SIZE(64)];
+    bool label[sizeof(out)];
+    check("secret_redact() only the secret",
+          secret_redact("abc hunter2def", out, label)
+          && strcmp(out, "abc <redacted>def") == 0
+          && !label[3] && label[4] && label[13] && !label[14]);
+    check("secret_redact() each secret",
+          secret_redact("hunter2 swordfish!", out, NULL)
+          && strcmp(out, "<redacted> <redacted>!") == 0);
+    check("secret_redact() secrets next to each other",
+          secret_redact("hunter2swordfish", out, NULL)
+          && strcmp(out, "<redacted><redacted>") == 0);
+    check("secret_redact() no secret",
+          !secret_redact("hunter swordfis", out, label)
+          && strcmp(out, "hunter swordfis") == 0 && !label[0]);
+    check("secret_redact() a short line",
+          !secret_redact("hun", out, NULL) && strcmp(out, "hun") == 0);
+
+    struct secret overlap = secret_make(&salt, "er2sw", 5);
+    secret_add(&overlap);
+    check("secret_redact() overlapping secrets once",
+          secret_redact("xhunter2swy", out, NULL)
+          && strcmp(out, "x<redacted>y") == 0);
+    secret_delete(2);
+
     check("secret_find()", secret_find("swordfish", 9) == 1);
     check("secret_find() nothing", secret_find("swordfist", 9) == -1);
 }

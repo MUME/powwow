@@ -18,6 +18,12 @@
 #define SECRET_SALT_LEN 8
 #define SECRET_STR_MAX  64      /* "<salt>:<length>:<hash>" and a '\0' */
 
+/* what secret_redact() puts in place of a secret */
+#define SECRET_REDACTED "<redacted>"
+/* the size of the output of secret_redact() for a line of 'len' bytes:
+ * SECRET_REDACTED is at most 3 times as long as a secret */
+#define SECRET_REDACT_SIZE(len) (3 * (len) + 1)
+
 struct secret_salt {
     uint8_t bytes[SECRET_SALT_LEN];
 };
@@ -50,5 +56,13 @@ void secret_delete(int i);
 int secret_find(const char *s, size_t len);
 /* whether 'line' contains one of the secrets */
 bool secret_in(const char *line);
+/*
+ * copy 'line' to 'out', of SECRET_REDACT_SIZE(strlen(line)) bytes, with
+ * each secret in it, or secrets that overlap, replaced by one
+ * SECRET_REDACTED; if 'label' is not NULL, as large as 'out', set the
+ * elements of the bytes of each SECRET_REDACTED to true and the others to
+ * false; return whether 'line' contains a secret
+ */
+bool secret_redact(const char *line, char *out, bool *label);
 
 #endif /* _SECRET_H_ */

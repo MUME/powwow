@@ -66,10 +66,10 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	Commands, attributes and messages:
 	* #secret keeps lines with a password or other secret out of the
 	  history, the completion words and the logs, keeping only a
-	  salted hash of each secret, and leaves them on the screen as
-	  <redacted>.
+	  salted hash of each secret, and leaves the secrets on the screen
+	  as <redacted>.
 	* `#option reprint' prints <redacted> in place of a password typed
-	  while the MUD does not echo, and of a line with a secret.
+	  while the MUD does not echo, and of the secrets in a line.
 	* #bind lists the keys that run commands as such, not as
 	  user-defined keys, since the default keypad keys are among them.
 	* #mark and #hilite attributes accept the styles dim, italic,
