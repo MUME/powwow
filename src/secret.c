@@ -45,6 +45,13 @@ struct secret_salt secret_new_salt(void)
     return salt;
 }
 
+/*
+ * the first 32 bits of SHA-256(salt + secret): so few that a strong
+ * secret cannot be told from the many other strings with the same hash
+ * if a definition file leaks, but enough that other text matches it only
+ * rarely; the salt makes the hashes of a secret differ from file to file,
+ * and from any table computed in advance
+ */
 static uint32_t secret_hash(const struct secret_salt *salt, const char *s,
                             size_t len)
 {
