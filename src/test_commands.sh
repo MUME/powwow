@@ -1382,6 +1382,14 @@ has '<ESC>[1m#beep<ESC>[m'
 grep -q '^<ESC>\[1m#option +autoclear -autoprint .*<ESC>\[m$' "$tmp/out" \
     || fail 'expected #option to list the options as messages'
 has '<ESC>[1m#option editor=vi<ESC>[m'
+
+run '#option list aligns the descriptions, also where they wrap' \
+    '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst
+#option list'
+has '#option +autoclear       clear input line before executing commands'
+has '#option pager=           show texts, such as #help, with this, not $POWWOWPAGER'
+has '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst edit'
+has '#                        texts of the MUD with this, not $POWWOWEDITOR'
 grep -Fxq '#hilite input red' "$tmp/cfg" || fail "#hilite input not saved"
 grep -Fxq '#hilite messages bold' "$tmp/cfg" || fail "#hilite messages not saved"
 
