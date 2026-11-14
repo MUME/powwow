@@ -1687,7 +1687,15 @@ run 'clearing a command option says what its default is' \
 #option +info'
 has '#option editor is now the default: nano (from $EDITOR)'
 has '#option shell is now the default: /bin/sh'
+run --args --windows '--windows: #option list names variables as %NAME%' \
+    '#option list'
+has '#option editor=nano (from %EDITOR%)'
+has '#option pager=cat (from %POWWOWPAGER%)'
 unset EDITOR
+
+run --args --windows '--windows: #help names variables as %NAME%' \
+    '#help option'
+has "others; they come before '%POWWOWEDITOR%', '%POWWOWPAGER%',"
 
 run 'help aligns the list of commands' '#help' ''
 has '#addstatic {<text>|(<expr>)}    add the string to the static completion list'
@@ -2019,6 +2027,10 @@ for shell in bash zsh; do
             "_files -W $POWWOWDIR -g *.powwow(-.)"
     fi
     unset POWWOWDIR
+    case $(uname -s) in
+        CYGWIN*) expect_completion $shell 'powwow --wi' '--windows ' ;;
+        *) expect_completion $shell 'powwow --wi' ;;
+    esac
 done
 
 # in a zsh that completes as one typing in it does, by zpty: a file in
@@ -2152,6 +2164,27 @@ printf '#alias t=#print loaded\n' > "$tmp/def"
 run --args "$tmp/def 127.0.0.1 1" 'definition file, host and port' 't'
 has '#cannot connect to 127.0.0.1:1: Connection refused'
 has 'loaded'
+
+# --windows keeps the backslashes of a file name after <, as path
+# separators on Windows; elsewhere than on Cygwin, where they are path
+# separators too, they are part of the name of the file
+case $(uname -s) in
+    CYGWIN*)
+        cygwin=1
+        wtmp=$(cygpath -w "$tmp")       # what %NAME% gives for $tmp
+        mkdir "$tmp/back"
+        printf 'from the file\n' > "$tmp/back/slash" ;;
+    *)
+        cygwin=
+        wtmp=$tmp
+        printf 'from the file\n' > "$tmp/back\\slash" ;;
+esac
+run --args --windows '--windows: a file name after < keeps its backslashes' \
+    "#print <$tmp/back\\slash"
+has 'from the file'
+run 'a file name after < loses its backslashes without --windows' \
+    "#print <$tmp/back\\slash"
+has "#print: #error opening '$tmp/backslash'"
 
 # a line longer than the memory limit is still processed as a line, not
 # again as a prompt

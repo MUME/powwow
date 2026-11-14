@@ -399,6 +399,16 @@ bool has_path_sep(const char *path)
 }
 
 /*
+ * the environment variable 'name' as messages write it, in 'buf' of 'size'
+ * bytes: $NAME, or %NAME% in Windows mode, as cmd writes it
+ */
+const char *env_name(const char *name, char *buf, size_t size)
+{
+    snprintf(buf, size, windows_mode ? "%%%s%%" : "$%s", name);
+    return buf;
+}
+
+/*
  * remove the spaces at the end of 's', such as after a word completed with
  * Tab; return 's'
  */

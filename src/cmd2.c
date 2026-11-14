@@ -1603,7 +1603,9 @@ char *redirect(char *arg, ptr **pbuf, char *kind, const char *name,
         arg = ptrdata(*pbuf);
         if (*start == 0 && *end != 0)
             *start = 1;
-    } else {
+    } else if (!windows_mode || k == '\0') {
+        /* in Windows mode, a file name or a command keeps its
+         * backslashes, as on Windows */
         unescape(arg);
     }
 

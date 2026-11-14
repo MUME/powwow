@@ -357,8 +357,9 @@ void tty_bootstrap(void)
         { .cap = "" }
     };
     char *term = getenv("TERM");
+    char var[16];
     if (term == NULL) {
-        fprintf(stderr, "$TERM not set\n");
+        fprintf(stderr, "%s not set\n", env_name("TERM", var, sizeof var));
         exit(1);
     }
     char tcbuf[2048];           /* by convention, this is enough */
@@ -370,7 +371,8 @@ void tty_bootstrap(void)
                 "There is no entry for \"%s\" in the terminal data"
                 " base.\n", term);
         fprintf(stderr,
-                "Please set your $TERM environment variable correctly.\n");
+                "Please set your %s environment variable correctly.\n",
+                env_name("TERM", var, sizeof var));
         exit(1);
     default:
         syserr("cannot read the terminal database");

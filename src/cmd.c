@@ -609,6 +609,43 @@ static void show_copyright(bool use_pager)
     show_help_text(text, use_pager);
 }
 
+/*
+ * in Windows mode, write each ‘$NAME’ of an environment variable in the
+ * line 'line' of the help file, of BUFSIZE bytes, as ‘%NAME%’, as cmd
+ * writes it; the line stays as it is if that would not fit
+ */
+static void windows_help_line(char *line)
+{
+    static const char start[] = LQUOTE "$";
+    if (!windows_mode || strstr(line, start) == NULL)
+        return;
+    char buf[BUFSIZE];
+    size_t n = 0;
+    for (const char *p = line; *p != '\0';) {
+        const char *name = p + sizeof start - 1;
+        size_t len = 0;
+        if (strncmp(p, start, sizeof start - 1) == 0) {
+            while (isupper((unsigned char)name[len]) || name[len] == '_'
+                   || (len > 0 && isdigit((unsigned char)name[len])))
+                ++len;
+            if (strncmp(name + len, RQUOTE, strlen(RQUOTE)) != 0)
+                len = 0;
+        }
+        if (len > 0) {
+            if (n + strlen(LQUOTE) + len + 2 >= sizeof buf)
+                return;
+            n += sprintf(buf + n, LQUOTE "%%%.*s%%", (int)len, name);
+            p = name + len;
+        } else {
+            if (n + 1 >= sizeof buf)
+                return;
+            buf[n++] = *p++;
+        }
+    }
+    buf[n] = '\0';
+    strcpy(line, buf);
+}
+
 static void cmd_help(char *arg)
 {
     arg = skipspace(arg);
@@ -693,6 +730,7 @@ static void cmd_help(char *arg)
     while (utf8_fgets(line, BUFSIZE, f) != NULL && line[0] == '@') ;
 
     do {
+        windows_help_line(line);
         int len = strlen(line);
         if (len >= size - i) {
             /* Not enough space in current buffer */
@@ -2972,13 +3010,15 @@ static const char *command_option_used(int i, const char **from)
     return editor_command(help || strcmp(name, "pager") == 0, help, from);
 }
 
-/* " (from $EDITOR)" in 'buf' of 'size' bytes for 'from' of
+/* " (from $EDITOR)", or %EDITOR% in Windows mode, in 'buf' of 'size' bytes for 'from' of
  * command_option_used(), or "" if it is NULL or powwow's own default */
 static const char *from_note(char *buf, size_t size, const char *from)
 {
     if (from == NULL || *from == '\0')
         return "";
-    snprintf(buf, size, " (from %s%s)", *from == '#' ? "" : "$", from);
+    char var[BUFSIZE];
+    snprintf(buf, size, " (from %s)",
+             *from == '#' ? from : env_name(from, var, sizeof var));
     return buf;
 }
 
@@ -3047,7 +3087,8 @@ static bool command_option(const char *word, int len, const char *rest)
 /*
  * the line of #option list of the command option 'i' in 'buf' of 'size'
  * bytes: if it is not set, with the command that is used instead and where
- * it comes from, such as "#option editor=vi (from $EDITOR)"
+ * it comes from, such as "#option editor=vi (from $EDITOR)", or
+ * %EDITOR% in Windows mode
  */
 static void command_option_line(char *buf, size_t size, int i)
 {

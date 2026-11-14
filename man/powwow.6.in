@@ -152,6 +152,18 @@ version and exit; given twice, also display the credits and the options
 .B powwow
 was compiled with
 .TP
+.BR \-w ", " \-\-windows
+on Cygwin, take file names and commands as on Windows, as the
+.B powwow
+of the installer for Windows does: a file name after
+.B <
+and a command after
+.B !
+keep their backslashes, and messages and
+.B #help
+write environment variables as
+.BI % NAME %
+.TP
 .BI \-\-completion " shell"
 print the completion of the arguments of
 .B powwow
