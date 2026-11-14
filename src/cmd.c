@@ -776,7 +776,7 @@ static const char *shell_choice(const char **from)
  * 'arg' with: 'arg' itself, or, if POWWOWSHELL is set, such as to
  * "zsh -c", that shell with 'arg' as its last argument, to be freed
  */
-static char *shell_command(const char *arg)
+char *shell_command(const char *arg)
 {
     const char *from;
     const char *shell = shell_choice(&from);

@@ -408,19 +408,28 @@ const char *env_name(const char *name, char *buf, size_t size)
 }
 
 /*
+ * the path 'path' as on Windows: on Cygwin, a Cygwin path such as /tmp/x
+ * converted in 'buf' of 'size' bytes; else 'path' itself
+ */
+const char *windows_path(const char *path, char *buf, size_t size)
+{
+#ifdef HAVE_CYGWIN_CONV_PATH
+    if (path[0] == '/'
+        && cygwin_conv_path(CCP_POSIX_TO_WIN_A | CCP_ABSOLUTE, path, buf,
+                            size) == 0)
+        return buf;
+#endif
+    return path;
+}
+
+/*
  * the value of the environment variable 'name', or NULL; on Cygwin, which
  * makes TEMP, HOME and the like Cygwin paths, a path as on Windows
  */
 static const char *windows_getenv(const char *name, char *buf, size_t size)
 {
     const char *value = getenv(name);
-#ifdef HAVE_CYGWIN_CONV_PATH
-    if (value != NULL && value[0] == '/'
-        && cygwin_conv_path(CCP_POSIX_TO_WIN_A | CCP_ABSOLUTE, value, buf,
-                            size) == 0)
-        return buf;
-#endif
-    return value;
+    return value != NULL ? windows_path(value, buf, size) : NULL;
 }
 
 /*

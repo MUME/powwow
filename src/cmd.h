@@ -32,5 +32,8 @@ const char *command_option_name(int i);
 bool secret_reading(void);
 void secret_entered(const char *s, size_t len);
 
+/* the command for /bin/sh that runs 'arg' as #! does, to be freed */
+char *shell_command(const char *arg);
+
 #endif /* _CMD_H_ */
 

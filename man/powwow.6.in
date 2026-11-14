@@ -164,7 +164,12 @@ keep their backslashes, and the
 of environment variables in file names are replaced by their values,
 and messages and
 .B #help
-write them so
+write environment variables so;
+the editor and the pager run as
+.B #!
+runs its commands, with the shell of
+.BR "#option shell" ,
+followed by the Windows path of the file
 .TP
 .BI \-\-completion " shell"
 print the completion of the arguments of
