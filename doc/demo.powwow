@@ -1,12 +1,12 @@
 #savefile-version 1
-#("We use an old version number to force creation of sane default #binds")
+# We use an old version number to force creation of sane default #binds
 
 #init ={#(@oldxp=0);mapend;#option +compact -info -echo}
 
-#("Connect to MUME")
+# Connect to MUME
 #host mume.org 4242
 
-#("Some aliases to use labeled #actions")
+# Some aliases to use labeled #actions
 #alias ac=#action $0
 #alias <=#action <$0
 #alias \==#action =$0
@@ -14,14 +14,14 @@
 #alias +=#action +$0
 #alias -=#action -$0
 
-#("Some variables")
+# Some variables
 #(@emergency = 1, @xp = -0)
 #($E_col = "bold")
 #($Elbereth = "Grima Slinket Crug Camaro")
 #($S_col = "inverse")
 #($Sauron = "Homie Aridhol Quigley Mournblade ")
 
-#("Some useful binds -- they all are on numeric keypad")
+# Some useful binds -- they all are on numeric keypad
 #alias ?=#history 1
 #alias ??=#history $0
 #bind * ^[Oj=stat
@@ -45,7 +45,7 @@
 #action >+open2 The $1 seems to be closed={#print;plusminus $1}
 #action >+open1 The $1 is closed={#print;plusminus $1}
 
-#("Bindings for function keys")
+# Bindings for function keys
 #alias HELP=#alias HELP={remove ring;narrate HELP! EMERGENCY TRANSFER! rings off!}
 #bind F01 ^[OP=HELP
 #alias wi=change wimpy $0
@@ -71,11 +71,11 @@
 #bind F11 ^[[23~=pi
 #bind F12 ^[[24~=sla
 
-#("Two nice aliases")
+# Two nice aliases
 #alias ,e=emote leaves east
 #alias emsay=emote says '$0'
 
-#("Teleporting")
+# Teleporting
 #alias ll=cast 'locate life' $0
 #alias tp=cast 'teleport' $0
 #alias portal=cast 'portal' $0
@@ -91,7 +91,7 @@
 #alias 2=zMichDelv
 #alias 3=zBree
 
-#("An emote for enchanting weapons")
+# An emote for enchanting weapons
 #alias ench=cast 'enchant weapon' $0
 #alias enchant={, makes a swift gesture and the $0 starts floating in mid air...;EnchSet +;ench $0}
 #alias EnchSet={#action $1EnchSucc;#action $1EnchFail;#action $1BackFire}
@@ -99,29 +99,29 @@
 #action >-EnchFail You lost your concentration!={#print;, frowns and exclaims, 'This cannot be! I failed!';EnchSet -}
 #action >-EnchSucc $1 glows blue.={#print;, gestures again, and arcane runes flare on the $1!;EnchSet -}
 
-#("Keep count of game time and also put it in the prompt")
+# Keep count of game time and also put it in the prompt
     #mark Game time =underline
-#("length of a game tick in milliseconds :")
+# length of a game tick in milliseconds :
     #(@tick = 61500)
-#("this is to synchronize")
+# this is to synchronize
     #action >+clock ^The current time is $1:$2 $3.={#print;#if (\@0=$1*@tick+$2*@tick/60, \$3=="pm" ^^ $1==12) #(\@0+=12*@tick); #settimer (\@0);settick}
-#("print time")
+# print time
     #alias time={#if ((\@1=timer%@tick*60/@tick) < 10) #(\$1=":0"); #else #(\$1=":");#print ("Game time "+%(timer/@tick%24)+\$1+%\@1)}
-#("manually set time")
+# manually set time
     #alias now={#if (*\$1) #(\@0=$1*@tick+0$2*@tick/60); #else #if ((\@0=timer-(\@1=timer%@tick)), \@1 >= @tick/2) #(\@0+=@tick); #settimer (\@0)}
-#("put time into the prompt. works for MUME.")
-#("change to use appropriate patterns for other MUDs")
+# put time into the prompt. works for MUME.
+# change to use appropriate patterns for other MUDs
     #prompt %+empty ^[o\\*]>={#isprompt -1; timeprompt}
     #prompt %+full ^[o\\*] [^>]*>={#isprompt -1; timeprompt}
     #alias timeprompt={#if ((\@1=timer%@tick*60/@tick) < 10) #(\$1=":0"); #else #(\$1=":");#($prompt=$prompt.1+" "+%(timer/@tick%24)+\$1+%\@1+$prompt.>2)}
-#("automatically print time at every tick. type `settick' to activate")
-#("or change #alias `now' and #action `clock' to run it")
+# automatically print time at every tick. type `settick' to activate
+# or change #alias `now' and #action `clock' to run it
     #alias settick=set tick 0 time
     #alias set=#exe ("#in $1 ("+%((-timer-1)%@tick+2)+") {"+\$0:>3+";#in $1 ((-timer-1)%@tick+2)}")
 
-#("Code to help mapping mazes -- keeps track of room number")
-#("using binary numbers -- 1 copper == 1, 2 coppers == 0")
-#("doesn't work anymore as you now get `six pile of coins' etc. tough luck.")
+# Code to help mapping mazes -- keeps track of room number
+# using binary numbers -- 1 copper == 1, 2 coppers == 0
+# doesn't work anymore as you now get `six pile of coins' etc. tough luck.
 #alias d1=drop 1 copper
 #alias d2=drop 2 copper
 #alias m=#for (\@1=$1; \@1; \@1/=2) #if (\@1&1) d1; #else d2
@@ -131,7 +131,7 @@
 #action >-pile-of-coins ^A pile of coins=mapcount 0
 #action >-copper-penny ^One miserable copper penny=mapcount 1
 
-#("Spells and fight")
+# Spells and fight
 #($self = "Cosmos")
 #alias self=#($self=$(0))
 #alias k=kill $0
@@ -189,7 +189,7 @@
 #alias bs.=bs ${target}
 #alias nn=$0 Necromancer
 
-#("Misc stuff")
+# Misc stuff
 #($water = "skin")
 #alias dw=drink water
 #alias dk=drink ${water}
