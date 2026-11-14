@@ -34,9 +34,9 @@ test_sgr_SOURCES = test_sgr.c sgr.c
 test_attr_SOURCES = test_attr.c attr.c
 test_secret_SOURCES = test_secret.c secret.c sha256.c
 TESTS = test_charset test_ptr test_sgr test_attr test_secret \
-    test_commands.sh
+    test_commands.sh test_split.sh
 
-EXTRA_DIST = plugtest.c test_commands.sh
+EXTRA_DIST = plugtest.c test_commands.sh test_split.sh test_split.py
 
 plugtest.so: plugtest.c
 	$(CC) -c -fPIC $(DEFS) $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) \
