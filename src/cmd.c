@@ -2832,6 +2832,14 @@ static void cmd_connect(char *arg)
 
 static void cmd_spawn(char *arg)
 {
+    /*
+     * the command would run in sh, and the programs of Windows cannot talk
+     * through the socket of Cygwin that it would be connected to
+     */
+    if (windows_mode) {
+        message_printf("#spawn: #error: not available with --windows\n");
+        return;
+    }
     arg = skipspace(arg);
     if (*arg != '\0') {
         char s[BUFSIZE];

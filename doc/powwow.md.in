@@ -1525,6 +1525,9 @@ as usual.
 Text to and from the command uses the character set of `#host`:
 UTF-8 unless powwow was started with `--latin1` (or `#host` has
 `--latin1`), in which case it uses ISO-8859-1.
+With `--windows`, as the installer for Windows runs powwow, `#spawn` is
+not available: the command would run in `sh`, and Windows programs
+cannot talk through the connection it would get.
 
 Depending on how lazy you are, you can choose two different ways
 to have spawned programs print to screen:
