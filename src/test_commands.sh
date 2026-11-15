@@ -1573,6 +1573,13 @@ run 'Tab completes #connect main, the address of #host and its port' \
 grep -Eq '^# *[0-9]+: #connect main 127\.0\.0\.1 --no-tls 1 $' "$tmp/out" \
     || fail 'expected the line completed'
 
+run 'Tab completes the address of #host as the first argument of #connect' \
+    '#host 127.0.0.1 1 --no-tls' "#connect 12		
+" '#history
+'
+grep -Eq '^# *[0-9]+: #connect 127\.0\.0\.1 1 $' "$tmp/out" \
+    || fail 'expected the line completed'
+
 run 'Tab completes the flags of #help and the topic after them' '' \
     "#help -P speedw	
 #help --n	speedw	
@@ -1725,6 +1732,10 @@ run 'help on a command without an entry' '#help nosuchcommand'
 has '#no entry for "nosuchcommand" in the help file.'
 
 run 'error message' '#connect test --no-tls 127.0.0.1 1'
+has '#cannot connect to 127.0.0.1:1: Connection refused'
+
+run '#connect <address> <port> needs no session id' \
+    '#connect --no-tls 127.0.0.1 1'
 has '#cannot connect to 127.0.0.1:1: Connection refused'
 
 run '#connect without an argument connects to the host of #host' \
@@ -2111,8 +2122,8 @@ run --until '#killed' 'cancelling a view' \
 #help mark
 #cancel"
 has "#killed \"Help on 'mark'\" (4294967295)"
-lacks "#no open connections. Use '#connect main <address> <port>'"\
-" to open a connection."
+lacks "#no open connections. Use '#connect <address> <port>' to open a"\
+" connection."
 
 # #cancel without an argument cancels all the editing sessions
 run --until "#killed \"Help on 'mark'\"" 'cancelling all editing sessions' \

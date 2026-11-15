@@ -1006,8 +1006,8 @@ static void complete_host(struct word_list *l, int arg, const char *args,
 }
 
 /* the flags of #connect, as for #host, and else, as its first argument,
- * the session main unless it is open, then the address of #host, and
- * after it its port */
+ * the session main unless it is open, or the address of #host, then that
+ * address, and after it its port */
 static void complete_connect(struct word_list *l, int arg, const char *args,
                              const char *word)
 {
@@ -1032,6 +1032,8 @@ static void complete_connect(struct word_list *l, int arg, const char *args,
     if (count == 0) {
         if (tcp_find_connection("main") == NULL)
             word_list_add(l, "main");
+        if (*hostinfo.name != '\0')
+            word_list_add(l, hostinfo.name);
     } else if (*hostinfo.name != '\0') {
         if (prev_len == (int)strlen(hostinfo.name)
             && strncmp(prev, hostinfo.name, prev_len) == 0) {
