@@ -94,6 +94,9 @@ WINDOWS INSTALLER
 	make windows-bundle             (just the directory powwow-win)
 	make windows-installer          (also powwow-VERSION-setup.exe)
 
+	A -dev version adds the commit it is built from, as #ver shows it:
+	powwow-1.3.2-dev-ebae0231-setup.exe.
+
 	The bundle needs the license files of the Cygwin packages that it
 	has, which are only in their source packages: so the first build of
 	it downloads those, about 200 MB, which needs an internet connection,
