@@ -8,6 +8,8 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	  them, and starts powwow for the one picked in a terminal:
 	  Windows Terminal on Windows, iTerm2 or Terminal on macOS, and
 	  that of TERMINAL, or one found, elsewhere.
+	* The Windows installer includes the launcher, which its shortcuts
+	  and the .powwow files open instead of powwow.
 
 	Completion and Unicode input:
 	* Tab completes file names that have spaces in them.

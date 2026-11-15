@@ -39,11 +39,10 @@ SetupIconFile=..\icons\powwow.ico
 UninstallDisplayIcon={app}\powwow.ico
 ChangesAssociations=yes
 
-; Windows Terminal, which powwow runs in, and its options: the profile
-; of powwow, with its icon and title, from the fragment that the installer
-; writes (see CurStepChanged)
+; Windows Terminal, which powwow runs in, with the profile of powwow, its
+; icon and title, from the fragment that the installer writes (see
+; CurStepChanged)
 #define Terminal "{localappdata}\Microsoft\WindowsApps\wt.exe"
-#define TerminalOptions "-p powwow"
 
 [Tasks]
 Name: desktopicon; Description: "{cm:CreateDesktopIcon}"; \
@@ -57,6 +56,7 @@ Name: associate; Description: "Open .powwow definition files with powwow"; \
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\bin"
 Type: filesandordirs; Name: "{app}\etc"
+Type: filesandordirs; Name: "{app}\launcher"
 Type: filesandordirs; Name: "{app}\usr"
 
 [Files]
@@ -64,22 +64,21 @@ Source: "{#Stage}\*"; DestDir: "{app}"; \
     Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\icons\powwow.ico"; DestDir: "{app}"; Flags: ignoreversion
 
+; the launcher, which lists the MUDs and starts powwow for one in Windows
+; Terminal, through the profile of powwow
+#define Launcher "{app}\launcher\powwow-launcher.exe"
+
 [Icons]
-; powwow runs in Windows Terminal, which draws emoji well and fast; its
-; profile runs powwow-start, in the Documents folder
-Name: "{group}\powwow"; Filename: "{#Terminal}"; \
-    Parameters: "{#TerminalOptions}"; \
-    WorkingDir: "{%USERPROFILE}"; IconFilename: "{app}\powwow.ico"
-Name: "{autodesktop}\powwow"; Filename: "{#Terminal}"; \
-    Parameters: "{#TerminalOptions}"; \
-    WorkingDir: "{%USERPROFILE}"; IconFilename: "{app}\powwow.ico"; \
-    Tasks: desktopicon
+Name: "{group}\powwow"; Filename: "{#Launcher}"; \
+    WorkingDir: "{%USERPROFILE}"
+Name: "{autodesktop}\powwow"; Filename: "{#Launcher}"; \
+    WorkingDir: "{%USERPROFILE}"; Tasks: desktopicon
 Name: "{group}\Licenses"; Filename: "{app}\{#Data}\LICENSES.txt"
 
 [Registry]
-; opening a .powwow file runs the profile of powwow with the file added to
-; its command: powwow with it as the definition file, in its folder, as
-; powwow-start does; with the icon of the profile, unlike a command given
+; opening a .powwow file runs the launcher with it, which runs the profile
+; of powwow with the file added to its command: powwow with it as the
+; definition file, in its folder, as powwow-start does
 Root: HKA; Subkey: "Software\Classes\.powwow"; ValueType: string; \
     ValueName: ""; ValueData: "powwow.definitions"; \
     Flags: uninsdeletevalue; Tasks: associate
@@ -92,9 +91,7 @@ Root: HKA; Subkey: "Software\Classes\powwow.definitions\DefaultIcon"; \
 Root: HKA; \
     Subkey: "Software\Classes\powwow.definitions\shell\open\command"; \
     ValueType: string; ValueName: ""; \
-    ValueData: """{#Terminal}"" {#TerminalOptions} \
-        --appendCommandLine ""%1"""; \
-    Tasks: associate
+    ValueData: """{#Launcher}"" ""%1"""; Tasks: associate
 
 [UninstallDelete]
 Type: filesandordirs; \

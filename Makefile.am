@@ -3,7 +3,8 @@ SUBDIRS=src doc man
 pkgdata_DATA = COPYING
 
 EXTRA_DIST = .clang-tidy AGENTS.md cygwin/bundle.sh cygwin/installer.sh \
-             icons/make-icon.sh icons/powwow.ico cygwin/powwow.iss \
+             cygwin/launcher.sh icons/make-icon.sh icons/powwow.ico \
+             cygwin/powwow.iss \
              cygwin/powwow-cmd \
              cygwin/powwow-start cygwin/update-licenses.sh \
              launcher/CMakeLists.txt launcher/main.cpp \
@@ -44,13 +45,46 @@ lint:
 tidy:
 	cd src && $(MAKE) $(AM_MAKEFLAGS) tidy
 
-# on Cygwin: a tree of powwow with what it needs from Cygwin, and an
-# installer of it for Windows (needs Inno Setup); see README; with +, as
-# the script runs make, which then shares the jobs of make -j; V=1, which
-# make passes on from its command line or the environment, makes the
-# scripts show their commands as they run them
+# the launcher, built with CMake in launcher/build; CMAKE_FLAGS go to
+# CMake, such as -DCMAKE_PREFIX_PATH=DIR if it does not find Qt in DIR.
+# On Cygwin, it is built with the MinGW build of Qt for Windows, in
+# launcher-win: QT is the folder of that Qt, by default the newest in
+# C:\Qt
+CMAKE = cmake
+CMAKE_FLAGS =
+QT =
+if CYGWIN
+launcher:
+	$(srcdir)/cygwin/launcher.sh build '$(QT)'
+else
+launcher:
+	$(CMAKE) -S $(srcdir)/launcher -B launcher/build \
+	    -DPOWWOW_BUILD_PROGRAM='$(abs_builddir)/src/powwow' $(CMAKE_FLAGS)
+	$(CMAKE) --build launcher/build --parallel
+endif
+
+# check the sources of the launcher with clang-tidy, with the checks of
+# .clang-tidy, one at a time, as clang-tidy shows its progress through
+# several, and the QML files with qmllint
+if !CYGWIN
+launcher-tidy: launcher
+	@for f in main.cpp launcher.cpp; do \
+	    echo "$(CLANG_TIDY) launcher/$$f"; \
+	    $(CLANG_TIDY) --quiet --config-file=$(srcdir)/.clang-tidy \
+	        --header-filter='launcher/[^/]*\.h$$' -p launcher/build \
+	        $(CLANG_TIDY_FLAGS) $(srcdir)/launcher/$$f || exit 1; \
+	done
+	$(CMAKE) --build launcher/build --target all_qmllint
+endif
+
+# on Cygwin: a tree of powwow with what it needs from Cygwin and the
+# launcher, and an installer of it for Windows (needs Inno Setup); see
+# README; bundle.sh with +, as it runs make, which then shares the jobs
+# of make -j; V=1, which make passes on from its command line or the
+# environment, makes the scripts show their commands as they run them
 windows-bundle: all
 	+$(srcdir)/cygwin/bundle.sh powwow-win
+	$(srcdir)/cygwin/launcher.sh bundle powwow-win '$(QT)'
 
 # a -dev version is named after the commit it is built from, as #ver
 # shows it, such as 1.3.2-dev-ebae0231
@@ -72,31 +106,11 @@ update-cygwin-licenses:
 # make clean removes the bundle and the installers; only make
 # maintainer-clean removes the licenses and the source packages they come
 # from, which take a download to get again
-# the launcher, built with CMake in launcher/build; CMAKE_FLAGS go to
-# CMake, such as -DCMAKE_PREFIX_PATH=DIR if it does not find Qt in DIR
-CMAKE = cmake
-CMAKE_FLAGS =
-launcher:
-	$(CMAKE) -S $(srcdir)/launcher -B launcher/build $(CMAKE_FLAGS)
-	$(CMAKE) --build launcher/build --parallel
-
-# check the sources of the launcher with clang-tidy, with the checks of
-# .clang-tidy, one at a time, as clang-tidy shows its progress through
-# several, and the QML files with qmllint
-launcher-tidy: launcher
-	@for f in main.cpp launcher.cpp; do \
-	    echo "$(CLANG_TIDY) launcher/$$f"; \
-	    $(CLANG_TIDY) --quiet --config-file=$(srcdir)/.clang-tidy \
-	        --header-filter='launcher/[^/]*\.h$$' -p launcher/build \
-	        $(CLANG_TIDY_FLAGS) $(srcdir)/launcher/$$f || exit 1; \
-	done
-	$(CMAKE) --build launcher/build --target all_qmllint
-
 clean-local:
-	rm -rf powwow-win powwow-*-setup.exe launcher/build
+	rm -rf powwow-win powwow-*-setup.exe launcher/build launcher-win
 
 maintainer-clean-local:
-	rm -rf cygwin-licenses cygwin-sources
+	rm -rf cygwin-licenses cygwin-sources qt-licenses
 
 help:
 	@echo 'Usage: make [TARGET]'
@@ -118,11 +132,16 @@ endif
 	@echo '  check             build and run the tests'
 	@echo '  lint              check the markup of the man page and markdown'
 	@echo '  tidy              check the sources (needs clang-tidy)'
+if CYGWIN
+	@echo '  launcher          build the launcher with Qt for MinGW in QT=DIR'
+else
 	@echo '  launcher          build the launcher with CMake (needs Qt 6.8)'
 	@echo '  launcher-tidy     check the sources of the launcher (needs'
 	@echo '                    clang-tidy)'
+endif
 if CYGWIN
-	@echo '  windows-bundle    build powwow-win: powwow with what it needs'
+	@echo '  windows-bundle    build powwow-win: powwow with what it needs,'
+	@echo '                    and the launcher, with Qt in QT=DIR'
 	@echo '  windows-installer also make a Windows installer of it'
 	@echo '  update-cygwin-licenses'
 	@echo '                    update cygwin-licenses from the Cygwin sources'

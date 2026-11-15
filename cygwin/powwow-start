@@ -40,4 +40,6 @@ elif [ -f "$1" ]; then
         */*) cd "${file%/*}" 2> /dev/null || true ;;
     esac
 fi
-exec /bin/powwow --windows "$@"
+# --config: the settings for all MUDs, such as the editor, go in the
+# user-wide settings file, where the launcher sets them
+exec /bin/powwow --windows --config "$@"
