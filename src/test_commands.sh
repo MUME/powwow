@@ -1458,10 +1458,32 @@ grep -q '^<ESC>\[1m#option +autoclear -autoprint .*<ESC>\[m$' "$tmp/out" \
     || fail 'expected #option to list the options as messages'
 has '<ESC>[1m#option editor=vi<ESC>[m'
 
+run '#option help-pager shows #help, instead of #option pager' \
+    '#option pager=echo pager
+#option help-pager=echo help-pager
+#help alias
+#option help-pager=
+#help alias'
+grep -q 'help-pager /' "$tmp/out" || fail 'expected the help pager'
+grep -Eq '(^|>)pager /' "$tmp/out" || fail 'expected the pager once cleared'
+
+POWWOWHELPPAGER='echo help-env'
+export POWWOWHELPPAGER
+run '$POWWOWHELPPAGER shows #help, after #option help-pager' \
+    '#option pager=echo pager
+#help alias
+#option help-pager=echo help-pager
+#help alias'
+unset POWWOWHELPPAGER
+grep -q 'help-env /' "$tmp/out" || fail 'expected $POWWOWHELPPAGER'
+grep -q 'help-pager /' "$tmp/out" || fail 'expected the help pager'
+grep -Eq '(^|>)pager /' "$tmp/out" && fail 'expected no pager'
+
 run '#option list aligns the descriptions, also where they wrap' \
     '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst
 #option list'
 has '#option +autoclear       clear input line before executing commands'
+has '#option help-pager=      show #help with this, not $POWWOWHELPPAGER'
 has '#option pager=           show texts, such as #help, with this, not $POWWOWPAGER'
 has '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst edit'
 has '#                        texts of the MUD with this, not $POWWOWEDITOR'
@@ -1607,8 +1629,8 @@ has 'black  blink  blue   bold'
 run 'Tab lists the words down and then across' '' \
     "#option 		$(printf '\025')
 "
-has 'autoclear  debug      exit       keyecho    reprint    speedwalk'
-has 'compact    editor=    info       pager=     shell=     wrap'
+has 'autoclear    echo         history      pager=       speedwalk'
+has 'debug        help-pager=  list         shell='
 
 name='powwow-movieplay -a converts lines longer than 4 KB'
 long=$(printf '%05000d' 0)

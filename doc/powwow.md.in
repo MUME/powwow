@@ -1045,7 +1045,8 @@ You can also have help on specific commands, using for example
 `#help alias` or in general `#help <command-name>`.
 `#help &<function>`, such as `#help &abort`, shows what a line-editing
 function does, and the keys bound to it.
-The text is shown with the pager in `POWWOWPAGER` or `PAGER`, or `more`;
+The text is shown with the pager in `#option help-pager`,
+`POWWOWHELPPAGER`, `#option pager`, `POWWOWPAGER` or `PAGER`, or `more`;
 with `-P` or `--no-pager` it is printed on the screen instead.
 A help file is needed and provided for this last feature of `#help`,
 and powwow will look for the file "powwow.help" in the directory
@@ -1270,7 +1271,7 @@ Currently available option names are
 | `#option name` | toggles it |
 | `#option =name` | reports its status |
 
-#### `#option editor`, `pager` and `shell`
+#### `#option editor`, `pager`, `help-pager` and `shell`
 
 ```
 #option <name>=[<command>]
@@ -1278,10 +1279,11 @@ Currently available option names are
 
 These options are commands, each the rest of the line: `editor` edits
 the texts that the MUD sends to edit, `pager` shows texts such as
-`#help`, and `shell` runs `#!` and the commands after `!` of `#var`
-and others. Each comes before its environment
-variable, `POWWOWEDITOR`, `POWWOWPAGER` and `POWWOWSHELL`, and they are
-saved with the other options. An empty command clears one, and
+`#help`, `help-pager` shows only `#help`, before `pager`, and `shell`
+runs `#!` and the commands after `!` of `#var` and others. Each comes
+before its environment variable, `POWWOWEDITOR`, `POWWOWPAGER`,
+`POWWOWHELPPAGER` and `POWWOWSHELL`, and they are saved with the other
+options. An empty command clears one, and
 `#option =name` puts it in the input line to edit.
 
 The editor and the pager get the text in a temporary file, whose name
@@ -1291,6 +1293,7 @@ not set.
 ```
 #option editor=&emacsclient
 #option shell=zsh -c
+#option help-pager=less
 #option pager=
 ```
 

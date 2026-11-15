@@ -2797,7 +2797,7 @@ static const struct {
     { 0 }
 };
 
-char *opt_editor, *opt_pager, *opt_shell;
+char *opt_editor, *opt_help_pager, *opt_pager, *opt_shell;
 
 /* the options that are commands, set as #option <name>=<command> */
 static const struct {
@@ -2807,6 +2807,8 @@ static const struct {
 } command_options[] = {
     { .name = "editor", .value = &opt_editor,
       .doc = "edit texts of the MUD with this, not $POWWOWEDITOR" },
+    { .name = "help-pager", .value = &opt_help_pager,
+      .doc = "show #help with this, not $POWWOWHELPPAGER" },
     { .name = "pager", .value = &opt_pager,
       .doc = "show texts, such as #help, with this, not $POWWOWPAGER" },
     { .name = "shell", .value = &opt_shell,

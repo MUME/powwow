@@ -464,8 +464,16 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
         }
     }
 
-    /* #option pager and editor come first, then the environment */
-    const char *editor = view ? opt_pager : opt_editor;
+    /* #help first uses #option help-pager, then $POWWOWHELPPAGER; then
+     * #option pager and editor come first, then the environment */
+    const char *editor = NULL;
+    if (builtin) {
+        editor = opt_help_pager;
+        if (editor == NULL)
+            editor = getenv("POWWOWHELPPAGER");
+    }
+    if (editor == NULL)
+        editor = view ? opt_pager : opt_editor;
     if (editor == NULL)
         editor = getenv(view ? "POWWOWPAGER" : "POWWOWEDITOR");
     if (editor == NULL)
