@@ -972,8 +972,8 @@ static void complete_session(struct word_list *l, int arg, const char *args,
 }
 
 /* the flags of #connect and #host, wherever a word starts with - */
-static void complete_connect(struct word_list *l, int arg, const char *args,
-                             const char *word)
+static void complete_host(struct word_list *l, int arg, const char *args,
+                          const char *word)
 {
     static const char *const names[] = {
         "--tls", "--tls=no-verify", NO_TLS_FLAG, UTF8_FLAG, LATIN1_FLAG,
@@ -981,6 +981,45 @@ static void complete_connect(struct word_list *l, int arg, const char *args,
     };
     if (word[0] == '-')
         add_words(l, names);
+}
+
+/* the flags of #connect, as for #host, and else, as its first argument,
+ * the session main unless it is open, then the address of #host, and
+ * after it its port */
+static void complete_connect(struct word_list *l, int arg, const char *args,
+                             const char *word)
+{
+    if (word[0] == '-') {
+        complete_host(l, arg, args, word);
+        return;
+    }
+    /* the arguments before the word, without the flags */
+    int count = 0;
+    const char *prev = args;
+    int prev_len = 0;
+    for (const char *p = args; *p != '\0';) {
+        p += strspn(p, " ");
+        int len = (int)strcspn(p, " ");
+        if (len > 0 && *p != '-') {
+            ++count;
+            prev = p;
+            prev_len = len;
+        }
+        p += len;
+    }
+    if (count == 0) {
+        if (tcp_find_connection("main") == NULL)
+            word_list_add(l, "main");
+    } else if (*hostinfo.name != '\0') {
+        if (prev_len == (int)strlen(hostinfo.name)
+            && strncmp(prev, hostinfo.name, prev_len) == 0) {
+            char port[16];
+            snprintf(port, sizeof(port), "%d", hostinfo.port);
+            word_list_add(l, port);
+        } else if (count <= 2) {
+            word_list_add(l, hostinfo.name);
+        }
+    }
 }
 
 /* the names of the keys bound */
@@ -1219,7 +1258,7 @@ static const struct {
     { "group", complete_group, "" },
     { "help", complete_help, "" },
     { "hilite", complete_hilite, "" },
-    { "host", complete_connect, "" },
+    { "host", complete_host, "" },
     { "in", complete_delay, "" },
     { "key", complete_key, "" },
     { "keyedit", complete_keyedit, "" },

@@ -1504,6 +1504,13 @@ run 'Tab lists the commands right after completing part of the name' '' \
 "
 grep -aq '#rebind  *#rebindALL  *#rebindall' "$tmp/out" || fail "expected the list"
 
+run 'Tab completes #connect main, the address of #host and its port' \
+    '#host 127.0.0.1 1 --no-tls' "#connect m	12	--no		
+" '#history
+'
+grep -Eq '^# *[0-9]+: #connect main 127\.0\.0\.1 --no-tls 1 $' "$tmp/out" \
+    || fail 'expected the line completed'
+
 run 'Tab completes the flags of #help and the topic after them' '' \
     "#help -P speedw	
 #help --n	speedw	
