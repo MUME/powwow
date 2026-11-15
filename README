@@ -91,7 +91,7 @@ INSTALLING
 	Powwow looks for the editor in the POWWOWEDITOR enviroment variable,
 	and if it doesn't exist, in EDITOR, and uses "emacs" as default.  For
 	text viewing, powwow looks for POWWOWPAGER, then PAGER, then uses
-	"more" as default.
+	"more" as default; #help looks for POWWOWHELPPAGER first.
 
 	If you are on a multi-window terminal (such as an X terminal or NCSA
 	telnet from a Mac or PC), powwow will let you start the editor in
@@ -99,11 +99,11 @@ INSTALLING
 	several texts at the same time.	 To achieve this, let the first
 	character of your editor/pager be '&' (which is then skipped).
 
-	#option editor=<command>, pager=<command> and shell=<command> come
-	before these variables, and are saved.  #! runs its command with
-	/bin/sh, or gives it to the shell in POWWOWSHELL, such as "zsh -c",
-	as its last argument; so do #var $x=!<command> and the other commands
-	that run a command after !.
+	#option editor=<command>, pager=<command>, help-pager=<command> and
+	shell=<command> come before these variables, and are saved.  #! runs
+	its command with /bin/sh, or gives it to the shell in POWWOWSHELL,
+	such as "zsh -c", as its last argument; so do #var $x=!<command> and
+	the other commands that run a command after !.
 
 	Example: (Bourne shell syntax)
 

@@ -55,7 +55,11 @@ is searched, then
 .B PAGER
 and
 .BR more (1)
-is used by default.  The command
+is used by default;
+.B #help
+searches
+.B POWWOWHELPPAGER
+first.  The command
 .B #!
 runs its command with
 .BR sh (1),
@@ -69,7 +73,8 @@ of
 .B #var
 and others.  The options
 .BR "#option editor=" ,
-.B pager=
+.BR pager= ,
+.B help-pager=
 and
 .B shell=
 come before these variables.
@@ -153,6 +158,11 @@ Name of editor to use.
 .TP
 .BR POWWOWPAGER " or " PAGER
 Name of pager to use.
+.TP
+.B POWWOWHELPPAGER
+Name of pager to use for
+.BR #help ,
+instead of the one above.
 .TP
 .B TMPDIR
 Where the editor and the pager get the temporary file of the text;

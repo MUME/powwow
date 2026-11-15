@@ -126,7 +126,7 @@ extern bool opt_sendsize;
 extern bool opt_autoclear;
 
 /* the commands that #option editor, pager and shell set, or NULL */
-extern char *opt_editor, *opt_pager, *opt_shell;
+extern char *opt_editor, *opt_help_pager, *opt_pager, *opt_shell;
 
 extern function_str last_edit_cmd;
 
