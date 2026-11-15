@@ -365,6 +365,16 @@ run '#save saves #setvar mem=0' "#file =$tmp/mem.pw
 run --args "$tmp/mem.pw" 'loading #setvar mem=0' '#setvar'
 has '#setvar mem=0'
 
+printf '#alias kept=yes\n' > "$tmp/save.pw"
+run --args "$tmp/save.pw" '#option -save keeps the definition file on exit' \
+    '#option -save
+#alias added=yes'
+grep -q 'added' "$tmp/save.pw" && fail 'expected the file as it was'
+run --args "$tmp/save.pw" '#option +save saves the definition file on exit' \
+    '#alias added=yes'
+grep -Fxq '#alias added=yes' "$tmp/save.pw" || fail 'expected the alias saved'
+grep -Fq '+save' "$tmp/save.pw" || fail 'expected #option +save saved'
+
 # the lines of #history must have the line $1, or none that contain $1
 has_history() {
     grep -Fxq -e "$1" "$tmp/history" || fail "not in the history: $1"
@@ -1948,8 +1958,8 @@ grep -aq 'input highlighting is now <ESC>\[33mon' "$tmp/out" \
 run 'Tab lists the words down and then across' '' \
     "#option 		$(printf '\025')
 "
-has 'autoclear    echo         history      list         shell='
-has 'debug        help-pager=  keyecho      sendsize     wrap'
+has 'autoclear    echo         history      list         sendsize     wrap'
+has 'debug        help-pager=  keyecho      save         words'
 
 name='powwow-movieplay -a converts lines longer than 4 KB'
 long=$(printf '%05000d' 0)

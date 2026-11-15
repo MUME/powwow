@@ -28,7 +28,8 @@ $ powwow definition-file
 If the definition file doesn't exist (as the first time you
 use powwow) you are asked for a host name and port number.
 This will then be stored in the file. The file will be updated
-every time you type `#save` or when powwow terminates.
+every time you type `#save` or when powwow terminates, unless
+`#option save` is off.
 The file is in plain text, so you can edit it if you want.
 A command that is `#` followed by a space, or only `#`, is a comment,
 which powwow skips up to the next `;` as any command; but a command such
@@ -311,7 +312,7 @@ Example:
 | `#alias ws={wake;stand}` | note that you must use braces |
 
 As noted above, aliases are saved automatically if you started powwow
-with a file name as argument.
+with a file name as argument, unless `#option save` is off.
 Aliases can contain other aliases, and an alias can also contain itself
 (be careful, or powwow will enter a long - but not infinite - loop)
 Aliases are not expanded in verbatim mode.
@@ -1349,6 +1350,12 @@ window of its own instead of passing the file to one already open.
 If the `exit` option is on, powwow automatically quits when the last
 connection is closed. Otherwise, to quit powwow you need to manually
 type `#quit`
+
+#### `#option save`
+
+With `save` on, the default, powwow writes the definition file when it
+exits, such as on `#quit`. With `save` off, it leaves the file as it is
+unless you `#save` it.
 
 #### `#option history`
 
