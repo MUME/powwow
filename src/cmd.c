@@ -122,7 +122,8 @@ static cmdstruct default_commands[] =
     C("clear",      cmd_clear,
       "\tclear input line (use from spawned programs)"),
     C("connect",    cmd_connect,
-      "[<session-id> [<initstr>] [<address> <port>]]\topen a new connection"),
+      "[<session-id> [<initstr>]] [<address> <port>]\topen a new"
+      " connection"),
     C("cpu",        cmd_cpu,
       "\tshow CPU time used by powwow"),
     C("delim",      cmd_delim,
@@ -2663,6 +2664,15 @@ static void cmd_connect(char *arg)
         }
     }
 
+    /* an address and a port, which is a number, connect the session main */
+    char main_id[] = "main";
+    if (argc == 2 && strspn(s2, "0123456789") == strlen(s2)) {
+        s3 = s2;
+        s2 = s1;
+        s1 = main_id;
+        argc = 3;
+    }
+
     if (argc <= 2) {
         if (*hostinfo.name != '\0')
             tcp_open(s1, s2, hostinfo.name, hostinfo.port,
@@ -2671,7 +2681,7 @@ static void cmd_connect(char *arg)
         else {
             message_printf("#connect: no host defined!\n"
                            "#syntax: #connect"
-                           " <session-id> [<initstr>] <address> <port>"
+                           " [<session-id> [<initstr>]] <address> <port>"
                            " [--tls[=<options>]|" NO_TLS_FLAG "]"
                            " [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
         }

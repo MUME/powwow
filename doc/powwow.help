@@ -196,14 +196,17 @@ Available TLS options are:
   no-verify    do not verify the CA certificate
   host=<host>  assume the CA certificate host name is <host>
 @connect
-#connect [<session-id> [<initstr>] [<address> <port>]]
+#connect [<session-id> [<initstr>]] [<address> <port>]
          [--tls[=<options>]|--no-tls] [--utf8|--latin1]
 
 Connect a new session.
 
 To connect your first session, use:
-#connect main <address> <port>
+#connect <address> <port>
 where <address> and <port> indicate the host you want to connect to.
+Without a session id, the session is called main; two arguments are an
+address and a port if the second is a number, and otherwise a session id
+and an initstr.
 
 Without an address and port, the session connects to the host of #host.
 #connect alone connects the session main to it if no connection is open,
