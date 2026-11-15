@@ -47,6 +47,15 @@ windows-installer: windows-bundle
 update-cygwin-licenses:
 	$(srcdir)/cygwin/update-licenses.sh
 
+# make clean removes the bundle and the installers; only make
+# maintainer-clean removes the licenses and the source packages they come
+# from, which take a download to get again
+clean-local:
+	rm -rf powwow-win powwow-*-setup.exe
+
+maintainer-clean-local:
+	rm -rf cygwin-licenses cygwin-sources
+
 help:
 	@echo 'Usage: make [TARGET]'
 	@echo ''
