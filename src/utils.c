@@ -1683,13 +1683,6 @@ static void load_missing_stuff(int n)
 }
 
 /*
- * read definitions from file
- * return > 0 if success, < 0 if fail.
- * NEVER call syserr() from here or powwow will
- * try to save the definition file even if it got
- * a broken or empty one.
- */
-/*
  * an #init that identifies as an editing client first, as written before
  * #option identify: #identify, {#identify} or {#identify;...}, with
  * spaces around #identify allowed; that option, and #init the rest
@@ -1733,65 +1726,21 @@ static void convert_identify_init(void)
     wrap_printf("#init: %s", u8"‘#identify’ is now ‘#option +identify’");
 }
 
-int read_settings(void)
+/*
+ * run the commands of the settings file 'f', called 'path' in messages;
+ * set '*version' to its #savefile-version, or 0 if it has none; return
+ * > 0 on success, < 0 on failure
+ */
+static int run_settings_file(FILE *f, const char *path, int *version)
 {
-    if (*deffile == '\0') {
-        wrap_printf("#warning: no save-file defined");
-        return 0;
-    }
-
-    FILE *f = fopen(deffile, "r");
-    if (f == NULL) {
-        wrap_printf("#error: cannot open file "
-                    LQUOTE "%s" RQUOTE ": %s", deffile,
-                    strerror(errno));
-        return 0;
-    }
-
     ptr *ptrbuf = ptrnew(PARAMLEN);
     if (mem_error()) {
         print_error(error);
-        fclose(f);
-        return 0;
+        return -1;
     }
     char *buf = ptrdata(ptrbuf);
     int left = ptrmax(ptrbuf);
     int len = 0;
-
-    opt_info = false;
-    int old_nice = a_nice;
-    a_nice = 0;
-
-    for (int n = 0; n < MAX_HASH; ++n) {
-        while (aliases[n] != NULL)
-            delete_aliasnode(&aliases[n]);
-    }
-    while (actions != NULL)
-        delete_actionnode(&actions);
-    while (prompts != NULL)
-        delete_promptnode(&prompts);
-    while (markers != NULL)
-        delete_marknode(&markers);
-    while (keydefs != NULL)
-        delete_keynode(&keydefs);
-    while (substitutions != NULL)
-        delete_substnode(&substitutions);
-    for (int n = 0; n < MAX_HASH; ++n) {
-        while (named_vars[VAR_NUM].buckets[n] != NULL)
-            delete_varnode(&named_vars[VAR_NUM].buckets[n], VAR_NUM);
-        varnode **first = &named_vars[VAR_TEXT].buckets[n];
-        while (*first != NULL) {
-            if (is_permanent_variable(*first))
-                first = &(*first)->next;
-            else
-                delete_varnode(first, VAR_TEXT);
-        }
-    }
-
-    for (int n = -GLOBAL_VAR_COUNT; n < 0; ++n) {
-        *num_var(n) = 0;
-        ptrdel(text_var(n));
-    }
 
     char *line = NULL;          /* current line, as UTF-8 */
     size_t linesize = 0;
@@ -1817,7 +1766,7 @@ int read_settings(void)
             if (feof(f)) {
                 wrap_printf("#error: missing newline at end of file "
                             LQUOTE "%s" RQUOTE,
-                            deffile);
+                            path);
                 break;
             }
             /* no newline yet. increase line size and try again */
@@ -1839,7 +1788,7 @@ int read_settings(void)
 
         /* convert it to UTF-8 */
         size_t llen = cmd - buf;
-        if (3 * llen + 1 > linesize) {
+        if (line == NULL || 3 * llen + 1 > linesize) {
             free(line);
             linesize = 3 * llen + 1;
             line = xmalloc(linesize);
@@ -1882,29 +1831,98 @@ int read_settings(void)
         failed = -1;
     } else if (ferror(f) && !feof(f)) {
         wrap_printf("#error: cannot read file "
-                    LQUOTE "%s" RQUOTE ": %s", deffile,
+                    LQUOTE "%s" RQUOTE ": %s", path,
                     strerror(errno));
         failed = -1;
     } else if (limit_mem_hit) {
         wrap_printf("#error: cannot load save-file: got a line longer than "
                     "limit");
         failed = -1;
-    } else if (savefilever > SAVEFILEVER) {
-        wrap_printf("#warning: save-file is from a newer version of powwow");
-    } else if (savefilever < UTF8_SAVEFILEVER) {
-        wrap_printf("#definition file converted from ISO-8859-1 to UTF-8");
-        load_missing_stuff(savefilever);
-    } else if (savefilever < SAVEFILEVER) {
-        wrap_printf("#warning: save-file is from an older version of powwow");
-        load_missing_stuff(savefilever);
     }
 
     free(line);
-    fclose(f);
-    a_nice = old_nice;
-
     if (ptrbuf != NULL)
         ptrdel(&ptrbuf);
+    *version = savefilever;
+    return failed;
+}
+
+/*
+ * read definitions from file
+ * return > 0 if success, < 0 if fail.
+ * NEVER call syserr() from here or powwow will
+ * try to save the definition file even if it got
+ * a broken or empty one.
+ */
+int read_settings(void)
+{
+    if (*deffile == '\0') {
+        wrap_printf("#warning: no save-file defined");
+        return 0;
+    }
+
+    FILE *f = fopen(deffile, "r");
+    if (f == NULL) {
+        wrap_printf("#error: cannot open file "
+                    LQUOTE "%s" RQUOTE ": %s", deffile,
+                    strerror(errno));
+        return 0;
+    }
+
+    opt_info = false;
+    int old_nice = a_nice;
+    a_nice = 0;
+
+    for (int n = 0; n < MAX_HASH; ++n) {
+        while (aliases[n] != NULL)
+            delete_aliasnode(&aliases[n]);
+    }
+    while (actions != NULL)
+        delete_actionnode(&actions);
+    while (prompts != NULL)
+        delete_promptnode(&prompts);
+    while (markers != NULL)
+        delete_marknode(&markers);
+    while (keydefs != NULL)
+        delete_keynode(&keydefs);
+    while (substitutions != NULL)
+        delete_substnode(&substitutions);
+    for (int n = 0; n < MAX_HASH; ++n) {
+        while (named_vars[VAR_NUM].buckets[n] != NULL)
+            delete_varnode(&named_vars[VAR_NUM].buckets[n], VAR_NUM);
+        varnode **first = &named_vars[VAR_TEXT].buckets[n];
+        while (*first != NULL) {
+            if (is_permanent_variable(*first))
+                first = &(*first)->next;
+            else
+                delete_varnode(first, VAR_TEXT);
+        }
+    }
+
+    for (int n = -GLOBAL_VAR_COUNT; n < 0; ++n) {
+        *num_var(n) = 0;
+        ptrdel(text_var(n));
+    }
+
+    int savefilever;
+    int failed = run_settings_file(f, deffile, &savefilever);
+    if (failed > 0) {
+        if (savefilever > SAVEFILEVER) {
+            wrap_printf("#warning: save-file is from a newer version of "
+                        "powwow");
+        } else if (savefilever < UTF8_SAVEFILEVER) {
+            wrap_printf("#definition file converted from ISO-8859-1 to "
+                        "UTF-8");
+            load_missing_stuff(savefilever);
+        } else if (savefilever < SAVEFILEVER) {
+            wrap_printf("#warning: save-file is from an older version of "
+                        "powwow");
+            load_missing_stuff(savefilever);
+        }
+    }
+
+    fclose(f);
+    a_nice = old_nice;
 
     if (failed > 0)
         convert_identify_init();
