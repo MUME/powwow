@@ -5,7 +5,20 @@ pkgdata_DATA = COPYING
 EXTRA_DIST = .clang-tidy AGENTS.md cygwin/bundle.sh cygwin/installer.sh \
              icons/make-icon.sh icons/powwow.ico cygwin/powwow.iss \
              cygwin/powwow-cmd \
-             cygwin/powwow-start cygwin/update-licenses.sh
+             cygwin/powwow-start cygwin/update-licenses.sh \
+             launcher/CMakeLists.txt launcher/main.cpp \
+             launcher/launcher.cpp launcher/launcher.h launcher/Main.qml \
+             launcher/MudsPage.qml launcher/SettingsPage.qml \
+             launcher/MudDialog.qml launcher/AboutPage.qml \
+             launcher/ManualPage.qml launcher/FocusRing.qml \
+             launcher/SelectableText.qml launcher/EntryField.qml \
+             launcher/PowwowDialog.qml launcher/InfoDialog.qml \
+             launcher/DuplicateDialog.qml launcher/ListRow.qml \
+             launcher/PowwowToolTip.qml launcher/ShortcutMenuItem.qml \
+             launcher/HiliteEditor.qml launcher/ColorButton.qml \
+             launcher/macos.h launcher/macos.mm \
+             launcher/powwow-launcher.rc launcher/make-icns.sh \
+             launcher/gitversion.cmake
 
 # what autogen.sh makes, so that make maintainer-clean leaves the tree as
 # git has it
@@ -59,8 +72,28 @@ update-cygwin-licenses:
 # make clean removes the bundle and the installers; only make
 # maintainer-clean removes the licenses and the source packages they come
 # from, which take a download to get again
+# the launcher, built with CMake in launcher/build; CMAKE_FLAGS go to
+# CMake, such as -DCMAKE_PREFIX_PATH=DIR if it does not find Qt in DIR
+CMAKE = cmake
+CMAKE_FLAGS =
+launcher:
+	$(CMAKE) -S $(srcdir)/launcher -B launcher/build $(CMAKE_FLAGS)
+	$(CMAKE) --build launcher/build --parallel
+
+# check the sources of the launcher with clang-tidy, with the checks of
+# .clang-tidy, one at a time, as clang-tidy shows its progress through
+# several, and the QML files with qmllint
+launcher-tidy: launcher
+	@for f in main.cpp launcher.cpp; do \
+	    echo "$(CLANG_TIDY) launcher/$$f"; \
+	    $(CLANG_TIDY) --quiet --config-file=$(srcdir)/.clang-tidy \
+	        --header-filter='launcher/[^/]*\.h$$' -p launcher/build \
+	        $(CLANG_TIDY_FLAGS) $(srcdir)/launcher/$$f || exit 1; \
+	done
+	$(CMAKE) --build launcher/build --target all_qmllint
+
 clean-local:
-	rm -rf powwow-win powwow-*-setup.exe
+	rm -rf powwow-win powwow-*-setup.exe launcher/build
 
 maintainer-clean-local:
 	rm -rf cygwin-licenses cygwin-sources
@@ -80,10 +113,14 @@ if CYGWIN
 	@echo ''
 endif
 	@echo 'Available targets:'
-	@echo '  all               build everything (the default)'
+	@echo '  all               build powwow and its files, but not the launcher'
+	@echo '                    (the default)'
 	@echo '  check             build and run the tests'
 	@echo '  lint              check the markup of the man page and markdown'
 	@echo '  tidy              check the sources (needs clang-tidy)'
+	@echo '  launcher          build the launcher with CMake (needs Qt 6.8)'
+	@echo '  launcher-tidy     check the sources of the launcher (needs'
+	@echo '                    clang-tidy)'
 if CYGWIN
 	@echo '  windows-bundle    build powwow-win: powwow with what it needs'
 	@echo '  windows-installer also make a Windows installer of it'
@@ -99,4 +136,4 @@ endif
 	@echo '  help              show this list'
 
 .PHONY: lint tidy windows-bundle windows-installer update-cygwin-licenses \
-        help
+        launcher launcher-tidy help

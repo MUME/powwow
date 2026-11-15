@@ -83,6 +83,83 @@ COMPILING
 	forced using configure.	 Try ‘configure --help’ to see the full
 	list of compile-time configuration options.
 
+LAUNCHER
+
+	The directory ‘launcher’ has a desktop program, ‘powwow-launcher’, that
+	lists the MUDs, one definition file each, in an order of your own, by
+	dragging, adds, imports (copies of older definition files, which it
+	converts), changes, duplicates and removes them, shows the definitions
+	in their files, such as the aliases and actions, edits the settings for
+	all of them, and starts powwow in a terminal for the one picked: in
+	Windows Terminal on Windows, through the profile of powwow that the
+	installer writes; on macOS in iTerm2 if installed, or else in Terminal;
+	elsewhere in the terminal of ‘TERMINAL’, or one found, such as
+	‘x-terminal-emulator’ or ‘xterm’.  Its settings page can choose another
+	one on macOS and elsewhere, or a command, where ‘%c’ is the command
+	that runs powwow, such as:
+
+	open -na Ghostty --args -e %c
+
+	Given a definition file, it starts powwow with it without showing its
+	window.  A MUD added with “MUME handshake” gets ‘#option +identify’,
+	which tells MUME that powwow edits texts locally.  The settings page
+	also picks the highlighting of typed text and of the messages of
+	powwow, ‘#hilite input’ and ‘#hilite messages’, for all MUDs but those
+	with their own ‘#hilite’, which Highlighting picks when adding or
+	editing a MUD.
+
+	It needs Qt 6.8 or later, with Qt Quick (the module ‘qtdeclarative’),
+	CMake and a C++ compiler, which these install:
+
+	macOS         xcode-select --install
+	              brew install cmake qtdeclarative     (Homebrew)
+	Debian 13, Ubuntu 26.04 or later
+	              apt install cmake g++ qt6-declarative-dev
+	Fedora        dnf install cmake gcc-c++ qt6-qtdeclarative-devel
+	Arch Linux    pacman -S cmake gcc qt6-declarative
+	FreeBSD       pkg install cmake qt6-declarative
+
+	Where the Qt of the system is older, such as in Debian 12 and Ubuntu
+	24.04, aqtinstall (see WINDOWS INSTALLER) or the installer of Qt
+	installs a newer one.
+
+	After configure, ‘make launcher’ builds it in ‘launcher/build’, or
+	rebuilds it, and ‘make clean’ removes it; if CMake does not find Qt,
+	give where it is:
+
+	make launcher CMAKE_FLAGS=-DCMAKE_PREFIX_PATH=/opt/homebrew
+
+	Without configure, CMake builds it:
+
+	cmake -S launcher -B launcher/build
+	cmake --build launcher/build
+
+	On Windows it is built with the MinGW or MSVC build of Qt, not
+	Cygwin's, and looks like a Windows 11 app.
+
+	It reads and saves the settings by running powwow, with ‘--config’ and
+	‘--get’ or ‘--set’, so it needs the powwow of this source tree: run
+	from its build directory, it takes the powwow built in the same tree,
+	with the manual of the source tree, and otherwise it finds powwow next
+	to itself, in ‘PATH’, or in ‘/opt/homebrew/bin’, ‘/usr/local/bin’ and
+	the like; its settings page can choose another one.  On Windows it
+	always takes the powwow installed with it.  The definition files are in
+	‘POWWOWDIR’, if set, or else in the folder ‘powwow’ of the Documents
+	folder on Windows, in ‘~/Library/Application Support/powwow’ on macOS
+	(‘~/.config/powwow’ if that exists), and in ‘$XDG_DATA_HOME/powwow’
+	(‘~/.local/share/powwow’) elsewhere.  The launcher keeps its own
+	settings, such as the powwow it runs and the order of the MUDs, in
+	‘$XDG_CONFIG_HOME/powwow/launcher.conf’
+	(‘~/.config/powwow/launcher.conf’), in
+	‘~/Library/Preferences/com.powwow.launcher.plist’ on macOS, and in the
+	registry, ‘HKEY_CURRENT_USER\Software\powwow\launcher’, on Windows.
+
+	On Windows, it also sets the lines of scrollback of the profile of
+	powwow in Windows Terminal, in the fragment that the installer writes,
+	‘Fragments\powwow\powwow.json’ in
+	‘%LOCALAPPDATA%\Microsoft\Windows Terminal’, when powwow is installed
+	for the user only; installing it again sets it back to 10000.
+
 WINDOWS INSTALLER
 
 	On Cygwin, powwow can be built into a directory, ‘powwow-win’, with

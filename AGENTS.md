@@ -37,7 +37,8 @@ committed, understand it, and take responsibility for it as its author.
   must `make lint` (needs mandoc) when the man page changes, and when the
   Markdown changes, if configure found markdownlint-cli2.
   `make -C src foo.tidy` checks only `foo.c`, and `.clang-tidy` lists the
-  checks.
+  checks. `make launcher-tidy` checks the launcher, also with qmllint, and
+  must report nothing when it changes.
 - **New tests:**
   - Add a test with every bug fix that fails without the fix, and tests for
     new features.

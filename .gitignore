@@ -27,3 +27,5 @@ Makefile.in
 /powwow-win/
 /powwow-*-setup.exe
 /cygwin/Output/
+# what CMake builds of the launcher
+/launcher/build/

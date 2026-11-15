@@ -1,5 +1,14 @@
 Changes from 1.3.2 to 2.0.0 (unreleased)
 
+	Launcher:
+	* powwow-launcher, a desktop program built with Qt 6 and CMake in
+	  launcher/ (`make launcher'), lists the MUDs, one definition file
+	  each, in an order of your own, adds, imports, changes,
+	  duplicates and removes them, edits the settings for all of
+	  them, and starts powwow for the one picked in a terminal:
+	  Windows Terminal on Windows, iTerm2 or Terminal on macOS, and
+	  that of TERMINAL, or one found, elsewhere.
+
 	Completion and Unicode input:
 	* Tab completes file names that have spaces in them.
 

@@ -1,0 +1,2 @@
+// the icon of the program in Explorer, and of its windows
+IDI_ICON1 ICON "../icons/powwow.ico"
