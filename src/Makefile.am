@@ -46,6 +46,7 @@ plugtest.so: plugtest.c
 	    -o plugtest.so plugtest.o
 
 CLEANFILES = plugtest.so gitversion.h
+MAINTAINERCLEANFILES = Makefile.in
 
 # the commit that a build from a git checkout is of, which #ver shows for
 # a -dev version, with -dirty if files are changed; empty in a tarball.

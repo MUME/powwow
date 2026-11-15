@@ -4,6 +4,12 @@ pkgdata_DATA = COPYING
 
 EXTRA_DIST = .clang-tidy AGENTS.md
 
+# what autogen.sh makes, so that make maintainer-clean leaves the tree as
+# git has it
+MAINTAINERCLEANFILES = Makefile.in aclocal.m4 compile config.guess \
+                       config.h.in config.h.in~ config.sub configure \
+                       configure~ depcomp install-sh missing test-driver
+
 # check the markup of the man page (needs mandoc)
 lint:
 	cd man && $(MAKE) $(AM_MAKEFLAGS) lint
@@ -30,6 +36,7 @@ help:
 	@echo '  uninstall         remove the installed files'
 	@echo '  clean             remove the files built by make'
 	@echo '  distclean         also remove the files created by configure'
+	@echo '  maintainer-clean  also remove the files that autogen.sh makes'
 	@echo '  help              show this list'
 
 .PHONY: lint tidy help

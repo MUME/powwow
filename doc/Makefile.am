@@ -5,6 +5,7 @@ if HAVE_ZLIB
 # powwow reads them through zlib
 pkgdata_DATA += unicode-names.txt.gz emoji-names.txt.gz
 CLEANFILES = unicode-names.txt.gz emoji-names.txt.gz
+MAINTAINERCLEANFILES = Makefile.in
 else
 pkgdata_DATA += unicode-names.txt emoji-names.txt
 endif
