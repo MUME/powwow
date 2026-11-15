@@ -181,18 +181,23 @@ See "#help mark" for the syntax of attributes.
 @host
 #host [<hostname> <port> [--tls[=<options>]|--no-tls] [--utf8|--latin1]]
 
-Sets the default host that powwow shall try to connect to when you use
-#connect.
-If you type #host without any arguments, the current host and port are
-shown (provided that you have specified them).
---latin1 makes connections to the host start out as ISO-8859-1 and
-prefer it over UTF-8 when negotiating; --utf8, the default unless
-powwow was started with --latin1, does the same for UTF-8.
---no-tls makes connections to the host unencrypted; --tls, the default
-unless powwow was started with --no-tls, makes them use TLS.
-(In definition files written by older versions of powwow, a #host
-without --tls means --no-tls.)
-Available TLS options are:
+Sets the default host that powwow connects to when you use #connect.
+
+Without arguments, #host shows the current host and port, if they are
+set.
+
+The flags are:
+
+  --tls       encrypt the connections with TLS; the default, unless
+              powwow was started with --no-tls
+  --no-tls    do not encrypt them
+  --utf8      start the connections in UTF-8, and prefer it when
+              negotiating the character set; the default, unless powwow
+              was started with --latin1
+  --latin1    start them in ISO-8859-1, and prefer it over UTF-8
+
+The options of --tls, separated by colons, are:
+
   no-verify    do not verify the CA certificate
   host=<host>  assume the CA certificate host name is <host>
 @connect
