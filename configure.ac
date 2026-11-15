@@ -183,7 +183,8 @@ AM_CONDITIONAL([HAVE_ZLIB], [test "x${with_zlib}" = xyes])
 
 # Checks for header files.
 if test "x${enable_regex}" = "xno"; then
-    AC_MSG_RESULT([Regex support disabled])
+    AC_MSG_CHECKING([which regcomp to use])
+    AC_MSG_RESULT([no (disabled)])
     enable_regex_using="disabled"
 else
     enable_regex_using="not_found"
@@ -201,29 +202,31 @@ else
         enable_regex_using="${enable_regex}"
     fi
 
+    AC_MSG_CHECKING([which regcomp to use])
     if test "x${enable_regex_using}" = "xnot_found"; then
         # no regex
         enable_regex=no
-        AC_MSG_RESULT([*** Unable to enable regex support])
+        AC_MSG_RESULT([none])
+        AC_MSG_WARN([no regcomp found: building without regular expressions])
     else
         AC_DEFINE(USE_REGEXP, 1, [Define to enable regular expression support.])
 
         if test "x${enable_regex_using}" = "xpcre2posix"; then
-            AC_MSG_RESULT([Using pcre2posix regcomp])
+            AC_MSG_RESULT([pcre2posix])
             AC_DEFINE(USE_REGEXP_PCRE2POSIX, 1, [Define to use pcre2posix.])
             dnl since PCRE2 10.33, pcre2posix.h renames regcomp to pcre2_regcomp
             AC_CHECK_LIB(pcre2-posix, pcre2_regcomp,
                 [LIBS="-lpcre2-posix $LIBS"],
                 [AC_CHECK_LIB(pcre2-posix, regcomp,
                     [LIBS="-lpcre2-posix $LIBS"],
-                    AC_MSG_ERROR([*** pcre2-posix library not found]))])
+                    AC_MSG_ERROR([cannot find the pcre2-posix library]))])
         elif test "x${enable_regex_using}" = "xlibc"; then
-            AC_MSG_RESULT([Using libc regcomp])
+            AC_MSG_RESULT([libc])
             AC_CHECK_FUNC(regcomp,,
-                AC_MSG_ERROR([*** regcomp not found in libc])
+                AC_MSG_ERROR([cannot find regcomp in libc])
             )
         else
-            AC_MSG_ERROR([*** unknown regex option: $enable_regex_using])
+            AC_MSG_ERROR([unknown --enable-regex: $enable_regex_using])
         fi
     fi
 fi
