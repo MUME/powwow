@@ -832,7 +832,18 @@ static char *compl_get_word(int i)
 struct word_list {
     int count, size;
     char **words;
+    bool ignore_case;           /* file names, which the system matches in
+                                 * any case */
 };
+
+/* does 'w' start with the 'len' bytes of 'word', in the case of 'l'? */
+static bool word_matches(const struct word_list *l, const char *w,
+                         const char *word, int len)
+{
+    return (l->ignore_case
+            ? strncasecmp(w, word, len) == 0
+            : strncmp(w, word, len) == 0);
+}
 
 static void word_list_add(struct word_list *l, const char *word)
 {
@@ -1216,9 +1227,16 @@ static void complete_file(struct word_list *l, int arg, const char *args,
     int dir_len = slash != NULL ? (int)(slash - word) + 1 : 0;
     char dir[BUFSIZE];
     snprintf(dir, sizeof(dir), "%.*s", dir_len, word);
-    DIR *d = opendir(dir_len > 0 ? dir : ".");
+    const char *open_dir = dir_len > 0 ? dir : ".";
+    DIR *d = opendir(open_dir);
     if (d == NULL)
         return;
+    /* only macOS and Cygwin tell whether a file system ignores case */
+#if defined(_PC_CASE_SENSITIVE)
+    l->ignore_case = pathconf(open_dir, _PC_CASE_SENSITIVE) == 0;
+#elif defined(_PC_CASE_INSENSITIVE)
+    l->ignore_case = pathconf(open_dir, _PC_CASE_INSENSITIVE) > 0;
+#endif
     for (const struct dirent *e = readdir(d); e != NULL; e = readdir(d)) {
         if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0
             || (e->d_name[0] == '.' && base[0] != '.'))
@@ -1327,11 +1345,11 @@ static void word_list_show(const struct word_list *l, const char *word,
                            int len, int skip)
 {
     int first = 0;
-    while (first < l->count && strncmp(l->words[first], word, len) != 0)
+    while (first < l->count && !word_matches(l, l->words[first], word, len))
         ++first;
     int count = 0, width = 0;
     while (first + count < l->count
-           && strncmp(l->words[first + count], word, len) == 0) {
+           && word_matches(l, l->words[first + count], word, len)) {
         int w = (int)strlen(l->words[first + count]) - skip;
         if (w > width)
             width = w;
@@ -1363,6 +1381,13 @@ static void word_list_show(const struct word_list *l, const char *word,
 static int compare_words(const void *a, const void *b)
 {
     return strcmp(*(char *const *)a, *(char *const *)b);
+}
+
+/* in any case, so that the words that match in any case follow each other */
+static int compare_words_any_case(const void *a, const void *b)
+{
+    int res = strcasecmp(*(char *const *)a, *(char *const *)b);
+    return res != 0 ? res : compare_words(a, b);
 }
 
 /*
@@ -1444,7 +1469,8 @@ static bool complete_command(void)
         }
     }
     if (l.count > 0)            /* else words is NULL, which qsort rejects */
-        qsort(l.words, l.count, sizeof(*l.words), compare_words);
+        qsort(l.words, l.count, sizeof(*l.words),
+              l.ignore_case ? compare_words_any_case : compare_words);
 
     /* the words that start with the word being typed */
     int len = pos - word;
@@ -1453,14 +1479,18 @@ static bool complete_command(void)
     int matches = 0;
     for (int i = 0; i < l.count; ++i) {
         const char *w = l.words[i];
-        if (strncmp(w, edbuf + word, len) != 0)
+        if (!word_matches(&l, w, edbuf + word, len))
             continue;
         if (matches++ == 0) {
             only = w;
             snprintf(common, sizeof(common), "%s", w);
         } else {
             size_t j = 0;
-            while (common[j] != '\0' && common[j] == w[j])
+            while (common[j] != '\0'
+                   && (common[j] == w[j]
+                       || (l.ignore_case
+                           && (tolower((unsigned char)common[j])
+                               == tolower((unsigned char)w[j])))))
                 ++j;
             common[j] = '\0';
         }
