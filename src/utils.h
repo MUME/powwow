@@ -106,6 +106,7 @@ extern bool deffile_locking;
 extern bool deffile_busy;
 extern long deffile_owner;
 bool lock_deffile(void);
+void unlock_deffile(void);
 
 /* the user-wide settings file: save it at once after a change, and read it
  * again if another program wrote it */

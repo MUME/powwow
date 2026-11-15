@@ -105,14 +105,41 @@ launcher, writes it, and the definition file has the others.
 `--config=FILE` reads and saves `FILE` instead, and
 `--no-config` does not read the user-wide settings file.
 
+`--get NAME` prints one setting and exits, and `--set NAME=VALUE` sets
+one, saves and exits, as the launcher reads and changes settings: a
+command option such as `editor`, an on/off option such as `save` as `on`
+or `off`, `host`, as `#host` takes it, or the user-wide attributes of
+`#hilite input` and `#hilite messages`, `hilite-input` and
+`hilite-messages`, as `#hilite` takes them, or empty for none, which
+`--set` sets back to those of powwow with `default`, and the MUD's own,
+`mud-hilite-input` and `mud-hilite-messages`, or `default` when it has
+none; `--get` also prints the paths of the user-wide settings file,
+`config-file`, and
+of this manual, `manual`, and `in-use`, the process ID of a powwow that
+has the definition file open, or nothing; `--set` then fails, as that
+powwow would write over it.
+`--list-settings` prints all of them, as `NAME=VALUE`. `--set` saves as
+with `--config`: the settings of the user-wide settings file go there,
+unless `--no-config` is given, and the others need a definition file. A
+definition file given after them is read too, or created by `--set`
+without asking for the host:
+
+```
+$ powwow --set editor=vim
+$ powwow --set 'host=mume.org 4242 --tls' mume.powwow
+$ powwow --get host mume.powwow
+mume.org 4242 --tls --utf8
+```
+
 ### Completing the command line
 
 `powwow --completion bash` prints a script that completes the arguments
 of powwow in bash: the options, the options of `--tls=`, the file of
-`--config=`, and the definition files, those that end with `.powwow`
-unless none does, also those in `POWWOWDIR`, which powwow looks in
-first. `make install` installs it where the package bash-completion
-loads it by itself; otherwise load it in `~/.bashrc`:
+`--config=`, the settings of `--get` and `--set` and their values, and
+the definition files, those that end with `.powwow` unless none does,
+also those in `POWWOWDIR`, which powwow looks in first. `make install`
+installs it where the package bash-completion loads it by itself;
+otherwise load it in `~/.bashrc`:
 
 ```
 eval "$(powwow --completion bash)"

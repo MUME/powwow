@@ -14,6 +14,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "defines.h"
+#include "main.h"
+#include "cmd.h"
 #include "completion.h"
 #include "tls.h"
 
@@ -71,6 +74,17 @@ static const char *const functions[] = {
     "    done\n",
     "}\n",
     "\n",
+    "# add the commands that start with $2, after $1\n",
+    "_powwow_commands()\n",
+    "{\n",
+    "    if [ -n \"${ZSH_VERSION-}\" ]; then\n",
+    "        _powwow_zsh _powwow_zsh_commands\n",
+    "    else\n",
+    "        _powwow_add \"$1\" \"$(compgen -c -- \"$2\" | sort -u)\""
+    " \"$2\"\n",
+    "    fi\n",
+    "}\n",
+    "\n",
     "# add the hosts that start with $1\n",
     "_powwow_hosts()\n",
     "{\n",
@@ -81,12 +95,36 @@ static const char *const functions[] = {
     "    fi\n",
     "}\n",
     "\n",
+    "# add the settings NAME=VALUE that start with $2, after $1:\n",
+    "# on or off, or a command\n",
+    "_powwow_set()\n",
+    "{\n",
+    "    local name\n",
+    "    case $2 in\n",
+    "        *=*)\n",
+    "            name=\"${2%%=*}\"\n",
+    "            case \" $_powwow_on_off \" in\n",
+    "                *\" $name \"*)\n",
+    "                    _powwow_add \"$1$name=\" \"on off\" \"${2#*=}\"\n",
+    "                    return ;;\n",
+    "            esac\n",
+    "            case \" $_powwow_commands \" in\n",
+    "                *\" $name \"*) _powwow_commands \"$1$name=\""
+    " \"${2#*=}\" ;;\n",
+    "            esac ;;\n",
+    "        *)\n",
+    "            for name in $_powwow_set; do\n",
+    "                _powwow_add \"$1\" \"$name=\" \"$2\"\n",
+    "            done ;;\n",
+    "    esac\n",
+    "}\n",
+    "\n",
     "_powwow()\n",
     "{\n",
     "    [ -n \"${ZSH_VERSION-}\" ] && emulate -L sh\n",
     "    local line=\"${COMP_LINE:0:$COMP_POINT}\"\n",
     "    local cur=\"${line##*[ \t]}\"\n",
-    "    local arg= args=-1 word\n",
+    "    local arg= args=-1 batch= word\n",
     "    COMPREPLY=()\n",
     "    # the words before, the first of which is powwow\n",
     "    set -f\n",
@@ -96,16 +134,22 @@ static const char *const functions[] = {
     "            continue\n",
     "        fi\n",
     "        case $word in\n",
-    "            --completion) arg=$word ;;\n",
+    "            --get|--set|--completion) arg=$word batch=1 ;;\n",
+    "            --get=*|--set=*|--list-settings|--completion=*) batch=1 ;;\n",
     "            -*) ;;\n",
     "            *) args=$((args + 1)) ;;\n",
     "        esac\n",
     "    done\n",
     "    set +f\n",
     "    case $arg in\n",
+    "        --get) _powwow_add \"\" \"$_powwow_get\" \"$cur\" ;;\n",
+    "        --set) _powwow_set \"\" \"$cur\" ;;\n",
     "        --completion) _powwow_add \"\" \"$_powwow_shells\" \"$cur\" ;;\n",
     "        *)\n",
     "            case $cur in\n",
+    "                --get=*) _powwow_add --get= \"$_powwow_get\""
+    " \"${cur#*=}\" ;;\n",
+    "                --set=*) _powwow_set --set= \"${cur#*=}\" ;;\n",
     "                --completion=*)\n",
     "                    _powwow_add --completion= \"$_powwow_shells\""
     " \"${cur#*=}\" ;;\n",
@@ -123,7 +167,8 @@ static const char *const functions[] = {
     "                    # file; then the host\n",
     "                    if [ \"$args\" -eq 0 ]; then\n",
     "                        _powwow_definition_files \"$cur\"\n",
-    "                    elif [ \"$args\" -eq 1 ]; then\n",
+    "                    elif [ \"$args\" -eq 1 ] && [ -z \"$batch\" ];"
+    " then\n",
     "                        _powwow_hosts \"$cur\"\n",
     "                    fi ;;\n",
     "            esac ;;\n",
@@ -197,9 +242,52 @@ static const char *const zsh_functions[] = {
     "    _files \"${opts[@]}\"\n",
     "}\n",
     "\n",
+    "# the commands of _powwow_commands, by zsh's _command_names\n",
+    "_powwow_zsh_commands()\n",
+    "{\n",
+    "    compset -P '*='\n",
+    "    _command_names -e\n",
+    "}\n",
+    "\n",
     "compdef _powwow_zsh_complete powwow\n",
     NULL
 };
+
+/* print "_powwow_NAME='WORDS'", of the settings of --get that 'take' */
+static void print_settings_of(const char *name, bool (*take)(const char *))
+{
+    const char *names[SETTINGS_MAX];
+    size_t count = setting_names(names, SETTINGS_MAX);
+    printf("_powwow_%s='", name);
+    const char *sep = "";
+    for (size_t i = 0; i < count; ++i) {
+        if (take(names[i])) {
+            printf("%s%s", sep, names[i]);
+            sep = " ";
+        }
+    }
+    printf("'\n");
+}
+
+static bool any_setting(const char *name)
+{
+    return name != NULL;
+}
+
+static bool settable(const char *name)
+{
+    return setting_kind(name) != SETTING_FILE;
+}
+
+static bool on_off(const char *name)
+{
+    return setting_kind(name) == SETTING_ON_OFF;
+}
+
+static bool command(const char *name)
+{
+    return setting_kind(name) == SETTING_COMMAND;
+}
 
 /* print "_powwow_NAME='WORDS'", of the NULL-terminated 'words' */
 static void print_words(const char *name, const char *const *words)
@@ -221,6 +309,10 @@ bool print_completion(const char *shell, const char *const *options)
            "# in ~/.%src%s\n\n",
            shell, shell, shell, zsh ? ", after compinit" : "");
     print_words("options", options);
+    print_settings_of("get", any_setting);
+    print_settings_of("set", settable);
+    print_settings_of("on_off", on_off);
+    print_settings_of("commands", command);
     print_words("tls", tls_option_names);
     printf("_powwow_shells='bash zsh'\n\n");
     for (int i = 0; functions[i] != NULL; ++i)

@@ -546,6 +546,141 @@ grep -Fxq '#hilite input underline' "$tmp/hl2.pw" \
     || fail 'expected the user-wide #hilite input in the definition file'
 no_hilite
 
+# --get prints one setting, and --set saves one, without a session, as
+# the launcher uses them; only the value goes to standard output
+name='--set saves a setting and --get prints it'
+conf="$tmp/batch/powwow.conf"
+# as --get prints paths: on Cygwin, as on Windows, for the launcher
+case $(uname -s) in
+    CYGWIN*) conf_shown=$(cygpath -w "$conf") ;;
+    *) conf_shown=$conf ;;
+esac
+"$POWWOW" "--config=$conf" --set 'editor=vi -x' > "$tmp/out" 2>&1 \
+    || fail '--set failed'
+[ -s "$tmp/out" ] && fail 'expected no output from --set'
+[ "$("$POWWOW" "--config=$conf" --get editor 2> /dev/null)" = 'vi -x' ] \
+    || fail 'expected --get to print the editor'
+[ "$("$POWWOW" "--config=$conf" --get save 2> /dev/null)" = on ] \
+    || fail 'expected --get to print on for #option save'
+name='--set and --get the user-wide #hilite'
+"$POWWOW" "--config=$conf" --set 'hilite-input=bold Yellow on #202020' \
+    > /dev/null 2>&1 || fail '--set hilite-input failed'
+grep -Fxq '#hilite input bold Yellow on #202020' "$conf" \
+    || fail 'expected #hilite input in the user-wide settings file'
+[ "$("$POWWOW" "--config=$conf" --get hilite-input 2> /dev/null)" \
+    = 'bold Yellow on #202020' ] || fail 'expected --get hilite-input'
+"$POWWOW" "--config=$conf" --set hilite-input=purple > /dev/null 2>&1 \
+    && fail 'expected --set hilite-input=purple to fail'
+"$POWWOW" "--config=$conf" --set hilite-input= > /dev/null 2>&1 \
+    || fail '--set hilite-input= failed'
+grep -Fxq '#hilite input none' "$conf" \
+    || fail 'expected #hilite input none once cleared'
+[ -z "$("$POWWOW" "--config=$conf" --get hilite-input 2> /dev/null)" ] \
+    || fail 'expected --get hilite-input to print nothing once cleared'
+"$POWWOW" "--config=$conf" --set hilite-input=default > /dev/null 2>&1 \
+    || fail '--set hilite-input=default failed'
+grep -Fq '#hilite' "$conf" && fail "expected no #hilite for powwow's own"
+[ "$("$POWWOW" "--config=$conf" --get hilite-input 2> /dev/null)" = bold ] \
+    || fail "expected --get hilite-input to print powwow's own"
+name="--set and --get the MUD's own #hilite"
+printf '#hilite input red\n' > "$tmp/mh.pw"
+[ "$("$POWWOW" "--config=$conf" --get mud-hilite-input "$tmp/mh.pw" \
+    2> /dev/null)" = red ] || fail 'expected --get mud-hilite-input'
+[ "$("$POWWOW" "--config=$conf" --get mud-hilite-messages "$tmp/mh.pw" \
+    2> /dev/null)" = default ] || fail 'expected default for no #hilite'
+"$POWWOW" "--config=$conf" --set mud-hilite-messages=off "$tmp/mh.pw" \
+    > /dev/null 2>&1 || fail '--set mud-hilite-messages=off failed'
+grep -Fxq '#hilite messages none' "$tmp/mh.pw" \
+    || fail "expected the MUD's own #hilite messages in its file"
+"$POWWOW" "--config=$conf" --set mud-hilite-input=default "$tmp/mh.pw" \
+    > /dev/null 2>&1 || fail '--set mud-hilite-input=default failed'
+grep -Fq '#hilite input' "$tmp/mh.pw" \
+    && fail 'expected no #hilite input once default'
+grep -Fq '#hilite' "$conf" && fail 'expected no #hilite in the user-wide file'
+"$POWWOW" "--config=$conf" --set mud-hilite-input=bold > /dev/null 2>&1 \
+    && fail 'expected --set mud-hilite-input to need a definition file'
+
+name='--set saves as with --config, and needs a file for the others'
+"$POWWOW" "--config=$conf" --set 'editor=vi -y' "$tmp/m.pw" \
+    > /dev/null 2>&1 || fail '--set with a definition file failed'
+grep -Fxq '#option editor=vi -y' "$conf" \
+    || fail 'expected the editor in the user-wide settings file'
+grep -Fq '#option editor=' "$tmp/m.pw" \
+    && fail 'expected no editor in the definition file'
+"$POWWOW" "--config=$conf" --set wrap=on > "$tmp/out" 2>&1 \
+    && fail 'expected --set wrap without a definition file to fail'
+grep -Fq '"wrap" needs a definition file' "$tmp/out" \
+    || fail 'expected --set wrap to need a definition file'
+"$POWWOW" "--config=$conf" --set 'editor=vi -x' > /dev/null 2>&1 \
+    || fail '--set without a definition file failed'
+name='--list-settings prints all the settings'
+"$POWWOW" "--config=$conf" --list-settings > "$tmp/out" 2> /dev/null \
+    || fail '--list-settings failed'
+grep -Fxq 'editor=vi -x' "$tmp/out" \
+    || fail 'expected editor= in --list-settings'
+grep -Fxq 'save=on' "$tmp/out" \
+    || fail 'expected save=on in --list-settings'
+grep -Fxq "config-file=$conf_shown" "$tmp/out" \
+    || fail 'expected config-file= in --list-settings'
+cut -d= -f1 "$tmp/out" | LC_ALL=C sort -c \
+    || fail 'expected --list-settings sorted by name'
+"$POWWOW" --no-config --list-settings --get editor > /dev/null 2>&1 \
+    && fail 'expected --list-settings and --get to fail together'
+name='--set host creates a definition file'
+"$POWWOW" --no-config --set 'host=mud.example 4000 --no-tls' \
+    "$tmp/new.pw" > "$tmp/out" 2>&1 || fail '--set host failed'
+grep -Fxq '#host mud.example 4000 --no-tls --utf8' "$tmp/new.pw" \
+    || fail 'expected #host in the new definition file'
+[ "$("$POWWOW" --no-config --get host "$tmp/new.pw" 2> /dev/null)" \
+  = 'mud.example 4000 --no-tls --utf8' ] \
+    || fail 'expected --get host to print the host'
+name='--get prints the paths of the user-wide settings file and the manual'
+[ "$("$POWWOW" "--config=$conf" --get config-file 2> /dev/null)" \
+  = "$conf_shown" ] \
+    || fail 'expected --get config-file to print the user-wide settings file'
+[ -z "$("$POWWOW" --no-config --get config-file 2> /dev/null)" ] \
+    || fail 'expected --get config-file to print nothing with --no-config'
+manual=$("$POWWOW" --no-config --get manual 2> /dev/null)
+case $manual in
+    */powwow.md) [ -f "$manual" ] || fail "expected the manual at $manual" ;;
+    *) fail "expected --get manual to print the path of powwow.md: $manual" ;;
+esac
+"$POWWOW" --no-config --set manual=x > /dev/null 2>&1 \
+    && fail 'expected --set manual to fail'
+name='--get and --set need no terminal, and save the keys of xterm then'
+rm -f "$tmp/new.pw"
+env -u TERM "$POWWOW" --no-config --set 'host=mud.example 4000 --no-tls' \
+    "$tmp/new.pw" > "$tmp/out" 2>&1 || fail '--set without $TERM failed'
+[ "$(env -u TERM "$POWWOW" --no-config --get host "$tmp/new.pw" \
+     2> /dev/null)" = 'mud.example 4000 --no-tls --utf8' ] \
+    || fail 'expected --get without $TERM to print the host'
+[ "$(grep -Ec '^#bind (Up|Down|Left|Right|Home|End|Delete) ' \
+     "$tmp/new.pw")" -eq 7 ] \
+    || fail 'expected the cursor keys and Delete in a file made by --set'
+grep -Fxq '#bind Up ^[OA=&prev-line' "$tmp/new.pw" \
+    || fail 'expected the Up of xterm in a file made by --set without $TERM'
+grep -Fxq '#bind C-a ^A=&begin-of-line' "$tmp/new.pw" \
+    || fail 'expected the other default keys in a file made by --set'
+# and those of $TERM, if it has an entry
+if command -v tic > /dev/null 2>&1; then
+    printf 'pwcsi|xterm with CSI cursor keys,\n\tkcuu1=\\E[A, use=xterm,\n' \
+        > "$tmp/pwcsi.ti"
+    if TERMINFO=$tmp/terminfo tic -x "$tmp/pwcsi.ti" 2> /dev/null; then
+        rm -f "$tmp/new.pw"
+        TERM=pwcsi TERMINFO=$tmp/terminfo "$POWWOW" --no-config \
+            --set 'host=mud.example 4000 --no-tls' "$tmp/new.pw" \
+            > /dev/null 2>&1 || fail '--set with $TERM failed'
+        grep -Fxq '#bind Up ^[[A=&prev-line' "$tmp/new.pw" \
+            || fail 'expected the Up of $TERM in a file made by --set'
+    fi
+fi
+name='--get and --set fail for unknown settings and invalid values'
+"$POWWOW" --no-config --get nosuch > "$tmp/out" 2> /dev/null \
+    && fail 'expected --get nosuch to fail'
+[ -s "$tmp/out" ] && fail 'expected nothing on standard output'
+"$POWWOW" --no-config --set save=maybe "$tmp/new.pw" > /dev/null 2>&1 \
+    && fail 'expected --set save=maybe to fail'
+
 run '#secret add deletes the lines and words with the secret' \
     "#put say hunter22
 #put keep this
@@ -1654,6 +1789,22 @@ wait $first
 touch "$tmp/second-quit"
 wait $second
 grep -q 'later' "$tmp/lock.pw" || fail 'the second session did not save'
+# --set refuses a definition file open in a session, which would write
+# over it, and --get in-use prints the pid of that session
+name='--set refuses a definition file open in powwow'
+start_first ''
+[ "$("$POWWOW" --no-config --get in-use "$tmp/lock.pw")" = "$first" ] \
+    || fail 'expected --get in-use to print the pid of the session'
+"$POWWOW" --no-config --set wrap=on "$tmp/lock.pw" > "$tmp/out" 2>&1 \
+    && fail 'expected --set to fail on a file open in powwow'
+grep -Fq "is in use by a running powwow (pid $first); quit it first" \
+    "$tmp/out" || fail "unexpected message: $(cat "$tmp/out")"
+touch "$tmp/lock-quit"
+wait $first
+[ -z "$("$POWWOW" --no-config --get in-use "$tmp/lock.pw")" ] \
+    || fail 'expected --get in-use to print nothing after the session'
+"$POWWOW" --no-config --set wrap=on "$tmp/lock.pw" > /dev/null 2>&1 \
+    || fail 'expected --set to work after the session'
 
 # with --config, a user-wide setting changed in a session is saved in the
 # user-wide settings file at once, and the session reads that file again
@@ -2269,12 +2420,19 @@ for shell in bash zsh; do
     $shell -n "$tmp/compl.$shell" || fail "not valid for $shell"
     # in zsh, the whole word is replaced; in bash, the part after = or :
     if [ $shell = bash ]; then
+        set=
         tls=
     else
+        set=save=
         tls=--tls=
     fi
     expect_completion $shell 'powwow --ver' '--version '
     expect_completion $shell 'powwow --tls=no' "${tls}no-verify "
+    expect_completion $shell 'powwow --get ed' 'editor '
+    expect_completion $shell 'powwow --get conf' 'config-file '
+    expect_completion $shell 'powwow --set sa' 'save='
+    expect_completion $shell 'powwow --set conf'
+    expect_completion $shell 'powwow --set save=o' "${set}on " "${set}off "
     expect_completion $shell 'powwow --completion ' 'bash ' 'zsh '
     # the definition files end with .powwow, unless none matches
     if [ $shell = bash ]; then
@@ -2283,10 +2441,14 @@ for shell in bash zsh; do
         expect_completion bash 'powwow ' 'defs/' 'dir/' 'mume.powwow '
         expect_completion bash 'powwow n' 'notes.txt '
         expect_completion bash 'powwow --config=di' 'dir/'
+        expect_completion bash 'powwow --get save mu' 'mume.powwow '
     else
         expect_completion zsh 'powwow mu' '_files -g *.powwow(-.)'
         expect_completion zsh 'powwow mume.powwow lo' '_hosts'
         expect_completion zsh 'powwow --config=di' 'compset -P *=' '_files'
+        expect_completion zsh 'powwow --get save mu' '_files -g *.powwow(-.)'
+        expect_completion zsh 'powwow --set editor=vi' 'compset -P *=' \
+            '_command_names -e'
     fi
     POWWOWDIR=$tmp/compl/defs
     export POWWOWDIR
@@ -2301,6 +2463,11 @@ for shell in bash zsh; do
         CYGWIN*) expect_completion $shell 'powwow --wi' '--windows ' ;;
         *) expect_completion $shell 'powwow --wi' ;;
     esac
+    # the settings are those of --list-settings
+    complete_in $shell 'powwow --get ' | sed 's/ |$//' > "$tmp/out"
+    "$POWWOW" --no-config --list-settings 2> /dev/null | sed 's/=.*//' \
+        | cmp -s - "$tmp/out" \
+        || fail 'expected the settings of --list-settings'
 done
 
 # in a zsh that completes as one typing in it does, by zpty: a file in

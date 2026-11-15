@@ -312,14 +312,60 @@ void tty_sig_winch_bottomhalf(void)
     }
 }
 
+#ifndef USE_VT100
 /*
- * read termcap definitions
+ * the sequences of the cursor keys and Delete, which a definition file
+ * saves with its keys, for a file that --set makes: from the terminal data
+ * base of $TERM, or of xterm if $TERM is not set or not found, such as when
+ * the launcher runs powwow
  */
-void tty_bootstrap(void)
+static void read_key_caps(void)
+{
+    static struct {
+        char cap[4];
+        char *buf;
+    } keys[] = {
+        { .cap = "kl", .buf = cursor_left },
+        { .cap = "kr", .buf = cursor_right },
+        { .cap = "ku", .buf = cursor_up },
+        { .cap = "kd", .buf = cursor_down },
+        { .cap = "kD", .buf = cursor_delete },
+        { .cap = "kh", .buf = cursor_home },
+        { .cap = "@7", .buf = cursor_end },
+    };
+    char tcbuf[2048];           /* by convention, this is enough */
+    const char *term = getenv("TERM");
+    if ((term == NULL || tgetent(tcbuf, term) != 1)
+        && tgetent(tcbuf, "xterm") != 1)
+        return;
+    for (size_t i = 0; i < sizeof(keys) / sizeof(*keys); ++i)
+        extract(keys[i].cap, keys[i].buf);
+}
+#endif
+
+/*
+ * read termcap definitions, if 'terminal': without, as for --get and
+ * --set, which draw nothing, nothing needs $TERM, and only the sequences
+ * of the keys are read, which a new definition file saves
+ */
+void tty_bootstrap(bool terminal)
 {
     tty_read_stream = stdin;
     /* already for the banner, before tty_start() */
     tty_write_state.utf8 = tty_locale_utf8();
+
+    if (!terminal) {
+        cols = 80;
+        lines = 24;
+#ifndef USE_VT100
+        strcpy(begoln, "\r");
+        len_begoln = 1;
+        strcpy(leftcur, "\b");
+        len_leftcur = 1;
+        read_key_caps();
+#endif
+        return;
+    }
 
 #ifdef USE_VT100
     cols = 80;
@@ -1585,6 +1631,13 @@ void tty_gets(char *s, int size)
         s += n;
     }
     *s = '\0';
+}
+
+/* write what powwow prints to the file descriptor 'fd' from now on */
+void tty_set_write_fd(int fd)
+{
+    tty_flush();
+    tty_write_state.fd = fd;
 }
 
 void tty_flush(void)

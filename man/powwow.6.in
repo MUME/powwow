@@ -7,6 +7,21 @@ powwow \- telnet protocol client for MUD playing
 .RI "[" options "] [" definition-file "] [" host " " port "]"
 .br
 .B powwow
+.RB [ \-\-config [= \fIfile\fR]]
+.BI \-\-get " name"
+.RI [ definition-file ]
+.br
+.B powwow
+.RB [ \-\-config [= \fIfile\fR]]
+.B \-\-list\-settings
+.RI [ definition-file ]
+.br
+.B powwow
+.RB [ \-\-config [= \fIfile\fR]]
+.BI \-\-set " name" = value
+.RI [ definition-file ]
+.br
+.B powwow
 .BI \-\-completion " shell"
 .SH DESCRIPTION
 .B powwow
@@ -195,6 +210,75 @@ if given, which is also read instead of the user-wide settings file
 .B \-\-no\-config
 do not read the user-wide settings file
 .TP
+.BI \-\-get " name"
+print the setting
+.I name
+on standard output and exit, after reading the user-wide settings file
+and the definition file, if given: a command option, such as
+.BR editor ,
+an on/off option, such as
+.BR save ,
+as
+.B on
+or
+.BR off ,
+.BR host ,
+as
+.B #host
+takes it, the user-wide attributes of
+.B #hilite input
+and
+.BR "#hilite messages" ,
+.B hilite\-input
+and
+.BR hilite\-messages ,
+as
+.B #hilite
+takes them, or nothing for none, which
+.B \-\-set
+sets back to those of powwow with
+.BR default ,
+and the MUD's own,
+.B mud\-hilite\-input
+and
+.BR mud\-hilite\-messages ,
+or
+.B default
+when it has none, or the path of the user-wide settings
+file,
+.BR config\-file ,
+or of the manual,
+.BR manual ,
+or
+.BR in\-use ,
+the process ID of a
+.B powwow
+that has the definition file open, when
+.B \-\-set
+fails, or nothing
+.TP
+.B \-\-list\-settings
+print all the settings of
+.BR \-\-get ,
+one per line as
+.IB name = value\fR,
+and exit
+.TP
+.BI \-\-set " name" = value
+set the setting
+.IR name ,
+as for
+.BR \-\-get ,
+but not the paths,
+save the settings and exit, as with
+.BR \-\-config :
+a user-wide setting, such as
+.BR editor ,
+goes in the user-wide settings file, unless
+.B \-\-no\-config
+is given, and the others need a definition file; one that does not
+exist is created without asking for the host
+.TP
 .BI \-\-completion " shell"
 print the completion of the arguments of
 .B powwow
@@ -207,7 +291,11 @@ and exit; it completes the options, those of
 .BR \-\-tls= ,
 the file of
 .BR \-\-config= ,
-and the definition files, those that end with
+the settings of
+.B \-\-get
+and
+.B \-\-set
+and their values, and the definition files, those that end with
 .B .powwow
 unless none does, also those in
 .BR POWWOWDIR .

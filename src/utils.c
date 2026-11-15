@@ -2561,6 +2561,18 @@ bool lock_deffile(void)
 #endif
 }
 
+/* let go of the lock of the definition file, if this powwow has it */
+void unlock_deffile(void)
+{
+#ifdef HAVE_FLOCK
+    if (lock_fd >= 0) {
+        close(lock_fd);
+        lock_fd = -1;
+        *lock_path = '\0';
+    }
+#endif
+}
+
 /*
  * terminate powwow as cleanly as possible
  */

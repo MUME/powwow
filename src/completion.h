@@ -6,7 +6,7 @@
 /*
  * print the script that completes the command line of powwow in 'shell',
  * bash or zsh, whose options are the NULL-terminated 'options', such as
- * "--tls" and "--tls="; return false if there is none for 'shell'
+ * "--config" and "--config="; return false if there is none for 'shell'
  */
 bool print_completion(const char *shell, const char *const *options);
 

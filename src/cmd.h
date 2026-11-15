@@ -36,6 +36,31 @@ void reset_user_wide_settings(void);
 /* show the attributes of #hilite as they are now */
 void hilite_update(void);
 
+/* for --get and --set: print the setting 'name' on standard output, or
+ * set one from 'name=value'; return false if there is no such setting, or
+ * its value is not valid */
+bool print_setting(const char *name);
+bool set_setting(const char *spec);
+bool setting_is_global(const char *name);
+void print_settings(void);
+
+/* the most settings of --get */
+#define SETTINGS_MAX 64
+
+/* the names of the settings of --get, sorted, in 'names', which has room
+ * for 'size'; return how many there are */
+size_t setting_names(const char **names, size_t size);
+
+/* what the setting 'name' of --get takes */
+enum setting_kind {
+    SETTING_COMMAND,            /* a command, such as editor */
+    SETTING_ON_OFF,             /* on or off, such as save */
+    SETTING_HOST,               /* host, as #host takes it */
+    SETTING_ATTR,               /* an attribute, such as hilite-input */
+    SETTING_FILE,               /* a file of powwow, which --set cannot set */
+};
+enum setting_kind setting_kind(const char *name);
+
 /* the name of option 'i', or NULL after the last one */
 const char *option_name(int i);
 const char *command_option_name(int i);

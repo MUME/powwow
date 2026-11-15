@@ -10,7 +10,7 @@ extern const char *tty_modebold, *tty_modeblink, *tty_modeuline;
 extern const char *tty_modenorm, *tty_modeinv;
 extern const char *tty_modestandon, *tty_modestandoff;
 
-void tty_bootstrap(void);
+void tty_bootstrap(bool terminal);
 bool tty_locale_utf8(void);
 void tty_use_locale(void);
 void tty_start(void);
@@ -57,6 +57,7 @@ int tty_printf(const char *format, ...) PRINTF_FUNCTION(1, 2);
 int tty_read(char *buf, size_t count);
 void tty_gets(char *s, int size);
 void tty_flush(void);
+void tty_set_write_fd(int fd);
 void tty_raw_write(char *data, size_t len);
 bool tty_has_chars(void);
 bool tty_at_eof(void);
