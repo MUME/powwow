@@ -1786,6 +1786,15 @@ void fmt_next_edit(const char *fmt, ...)
 }
 
 /*
+ * a search that a line being run started, such as by #key C-r: it starts
+ * once the line is done, from the empty line after it, not from the line
+ * run, which C-g would bring back
+ */
+static bool running_line;
+static enum { NO_SEARCH, SEARCH_BACK, SEARCH_ON } waiting_search;
+static void isearch_start_or_repeat(bool reverse);
+
+/*
  * enter a line
  */
 void enter_line(char *dummy)
@@ -1837,10 +1846,12 @@ void enter_line(char *dummy)
     pos = 0;
     line_status = 0;
 
+    running_line = true;
     if (*edbuf == '\0' || (verbatim && *edbuf != '#'))
         tcp_write(current_connection, edbuf);
     else
         parse_user_input(edbuf, true);
+    running_line = false;
     history_done = 0;
 
     /* don't put identical lines in history, nor empty ones */
@@ -1860,6 +1871,12 @@ void enter_line(char *dummy)
     }
     edlen = strlen(edbuf);
     pos = edlen;
+
+    if (waiting_search != NO_SEARCH) {
+        bool reverse = waiting_search == SEARCH_BACK;
+        waiting_search = NO_SEARCH;
+        isearch_start_or_repeat(reverse);
+    }
 }
 
 /*
@@ -2307,6 +2324,10 @@ static void isearch_end(bool accept)
 
 static void isearch_start_or_repeat(bool reverse)
 {
+    if (running_line && !isearch.active) {
+        waiting_search = reverse ? SEARCH_BACK : SEARCH_ON;
+        return;
+    }
     if (!isearch.active) {
         isearch.active = true;
         isearch.reverse = reverse;

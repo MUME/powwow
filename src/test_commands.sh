@@ -824,6 +824,20 @@ run 'C-g restores the line, and C-r C-r repeats the last search' \
 has 'typed'
 has 'banana!'
 
+# a search that a line starts, typed so that it starts after the line
+run '#key C-r searches from an empty line, which C-g leaves empty' \
+    "$history" "#key C-r
+$(printf '\007')#print restored
+"
+grep -Fxq 'restored' "$tmp/out" \
+    || fail 'expected C-g to leave the line empty, not bring back #key C-r'
+
+run '#keyedit &reverse-search finds lines as C-r does' "$history" \
+    "#keyedit &reverse-search
+ban${ce}s
+"
+has 'bananas'
+
 run 'M-< and M-> go to the first history line and back' "$history" \
     "#print typed${esc}<${esc}>!
 " "${esc}<!
