@@ -21,6 +21,9 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	  both.
 	* By default, typed text is bold and the messages of powwow are
 	  italic Blue.
+	* `powwow --get NAME', `--set NAME=VALUE' and --list-settings read
+	  and set the settings of the user-wide settings file and of a
+	  definition file without a session, as the launcher does.
 
 	Platforms and building:
 	* Windows using Cygwin is supported, along with WSL2.  Cygwin

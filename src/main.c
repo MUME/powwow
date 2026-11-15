@@ -300,10 +300,15 @@ static void show_help(const char *prog)
 #define WIN_ARG  "--windows, -w      "
 #endif
 #define CONFIG_HELP                                                     \
-    "  --config[=FILE]        save the user-wide settings in the shared"  \
-    " settings\n"                                                      \
-    "                         file, or in FILE\n"                      \
-    "  --no-config            do not read the user-wide settings file\n"
+    "  --config[=FILE]        save the user-wide settings in their"     \
+    " own\n"                                                            \
+    "                         file, or in FILE\n"                       \
+    "  --no-config            do not read the user-wide settings\n"     \
+    "  --list-settings        print all the settings, as NAME=VALUE,"   \
+    " and exit\n"                                                       \
+    "  --get NAME             print the setting NAME and exit\n"        \
+    "  --set NAME=VALUE       save the user-wide setting NAME and"      \
+    " exit\n"
 #else
 #define HELP_ARG "-h                 "
 #define TLS_ARG  "-t, -T TLS-OPTIONS "
@@ -350,9 +355,8 @@ static void show_help(const char *prog)
            "  " LAT1_ARG "    assume and prefer ISO-8859-1 on the connection\n"
            "  " VER_ARG  "    " VER_DESC "\n"
            WIN_HELP
-           CONFIG_HELP
-           COMPL_HELP,
-           prog);
+           "%s%s",
+           prog, CONFIG_HELP, COMPL_HELP);
 #undef HELP_ARG
 #undef TLS_ARG
 #undef NTLS_ARG
@@ -446,21 +450,27 @@ static bool in_build_dir(const char *argv0)
 }
 
 /* the options that have no letter */
-enum { OPT_CONFIG = 256, OPT_NO_CONFIG, OPT_COMPLETION };
+enum {
+    OPT_CONFIG = 256, OPT_NO_CONFIG, OPT_GET, OPT_LIST, OPT_SET,
+    OPT_COMPLETION
+};
 
 #ifdef HAVE_GETOPT_LONG
 /* the long options, which --completion also lists */
 static const struct option longopts[] = {
-    { "config",     optional_argument, NULL, OPT_CONFIG },
-    { "no-config",  no_argument,       NULL, OPT_NO_CONFIG },
-    { "completion", required_argument, NULL, OPT_COMPLETION },
-    { "help",       no_argument,       NULL, 'h' },
-    { "tls",        optional_argument, NULL, 't' },
-    { "no-tls",     no_argument,       NULL, 'n' },
-    { "latin1",     no_argument,       NULL, 'l' },
-    { "utf8",       no_argument,       NULL, 'u' },
-    { "version",    no_argument,       NULL, 'v' },
-    { "windows",    no_argument,       NULL, 'w' },
+    { "config",        optional_argument, NULL, OPT_CONFIG },
+    { "no-config",     no_argument,       NULL, OPT_NO_CONFIG },
+    { "get",           required_argument, NULL, OPT_GET },
+    { "list-settings", no_argument,       NULL, OPT_LIST },
+    { "set",           required_argument, NULL, OPT_SET },
+    { "completion",    required_argument, NULL, OPT_COMPLETION },
+    { "help",          no_argument,       NULL, 'h' },
+    { "tls",           optional_argument, NULL, 't' },
+    { "no-tls",        no_argument,       NULL, 'n' },
+    { "latin1",        no_argument,       NULL, 'l' },
+    { "utf8",          no_argument,       NULL, 'u' },
+    { "version",       no_argument,       NULL, 'v' },
+    { "windows",       no_argument,       NULL, 'w' },
     { NULL }
 };
 
@@ -592,6 +602,9 @@ int main(int argc, char **argv)
 
     const char *cmdline_config = NULL;  /* the file of --config=FILE */
     bool no_config = false;             /* --no-config given */
+    const char *get_name = NULL;        /* the setting of --get */
+    bool list = false;                  /* --list-settings given */
+    const char *set_spec = NULL;        /* the name=value of --set */
     int cmdline_utf8 = -1;      /* --utf8: 1, --latin1: 0 */
     struct tls_options cmdline_tlsopt = { .use_tls = false };
     bool cmdline_tls = false;   /* --tls or --no-tls given */
@@ -647,6 +660,15 @@ int main(int argc, char **argv)
         case OPT_NO_CONFIG:
             no_config = true;
             break;
+        case OPT_GET:
+            get_name = optarg;
+            break;
+        case OPT_LIST:
+            list = true;
+            break;
+        case OPT_SET:
+            set_spec = optarg;
+            break;
 #ifdef HAVE_GETOPT_LONG
         case OPT_COMPLETION:
             if (!print_completion_of(optarg)) {
@@ -676,8 +698,17 @@ int main(int argc, char **argv)
     hostinfo.tlsopt.use_tls = default_tls;
 
     int nargs = argc - optind;
-    if (nargs > 3) {
+    /* --get, --list-settings and --set print or save settings and exit,
+     * with only the definition file as an argument */
+    bool batch = get_name != NULL || list || set_spec != NULL;
+    if (nargs > (batch ? 1 : 3)) {
         fprintf(stderr, "%s: too many arguments\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+    if ((get_name != NULL) + list + (set_spec != NULL) > 1) {
+        fprintf(stderr,
+                "%s: --get, --list-settings and --set cannot go together\n",
+                argv[0]);
         exit(EXIT_FAILURE);
     }
 
@@ -750,15 +781,21 @@ int main(int argc, char **argv)
     last_line->str = ptrnew(PARAMLEN);
 
     edit_bootstrap();
-    tty_bootstrap();
+    tty_bootstrap(!batch);
+
+    /* only the values of --get and --list-settings on standard output */
+    if (batch)
+        tty_set_write_fd(STDERR_FILENO);
 
 #ifdef MOTDFILE
-    printmotd();
+    if (!batch)
+        printmotd();
 #endif
 
-    printver(1);
+    if (!batch)
+        printver(1);
 
-    if (nargs == 0) {
+    if (nargs == 0 && !batch) {
         /* the commands quoted as in the help, which the terminal shows as
          * ' where it cannot show the typographic quotes */
         message_wrap(VER_CONT, "\n"
@@ -770,6 +807,9 @@ int main(int argc, char **argv)
                      u8"‘#help warranty’", u8"‘#help copyright’");
     }
 
+    /* --set saves as the launcher does, with --config */
+    if (set_spec != NULL)
+        config_global = true;
     if (no_config)
         config_global = false;
     else if (cmdline_config != NULL)
@@ -781,8 +821,9 @@ int main(int argc, char **argv)
     read_config();
 
     /* the definition file locked while this session has it, also one of
-     * #load or #save, so that another session does not save it */
-    deffile_locking = true;
+     * #load or #save, so that another session does not save it; --set
+     * locks it below, and --get needs no lock */
+    deffile_locking = !batch;
 
     bool read_file = false;     /* run initstr ? */
     if (nargs == 0 || nargs == 2) {
@@ -797,7 +838,26 @@ int main(int argc, char **argv)
          */
         set_deffile(argv[optind++]);
 
-        if (access(deffile, R_OK) == -1 || access(deffile, W_OK) == -1) {
+        /* --set changes the file, which a session that has it open would
+         * write over */
+        if (set_spec != NULL && !lock_deffile() && deffile_busy) {
+            char pid[32] = "";
+            if (deffile_owner > 0)
+                snprintf(pid, sizeof pid, " (pid %ld)", deffile_owner);
+            /* through the terminal output, on standard error, which
+             * writes the quotes as ' where the locale is not UTF-8 */
+            tty_printf("%s: " LQUOTE "%s" RQUOTE " is in use by a running"
+                       " powwow%s; quit it first\n", argv[0], deffile, pid);
+            tty_flush();
+            exit(EXIT_FAILURE);
+        }
+
+        if (batch && access(deffile, F_OK) == -1) {
+            /* a new file, which --set saves */
+            tty_add_initial_binds();
+            tty_add_walk_binds();
+        } else if (access(deffile, R_OK) == -1
+                   || access(deffile, W_OK) == -1) {
             tty_printf("Creating %s\nHost name  :", deffile);
             tty_flush();
             tty_gets(hostinfo.name, BUFSIZE);
@@ -819,6 +879,33 @@ int main(int argc, char **argv)
         } else {
             read_file = true;
         }
+    }
+
+    if (list) {
+        print_settings();
+        exit(EXIT_SUCCESS);
+    }
+    if (set_spec != NULL && *deffile == '\0' && set_setting(set_spec)) {
+        /* only the user-wide settings file to save it in, which is not for
+         * the settings of a MUD */
+        char name[BUFSIZE];
+        snprintf(name, sizeof name, "%.*s", (int)strcspn(set_spec, "="),
+                 set_spec);
+        if (!config_global || !setting_is_global(name)) {
+            fprintf(stderr, "%s: \"%s\" needs a definition file\n",
+                    argv[0], name);
+            exit(EXIT_FAILURE);
+        }
+    }
+    if (batch) {
+        bool ok = (get_name != NULL ? print_setting(get_name)
+                   : set_setting(set_spec) && save_settings() > 0);
+        if (!ok)
+            tty_printf("%s: cannot %s \"%s\"\n", argv[0],
+                       get_name != NULL ? "get" : "set",
+                       get_name != NULL ? get_name : set_spec);
+        tty_flush();
+        exit(ok ? EXIT_SUCCESS : EXIT_FAILURE);
     }
 
     /* the definition file's #host must not override --utf8/--latin1

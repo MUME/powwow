@@ -3307,6 +3307,248 @@ void reset_user_wide_settings(void)
         secret_delete(0);
 }
 
+static void cmd_option(char *arg);
+
+/* the #hilite of --get and --set 'name', or NULL: the user-wide one, or
+ * with "mud-", the MUD's own, then *own is true */
+static struct hilite *hilite_setting(const char *name, size_t len, bool *own)
+{
+    *own = len > 4 && strncmp(name, "mud-", 4) == 0;
+    if (*own) {
+        name += 4;
+        len -= 4;
+    }
+    if (len == 12 && strncmp(name, "hilite-input", len) == 0)
+        return &input_hilite;
+    if (len == 15 && strncmp(name, "hilite-messages", len) == 0)
+        return &message_hilite;
+    return NULL;
+}
+
+/*
+ * the settings of --get and --set: the command options, such as editor,
+ * the on/off options, as on or off, host, as #host takes it, the
+ * user-wide attributes of #hilite input and messages, as #hilite takes
+ * them, or nothing for none, and the MUD's own, or default if it has none, the paths of the user-wide settings file,
+ * config-file, and of the manual, manual, and the pid of a powwow that has
+ * the definition file open, in-use, which --set cannot set
+ */
+bool print_setting(const char *name)
+{
+    for (int i = 0; command_options[i].name != NULL; ++i) {
+        if (strcmp(name, command_options[i].name) == 0) {
+            const char *value = *command_options[i].value;
+            printf("%s\n", value != NULL ? value : "");
+            return true;
+        }
+    }
+    for (int i = 0; options[i].name != NULL; ++i) {
+        if (strcmp(name, options[i].name) == 0) {
+            printf("%s\n", *options[i].option ? "on" : "off");
+            return true;
+        }
+    }
+    bool own;
+    const struct hilite *h = hilite_setting(name, strlen(name), &own);
+    char buf[BUFSIZE];
+    if (h != NULL && own) {
+        if (h->own)
+            attr_format(&h->mud, buf, sizeof buf);
+        else
+            snprintf(buf, sizeof buf, "default");
+        printf("%s\n", buf);
+        return true;
+    }
+    if (h != NULL) {
+        if (attr_is_none(&h->user))
+            *buf = '\0';
+        else
+            attr_format(&h->user, buf, sizeof buf);
+        printf("%s\n", buf);
+        return true;
+    }
+    /* the files of powwow, as paths on Windows on Cygwin, as the launcher
+     * there opens them */
+    if (strcmp(name, "config-file") == 0) {
+        printf("%s\n", (*config_file != '\0'
+                        ? windows_path(config_file, buf, sizeof buf) : ""));
+        return true;
+    }
+    if (strcmp(name, "manual") == 0) {
+        /* next to the help file */
+        char path[BUFSIZE];
+        snprintf(path, sizeof path, "%s", helpfile);
+        char *slash = strrchr(path, '/');
+        char *base = slash != NULL ? slash + 1 : path;
+        snprintf(base, sizeof path - (size_t)(base - path), "powwow.md");
+        printf("%s\n", windows_path(path, buf, sizeof buf));
+        return true;
+    }
+    if (strcmp(name, "in-use") == 0) {
+        /* tried with the lock of a session, and let go at once; 0 if its
+         * pid cannot be told */
+        if (*deffile != '\0' && !lock_deffile() && deffile_busy)
+            printf("%ld\n", deffile_owner);
+        else
+            printf("\n");
+        unlock_deffile();
+        return true;
+    }
+    if (strcmp(name, "host") == 0) {
+        if (*hostinfo.name != '\0')
+            printf("%s %d%s%s\n", hostinfo.name, hostinfo.port,
+                   tlsopt_str(&hostinfo.tlsopt),
+                   charset_flag_str(hostinfo.utf8));
+        else
+            printf("\n");
+        return true;
+    }
+    return false;
+}
+
+static int compare_names(const void *a, const void *b)
+{
+    return strcmp(*(const char *const *)a, *(const char *const *)b);
+}
+
+/* the settings of --get besides the options, and the files of powwow,
+ * which --set cannot set */
+static const char *const other_settings[] = { "host" };
+static const char *const hilite_settings[] = {
+    "hilite-input", "hilite-messages", "mud-hilite-input",
+    "mud-hilite-messages"
+};
+static const char *const file_settings[] = {
+    "config-file", "in-use", "manual"
+};
+
+size_t setting_names(const char **names, size_t size)
+{
+    size_t count = 0;
+    for (int i = 0; command_options[i].name != NULL; ++i)
+        names[count++] = command_options[i].name;
+    for (int i = 0; options[i].name != NULL; ++i)
+        names[count++] = options[i].name;
+    for (size_t i = 0; i < sizeof other_settings / sizeof *other_settings; ++i)
+        names[count++] = other_settings[i];
+    for (size_t i = 0; i < sizeof hilite_settings / sizeof *hilite_settings;
+         ++i) {
+        names[count++] = hilite_settings[i];
+    }
+    for (size_t i = 0; i < sizeof file_settings / sizeof *file_settings; ++i)
+        names[count++] = file_settings[i];
+    assert(count <= size);
+    qsort(names, count, sizeof *names, compare_names);
+    return count;
+}
+
+enum setting_kind setting_kind(const char *name)
+{
+    for (int i = 0; command_options[i].name != NULL; ++i)
+        if (strcmp(name, command_options[i].name) == 0)
+            return SETTING_COMMAND;
+    for (int i = 0; options[i].name != NULL; ++i)
+        if (strcmp(name, options[i].name) == 0)
+            return SETTING_ON_OFF;
+    for (size_t i = 0; i < sizeof file_settings / sizeof *file_settings; ++i)
+        if (strcmp(name, file_settings[i]) == 0)
+            return SETTING_FILE;
+    bool own;
+    if (hilite_setting(name, strlen(name), &own) != NULL)
+        return SETTING_ATTR;
+    return SETTING_HOST;
+}
+
+/* print all the settings of --get, as name=value, sorted by name, for
+ * --list-settings */
+void print_settings(void)
+{
+    const char *names[SETTINGS_MAX];
+    size_t count = setting_names(names, SETTINGS_MAX);
+    for (size_t i = 0; i < count; ++i) {
+        printf("%s=", names[i]);
+        print_setting(names[i]);
+    }
+}
+
+/* is the setting 'name' of --set user-wide, one that goes in the user-wide
+ * settings file, and not in the definition file? */
+bool setting_is_global(const char *name)
+{
+    for (int i = 0; command_options[i].name != NULL; ++i)
+        if (strcmp(name, command_options[i].name) == 0)
+            return true;
+    for (int i = 0; options[i].name != NULL; ++i)
+        if (strcmp(name, options[i].name) == 0)
+            return options[i].global;
+    bool own;
+    return hilite_setting(name, strlen(name), &own) != NULL && !own;
+}
+
+bool set_setting(const char *spec)
+{
+    const char *eq = strchr(spec, '=');
+    if (eq == NULL)
+        return false;
+    int len = (int)(eq - spec);
+    const char *value = eq + 1;
+    char buf[BUFSIZE];
+
+    /* quietly, but keep #option info as it is, unless it is set */
+    bool info = opt_info;
+    opt_info = false;
+    bool ok = false;
+    error = NO_ERROR;
+    for (int i = 0; !ok && command_options[i].name != NULL; ++i) {
+        if ((int)strlen(command_options[i].name) == len
+            && strncmp(spec, command_options[i].name, len) == 0) {
+            snprintf(buf, sizeof buf, "%s", spec);
+            cmd_option(buf);
+            ok = true;
+        }
+    }
+    for (int i = 0; !ok && options[i].name != NULL; ++i) {
+        if ((int)strlen(options[i].name) == len
+            && strncmp(spec, options[i].name, len) == 0) {
+            if (strcmp(value, "on") != 0 && strcmp(value, "off") != 0)
+                break;
+            *options[i].option = strcmp(value, "on") == 0;
+            if (options[i].option == &opt_info)
+                info = opt_info;
+            ok = true;
+        }
+    }
+    bool own = false;
+    struct hilite *h = ok ? NULL : hilite_setting(spec, (size_t)len, &own);
+    struct attr attr;
+    if (h != NULL && own && strcmp(value, "default") == 0) {
+        h->own = false;
+        ok = true;
+    } else if (h != NULL && own) {
+        ok = attr_parse(strcmp(value, "off") == 0 ? "none" : value, &attr);
+        if (ok) {
+            h->mud = attr;
+            h->own = true;
+        }
+    } else if (h != NULL && strcmp(value, "default") == 0) {
+        h->user = h->def;
+        ok = true;
+    } else if (h != NULL) {
+        ok = attr_parse(value, &attr);
+        if (ok)
+            h->user = attr;
+    }
+    if (ok && h != NULL)
+        hilite_update();
+    if (!ok && h == NULL && len == 4 && strncmp(spec, "host", len) == 0) {
+        snprintf(buf, sizeof buf, "%s", value);
+        cmd_host(buf);
+        ok = error == NO_ERROR;
+    }
+    opt_info = info;
+    return ok;
+}
+
 static void cmd_option(char *arg)
 {
     arg = skipspace(arg);
