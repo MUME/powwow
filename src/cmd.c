@@ -2825,6 +2825,10 @@ static int print_command_options(FILE *file)
  * return -1 on error, 1 on success */
 int print_all_options(FILE *file)
 {
+    /* in a file, the command options come first, as #load reports them
+     * once the line of the other options turns +info back on */
+    if (file != NULL && print_command_options(file) < 0)
+        return -1;
     int width = (file != NULL ? WRAP_COLUMNS : wrap_width() + 1) - 16;
     char line[BUFSIZE];
     int len = 0;
@@ -2841,10 +2845,11 @@ int print_all_options(FILE *file)
             len = 0;
         }
     }
-    if (print_command_options(file) < 0)
-        return -1;
-    if (file == NULL)
+    if (file == NULL) {
+        if (print_command_options(NULL) < 0)
+            return -1;
         status(1);
+    }
     return 1;
 }
 
