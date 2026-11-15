@@ -2622,7 +2622,10 @@ static bool maybe_flag_args(char **argp, struct tls_options *tlsopt,
 static void cmd_connect(char *arg)
 {
     if (*skipspace(arg) == '\0') {
-        tcp_show();
+        if (tcp_count == 0 && *hostinfo.name != '\0')
+            connect_default();
+        else
+            tcp_show();
         return;
     }
 

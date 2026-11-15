@@ -1628,6 +1628,11 @@ has '#no entry for "nosuchcommand" in the help file.'
 run 'error message' '#connect test --no-tls 127.0.0.1 1'
 has '#cannot connect to 127.0.0.1:1: Connection refused'
 
+run '#connect without an argument connects to the host of #host' \
+    '#host 127.0.0.1 1 --no-tls
+#connect'
+has '#cannot connect to 127.0.0.1:1: Connection refused'
+
 run 'random numbers' "$(for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
     echo '#print (rand 6)'
 done)"
