@@ -883,13 +883,11 @@ Without a sequence, you are asked to press the key.
 
 #rebind f1 ^[OP         (tell powwow that your f1 key sends ESC O P)
 @rebindall
-@rebindALL
-#rebindall
-#rebindALL
+#rebindall [--every]
 
-#rebindall runs #rebind on most key bindings (skipping trivial ones like
-C-a, C-b, etc.), asking you to press each key. #rebindALL does the same for
-really every key binding.
+#rebindall runs #rebind on most key bindings, asking you to press each
+key. It skips the trivial ones, such as C-a, C-x 8 Ret and M-b, unless
+--every is given.
 @record
 #record [<filename>]
 

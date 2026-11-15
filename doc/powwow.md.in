@@ -712,14 +712,12 @@ Examples:
 ### Change the keyboard sequence of all existing key bindings
 
 ```
-#rebindall
-#rebindALL
+#rebindall [--every]
 ```
 
-`#rebindall` runs `#rebind` on most key bindings (skips trivial ones like
-`C-a`, `C-b`, etc.), asking you to press each corresponding key.
-
-`#rebindALL` does the same, but for really every key binding.
+`#rebindall` runs `#rebind` on most key bindings, asking you to press
+each corresponding key. It skips the trivial ones, such as `C-a`,
+`C-x 8 Ret` and `M-b`, unless `--every` is given.
 
 ### Execute a key as if pressed on keyboard
 

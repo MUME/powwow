@@ -913,6 +913,15 @@ static void complete_on_off(struct word_list *l, int arg, const char *args,
         add_words(l, names);
 }
 
+/* the flag of #rebindall */
+static void complete_rebindall(struct word_list *l, int arg,
+                               const char *args, const char *word)
+{
+    static const char *const names[] = { "--every", NULL };
+    if (arg == 0)
+        add_words(l, names);
+}
+
 /* the flag of #ver */
 static void complete_ver(struct word_list *l, int arg, const char *args,
                          const char *word)
@@ -1289,6 +1298,7 @@ static const struct {
     { "prompt", complete_prompt, "<=>%+-" },
     { "quote", complete_on_off, "" },
     { "rebind", complete_key, "" },
+    { "rebindall", complete_rebindall, "" },
     { "record", complete_file, "" },
     { "request", complete_request, "" },
     { "reset", complete_reset, "" },
