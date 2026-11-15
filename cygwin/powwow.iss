@@ -140,7 +140,8 @@ end;
 
 { the profile of powwow for Windows Terminal, which the shortcuts and the
   .powwow files open (-p powwow): powwow-start, with the icon and title of
-  powwow }
+  powwow, and 10000 lines of scrollback instead of the 9001 of Windows
+  Terminal }
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   App: String;
@@ -149,7 +150,7 @@ begin
   if CurStep <> ssPostInstall then
     exit;
   App := ExpandConstant('{app}');
-  SetArrayLength(Lines, 11);
+  SetArrayLength(Lines, 12);
   Lines[0] := '{';
   Lines[1] := '  "profiles": [';
   Lines[2] := '    {';
@@ -158,10 +159,11 @@ begin
     + JsonString('"' + App + '\bin\sh.exe" /bin/powwow-start') + ',';
   Lines[5] := '      "icon": ' + JsonString(App + '\powwow.ico') + ',';
   Lines[6] := '      "tabTitle": "powwow",';
-  Lines[7] := '      "suppressApplicationTitle": true';
-  Lines[8] := '    }';
-  Lines[9] := '  ]';
-  Lines[10] := '}';
+  Lines[7] := '      "historySize": 10000,';
+  Lines[8] := '      "suppressApplicationTitle": true';
+  Lines[9] := '    }';
+  Lines[10] := '  ]';
+  Lines[11] := '}';
   ForceDirectories(FragmentDir());
   if not SaveStringsToUTF8FileWithoutBOM(FragmentDir() + '\powwow.json',
                                          Lines, False) then
