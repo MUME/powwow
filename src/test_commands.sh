@@ -1077,6 +1077,11 @@ run --bind 'rebind rejects an empty key sequence' \
 "
 has '#rebind: empty key sequence.'
 
+run --eof '#rebindall skips the keys typed after a control key' '#rebindall'
+grep -Fq '#please press the key "C-x-8-Ret"' "$tmp/out" \
+    && fail 'expected no C-x-8-Ret'
+grep -Fq '#please press the key "Up" : ' "$tmp/out" || fail 'expected Up'
+
 # the rest of a key that other keys start with, typed after the timeout
 name='#rebind waits for the rest of a key after a prefix such as C-x'
 : > "$tmp/raw"
