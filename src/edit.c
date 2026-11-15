@@ -872,6 +872,8 @@ static void complete_help(struct word_list *l, int arg, const char *args,
     if (arg != 0)
         return;
     word_list_add(l, "copyright");      /* not in the help file */
+    for (int i = 1; internal_functions[i].name != NULL; ++i)
+        word_list_add(l, internal_functions[i].name);
     FILE *f = fopen(helpfile, "r");
     if (f == NULL)
         return;

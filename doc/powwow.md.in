@@ -1034,7 +1034,7 @@ This is handy when you are talking to someone, for example.
 ### Help
 
 ```
-#help [-P|--no-pager] [keys|math|comment|<command>]
+#help [-P|--no-pager] [keys|math|comment|<command>|&<function>]
 ```
 
 Shows a list of powwow's commands.
@@ -1043,6 +1043,8 @@ Shows a list of powwow's commands.
 `#help comment` shows how to write comments.
 You can also have help on specific commands, using for example
 `#help alias` or in general `#help <command-name>`.
+`#help &<function>`, such as `#help &abort`, shows what a line-editing
+function does, and the keys bound to it.
 The text is shown with the pager in `POWWOWPAGER` or `PAGER`, or `more`;
 with `-P` or `--no-pager` it is printed on the screen instead.
 A help file is needed and provided for this last feature of `#help`,

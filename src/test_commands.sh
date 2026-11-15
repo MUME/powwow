@@ -1417,6 +1417,12 @@ name='the keys typed so far are shown again after a message'
 sed -n '/later/,$p' "$tmp/raw" | grep -q 'C-x-' \
     || fail 'expected C-x- after the message'
 
+run '#help &<function> shows an editing function and its keys' \
+    '#help &abort
+#help &nosuch'
+has '&abort                  stop searching (C-g)'
+has '#no such editing function: "&nosuch"'
+
 run '#key and #keyedit without an argument show their syntax' '#key
 #keyedit'
 has '#syntax: #key <name>'
@@ -1481,7 +1487,7 @@ run 'help without the pager' '#help -P help
 #help -P'
 POWWOWPAGER=cat
 lacks 'PAGER USED'
-has '#help [-P|--no-pager] [keys|math|comment|<command>]'
+has '#help [-P|--no-pager] [keys|math|comment|<command>|&<function>]'
 has '#addstatic {<text>|(<expr>)}    add the string to the static completion list'
 lacks "Help on 'help'"
 

@@ -1202,27 +1202,36 @@ void show_binds_starting(const char *prefix, int len, const char *names)
 }
 
 /*
+ * show the editing function 'function', an index of internal_functions,
+ * with its description and the keys bound to it
+ */
+void show_edit_function(int function)
+{
+    enum { FUNCTION_COLUMN = 24 };
+    const edit_function *f = &internal_functions[function];
+    char keys[BUFSIZE];
+    int n = 0;
+    for (const keynode *k = keydefs; k != NULL; k = k->next) {
+        if (k->funct == f->funct && n < (int)sizeof(keys))
+            n += snprintf(keys + n, sizeof(keys) - n, "%s%s",
+                          n == 0 ? " (" : ", ", k->name);
+    }
+    message_printf("%-*s%s%s%s\n", FUNCTION_COLUMN, f->name, f->help,
+                   n > 0 ? keys : "", n > 0 ? ")" : "");
+}
+
+/*
  * list all the editing functions by group, with their descriptions and the
  * keys bound to them
  */
 void show_edit_functions(void)
 {
-    enum { FUNCTION_COLUMN = 24 };
     message_printf("#editing functions:\n");
-    for (const edit_function *f = internal_functions + 1; f->name != NULL;
-         ++f) {
-        if (f == internal_functions + 1 || strcmp(f->group, f[-1].group) != 0)
-            message_printf("%s#%s:\n", f == internal_functions + 1 ? "" : "\n",
-                           f->group);
-        char keys[BUFSIZE];
-        int n = 0;
-        for (const keynode *k = keydefs; k != NULL; k = k->next) {
-            if (k->funct == f->funct && n < (int)sizeof(keys))
-                n += snprintf(keys + n, sizeof(keys) - n, "%s%s",
-                              n == 0 ? " (" : ", ", k->name);
-        }
-        message_printf("%-*s%s%s%s\n", FUNCTION_COLUMN, f->name, f->help,
-                       n > 0 ? keys : "", n > 0 ? ")" : "");
+    for (int i = 1; internal_functions[i].name != NULL; ++i) {
+        const edit_function *f = &internal_functions[i];
+        if (i == 1 || strcmp(f->group, f[-1].group) != 0)
+            message_printf("%s#%s:\n", i == 1 ? "" : "\n", f->group);
+        show_edit_function(i);
     }
 }
 
