@@ -135,7 +135,9 @@ LAUNCHER
 	cmake --build launcher/build
 
 	On Windows it is built with the MinGW or MSVC build of Qt, not
-	Cygwin's, and looks like a Windows 11 app.
+	Cygwin's, and looks like a Windows 11 app.  On Cygwin, ‘make launcher’
+	builds it with the MinGW build of Qt in ‘launcher-win’, as for the
+	installer (see WINDOWS INSTALLER).
 
 	It reads and saves the settings by running powwow, with ‘--config’ and
 	‘--get’ or ‘--set’, so it needs the powwow of this source tree: run
@@ -178,7 +180,9 @@ WINDOWS INSTALLER
 	has, which are only in their source packages: so the first build of
 	it downloads those, about 200 MB, which needs an internet connection,
 	and extracts their licenses.  Later builds in the same build
-	directory download only those of packages that are new.
+	directory download only those of packages that are new.  Likewise,
+	the first build with a version of Qt gets the license texts of its
+	modules from their sources, with git.
 
 	The setup program of Cygwin installs the packages that these need,
 	to build powwow, to bundle it and to get the licenses, from the
@@ -186,7 +190,23 @@ WINDOWS INSTALLER
 
 	setup-x86_64.exe -q -P gcc-core,make,autoconf,automake,pkg-config ^
 	    -P libgnutls-devel,libpcre2-devel,libncurses-devel,zlib-devel ^
-	    -P nano,ca-certificates,xz,zstd,bzip2,lzip
+	    -P nano,ca-certificates,xz,zstd,bzip2,lzip,git
+
+	The bundle has the launcher (see LAUNCHER above), which
+	‘cygwin/launcher.sh’ builds with the MinGW build of Qt 6.8 or later
+	for Windows, not that of Cygwin, and its MinGW, CMake and Ninja,
+	such as these, which aqtinstall
+	(https://github.com/miurahr/aqtinstall) installs in ‘C:\Qt’:
+
+	aqt install-qt windows desktop 6.10.3 win64_mingw -O C:\Qt
+	aqt install-tool windows desktop tools_mingw1310 ^
+	    qt.tools.win64_mingw1310 -O C:\Qt
+	aqt install-tool windows desktop tools_cmake -O C:\Qt
+	aqt install-tool windows desktop tools_ninja -O C:\Qt
+
+	It takes the newest Qt in ‘C:\Qt’, or the one of ‘QT’, such as
+	‘make windows-installer QT=C:/Qt/6.10.3/mingw_64’; ‘make launcher’
+	builds just the launcher, in ‘launcher-win’.
 
 	The installer needs Inno Setup 6.3 or later
 	(https://jrsoftware.org/isinfo.php); ‘cygwin/installer.sh’ finds its
@@ -194,35 +214,43 @@ WINDOWS INSTALLER
 	to its path.
 
 	The installer is written to the build directory.  It installs powwow
-	with a Start menu shortcut that runs it in Windows Terminal, which
-	the installer requires, through ‘cygwin/powwow-start’, in the folder
-	‘powwow’ of the Documents folder, such as
-	‘C:\Users\name\Documents\powwow’, where the definition files then
-	go.  Unless unchecked, opening a ‘.powwow’ file runs powwow with it
-	as the definition file.  The icon, ‘icons/powwow.ico’, is a
-	placeholder made by ‘icons/make-icon.sh’.
+	with a Start menu shortcut that opens the launcher, which lists the
+	MUDs, one definition file each, in the folder ‘powwow’ of the
+	Documents folder, such as ‘C:\Users\name\Documents\powwow’, and runs
+	powwow for one in Windows Terminal, which the installer requires,
+	through ‘cygwin/powwow-start’.  Unless unchecked, opening a ‘.powwow’
+	file runs powwow with it as the definition file, through the
+	launcher.  Installing a newer version updates powwow in its folder:
+	the folders of the bundle are cleared first, and the MUDs and the
+	settings, which are elsewhere, stay.  The icon, ‘icons/powwow.ico’,
+	is a placeholder made by ‘icons/make-icon.sh’.
 
 	The programs and libraries of Cygwin bundled are under their own
-	licenses.  The bundle has their license files, which ‘LICENSES.txt’
-	lists with where Cygwin has their source; the installer and ‘#help
-	copyright’ show it.  ‘cygwin/update-licenses.sh’ downloads the source
-	packages to ‘cygwin-sources’ in the build directory, and keeps the
-	licenses in ‘cygwin-licenses’ there.  ‘make update-cygwin-licenses’
-	updates them all.  ‘make clean’ removes ‘powwow-win’ and the
-	installer, and ‘make maintainer-clean’ also these two directories.
+	licenses, as are Qt and the libraries of MinGW of the launcher.  The
+	bundle has their license files, which ‘LICENSES.txt’ lists with where
+	to get their source; the installer and ‘#help copyright’ show it.
+	‘cygwin/update-licenses.sh’ downloads the source packages to
+	‘cygwin-sources’ in the build directory, and keeps the licenses in
+	‘cygwin-licenses’ there, and ‘cygwin/launcher.sh’ those of Qt in
+	‘qt-licenses’.  ‘make update-cygwin-licenses’ updates those of
+	Cygwin.  ‘make clean’ removes ‘powwow-win’, the installer and
+	‘launcher-win’, where the launcher is built, and
+	‘make maintainer-clean’ also these three directories.
 
-	The shortcuts run ‘cygwin/powwow-start’, which runs powwow with
-	‘--windows’: file names are written as on Windows, such as
-	‘C:\Users\Me\Documents\mud.powwow’ or ‘%USERPROFILE%\mud.powwow’,
-	and the commands of ‘#!’, of ‘#var $x=!...’ and the like, and of the
-	editor and the pager, are commands of ‘cmd.exe’.  It also sets
-	‘TMPDIR’ to the temporary folder of Windows.  With ‘--windows’,
-	unless the settings or the environment choose others, the shell is
-	‘cygwin/powwow-cmd’, which runs ‘cmd.exe’ in UTF-8, with each command
-	as a line of a batch file, where ‘%NAME%’ is expanded and a ‘%’ is
-	written ‘%%’; the editor is Notepad, in another window, or ‘nano’ in
-	an ssh session; and the pager is the same, with ‘nano -v’, which only
-	views.
+	The launcher runs ‘cygwin/powwow-start’, which runs powwow with
+	‘--config’, so that the settings for all MUDs, such as the editor,
+	are saved in the user-wide settings file,
+	‘%APPDATA%\powwow\powwow.conf’, and with ‘--windows’: file names are
+	written as on Windows, such as ‘C:\Users\Me\Documents\mud.powwow’ or
+	‘%USERPROFILE%\mud.powwow’, and the commands of ‘#!’, of
+	‘#var $x=!...’ and the like, and of the editor and the pager, are
+	commands of ‘cmd.exe’.  It also sets ‘TMPDIR’ to the temporary
+	folder of Windows.  With ‘--windows’, unless the settings or the
+	environment choose others, the shell is ‘cygwin/powwow-cmd’, which
+	runs ‘cmd.exe’ in UTF-8, with each command as a line of a batch file,
+	where ‘%NAME%’ is expanded and a ‘%’ is written ‘%%’; the editor is
+	Notepad, in another window, or ‘nano’ in an ssh session; and the
+	pager is the same, with ‘nano -v’, which only views.
 
 	To edit with another program, give its command as in ‘cmd.exe’, but
 	with each ‘\’ in double quotes written ‘\\’, as in ‘sh’ and in the

@@ -23,6 +23,7 @@ Makefile.in
 /powwow-*.tar.gz
 /cygwin-sources/
 /cygwin-licenses/
+/qt-licenses/
 # what make windows-installer makes, and Inno Setup when run by hand
 /powwow-win/
 /powwow-*-setup.exe
