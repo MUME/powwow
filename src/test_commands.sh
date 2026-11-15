@@ -1412,6 +1412,11 @@ name='the keys typed so far are shown again after a message'
 sed -n '/later/,$p' "$tmp/raw" | grep -q 'C-x-' \
     || fail 'expected C-x- after the message'
 
+run '#key and #keyedit without an argument show their syntax' '#key
+#keyedit'
+has '#syntax: #key <name>'
+has '#syntax: #keyedit <function>'
+
 run '#bind functions lists all editing functions' '#bind functions'
 has '#moving:'
 has '#killing and yanking:'
