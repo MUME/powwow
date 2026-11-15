@@ -90,8 +90,8 @@ cmdstruct *commands = NULL;
 static cmdstruct default_commands[] =
 {
     C("help",       cmd_help,
-      "[-P|--no-pager] [keys|math|comment|<command>]\tthis text, or help on"
-      " specified topic"),
+      "[-P|--no-pager] [keys|math|comment|<command>|&<function>]\tthis text,"
+      " or help on specified topic"),
     C("17", (function_str)0,
       "<command>\trepeat <command> 17 times"),
 #ifdef USE_SHELL
@@ -599,6 +599,15 @@ static void cmd_help(char *arg)
     }
     strip_end(arg);
     if (*arg == '#') ++arg;
+    if (*arg == '&') {
+        char *param;
+        int function = lookup_edit_name(arg, &param);
+        if (function != 0 && param == NULL)
+            show_edit_function(function);
+        else
+            wrap_printf("#no such editing function: \"%s\"", arg);
+        return;
+    }
     if (*arg == '\0') {
         int size = 25;
         for (cmdstruct *c = commands; c != NULL; c = c->next) {
