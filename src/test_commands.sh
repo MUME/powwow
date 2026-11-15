@@ -1712,6 +1712,23 @@ run 'marked prompt longer than the memory limit' "#setvar mem=120
 has '#error: text/string longer than limit, discarded.'
 grep -q 'after$' "$tmp/out" || fail 'the second #prompt did not run'
 
+# powwow alone in its session, as under "xterm -e powwow", has no shell
+# to resume it
+if python3 -c "" > /dev/null 2>&1; then
+    cat > "$tmp/setsid.py" <<'EOF'
+import os, sys
+os.setsid()
+os.execv(sys.argv[1], sys.argv[1:])
+EOF
+    powwow=$POWWOW
+    POWWOW=python3
+    run --args "$tmp/setsid.py $powwow" \
+        'C-z says that powwow cannot be suspended without job control' \
+        '' "$(printf '\032')"
+    POWWOW=$powwow
+    has '#cannot suspend: powwow was not started by a shell with job control.'
+fi
+
 # the fake MUDs below need python3 to run: on Windows, the python3 found
 # can be an alias that only offers to install it
 if python3 -c "" > /dev/null 2>&1; then
