@@ -1138,6 +1138,16 @@ char *seq_name(char *seq, int len)
     return buf;
 }
 
+/* does a key binding start with the 'len' bytes of 'seq', and go on? */
+static bool starts_binding(const char *seq, int len)
+{
+    for (const keynode *p = keydefs; p != NULL; p = p->next) {
+        if (p->seqlen > len && memcmp(p->sequence, seq, len) == 0)
+            return true;
+    }
+    return false;
+}
+
 /*
  * read a single escape sequence from the keyboard
  * prompting user for it; return static pointer
@@ -1149,16 +1159,18 @@ static char *read_seq(char *name, int *len)
     message_printf("#please press the key \"%s\" : ", name);
     tty_flush();
 
-    int tmp = get_one_char(0);
-    if (tmp < 0) {
-        tty_message("#unable to get key. Giving up.\n");
-        return NULL;
-    }
-    seq[0] = tmp;
-
-    int i = 1;
-    while (i < CAPLEN - 1 && (tmp = get_one_char(KBD_TIMEOUT)) >= 0)
+    int i = 0;
+    do {
+        /* the next key, waiting for it after a prefix such as C-x */
+        int tmp = get_one_char(0);
+        if (tmp < 0) {
+            tty_message("#unable to get key. Giving up.\n");
+            return NULL;
+        }
         seq[i++] = tmp;
+        while (i < CAPLEN - 1 && (tmp = get_one_char(KBD_TIMEOUT)) >= 0)
+            seq[i++] = tmp;
+    } while (i < CAPLEN - 1 && starts_binding(seq, i));
     *len = i;
     print_seq(seq, i);
 

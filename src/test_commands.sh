@@ -1077,6 +1077,21 @@ run --bind 'rebind rejects an empty key sequence' \
 "
 has '#rebind: empty key sequence.'
 
+# the rest of a key that other keys start with, typed after the timeout
+name='#rebind waits for the rest of a key after a prefix such as C-x'
+: > "$tmp/raw"
+{
+    printf '#rebind C-x-8-e-e\n'
+    wait_for '#please press the key'
+    printf '\030'
+    sleep 0.3
+    printf '8ex'
+    wait_for '#redefined key'
+    printf '#quit\n'
+} | "$POWWOW" > "$tmp/raw" 2>&1
+sed -e "s/$esc/<ESC>/g" -e "s/$cr//g" "$tmp/raw" > "$tmp/out"
+has '#redefined key: C-x-8-e-e ^X8ex=&insert-emoji'
+
 if [ "$(getconf LONG_BIT)" -ge 64 ]; then
     run '#var numbers beyond int' '#var @x=3000000000
 #print (@x)
