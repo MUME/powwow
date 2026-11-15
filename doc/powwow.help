@@ -205,9 +205,9 @@ To connect your first session, use:
 #connect main <address> <port>
 where <address> and <port> indicate the host you want to connect to.
 
-If no address/port is defined, you either get connected to the default
-host and port (if you have no open connection) or a list of open
-connections is shown.
+Without an address and port, the session connects to the host of #host.
+#connect alone connects the session main to it if no connection is open,
+and otherwise lists the open connections.
 
 For documentation on the --tls, --no-tls, --utf8 and --latin1 options,
 see '#help host'.

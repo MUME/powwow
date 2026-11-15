@@ -572,10 +572,8 @@ int main(int argc, char **argv)
     FD_ZERO(&fdset);
     FD_SET(tty_read_fd, &fdset);
 
-    if (*hostinfo.name != '\0') {
-        tcp_open("main", (*initstr != '\0' ? initstr : NULL), hostinfo.name,
-                 hostinfo.port, &hostinfo.tlsopt, hostinfo.utf8);
-    }
+    if (*hostinfo.name != '\0')
+        connect_default();
 
     if (read_file && *hostinfo.name == '\0' && *initstr != '\0') {
         parse_instruction(initstr, false, false, true);
@@ -588,6 +586,13 @@ int main(int argc, char **argv)
 
     /* NOTREACHED */
     return 0;
+}
+
+/* connect the session main to the host of #host, running #init */
+void connect_default(void)
+{
+    tcp_open("main", (*initstr != '\0' ? initstr : NULL), hostinfo.name,
+             hostinfo.port, &hostinfo.tlsopt, hostinfo.utf8);
 }
 
 /*
