@@ -3,6 +3,10 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	Completion and Unicode input:
 	* Tab completes file names that have spaces in them.
 
+	Commands, attributes and messages:
+	* `#option save', on by default, saves the definition file on
+	  exit; `#option -save' leaves it as it is.
+
 	Platforms and building:
 	* Windows using Cygwin is supported, along with WSL2.  Cygwin
 	  builds powwow without #module.

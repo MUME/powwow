@@ -124,6 +124,7 @@ bool opt_keyecho = true;        /* true if binds must be echoed */
 bool opt_info = true;           /* false if internal messages are suppressed */
 bool opt_exit = false;          /* true to autoquit when closing last conn. */
 bool opt_history = false;       /* true if to save also history */
+bool opt_save = true;           /* true to save the definition file on exit */
 bool opt_words = false;         /* true if to save also word completion list */
 bool opt_compact = false;       /* true if to clear prompt between remote
                                  * messages */

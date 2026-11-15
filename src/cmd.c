@@ -2935,6 +2935,8 @@ static const struct {
       .doc = "print command bound to key when executed" },
     { .name = "reprint", .option = &opt_reprint,
       .doc = "reprint sent commands when getting new prompt" },
+    { .name = "save", .option = &opt_save,
+      .doc = "save the definition file when powwow exits" },
     { .name = "sendsize", .option = &opt_sendsize,
       .doc = "send terminal size when opening connection" },
     { .name = "speedwalk", .option = &opt_speedwalk,

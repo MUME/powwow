@@ -2314,14 +2314,17 @@ void exit_powwow(void)
         fclose(recordfile);
     if (moviefile != NULL)
         fclose(moviefile);
-    /* the other powwow that had the definition file may have quit since */
-    if (deffile_busy)
-        lock_deffile();
-    if (deffile_busy)
-        wrap_printf("#definition file not saved: it is in use by another "
-                    "powwow");
-    else
-        save_settings();
+    if (opt_save) {
+        /* the other powwow that had the definition file may have quit
+         * since */
+        if (deffile_busy)
+            lock_deffile();
+        if (deffile_busy)
+            wrap_printf("#definition file not saved: it is in use by another "
+                        "powwow");
+        else
+            save_settings();
+    }
     tty_quit();
     exit(0);
 }

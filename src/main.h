@@ -115,6 +115,7 @@ extern bool windows_mode;      /* --windows: see main.c */
 
 extern bool opt_exit;
 extern bool opt_history;
+extern bool opt_save;
 extern bool opt_words;
 extern bool opt_compact;
 extern bool opt_debug;

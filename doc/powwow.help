@@ -21,7 +21,8 @@ value. Examples:
 #alias ws={wake;stand}                  (note that you must use braces)
 
 Aliases are saved automatically if you started powwow with a file name as
-argument. Aliases are not expanded in verbatim mode.
+argument, unless ‘#option save’ is off. Aliases are not expanded in
+verbatim mode.
 @action
 #action [[<|=|>|%][+|-]<label>] [{<pattern>|(<expr>)}=[<command>]]
 
@@ -900,7 +901,8 @@ Do nothing. It exists so that ‘#qui’ is not an abbreviation of ‘#quit’.
 #quit
 
 Exit from powwow. It brutally closes all connections that are still open,
-without renting your characters.
+without renting your characters. It saves the definition file first,
+unless ‘#option save’ is off.
 @quote
 #quote [on|off]
 
