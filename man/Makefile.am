@@ -1,6 +1,7 @@
 man_MANS = powwow.6
 
 CLEANFILES = powwow.6
+MAINTAINERCLEANFILES = Makefile.in
 
 # check the markup of the man page; override MANDOC to use another
 # mandoc binary
