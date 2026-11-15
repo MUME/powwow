@@ -1576,6 +1576,21 @@ has 'loaded'
 has "#error writing file \"$tmp/defs/sub/\""
 has 'mud.powwow  sub/'
 
+# file names in any case where the file system ignores case, as on macOS
+mkdir -p "$tmp/case"
+echo '#print ("upper" + "case")' > "$tmp/case/Mud.powwow"
+echo '#print ("lower" + "case")' > "$tmp/case/mob.powwow"
+run 'Tab completes file names in any case where the system ignores it' \
+    '' "#load $tmp/case/mu	
+#load $tmp/case/M		$(printf '\025')
+"
+if [ -e "$tmp/case/mud.powwow" ]; then
+    has 'uppercase'
+    has 'mob.powwow  Mud.powwow'
+else
+    lacks 'uppercase'
+fi
+
 run 'Tab completes the arguments of #hilite' '' \
     "#hil	inp	un	Ye	o	cy	
 #hil	me	b		
