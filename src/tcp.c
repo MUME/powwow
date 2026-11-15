@@ -733,6 +733,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                 break;
             case TELOPT_NAWS:
                 sendopt(conn, WILL, *s);
+                conn->naws = true;
                 tcp_write_tty_size(conn);
                 break;
             case TELOPT_CHARSET:
@@ -758,6 +759,8 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                 hidden_mode_changed();
                 tty_special_keys();
             }
+            if (*s == TELOPT_NAWS)
+                conn->naws = false;
             if (*s == TELOPT_CHARSET) {
                 /* only acknowledge if it was enabled; a refusal of our
                  * unsolicited WILL needs no answer */
@@ -1289,6 +1292,7 @@ void tcp_close(const char *id)
     conn->spawn = false;
     conn->ideditor = false;
     conn->ideditor_utf8 = false;
+    conn->naws = false;
     conn->state = TELNET_NORMAL;
     conn->old_state = TELNET_NORMAL;
     conn->mpi_headlen = 0;
@@ -1399,6 +1403,7 @@ void tcp_spawn(const char *id, char *cmd)
     CONN_INDEX(i).spawn = true;
     CONN_INDEX(i).ideditor = false;
     CONN_INDEX(i).ideditor_utf8 = false;
+    CONN_INDEX(i).naws = false;
     CONN_INDEX(i).state = TELNET_NORMAL;
     CONN_INDEX(i).old_state = TELNET_NORMAL;
     CONN_INDEX(i).mpi_headlen = 0;

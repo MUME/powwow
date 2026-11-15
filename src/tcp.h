@@ -72,6 +72,7 @@ typedef struct connsess {
     bool spawn;                 /* a command that #spawn runs, not a MUD */
     bool ideditor;              /* sent #request editor */
     bool ideditor_utf8;         /* and announced UTF-8 support in it */
+    bool naws;                  /* the MUD asked for the window size */
     enum telnet_state state;
     enum telnet_state old_state;
     unsigned char subopt[MAX_SUBOPT]; /* telnet suboption being read */

@@ -289,7 +289,10 @@ void tty_sig_winch_bottomhalf(void)
         if (!wrapglitch)
             --cols_1;
 
-        if (main_connection != NULL)
+        /* only to a MUD that asked for it, as telnet requires, or
+         * wants it anyway with #option sendsize */
+        if (main_connection != NULL
+            && (main_connection->naws || opt_sendsize))
             tcp_write_tty_size(main_connection);
         line0 += lines - olines;
 

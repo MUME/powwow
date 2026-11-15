@@ -1991,6 +1991,69 @@ EOF
     printf 'hunter22\n' > "$tmp/expected"
     cmp -s "$tmp/line" "$tmp/expected" \
         || fail "unexpected line: $(od -c "$tmp/got")"
+
+    # powwow in a terminal of 80x24, connected to a MUD that asks for the
+    # window size with DO NAWS if $3 is "ask"; the terminal then becomes
+    # 100x30, and $2 gets what the MUD received
+    cat > "$tmp/naws.py" <<'EOF'
+import fcntl, os, pty, signal, socket, struct, sys, termios, threading, time
+powwow, out, ask = sys.argv[1], sys.argv[2], sys.argv[3] == 'ask'
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+got = bytearray()
+def mud():
+    c, _ = s.accept()
+    if ask:
+        c.sendall(b'\xff\xfd\x1f')
+    c.sendall(b'Welcome\r\n')
+    while True:
+        data = c.recv(1024)
+        if not data:
+            break
+        got.extend(data)
+threading.Thread(target=mud, daemon=True).start()
+pid, fd = pty.fork()
+if pid == 0:
+    os.environ['TERM'] = 'xterm'
+    os.execv(powwow, [powwow])
+def size(rows, cols):
+    fcntl.ioctl(fd, termios.TIOCSWINSZ,
+                struct.pack('HHHH', rows, cols, 0, 0))
+def drain():
+    # read what powwow prints, so that it does not block
+    try:
+        while os.read(fd, 4096):
+            pass
+    except OSError:
+        pass
+threading.Thread(target=drain, daemon=True).start()
+size(24, 80)
+time.sleep(0.5)
+os.write(fd, b'#connect m --no-tls 127.0.0.1 %d\n' % s.getsockname()[1])
+time.sleep(1)
+size(30, 100)
+os.kill(pid, signal.SIGWINCH)
+time.sleep(1)
+os.write(fd, b'#quit\n')
+os.waitpid(pid, 0)
+time.sleep(0.3)
+with open(out, 'wb') as f:
+    f.write(got)
+EOF
+    # the window size, of $1 columns and $2 rows in octal, as NAWS sends it
+    naws_size() {
+        printf '\377\372\037\000\'"$1"'\000\'"$2"'\377\360'
+    }
+    name='a resize sends no window size to a MUD that did not ask for it'
+    python3 -I "$tmp/naws.py" "$POWWOW" "$tmp/got" no
+    [ -s "$tmp/got" ] && fail "unexpected bytes: $(od -c "$tmp/got")"
+    name='a MUD that asks for the window size gets it, also after a resize'
+    python3 -I "$tmp/naws.py" "$POWWOW" "$tmp/got" ask
+    { printf '\377\373\037'; naws_size 120 030; naws_size 144 036; } \
+        > "$tmp/expected"
+    cmp -s "$tmp/got" "$tmp/expected" \
+        || fail "unexpected bytes: $(od -c "$tmp/got")"
 fi
 
 # a spawned command is a connection that uses the telnet protocol too:
