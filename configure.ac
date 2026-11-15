@@ -99,7 +99,7 @@ for warning in ${powwow_warnings}; do
     AS_IF([${CC} ${CFLAGS} -Werror -W${probe} -c conftest-warn.c \
                -o conftest-warn.o >/dev/null 2>&1],
         [AC_MSG_RESULT([yes])
-         WARN_CFLAGS="${WARN_CFLAGS} -W${warning}"],
+         WARN_CFLAGS="${WARN_CFLAGS:+${WARN_CFLAGS} }-W${warning}"],
         [AC_MSG_RESULT([no])])
 done
 rm -f conftest-warn.c conftest-warn.o
