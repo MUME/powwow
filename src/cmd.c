@@ -2933,6 +2933,23 @@ static bool command_option(const char *word, int len, const char *rest)
     return true;
 }
 
+/*
+ * print the option 'opt', as #option list does, with its description
+ * 'doc' in a column, also where it wraps; after a command option set to
+ * a command longer than the column, on the next line
+ */
+static void print_option_doc(const char *opt, const char *doc)
+{
+    static const char cont[] = "#                        ";
+    int col = (int)strlen(cont) - 1;
+    if ((int)strlen(opt) <= col) {
+        message_wrap(cont, "%-*s %s", col, opt, doc);
+    } else {
+        message_wrap(cont, "%s", opt);
+        message_wrap(cont, "%s%s", cont, doc);
+    }
+}
+
 static void cmd_option(char *arg)
 {
     arg = skipspace(arg);
@@ -2978,25 +2995,20 @@ static void cmd_option(char *arg)
         }
         if (varp == NULL) {
             if (strncmp("list", p, len) == 0) {
-                /* the descriptions in a column, also where they wrap,
-                 * after a command option set to a longer command */
-                static const char cont[] = "#                        ";
-                int col = (int)strlen(cont) - 1;
                 char opt[BUFSIZE];
                 tty_message("#list of options:\n");
                 for (i = 0; options[i].name != NULL; ++i) {
                     assert(options[i].option != NULL);
                     snprintf(opt, sizeof opt, "#option %c%s",
                              *options[i].option ? '+' : '-', options[i].name);
-                    message_wrap(cont, "%-*s %s", col, opt, options[i].doc);
+                    print_option_doc(opt, options[i].doc);
                 }
                 for (i = 0; command_options[i].name != NULL; ++i) {
                     const char *value = *command_options[i].value;
                     snprintf(opt, sizeof opt, "#option %s=%s",
                              command_options[i].name,
                              value != NULL ? value : "");
-                    message_wrap(cont, "%-*s %s", col, opt,
-                                 command_options[i].doc);
+                    print_option_doc(opt, command_options[i].doc);
                 }
             } else {
                 tty_message("#syntax: #option [[+|-|=]<option>|list]..."
