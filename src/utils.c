@@ -46,7 +46,7 @@ enum {
     UTF8_SAVEFILEVER = 8,       /* version when files became UTF-8 */
 };
 
-static bool can_suspend = false; /* true if shell has job control */
+static bool can_suspend = false; /* true if a shell can resume us */
 
 /*
  * restore the terminal, print that memory ran out and terminate, without
@@ -1304,7 +1304,8 @@ void suspend_powwow(int signum)
         tty_start();
         tty_sig_winch_bottomhalf();  /* in case size changed meanwhile */
     } else {
-        tty_puts("\n#I don't think your shell has job control.\n");
+        tty_puts("\n#cannot suspend: powwow was not started by a shell"
+                 " with job control.\n");
     }
     status(1);
 }
@@ -1360,7 +1361,10 @@ void signal_start(void)
             fcntl(sig_wake_fds[i], F_SETFD, FD_CLOEXEC);
         }
     }
-    if (sig_permanent(SIGTSTP, SIG_IGN) == SIG_DFL) {
+    /* only a shell with job control can resume us: it puts us in a
+     * process group of our own, apart from the session leader's one */
+    if (sig_permanent(SIGTSTP, SIG_IGN) == SIG_DFL
+        && getpgrp() != getsid(0)) {
         sig_permanent(SIGTSTP, suspend_powwow);
         can_suspend = true;
     }
