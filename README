@@ -127,7 +127,8 @@ WINDOWS INSTALLER
 	copyright show it.  cygwin/update-licenses.sh downloads the source
 	packages to cygwin-sources in the build directory, and keeps the
 	licenses in cygwin-licenses there.  make update-cygwin-licenses
-	updates them all.
+	updates them all.  make clean removes powwow-win and the installer,
+	and make maintainer-clean also these two directories.
 
 	The shortcuts run cygwin/powwow-start, which runs powwow with
 	--windows: file names are written as on Windows, such as
