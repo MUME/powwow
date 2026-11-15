@@ -1508,14 +1508,14 @@ grep -q 'help-env /' "$tmp/out" || fail 'expected $POWWOWHELPPAGER'
 grep -q 'help-pager /' "$tmp/out" || fail 'expected the help pager'
 grep -Eq '(^|>)pager /' "$tmp/out" && fail 'expected no pager'
 
-run '#option list aligns the descriptions, also where they wrap' \
+run '#option list aligns the descriptions, also after a long command' \
     '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst
 #option list'
 has '#option +autoclear       clear input line before executing commands'
 has '#option help-pager=      show #help with this, not $POWWOWHELPPAGER'
 has '#option pager=           show texts, such as #help, with this, not $POWWOWPAGER'
-has '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst edit'
-has '#                        texts of the MUD with this, not $POWWOWEDITOR'
+has '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst'
+has '#                        edit texts of the MUD with this, not $POWWOWEDITOR'
 grep -Fxq '#hilite input red' "$tmp/cfg" || fail "#hilite input not saved"
 grep -Fxq '#hilite messages bold' "$tmp/cfg" || fail "#hilite messages not saved"
 
