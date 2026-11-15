@@ -115,6 +115,18 @@ committed, understand it, and take responsibility for it as its author.
 - **Headers:** declare everything that a `.c` file exports in its `.h` file,
   and use a symbol of another file by including its `.h` file, not by a local
   `extern` declaration.
+- **Include order:** sort the system headers, those included with `<...>`:
+  first the ones in a subdirectory, by subdirectory, then the ones without
+  one, each group by name. Sort each `#if` block of includes on its own.
+
+  ```c
+  #include <arpa/inet.h>
+  #include <gnutls/gnutls.h>
+  #include <sys/socket.h>
+  #include <sys/types.h>
+  #include <errno.h>
+  #include <stdio.h>
+  ```
 - **Linkage:** make everything `static` that can be, but first make sure that
   no plugin (see `#module`) needs it.
 
