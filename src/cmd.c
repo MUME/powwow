@@ -66,7 +66,7 @@ static void F(help), F(action), F(add),
   F(net), F(nice), F(option),
   F(prefix), F(print), F(prompt), F(put),
   F(qui), F(quit), F(quote),
-  F(rawsend), F(rawprint), F(rebind), F(rebindall), F(rebindALL),
+  F(rawsend), F(rawprint), F(rebind), F(rebindall),
   F(record), F(request), F(reset), F(retrace),
   F(save), F(secret), F(send), F(setvar), F(snoop), F(spawn), F(stop),
   F(substitute), F(time), F(var), F(ver), F(while), F(write),
@@ -215,9 +215,7 @@ static cmdstruct default_commands[] =
     C("rebind",     cmd_rebind,
       "<key> [<sequence>]\tchange sequence of a key binding"),
     C("rebindall",  cmd_rebindall,
-      "\trebind all key bindings"),
-    C("rebindALL",  cmd_rebindALL,
-      "\trebind ALL key bindings, even trivial ones"),
+      "[--every]\trebind most key bindings, or every one"),
     C("record",     cmd_record,
       "[<filename>]\tbegin/end of record to file"),
     C("request",    cmd_request,
@@ -1434,28 +1432,24 @@ static void cmd_rebind(char *arg)
 
 static void cmd_rebindall(char *arg)
 {
+    arg = strip_end(skipspace(arg));
+    bool every = strcmp(arg, "--every") == 0;
+    if (*arg != '\0' && !every) {
+        message_printf("#syntax: #rebindall [--every]\n");
+        return;
+    }
     for (keynode *kp = keydefs; kp != NULL; kp = kp->next) {
-        char *seq = kp->sequence;
-        /* control keys, and keys that follow one, such as C-x 8 Ret */
-        if (seq[0] >= 0 && seq[0] < ' ' && seq[0] != ASCII_ESC)
-            ;
-        else if (kp->seqlen == 2 && seq[0] == ASCII_ESC
-                 && isalnum((unsigned char)seq[1]))
-            ;
-        else {
+        const char *seq = kp->sequence;
+        /* control keys, keys that follow one, such as C-x 8 Ret, and M-
+         * with a letter or digit */
+        bool trivial = ((seq[0] >= 0 && seq[0] < ' ' && seq[0] != ASCII_ESC)
+                        || (kp->seqlen == 2 && seq[0] == ASCII_ESC
+                            && isalnum((unsigned char)seq[1])));
+        if (every || !trivial) {
             parse_rebind(kp->name);
             if (error != NO_ERROR)
                 break;
         }
-    }
-}
-
-static void cmd_rebindALL(char *arg)
-{
-    for (keynode *kp = keydefs; kp != NULL; kp = kp->next) {
-        parse_rebind(kp->name);
-        if (error != NO_ERROR)
-            break;
     }
 }
 

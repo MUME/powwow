@@ -1077,6 +1077,20 @@ run --bind 'rebind rejects an empty key sequence' \
 "
 has '#rebind: empty key sequence.'
 
+run '#rebindall rejects arguments other than --every' '#rebindall --all'
+has '#syntax: #rebindall [--every]'
+
+# the line completed is printed, not run: the keys typed after a running
+# #rebindall would be read as the keys to rebind
+run 'Tab completes #rebindall --every' '' \
+    "#rebindall --e	$(printf '\001')#print 
+"
+grep -q '^#rebindall --every *$' "$tmp/out" || fail 'expected --every'
+
+run --eof '#rebindall --every asks for every key' '#rebindall --every'
+grep -Fq '#please press the key "C-x-8-Ret"' "$tmp/out" \
+    || fail 'expected C-x-8-Ret'
+
 run --eof '#rebindall skips the keys typed after a control key' '#rebindall'
 grep -Fq '#please press the key "C-x-8-Ret"' "$tmp/out" \
     && fail 'expected no C-x-8-Ret'
@@ -1535,7 +1549,7 @@ has 'C-x-8-e-e  C-x-8-e-s'
 run 'Tab lists the commands right after completing part of the name' '' \
     "#rebi		$(printf '\025')
 "
-grep -aq '#rebind  *#rebindALL  *#rebindall' "$tmp/out" || fail "expected the list"
+grep -aq '#rebind  *#rebindall' "$tmp/out" || fail "expected the list"
 
 run 'Tab completes #connect main, the address of #host and its port' \
     '#host 127.0.0.1 1 --no-tls' "#connect m	12	--no		
