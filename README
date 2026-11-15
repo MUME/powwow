@@ -67,9 +67,9 @@ COMPILING
 	settings or flags.  Run from the build directory, as src/powwow, it
 	uses the documentation in the source tree.
 
-	If you require changes to the build process, please report the problems
-	(and hopefully solution) at https://github.com/MUME/powwow.  Also please
-	include your system information (uname -a, etc)
+	If you require changes to the build process, please report the
+	problems (and hopefully solution) at https://github.com/MUME/powwow.
+	Also please include your system information (uname -a, etc)
 
 	There are also some other options that may be turned on or off or
 	forced using configure.	 Try "configure --help" to see the full
