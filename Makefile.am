@@ -39,8 +39,17 @@ tidy:
 windows-bundle: all
 	+$(srcdir)/cygwin/bundle.sh powwow-win
 
+# a -dev version is named after the commit it is built from, as #ver
+# shows it, such as 1.3.2-dev-ebae0231
 windows-installer: windows-bundle
-	$(srcdir)/cygwin/installer.sh powwow-win $(VERSION)
+	@version='$(VERSION)'; \
+	commit=`sed -n 's/^#define GIT_COMMIT "\(.*\)"$$/\1/p' \
+	        src/gitversion.h`; \
+	case $$version in \
+	    *-dev) test -z "$$commit" || version=$$version-$$commit ;; \
+	esac; \
+	echo "$(srcdir)/cygwin/installer.sh powwow-win $$version"; \
+	$(srcdir)/cygwin/installer.sh powwow-win "$$version"
 
 # download the Cygwin source packages of the bundle again, and update
 # their license files in cygwin-licenses
