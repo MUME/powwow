@@ -1436,7 +1436,8 @@ static void cmd_rebindall(char *arg)
 {
     for (keynode *kp = keydefs; kp != NULL; kp = kp->next) {
         char *seq = kp->sequence;
-        if (kp->seqlen == 1 && seq[0] < ' ')
+        /* control keys, and keys that follow one, such as C-x 8 Ret */
+        if (seq[0] >= 0 && seq[0] < ' ' && seq[0] != ASCII_ESC)
             ;
         else if (kp->seqlen == 2 && seq[0] == ASCII_ESC
                  && isalnum((unsigned char)seq[1]))
