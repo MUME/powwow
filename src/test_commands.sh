@@ -294,6 +294,11 @@ run '#save saves #option editor as typed' "#file =$tmp/options.pw
 grep -Fxq '#option editor=my ed\;it -x' "$tmp/options.pw" \
     || fail "expected #option editor in the file"
 
+run '#load does not report the #option editor it sets' "#load $tmp/options.pw
+#option"
+lacks '#option editor is now: my ed\;it -x'
+has '#option editor=my ed\;it -x'
+
 run '#setvar buffer rejects sizes too large for powwow' \
     '#setvar buffer=4294968296
 #setvar'
