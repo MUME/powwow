@@ -1397,6 +1397,11 @@ run '#reset rejects unknown lists' '#bind foo ^[[20~=bar
 has '#no such key: "foo"'
 has '#reset: unknown list "nosuch", must specify one of:'
 
+run '#key and #keyedit without an argument show their syntax' '#key
+#keyedit'
+has '#syntax: #key <name>'
+has '#syntax: #keyedit <function>'
+
 run '#bind functions lists all editing functions' '#bind functions'
 has '#moving:'
 has '#killing and yanking:'

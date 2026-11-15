@@ -1302,8 +1302,10 @@ static void cmd_isprompt(char *arg)
 static void cmd_key(char *arg)
 {
     arg = strip_end(skipspace(arg));
-    if (*arg == '\0')
+    if (*arg == '\0') {
+        message_printf("#syntax: #key <name>\n");
         return;
+    }
 
     keynode *q = *lookup_key(arg);
     if (q != NULL)
@@ -1316,8 +1318,10 @@ static void cmd_key(char *arg)
 static void cmd_keyedit(char *arg)
 {
     arg = skipspace(arg);
-    if (*arg == '\0')
+    if (*arg == '\0') {
+        message_printf("#syntax: #keyedit <function>\n");
         return;
+    }
 
     char *param;
     int function = lookup_edit_name(arg, &param);
