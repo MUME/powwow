@@ -260,6 +260,15 @@ bool tls_upgrade(struct connsess *conn, const struct tls_options *tlsopt)
 
 static const char f_tls[] = "--tls";
 
+/* the options of --tls=, which the completion of the command line lists */
+#ifdef USE_TLS
+static const char f_no_verify[] = "no-verify";
+static const char f_host[] = "host=";
+const char *const tls_option_names[] = { f_no_verify, f_host, NULL };
+#else
+const char *const tls_option_names[] = { NULL };
+#endif
+
 #define TLSOPT_SEP ':'          /* update documentation if this changes */
 
 /* returns false if invalid options;
@@ -281,9 +290,6 @@ bool parse_tls_flag(struct tls_options *dst, const char **argp,
 #ifdef USE_TLS
 
     while (*arg != '\0') {
-        static const char f_no_verify[] = "no-verify";
-        static const char f_host[] = "host=";
-
         if (strncmp(f_no_verify, arg, sizeof f_no_verify - 1) == 0) {
             arg += sizeof f_no_verify - 1;
             dst->no_verify_ca = true;

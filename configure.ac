@@ -241,6 +241,22 @@ AC_ARG_WITH([plugindir],
 
 AC_SUBST(plugindir)
 
+# the completion of bash, which make install writes with the powwow just
+# built, so not when cross-compiling; bash-completion finds it in
+# DATADIR/bash-completion/completions, as in /usr/local/share
+AC_ARG_WITH([bash-completion-dir],
+    AS_HELP_STRING([--with-bash-completion-dir=DIR],
+        [install the completion of bash in DIR, or not with no;
+         default=DATADIR/bash-completion/completions]),
+    [bashcompletiondir="${withval}"],
+    [bashcompletiondir="\${datadir}/bash-completion/completions"])
+AS_IF([test "x${bashcompletiondir}" = xyes],
+    [bashcompletiondir="\${datadir}/bash-completion/completions"])
+AC_SUBST(bashcompletiondir)
+AM_CONDITIONAL([BASH_COMPLETION],
+    [test "x${bashcompletiondir}" != xno \
+     && test "x${cross_compiling}" != xyes])
+
 AC_CONFIG_FILES([Makefile src/Makefile doc/powwow.md doc/Makefile
     man/powwow.6 man/Makefile])
 AC_OUTPUT

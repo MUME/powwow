@@ -53,6 +53,7 @@
 #include "beam.h"
 #include "cmd.h"
 #include "cmd2.h"
+#include "completion.h"
 #include "edit.h"
 #include "eval.h"
 #include "gitversion.h"
@@ -269,6 +270,10 @@ static void show_help(const char *prog)
 #define LAT1_ARG "--latin1, -l       "
 #define VER_ARG  "--version, -v      "
 #define VER_DESC "display the powwow version (twice: with details)"
+#define COMPL_HELP                                                      \
+    "  --completion SHELL     print the completion of the arguments of" \
+    " powwow\n"                                                         \
+    "                         in SHELL, bash or zsh, and exit\n"
 #else
 #define HELP_ARG "-h                 "
 #define TLS_ARG  "-t, -T TLS-OPTIONS "
@@ -277,6 +282,7 @@ static void show_help(const char *prog)
 #define LAT1_ARG "-l                 "
 #define VER_ARG  "-v                 "
 #define VER_DESC "display the powwow version (-vv: with details)"
+#define COMPL_HELP ""
 #endif
 
 #ifdef USE_TLS
@@ -299,7 +305,8 @@ static void show_help(const char *prog)
            "  " UTF8_ARG "    assume and prefer UTF-8 on the connection"
            " (default)\n"
            "  " LAT1_ARG "    assume and prefer ISO-8859-1 on the connection\n"
-           "  " VER_ARG  "    " VER_DESC "\n",
+           "  " VER_ARG  "    " VER_DESC "\n"
+           COMPL_HELP,
            prog);
 #undef HELP_ARG
 #undef TLS_ARG
@@ -308,6 +315,7 @@ static void show_help(const char *prog)
 #undef LAT1_ARG
 #undef VER_ARG
 #undef VER_DESC
+#undef COMPL_HELP
 #undef TLS_DESC
 }
 
@@ -387,22 +395,52 @@ static bool in_build_dir(const char *argv0)
     return same;
 }
 
+/* the options that have no letter */
+enum { OPT_COMPLETION = 256 };
+
+#ifdef HAVE_GETOPT_LONG
+/* the long options, which --completion also lists */
+static const struct option longopts[] = {
+    { "completion", required_argument, NULL, OPT_COMPLETION },
+    { "help",       no_argument,       NULL, 'h' },
+    { "tls",        optional_argument, NULL, 't' },
+    { "no-tls",     no_argument,       NULL, 'n' },
+    { "latin1",     no_argument,       NULL, 'l' },
+    { "utf8",       no_argument,       NULL, 'u' },
+    { "version",    no_argument,       NULL, 'v' },
+    { NULL }
+};
+
+/*
+ * print the script of --completion for 'shell', with the long options,
+ * and those with an optional argument also with =; return false if there
+ * is none for 'shell'
+ */
+static bool print_completion_of(const char *shell)
+{
+    const char *options[2 * sizeof longopts / sizeof *longopts];
+    char names[2 * sizeof longopts / sizeof *longopts][32];
+    size_t count = 0;
+    for (const struct option *o = longopts; o->name != NULL; ++o) {
+        snprintf(names[count], sizeof names[count], "--%s", o->name);
+        options[count] = names[count];
+        ++count;
+        if (o->has_arg == optional_argument) {
+            snprintf(names[count], sizeof names[count], "--%s=", o->name);
+            options[count] = names[count];
+            ++count;
+        }
+    }
+    options[count] = NULL;
+    return print_completion(shell, options);
+}
+#endif
+
 int main(int argc, char **argv)
 {
     if (setlocale(LC_ALL, "") == NULL)
         fprintf(stderr, "Failed setlocale(LC_ALL, \"\")\n");
 
-#ifdef HAVE_GETOPT_LONG
-    static const struct option longopts[] = {
-        { "help",    no_argument,       NULL, 'h' },
-        { "tls",     optional_argument, NULL, 't' },
-        { "no-tls",  no_argument,       NULL, 'n' },
-        { "latin1",  no_argument,       NULL, 'l' },
-        { "utf8",    no_argument,       NULL, 'u' },
-        { "version", no_argument,       NULL, 'v' },
-        { NULL }
-    };
-#endif
     int cmdline_utf8 = -1;      /* --utf8: 1, --latin1: 0 */
     struct tls_options cmdline_tlsopt = { .use_tls = false };
     bool cmdline_tls = false;   /* --tls or --no-tls given */
@@ -448,6 +486,15 @@ int main(int argc, char **argv)
         case 'v':
             ++nversion;
             break;
+#ifdef HAVE_GETOPT_LONG
+        case OPT_COMPLETION:
+            if (!print_completion_of(optarg)) {
+                fprintf(stderr, "%s: no completion for %s; only for bash"
+                        " and zsh\n", argv[0], optarg);
+                exit(EXIT_FAILURE);
+            }
+            exit(EXIT_SUCCESS);
+#endif
         default:
             abort();
         }

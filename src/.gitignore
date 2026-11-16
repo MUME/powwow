@@ -11,3 +11,5 @@
 *.log
 *.trs
 /gitversion.h
+# the completion of bash, which make install installs
+/completion/
