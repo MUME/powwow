@@ -5,16 +5,16 @@ Aliases are abbreviations for longer, frequently used commands.
 As all powwow commands, they are only recognized at the beginning
 of a line or directly after a semicolon, an open or a closed brace.
 When an alias is used, the first word following the alias name
-is placed in the variable $1, the second in $2, etc... up to $9.
-also, the whole string following alias name is placed in $0.
+is placed in the variable ‘$1’, the second in ‘$2’, etc... up to ‘$9’.
+also, the whole string following alias name is placed in ‘$0’.
 
-Then, before executing <command>, every $n in <command> is replaced by its
+Then, before executing <command>, every ‘$n’ in <command> is replaced by its
 value. Examples:
 
-#alias summ=cast 'summon' $0            (then "summ thor" is replaced by
-                                         "cast 'summon' thor")
-#alias cs=cast '$1' $2                  ("cs summon thor" is expanded to
-                                         "cast 'summon' thor")
+#alias summ=cast 'summon' $0            (then ‘summ thor’ is replaced by
+                                         ‘cast 'summon' thor’)
+#alias cs=cast '$1' $2                  (‘cs summon thor’ is expanded to
+                                         ‘cast 'summon' thor’)
 #alias summ                             (lets you edit the definition of summ)
 #alias summ=                            (removes the alias summ)
 #alias                                  (displays all defined aliases)
@@ -25,17 +25,18 @@ argument. Aliases are not expanded in verbatim mode.
 @action
 #action [[<|=|>|%][+|-]<label>] [{<pattern>|(<expr>)}=[<command>]]
 
-When 'pattern' is found in a line from the remote host, the 'command' is
-automatically executed. If the pattern contains $n, powwow matches one word
-of the remote line and puts it in the variable $n. Instead, if pattern contains
-&n, powwow places the shortest possible text (can be more than one word, less,
-or even one word) in the corresponding $n (NOT in &n).
+When <pattern> is found in a line from the remote host, the <command> is
+automatically executed. If the pattern contains ‘$n’, powwow matches one
+word of the remote line and puts it in the variable ‘$n’. Instead, if
+pattern contains ‘&n’, powwow places the shortest possible text (can be
+more than one word, less, or even one word) in the corresponding ‘$n’ (NOT
+in ‘&n’).
 
-As in #alias, before executing <command>, every $n in <command> is replaced
-by its value. If the first character of the pattern is ^ (caret), the match
-will only be possible at the beginning of a line.
-If 'label' is specified, the action is labeled; otherwise it is numbered.
-The match is case-sensitive. Examples:
+As in ‘#alias’, before executing <command>, every ‘$n’ in <command> is
+replaced by its value. If the first character of the pattern is ‘^’ (caret),
+the match will only be possible at the beginning of a line. If <label> is
+specified, the action is labeled; otherwise it is numbered. The match is
+case-sensitive. Examples:
 
 #action >fount ^There is a fountain here={#print;drink water}
 #action -fount                                  (turns off action)
@@ -43,25 +44,25 @@ The match is case-sensitive. Examples:
 #action =fount                                  (lets you edit it)
 #action <fount                                  (removes action)
 
-If you use % instead of >, you define an action that uses an Extended POSIX
+If you use ‘%’ instead of ‘>’, you define an action that uses an Extended POSIX
 regexp to match instead of the standard matcher.
 
 #action %first ^([[:alpha:]]+) ([[:digit:]]+)=#print $2 counted $3.
                                                 (matches abc 123)
 
-Note that if the pattern starts with '(', it is evaluated, which means that
-a regexp that starts with '(' has to be surrounded by  ("...")
+Note that if the pattern starts with ‘(’, it is evaluated, which means that
+a regexp that starts with ‘(’ has to be surrounded by ‘("...")’.
 
 #action %second ("(..+)-\\1")=#print Double $1
                                                 (matches xyz-xyz)
-For regexp actions, $0 = the line, $1 = the whole match and $2... contain the
-submatches.
+For regexp actions, ‘$0’ = the line, ‘$1’ = the whole match and ‘$2’...
+contain the submatches.
 @bind
 #bind [edit|functions|<key> [<sequence>][=[<command>]]]
 
 You can bind most function keys and control keys to enter a command for you
 when the key is pressed. You cannot (yet) redefine a key already used for an
-editing function (such as the arrow keys). 'key' is the name of the key you
+editing function (such as the arrow keys). <key> is the name of the key you
 want to define; When defining a new key, you will be asked to press it so
 powwow can record the control sequence your terminal sends. Examples:
 
@@ -77,14 +78,14 @@ By default, the vt100 numeric keypad is partially used to walk around
 @key
 #key <name>
 
-If 'name' is the name of one of the key defined with #bind, #key executes the
-corresponding command. Example:
+If <name> is the name of one of the key defined with ‘#bind’, ‘#key’
+executes the corresponding command. Example:
 
 #bind f1=flee           (binds the f1 key to the 'flee' command)
 At any time, then, you can either:
-- Press your f1 key on you keyboard
-- Execute the command '#key f1'
-and powwow will execute the command 'flee' for you.
+- Press your ‘f1’ key on you keyboard
+- Execute the command ‘#key f1’
+and powwow will execute the command ‘flee’ for you.
 @reset
 #reset {all|<list-name>|bind [<key>]}
 
@@ -106,11 +107,11 @@ var             clear all variables
 #mark [<pattern>[=[<attribute>]]]
 
 Highlight text in your output, if your terminal supports it.
-In the text, $ matches a single word and & matches any string, and
-a leading ^ matches only at the beginning of a line.
+In the text, ‘$’ matches a single word and ‘&’ matches any string, and
+a leading ‘^’ matches only at the beginning of a line.
 
 An attribute is zero or more styles, then a foreground color, then
-"on" and a background color. Each part is optional.
+‘on’ and a background color. Each part is optional.
 
 Styles:   bold, dim, italic, underline, blink, inverse, hidden,
           strike, overline
@@ -133,11 +134,11 @@ Examples:
 #substitute [<pattern>[=[<text>]]]
 
 This command replaces a text in your output with some other text. It only
-changes what you see: actions and the like still work on the original text.
-It is applied before #mark. Wildcards are allowed as in #mark ($ for a single
-word, & for any string), and ^ matches only at the beginning of a line.
-The characters ; { } ( ) " = in the new text must be escaped with a backslash.
-Examples:
+changes what you see: actions and the like still work on the original
+text. It is applied before ‘#mark’. Wildcards are allowed as in ‘#mark’
+(‘$’ for a single word, ‘&’ for any string), and ‘^’ matches only at the
+beginning of a line. The characters ‘;’ ‘{’ ‘}’ ‘(’ ‘)’ ‘"’ ‘=’ in the new
+text must be escaped with a backslash. Examples:
 
 #substitute orc=goblin                  (show orc as goblin)
 #substitute orc                         (lets you edit the above definition)
@@ -162,41 +163,41 @@ The commands added and their syntax varies depending on the module.
 @history
 #history [{<number>|(<expr>)}]
 
-#history alone shows you the last commands in history, up to the number
+‘#history’ alone shows you the last commands in history, up to the number
 of lines in your screen.
-#history -n shows the last n commands in history, and
-#history n  executes the n-th command of the history.
+‘#history -n’ shows the last n commands in history, and
+‘#history n’ executes the n-th command of the history.
 
-#history commands are not placed in history.
+‘#history’ commands are not placed in history.
 @hilite
 #hilite [input|messages] [<attribute>]
 
 This sets the attribute of your entered text, or with messages, of the
 messages of powwow, such as those starting with #, and the labels it shows
-in the input line, such as that of C-r, to the given attribute.
+in the input line, such as that of ‘C-r’, to the given attribute.
 Without an attribute, it turns it off. Both are saved in the definition
-file; a #hilite in #init changes them when connecting.
+file; a ‘#hilite’ in ‘#init’ changes them when connecting.
 
-See "#help mark" for the syntax of attributes.
+See ‘#help mark’ for the syntax of attributes.
 @host
 #host [<host> <port> [--tls[=<options>]|--no-tls] [--utf8|--latin1]]
 
-Sets the default host that powwow connects to when you use #connect.
+Sets the default host that powwow connects to when you use ‘#connect’.
 
-Without arguments, #host shows the current host and port, if they are
+Without arguments, ‘#host’ shows the current host and port, if they are
 set.
 
 The flags are:
 
   --tls       encrypt the connections with TLS; the default, unless
-              powwow was started with --no-tls
+              powwow was started with ‘--no-tls’
   --no-tls    do not encrypt them
   --utf8      start the connections in UTF-8, and prefer it when
               negotiating the character set; the default, unless powwow
-              was started with --latin1
+              was started with ‘--latin1’
   --latin1    start them in ISO-8859-1, and prefer it over UTF-8
 
-The options of --tls, separated by colons, are:
+The options of ‘--tls’, separated by colons, are:
 
   no-verify    do not verify the CA certificate
   host=<name>  assume the CA certificate host name is <name>
@@ -210,12 +211,12 @@ open connections.
 The number of arguments tells what they are:
 
   #connect
-      connect the session main to the host of #host if no connection is
-      open, and otherwise list the open connections
+      connect the session main to the host of ‘#host’ if no connection
+      is open, and otherwise list the open connections
   #connect <host> <port>
       connect the session main to <host> and <port>
   #connect <session-id>
-      connect the session <session-id> to the host of #host
+      connect the session <session-id> to the host of ‘#host’
   #connect <session-id> <initstr>
       the same, and send <initstr> to the host on connection
   #connect <session-id> <host> <port>
@@ -224,10 +225,10 @@ The number of arguments tells what they are:
       the same, and send <initstr> to the host on connection
 
 Of two arguments, the second is a <port> if it has only digits, and
-otherwise an <initstr>, which is a single word.  If #host has no host
+otherwise an <initstr>, which is a single word.  If ‘#host’ has no host
 yet, the first <host> and <port> connected to become it.
 
-The flags, which can go anywhere, are those of #host; see '#help host'.
+The flags, which can go anywhere, are those of ‘#host’; see ‘#help host’.
 @keys
 Default editing keys:
 
@@ -267,33 +268,36 @@ LF          &enter-line
 Ret         &enter-line
 Tab         &complete-word              M-Tab       &complete-line
 
-not assigned: &clear-line, &insert-string
+not assigned: ‘&clear-line’, ‘&insert-string’
 
-#bind functions lists all the editing functions and their keys.
+‘#bind functions’ lists all the editing functions and their keys.
 
-Tab completes the word being typed from the history, but in a command, it
-completes its name or argument, and lists them when pressed again.
+‘Tab’ completes the word being typed from the history, but in a command,
+it completes its name or argument, and lists them when pressed again.
 
-C-x 8 Ret reads the Unicode name of a character, such as em dash, or its
-code point, such as U+2014, and inserts the character; the name can be
+‘C-x 8 Ret’ reads the Unicode name of a character, such as ‘em dash’, or its
+code point, such as ‘U+2014’, and inserts the character; the name can be
 edited like the input line. Each word typed can be the start of a word of
-the name, as gr sm al for greek small letter alpha. Tab completes the name,
-and lists the names when pressed again.
-In text, \N{em dash} and \u{2014} insert a character the same way.
-C-x 8 e e reads the name of an emoji, such as thumbs up or flag: Sweden, the
-same way; the words of its group, such as food or animal, match too. Before
-the name, its group and subgroup can be typed, each followed by a slash, as
-people & body/person-fantasy/mage, or shorter, as peo/fant/mage; Tab
-completes them.
+the name, as ‘gr sm al’ for ‘greek small letter alpha’. ‘Tab’ completes the
+name, and lists the names when pressed again.
+In text, ‘\N{em dash}’ and ‘\u{2014}’ insert a character the same way.
+‘C-x 8 e e’ reads the name of an emoji, such as ‘thumbs up’ or
+‘flag: Sweden’, the same way; the words of its group, such as ‘food’ or
+‘animal’, match too.
+Before the name, its group and subgroup can be typed, each followed by a
+slash, as ‘people & body/person-fantasy/mage’, or shorter, as
+‘peo/fant/mage’; ‘Tab’ completes them.
 
-C-c, the interrupt key of the terminal, cannot be bound: it stops a command
-that is running, such as a #while loop, and pressed twice it quits powwow.
+‘C-c’, the interrupt key of the terminal, cannot be bound: it stops a
+command that is running, such as a ‘#while’ loop, and pressed twice it
+quits powwow.
 
-M-<key> means press escape and then <key>, or press meta/alt key at the same
-time as <key>. C-<key> means press control at the same time as <key>.
-When a key, such as C-x, starts a longer key sequence, the keys typed so far
-are shown after the input line if the next key does not follow in a second,
-and C-h after them, as C-x C-h, lists the key bindings that start with them.
+‘M-<key>’ means press escape and then <key>, or press meta/alt key at the
+same time as <key>. ‘C-<key>’ means press control at the same time as
+<key>. When a key, such as ‘C-x’, starts a longer key sequence, the keys
+typed so far are shown after the input line if the next key does not
+follow in a second, and ‘C-h’ after them, as ‘C-x C-h’, lists the key
+bindings that start with them.
 If your terminal has arrow keys, they are set for default to move cursor and to
 step around history.
 @wrap
@@ -305,52 +309,53 @@ margin to the next line. This option lets you turn it off and on.
 #option [+-=]compact
 
 Normally, powwow does not touch the prompts on screen while you play.
-In `compact' mode, instead, lines containing only a prompt are deleted when
+In ‘compact’ mode, instead, lines containing only a prompt are deleted when
 further messages arrive from the remote host: only the prompts that a
-#prompt recognizes with #isprompt.
+‘#prompt’ recognizes with ‘#isprompt’.
 @echo
 #option [+-=]echo
 
 Normally, powwow echoes on your screen each command sent to remote
 host but not directly typed (example: aliases and actions sending text
-to the MUD). When `echo' is off, such commands are still sent to host,
+to the MUD). When ‘echo’ is off, such commands are still sent to host,
 but not echoed on screen.
 @info
 #option [+-=]info
 
 Normally, powwow prints on screen some messages each time you
-define/edit/delete an #alias, #action, #bind and similar.
-When `info' is off, those messages are not typed at all.
+define/edit/delete an ‘#alias’, ‘#action’, ‘#bind’ and similar.
+When ‘info’ is off, those messages are not typed at all.
 (But errors are still printed on screen)
 @debug
 #option [+-=]debug
 
 Normally, powwow does not print on screen the command lines it
-executes. When `debug' is on, every line executed by powwow is also
+executes. When ‘debug’ is on, every line executed by powwow is also
 echoed on screen (warning: this prints a lot of lines on your screen)
 @delim
 #delim [normal|program|{custom <chars>}]
 
 By default, when powwow adds words to the word completion buffer,
-it uses only SPACE (' ') and SEMI-COLON (';') as delimeters. You
-can change this behaviour by specifying "program" or "custom" mode.
-The "program" mode uses ' <>!=(),;"'{}[]+-/*%' as separators, which
+it uses only SPACE (‘ ’) and SEMI-COLON (‘;’) as delimeters. You
+can change this behaviour by specifying ‘program’ or ‘custom’ mode.
+The ‘program’ mode uses ‘ <>!=(),;"'{}[]+-/*%’ as separators, which
 is suitable if you are doing some kind of on-line programming.
-You can also make a customized setting with the "custom" mode (space
+You can also make a customized setting with the ‘custom’ mode (space
 is always used as a delimeter).
-This setting also affects alias parameters, $ in patterns, and the word
-operators of the calculator, such as :< and >:.
+This setting also affects alias parameters, ‘$’ in patterns, and the word
+operators of the calculator, such as ‘:<’ and ‘>:’.
 @for
 #for ([<init>];<check>;[<loop>]) <command>
 
-Directly copied from C language, this command evaluates 'init'
+Directly copied from C language, this command evaluates <init>
 (if specified), then repeats the following cycle:
-        1) evaluate 'check', if result is 0 (false) stop repetition
-        2) execute 'command'
-        3) evaluate 'loop' (if specified)
+        1) evaluate <check>, if result is 0 (false) stop repetition
+        2) execute <command>
+        3) evaluate <loop> (if specified)
         4) restart from 1)
 
-As with #while, #for performs the parameter substitution in 'command'. Example:
+As with ‘#while’, ‘#for’ performs the parameter substitution in <command>.
+Example:
 #for (@0=32; @0<=47; @0++) read @0      (read messages 32-47)
 @at
 @in
@@ -369,9 +374,9 @@ A delay of zero deletes the delayed label.
 If you specify only a label, powwow lists it.
 If you specify nothing, all delayed labels are listed.
 
-The #at command is almost the same as #in, but assumes the expression
+The ‘#at’ command is almost the same as ‘#in’, but assumes the expression
 in ( ) is a time.
-For example (114520) means 11:45:20 and ("114520") is the same.
+For example ‘(114520)’ means 11:45:20 and ‘("114520")’ is the same.
 
 After executing a delayed command, powwow does not delete it, but simply
 disables it.
@@ -397,14 +402,14 @@ expression) to the static word completion list. Example:
 #addstatic Tintin Milou     (from now on you can always use Tab to complete
                              these two names)
 
-Note that the static list is not saved when you run #save, and its
+Note that the static list is not saved when you run ‘#save’, and its
 words will never be overwritten as new words are added.
 
-It is best used from your #init command, for example:
+It is best used from your ‘#init’ command, for example:
 
 #init ={#identify;#exe <static-completions}
 
-If the 'static-completions' file contains a number of #addstatic
+If the ‘static-completions’ file contains a number of ‘#addstatic’
 commands, all those words will always be possible to Tab-complete on.
 
 @option
@@ -420,18 +425,19 @@ This command lets you list or change various options of powwow.
      #option -<option>  disable <option>
      #option <option>   toggle <option>
 
-The command options editor, pager, help-pager and shell are the commands
-that edit the texts of the MUD, show texts such as #help, show #help
-only, and run #! and the commands after ! of #var and others; they come
-before $POWWOWEDITOR, $POWWOWPAGER, $POWWOWHELPPAGER and $POWWOWSHELL,
-are saved, and take the rest of the line.  A pager of - is none: #help
-prints its text as other messages, and the texts that the MUD sends to
-view are printed as its other lines.
+The command options ‘editor’, ‘pager’, ‘help-pager’ and ‘shell’ are the
+commands that edit the texts of the MUD, show texts such as ‘#help’, show
+‘#help’ only, and run ‘#!’ and the commands after ‘!’ of ‘#var’ and
+others; they come before ‘$POWWOWEDITOR’, ‘$POWWOWPAGER’,
+‘$POWWOWHELPPAGER’ and ‘$POWWOWSHELL’, are saved, and take the rest of the
+line.  A pager of ‘-’ (a hyphen) is none: ‘#help’ prints its text as other
+messages, and the texts that the MUD sends to view are printed as its
+other lines.
 
      #option editor=&emacsclient  edit in another window
-     #option help-pager=less      show #help with less
+     #option help-pager=less      show ‘#help’ with less
      #option pager=-              print the texts to view
-     #option shell=               clear it: use $POWWOWSHELL, or /bin/sh
+     #option shell=               clear it: use ‘$POWWOWSHELL’, or /bin/sh
 
 @put
 #put {<text>|(<expr>)}
@@ -455,16 +461,16 @@ If a string is specified, powwow simply prints it on screen. If an expression
 is specified, powwow uses the inline calculator to evaluate it, and then
 prints the result.
 
-If a #print without arguments is found, powwow prints the value of the
-variable $0 (this is a special feature of #print, and is not present in #send,
-#exe, #emulate or #var).
+If a ‘#print’ without arguments is found, powwow prints the value of the
+variable ‘$0’ (this is a special feature of ‘#print’, and is not present in
+‘#send’, ‘#exe’, ‘#emulate’ or ‘#var’).
 
-If < precedes the text or expression, #print assumes text (or result of
+If ‘<’ precedes the text or expression, ‘#print’ assumes text (or result of
 expression) to be name of a file, and displays the contents of that file.
 
-Instead if ! precedes the text or expression, #print assumes text (or result of
-expression) to be a Bourne shell command, whose output is displayed.
-Examples:
+Instead if ‘!’ precedes the text or expression, ‘#print’ assumes text (or
+result of expression) to be a Bourne shell command, whose output is
+displayed. Examples:
 
 #action disint ^&1 disintegrates &2=#print $1 DISINTEGRATES $2
 #action disint ^&1 disintegrates &2=#print (\$1+" DISINTEGRATES "+\$2)
@@ -474,8 +480,8 @@ Examples:
 #print <($2)                    (display the contents of file whose name is in
                                  variable $2)
 
-Further feature (supported also by #send, #exe, #emulate and #var):
-If < or ! is specified, and you use an expression after it, you can also
+Further feature (supported also by ‘#send’, ‘#exe’, ‘#emulate’ and ‘#var’):
+If ‘<’ or ‘!’ is specified, and you use an expression after it, you can also
 specify starting and ending line of the file/command output that you want
 to use (the other lines will be ignored), in this way:
 
@@ -483,11 +489,11 @@ to use (the other lines will be ignored), in this way:
 @send
 #send [<|!]{<text>|(<expr>)}
 
-The simplest use of #send is to evaluate an expression and to send
-the result to the MUD. More generally, #send is very similar to #print,
+The simplest use of ‘#send’ is to evaluate an expression and to send
+the result to the MUD. More generally, ‘#send’ is very similar to ‘#print’,
 with the only difference that the final text is sent to the MUD rather
 than displayed on screen.
-The meaning of < and ! is the same, and #send do the expected things
+The meaning of ‘<’ and ‘!’ is the same, and ‘#send’ do the expected things
 when they are used. Examples:
 
 #send <mytext                                   (stuff a text into the mud)
@@ -496,11 +502,11 @@ when they are used. Examples:
 @exe
 #exe [<|!]{<text>|(<expr>)}
 
-Evaluate the expression and get result, then execute result as if typed from
-keyboard. If < or ! is specified, #exe behaves exactly like #print, but
-executes the final text as if typed. Examples:
+Evaluate the expression and get result, then execute result as if typed
+from keyboard. If ‘<’ or ‘!’ is specified, ‘#exe’ behaves exactly like
+‘#print’, but executes the final text as if typed. Examples:
 
-#exe ("sigh")                   (is the same as typing sigh from keyboard)
+#exe ("sigh")                   (is the same as typing ‘sigh’ from keyboard)
 #bind f9=#exe ("#capture emergency" + %(@-7++))
                                 (each time you press f9, a different file
                                  is opened as capture)
@@ -508,9 +514,9 @@ executes the final text as if typed. Examples:
 @emulate
 #emulate [<|!]{<text>|(<expr>)}
 
-Evaluate the expression and get result, then parse result as if received from
-remote host. If < or ! is specified, #emulate behaves exactly like #print,
-but parses the final text as if received from host. Examples:
+Evaluate the expression and get result, then parse result as if received
+from remote host. If ‘<’ or ‘!’ is specified, ‘#emulate’ behaves exactly like
+‘#print’, but parses the final text as if received from host. Examples:
 
 #emulate The assassin is dead! R.I.P.   (powwow reacts in the same way as
                                          if received the text from remote host)
@@ -521,11 +527,11 @@ but parses the final text as if received from host. Examples:
 #var @number = [<|!]{text|(expression)}
 
 Evaluate the expression and get result, then put result in the indicated
-variable. If < or ! is specified, #var behaves exactly like #print, but puts
-the final text in the variable.
-You can also use an expression instead of 'number'. Examples:
+variable. If ‘<’ or ‘!’ is specified, ‘#var’ behaves exactly like ‘#print’,
+but puts the final text in the variable. You can also use an expression
+instead of the number after ‘@’. Examples:
 
-#var @(-1*4) = 27                      (same as #(@(-1*4)=27) )
+#var @(-1*4) = 27                      (same as ‘#(@(-1*4)=27)’)
 #var @1=!echo '5.6+6.48' | bc -l       (use bc calculator and put result in @1)
 #var $test = this is a very very very long text    (you do not need quotes)
 #var $-6 = ("a short text")            (since there are parentheses, you must
@@ -541,37 +547,38 @@ will delete the variable
 @write
 #write [>|!](<expr>;<filename>)
 
-Evaluate expression and get result, then append result to 'name' file.
-If > is specified, 'name' file is truncated before actually writing result.
+Evaluate expression and get result, then append result to <filename>.
+If ‘>’ is specified, <filename> is truncated before actually writing result.
 
-If ! is specified, 'name' shell command is executed, and result is written
-to its standard input. Examples:
+If ‘!’ is specified, the shell command <filename> is executed, and result is
+written to its standard input. Examples:
 
 #write ($test; "myfile")        (append contents of $test to the end of myfile)
 #write !("55+12"; "bc -l")      (eval 55+12 using bc program)
 @if
 #if (<expr>) <command1> [; #else <command2>]
 
-Evaluate the expression: if result is 'true' execute command1,
-otherwise (if there is an #else) execute command2.
-If expression is false and there is no #else, execute nothing.
-remember that you must use braces {} if command1 or command2
+Evaluate the expression: if result is true execute <command1>,
+otherwise (if there is an ‘#else’) execute <command2>.
+If expression is false and there is no ‘#else’, execute nothing.
+remember that you must use braces ‘{}’ if <command1> or <command2>
 contain more than one instruction.
 @while
 #while (<expr>) <command>
 
-This construct repeats a command while expression keeps true. As with #alias,
-#action and #for, the $n and @n in command are replaced by their values.
-Examples:
+This construct repeats a command while expression keeps true. As with
+‘#alias’, ‘#action’ and ‘#for’, the ‘$n’ and ‘@n’ in command are replaced by
+their values. Examples:
 
 #while (@0<13) {read @0;#(\@0++)}         (read messages 0-12)
 
-The last @0 is escaped with a backslash, so that it is not replaced with its
+The last ‘@0’ is escaped with a backslash, so that it is not replaced with its
 value when the command runs: it is the variable that must be incremented.
 @math
-The inline calculator is used to evaluate expressions inside
-#(), #print (), #exe (), #send (), #if (), #while (), #for (), #do (), etc.
-and (if you use this syntax) expressions in pattern of #actions
+The inline calculator is used to evaluate expressions inside ‘#()’,
+‘#print ()’, ‘#exe ()’, ‘#send ()’, ‘#if ()’, ‘#while ()’, ‘#for ()’,
+‘#do ()’, etc. and (if you use this syntax) expressions in the patterns
+of ‘#action’
 
 The inline calculator recognizes the following objects:
 
@@ -580,40 +587,41 @@ numbers (only integers are supported)
     simply write them.
 
   hexadecimal numbers:
-    use '#' as prefix: #F is 15, #a0 is 160, and so on
+    use ‘#’ as prefix: ‘#F’ is 15, ‘#a0’ is 160, and so on
 
   numbers in any other base:
-    use base# as prefix: 2#101 is 5, 7#14 is 11...
+    use ‘<base>#’ as prefix: ‘2#101’ is 5, ‘7#14’ is 11...
 
-  if you use negative non-decimal numbers, you must put '-'
-  before the base: -2#101 is -5, 2#-101 causes an error.
+  if you use negative non-decimal numbers, you must put ‘-’
+  before the base: ‘-2#101’ is -5, ‘2#-101’ causes an error.
 
-  every digit must be less than the base: 2#102 and 8#9 cause an
+  every digit must be less than the base: ‘2#102’ and ‘8#9’ cause an
   error, and so does a number that is too large, which on 64-bit
   systems means above 9223372036854775807.
 
-quoted-strings (i.e.: strings in " ").
+quoted-strings (i.e.: strings in ‘" "’).
 NOTE: powwow unescapes them when they are evaluated
 
-timer (number of milliseconds since last timer reset)
+‘timer’ (number of milliseconds since last timer reset)
 
-map   (string containing the map shown by #map command)
+‘map’ (string containing the map shown by ‘#map’ command)
 
 variables:
-  @n with n within -50 and 9, are numeric-variables
-  $n with n within -50 and 9, are string-variables
+  ‘@n’ with n within -50 and 9, are numeric-variables
+  ‘$n’ with n within -50 and 9, are string-variables
 
-  Variables with negative index (@-1...@-50 and $-1...$-50) are global,
-  while variables with positive or zero index are parameters: they are local to
-  the #alias, #action, #while or #for powwow is executing, and each time
-  powwow executes one of these commands, a new set of parameters is created.
+  Variables with negative index (‘@-1’...‘@-50’ and ‘$-1’...‘$-50’) are
+  global, while variables with positive or zero index are parameters: they
+  are local to the ‘#alias’, ‘#action’, ‘#while’ or ‘#for’ powwow is
+  executing, and each time powwow executes one of these commands, a new
+  set of parameters is created.
 
-  @name are numeric-variables
-  $name are string-variables
+  ‘@name’ are numeric-variables
+  ‘$name’ are string-variables
 
   Every character of the name must be either:
     a letter (uppercase or lowercase)
-    an underscore '_'
+    an underscore ‘_’
     a number
   Exception: the first char of the name must NOT be a number
 
@@ -629,11 +637,11 @@ operators between numbers:
    ,
    (  )
 (no help on these operators, see a C-language manual)
-(note: unlike C, operators &&, ^^ and || always eval both arguments)
-(^^ is the logical exclusive or: 1 if exactly one argument is non-zero,
+(note: unlike C, operators ‘&&’, ‘^^’ and ‘||’ always eval both arguments)
+(‘^^’ is the logical exclusive or: 1 if exactly one argument is non-zero,
  otherwise 0)
-(also, % and %= always return non-negative values)
-(<< and >> shift by 0 or more bits: the bits shifted out are lost,
+(also, ‘%’ and ‘%=’ always return non-negative values)
+(‘<<’ and ‘>>’ shift by 0 or more bits: the bits shifted out are lost,
  and >> keeps the sign, so -8 >> 1 is -4)
 
 random number generator:
@@ -672,7 +680,7 @@ Examples:
 
 #action >+exp ^You have scored $1 exp={#print;#print ("You gained " +
         %($1 - @-5) + " exp. points since last score"); #(@-5 = $1)}
-                (when you type 'score' in MUME, one of the lines you get is:
+                (when you type ‘score’ in MUME, one of the lines you get is:
                  You have scored xxx experience points ... )
 @warranty
                             NO WARRANTY
@@ -700,17 +708,17 @@ POSSIBILITY OF SUCH DAMAGES.
 #!<shell-command>
 
 Execute a command using /bin/sh. Powwow waits until your shell finishes,
-but you can put jobs in the background with & as usual. Semicolons,
+but you can put jobs in the background with ‘&’ as usual. Semicolons,
 escapes and braces need to be escaped if they are to be sent to the
 shell.
 
-If #option shell or $POWWOWSHELL is set, the command is given to that
-shell instead, as its last argument; so are the commands after ! of
-#var, #exe, #send, #print, #emulate and #write.
+If ‘#option shell’ or ‘$POWWOWSHELL’ is set, the command is given to that
+shell instead, as its last argument; so are the commands after ‘!’ of
+‘#var’, ‘#exe’, ‘#send’, ‘#print’, ‘#emulate’ and ‘#write’.
 @beep
 #beep
 
-Ring your terminal's bell (like #print (*7)).
+Ring your terminal's bell (like ‘#print (*7)’).
 @cancel
 #cancel [<number>]
 
@@ -722,14 +730,14 @@ yet, are left alone.
 #capture [[>]<filename>]
 
 Capture all output from the main MUD connection and your typed commands
-to a local file. Type #capture without argument to close the file.
-If the filename starts with a '>', new text is appended to the end of the
-file instead of overwriting it. See also #setvar buffer.
+to a local file. Type ‘#capture’ without argument to close the file.
+If the filename starts with a ‘>’, new text is appended to the end of the
+file instead of overwriting it. See also ‘#setvar buffer’.
 @clear
 #clear
 
 Clear the input line. Used by spawned programs before they print to the
-screen when #option autoclear is off.
+screen when ‘#option autoclear’ is off.
 @cpu
 #cpu
 
@@ -739,8 +747,8 @@ Show the CPU time used by powwow.
 #do (<expr>) <command>
 #<number> <command>
 
-Repeat a command: #do evaluates the expression and uses the result as
-counter, and #n uses a number, like #5 buy bread.
+Repeat a command: ‘#do’ evaluates the expression and uses the result as
+counter, and ‘#n’ uses a number, like ‘#5 buy bread’.
 
 #do (3*8) north         (go north 24 times)
 @edit
@@ -753,14 +761,14 @@ number.
 
 Set, show or clear the name of the definition file. By default it is the
 one loaded when you start powwow, and powwow saves your settings to it
-before exiting. To disable this autosave, use #file =
+before exiting. To disable this autosave, use ‘#file =’.
 @comment
 # <text>
 
-A command that is # followed by a space, or only #, is a comment, which
-powwow skips up to the next ; as any command. A command such as # (@1=5)
-is an expression instead (see #help #()). #save writes the definitions of
-a definition file without its comments.
+A command that is ‘#’ followed by a space, or only ‘#’, is a comment,
+which powwow skips up to the next ‘;’ as any command. A command such as
+‘# (@1=5)’ is an expression instead (see ‘#help #()’). ‘#save’ writes
+the definitions of a definition file without its comments.
 
 # connect to MUME
 #host mume.org 4242
@@ -768,7 +776,7 @@ a definition file without its comments.
 #group [<name>] [on|off|list]
 
 Turn on or off all the actions and aliases of a group, or list them.
-To put an action in a group, write the group name after an '@' when
+To put an action in a group, write the group name after an ‘@’ when
 defining it:
 
 #action >+auto-ride@non-pk ZBLAM!={#print;stand;ride}
@@ -776,21 +784,21 @@ defining it:
 @groupdelim
 #groupdelim [<delimiter>]
 
-Change the '@' between the label of an action or alias and its group name.
-Without an argument, #groupdelim does nothing.
+Change the ‘@’ between the label of an action or alias and its group name.
+Without an argument, ‘#groupdelim’ does nothing.
 @help
 #help [-P|--no-pager] [keys|math|comment|<command>|&<function>]
 
-Without an argument, list all commands. '#help keys' shows the editing
-keys, '#help math' the inline calculator, '#help comment' comments, and
-'#help <command>', such as '#help alias', the help on a command. Names
-can be abbreviated. '#help &<function>', such as '#help &abort', shows
+Without an argument, list all commands. ‘#help keys’ shows the editing
+keys, ‘#help math’ the inline calculator, ‘#help comment’ comments, and
+‘#help <command>’, such as ‘#help alias’, the help on a command. Names
+can be abbreviated. ‘#help &<function>’, such as ‘#help &abort’, shows
 what a line-editing function does, and the keys bound to it.
 
-The text is shown with the pager in #option help-pager, $POWWOWHELPPAGER,
-#option pager, $POWWOWPAGER or $PAGER, or more(1).
-With -P or --no-pager, or a pager of -, it is printed on the screen
-instead.
+The text is shown with the pager in ‘#option help-pager’,
+‘$POWWOWHELPPAGER’, ‘#option pager’, ‘$POWWOWPAGER’ or ‘$PAGER’, or
+more(1). With ‘-P’ or ‘--no-pager’, or a pager of ‘-’ (a hyphen), it is
+printed on the screen instead.
 @identify
 #identify [<startedit> [<endedit>]]
 
@@ -811,10 +819,10 @@ Set up the command to execute on establishing a connection.
 @isprompt
 #isprompt [{<number>|(<expr>)}]
 
-Used inside a #prompt to declare that the beginning of the line is a prompt.
-If positive, the number is the length of the prompt. If negative, -n, the
-prompt is as long as the parameter $n. If 0 or missing, the whole line is a
-prompt. See #prompt and the documentation for details.
+Used inside a ‘#prompt’ to declare that the beginning of the line is a
+prompt. If positive, the number is the length of the prompt. If negative,
+‘-n’, the prompt is as long as the parameter ‘$n’. If 0 or missing, the whole
+line is a prompt. See ‘#prompt’ and the documentation for details.
 @keyedit
 #keyedit <function>
 
@@ -826,7 +834,7 @@ Run one of the line-editing functions, as if its key had been pressed.
 
 Set the definition file and load settings from it. Current settings are
 completely erased first. To add the contents of a file to your current
-settings, use #exe <filename instead.
+settings, use ‘#exe <filename’ instead.
 @map
 #map [-[<number>]|<walk-sequence>]
 
@@ -838,9 +846,9 @@ With no argument, show the map of the directions you travelled.
 @movie
 #movie [<filename>]
 
-Like #capture, but add timestamps to each line, to allow replay at correct
-speed with powwow-movieplay. powwow-movieplay -a converts a movie to plain
-text. Type #movie without argument to close the file.
+Like ‘#capture’, but add timestamps to each line, to allow replay at
+correct speed with ‘powwow-movieplay’. ‘powwow-movieplay -a’ converts a
+movie to plain text. Type ‘#movie’ without argument to close the file.
 @net
 #net
 
@@ -857,20 +865,21 @@ number, the new value is used only for that command.
 #prefix [<string>]
 
 Begin each new line you type with the string. You can edit or delete the
-inserted string as usual. #prefix without arguments removes it.
+inserted string as usual. ‘#prefix’ without arguments removes it.
 
 #prefix tell arthur
 @prompt
 #prompt [[<|=|>|%][+|-]<label>] [{<pattern>|(<expr>)}=[<command>]]
 
-Like #action, but for prompts: powwow matches #prompts on the beginning of
-a line, and the command must run #isprompt to recognize it as a prompt.
-It works only on the main MUD connection, and is needed only to mess with
-prompts in strange ways. See the documentation for details.
+Like ‘#action’, but for prompts: powwow matches the patterns of ‘#prompt’
+at the beginning of a line, and the command must run ‘#isprompt’ to
+recognize it as a prompt. It works only on the main MUD connection, and is
+needed only to mess with prompts in strange ways. See the documentation
+for details.
 @qui
 #qui
 
-Do nothing. It exists so that #qui is not an abbreviation of #quit.
+Do nothing. It exists so that ‘#qui’ is not an abbreviation of ‘#quit’.
 @quit
 #quit
 
@@ -880,18 +889,18 @@ without renting your characters.
 #quote [on|off]
 
 Toggle verbatim mode, in which no alias expansion takes place and
-semicolons, escapes, braces and ` are sent as typed, unless the line begins
-with a #. Useful to paste a text from an editor.
+semicolons, escapes, braces and ‘`’ are sent as typed, unless the line
+begins with a ‘#’. Useful to paste a text from an editor.
 @rawprint
 #rawprint {<text>|(<expr>)}
 
-Like #print, but does NOT add a final newline, and can handle ASCII 0
+Like ‘#print’, but does NOT add a final newline, and can handle ASCII 0
 characters.
 @rawsend
 #rawsend {<text>|(<expr>)}
 
-Like #send, but does NOT add a final newline nor IAC escaping of ASCII 255
-characters, and can handle ASCII 0 characters.
+Like ‘#send’, but does NOT add a final newline nor IAC escaping of ASCII
+255 characters, and can handle ASCII 0 characters.
 @rebind
 #rebind <key> [<sequence>]
 
@@ -903,19 +912,19 @@ Without a sequence, you are asked to press the key.
 #rebindall [--every]
 
 #rebindall runs #rebind on most key bindings, asking you to press each
-key. It skips the trivial ones, such as C-a, C-x 8 Ret and M-b, unless
---every is given.
+key. It skips the trivial ones, such as ‘C-a’, ‘C-x 8 Ret’ and ‘M-b’, unless
+‘--every’ is given.
 @record
 #record [<filename>]
 
 Record all text typed from the keyboard to a local file. Output from the
-remote host is not recorded. Type #record without argument to close the
+remote host is not recorded. Type ‘#record’ without argument to close the
 file.
 @request
 #request [editor][all]
 
-Send identification strings to the server: editor is the same as
-#identify.
+Send identification strings to the server: ‘editor’ is the same as
+‘#identify’.
 @retrace
 #retrace [<number>]
 
@@ -931,9 +940,9 @@ writing succeeds.
 #secret [add|delete [<number>]|=<hash>]
 
 Keep the lines that contain a secret, such as a password, out of the
-history, the word completion list, #record files and the lines sent that
-#capture and #movie write. A secret matches anywhere in a line, and is at
-least 4 bytes long.
+history, the word completion list, ‘#record’ files and the lines sent that
+‘#capture’ and ‘#movie’ write. A secret matches anywhere in a line, and is
+at least 4 bytes long.
 
      #secret             list the secrets: their number and length
      #secret add         add a secret, typed without being shown; the
@@ -941,15 +950,15 @@ least 4 bytes long.
      #secret delete      delete a secret, typed without being shown
      #secret delete <n>  delete secret number n of the list
 
-An empty line or C-g cancels typing a secret, and &insert-char and
-&insert-emoji add a character by its name, which is shown.
+An empty line or ‘C-g’ cancels typing a secret, and ‘&insert-char’ and
+‘&insert-emoji’ add a character by its name, which is shown.
 
 The secrets in a line entered are left on the screen as <redacted>, drawn
-as the messages of powwow (see #hilite): with the secret `password',
-`abc passworddef' is left as `abc <redacted>def'.
+as the messages of powwow (see ‘#hilite’): with the secret ‘password’,
+‘abc passworddef’ is left as ‘abc <redacted>def’.
 
-Powwow keeps only a salted hash of each secret, which #save writes as
-#secret =<hash>. It has only 32 bits: too few to tell a strong password
+Powwow keeps only a salted hash of each secret, which ‘#save’ writes as
+‘#secret =<hash>’. It has only 32 bits: too few to tell a strong password
 from the many others with the same hash, but a weak one, such as a word of
 a dictionary, can be found from it, and so can a password kept in several
 definition files. Powwow warns about a secret shorter than 8 bytes, which
@@ -960,7 +969,7 @@ may also match other text.
 Set or show an internal variable. Known variables are:
 
 buffer  bytes of recent text from the MUD to keep and write at the beginning
-        of #capture and #movie files when you open them (default 0; else
+        of ‘#capture’ and ‘#movie’ files when you open them (default 0; else
         1000 to 2147483647)
 lines   the number of lines of your terminal (1 to 2147483647)
 mem     the maximum length of a text or string, in bytes (default 1048576;
@@ -980,19 +989,19 @@ Create a new session connected to a shell command instead of a MUD.
 Writing to ##<session-id> sends data to the command's standard input, and
 its standard output is executed as if typed from the keyboard. Each command
 it outputs must end with a newline or a semicolon, and the last one with a
-newline. See #option autoclear and #clear for printing to the screen.
+newline. See ‘#option autoclear’ and ‘#clear’ for printing to the screen.
 @speedwalk
 #speedwalk [<walk-sequence>]
 
-Execute a speedwalk sequence even if the speedwalk option is disabled.
+Execute a speedwalk sequence even if the ‘speedwalk’ option is disabled.
 @time
 #time
 
-Show the current time and date. Useful if you want to use #at.
+Show the current time and date. Useful if you want to use ‘#at’.
 @ver
 #ver [-v]
 
-Show the version of powwow; with -v, also show the credits and some
+Show the version of powwow; with ‘-v’, also show the credits and some
 compile options.
 @zap
 #zap <session-id>

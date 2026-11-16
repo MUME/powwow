@@ -551,12 +551,15 @@ int main(int argc, char **argv)
     printver(1);
 
     if (nargs == 0) {
+        /* the commands quoted as in the help, which the terminal shows as
+         * ' where it cannot show the typographic quotes */
         message_wrap(VER_CONT, "\n"
                      "Powwow comes with ABSOLUTELY NO WARRANTY; for details"
-                     " type \"#help warranty\".\n"
+                     " type %s.\n"
                      "This is free software, and you are welcome to"
                      " redistribute it under certain conditions; type"
-                     " \"#help copyright\" for details.");
+                     " %s for details.",
+                     u8"‘#help warranty’", u8"‘#help copyright’");
     }
 
     bool read_file = false;     /* run initstr ? */

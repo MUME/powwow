@@ -501,12 +501,34 @@ static char *format_command_help(char *dst, const cmdstruct *c)
 }
 
 /*
+ * write the typographic quotes of the UTF-8 'text', U+2018 to U+201F, as '
+ * and ", in place, as the screen shows them where the locale is not UTF-8
+ */
+static void plain_quotes(char *text)
+{
+    char *out = text;
+    const unsigned char *in = (const unsigned char *)text;
+    while (*in != '\0') {
+        if (in[0] == 0xe2 && in[1] == 0x80 && in[2] >= 0x98 && in[2] <= 0x9f) {
+            *out++ = in[2] <= 0x9b ? '\'' : '"';
+            in += 3;
+        } else {
+            *out++ = (char)*in++;
+        }
+    }
+    *out = '\0';
+}
+
+/*
  * show 'text', whose first line is its title, with the pager, or on
  * the screen if 'use_pager' is false; this frees 'text'
  */
 static void show_help_text(char *text, bool use_pager)
 {
     if (use_pager) {
+        /* the pager gets the text as UTF-8, which only some locales are */
+        if (!tty_locale_utf8())
+            plain_quotes(text);
         message_edit(NULL, text, strlen(text), true, true);
         return;
     }
