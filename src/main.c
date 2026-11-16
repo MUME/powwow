@@ -503,11 +503,12 @@ int main(int argc, char **argv)
     printver(1);
 
     if (nargs == 0) {
-        message_wrap(VER_CONT, "\nPowwow comes with ABSOLUTELY NO WARRANTY; "
-                     "for details type \"#help warranty\".\nThis is free "
-                     "software, and you are welcome to redistribute it "
-                     "under certain conditions; type \"#help copyright\" "
-                     "for details.");
+        message_wrap(VER_CONT, "\n"
+                     "Powwow comes with ABSOLUTELY NO WARRANTY; for details"
+                     " type \"#help warranty\".\n"
+                     "This is free software, and you are welcome to"
+                     " redistribute it under certain conditions; type"
+                     " \"#help copyright\" for details.");
     }
 
     bool read_file = false;     /* run initstr ? */
