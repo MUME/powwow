@@ -1748,7 +1748,7 @@ has '#no entry for "nosuchcommand" in the help file.'
 run 'error message' '#connect test --no-tls 127.0.0.1 1'
 has '#cannot connect to 127.0.0.1:1: Connection refused'
 
-run '#connect <address> <port> needs no session id' \
+run '#connect <host> <port> needs no session id' \
     '#connect --no-tls 127.0.0.1 1'
 has '#cannot connect to 127.0.0.1:1: Connection refused'
 
@@ -2199,7 +2199,7 @@ run --until '#killed' 'cancelling a view' \
 #help mark
 #cancel"
 has "#killed \"Help on 'mark'\" (4294967295)"
-lacks "#no open connections. Use '#connect <address> <port>' to open a"\
+lacks "#no open connections. Use '#connect <host> <port>' to open a"\
 " connection."
 
 # #cancel without an argument cancels all the editing sessions

@@ -122,7 +122,7 @@ static cmdstruct default_commands[] =
     C("clear",      cmd_clear,
       "\tclear input line (use from spawned programs)"),
     C("connect",    cmd_connect,
-      "[<session-id> [<initstr>]] [<address> <port>]\topen a new"
+      "[<session-id> [<initstr>]] [<host> <port>]\topen a new"
       " connection"),
     C("cpu",        cmd_cpu,
       "\tshow CPU time used by powwow"),
@@ -151,7 +151,7 @@ static cmdstruct default_commands[] =
     C("history",    cmd_history,
       "[{<number>|(<expr>)}]\tlist/execute commands in history"),
     C("host",       cmd_host,
-      "[<hostname> <port> [--tls[=<options>]|--no-tls] [--utf8|--latin1]]\t"
+      "[<host> <port> [--tls[=<options>]|--no-tls] [--utf8|--latin1]]\t"
       "set/show address of default host"),
     C("identify",   cmd_identify,
       "[<startedit> [<endedit>]]\tsend MUME client identification"),
@@ -1028,7 +1028,7 @@ static void cmd_host(char *arg)
 
  fail:
     error = NOT_SUPPORTED_ERROR;
-    message_printf("#syntax: #host <hostname> <port> [--tls[=<options>]|"
+    message_printf("#syntax: #host <host> <port> [--tls[=<options>]|"
                    NO_TLS_FLAG "] [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
 }
 
@@ -2681,7 +2681,7 @@ static void cmd_connect(char *arg)
         else {
             message_printf("#connect: no host defined!\n"
                            "#syntax: #connect"
-                           " [<session-id> [<initstr>]] <address> <port>"
+                           " [<session-id> [<initstr>]] <host> <port>"
                            " [--tls[=<options>]|" NO_TLS_FLAG "]"
                            " [" UTF8_FLAG "|" LATIN1_FLAG "]\n");
         }
