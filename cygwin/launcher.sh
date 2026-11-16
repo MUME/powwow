@@ -92,34 +92,9 @@ if [ -z "$list" ] || [ ! -d "$licenses" ]; then
     exit 1
 fi
 mkdir -p "$licenses/mingw-gcc" "$licenses/mingw-w64"
-# for each module of Qt, its SPDX file, which lists its parts and their
-# licenses, and the texts of those licenses, from the folder LICENSES of
-# its source of the same version, which the first run downloads to
-# qt-licenses in the build directory
-if ! command -v git > /dev/null; then
-    echo "$0: install git" >&2
-    exit 1
-fi
-cache=$(pwd)/qt-licenses/$version
-for spdx in "$qt"/sbom/*-"$version".spdx; do
-    module=$(basename "$spdx" "-$version.spdx")
-    if [ ! -d "$cache/$module" ]; then
-        # the tag fetched, not cloned, which would warn that it is not a
-        # commit, as it is annotated
-        tmp=$cache/$module.tmp
-        rm -rf "$tmp"
-        git init -q "$tmp"
-        git -C "$tmp" remote add origin "https://github.com/qt/$module.git"
-        git -C "$tmp" sparse-checkout set --no-cone /LICENSES/
-        git -C "$tmp" fetch -q --depth 1 --filter=blob:none origin \
-            tag "v$version"
-        git -C "$tmp" checkout -q FETCH_HEAD
-        mv "$tmp/LICENSES" "$cache/$module"
-        rm -rf "$tmp"
-    fi
-    mkdir -p "$licenses/qt/$module"
-    cp "$spdx" "$cache/$module"/* "$licenses/qt/$module/"
-done
+# for each module of Qt, its SPDX file and the texts of its licenses
+"$here/../launcher/qt-licenses.sh" "$licenses/qt" \
+    "$qt"/sbom/*-"$version".spdx
 cp "$mingw/licenses/gcc/COPYING3" "$mingw/licenses/gcc/COPYING.RUNTIME" \
     "$licenses/mingw-gcc/"
 cp "$mingw/licenses/mingw-w64/COPYING.MinGW-w64-runtime.txt" \

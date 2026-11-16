@@ -49,8 +49,10 @@ AS_IF([test -n "${is_darwin}"], [
     AC_DEFINE(HAVE_LIBRARY_DIRS, 1,
               [Define to keep the settings in ~/Library/Application Support,
                as on macOS.]) ])
-# make help lists the cygwin targets only on Cygwin
+# make help lists the cygwin targets only on Cygwin, and macos-dmg only on
+# macOS
 AM_CONDITIONAL([CYGWIN], [test -n "${is_cygwin}"])
+AM_CONDITIONAL([MACOS], [test -n "${is_darwin}"])
 
 AC_ARG_ENABLE(tls,
     AS_HELP_STRING([--disable-tls],[disables TLS support]),

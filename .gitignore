@@ -28,5 +28,8 @@ Makefile.in
 /powwow-win/
 /powwow-*-setup.exe
 /cygwin/Output/
+# what make macos-dmg makes
+/powwow-mac/
+/powwow-*.dmg
 # what CMake builds of the launcher
 /launcher/build/
