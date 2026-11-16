@@ -85,17 +85,17 @@ COMPILING
 
 WINDOWS INSTALLER
 
-	On Cygwin, powwow can be built into a directory, powwow-win, with
-	the Cygwin DLLs it needs, sh, nano, and the CA certificates,
+	On Cygwin, powwow can be built into a directory, ‘powwow-win’, with
+	the Cygwin DLLs it needs, ‘sh’, ‘nano’, and the CA certificates,
 	which runs without Cygwin installed, and into a Windows installer of
-	that directory, with the prefix /usr or /usr/local, the default:
+	that directory, with the prefix ‘/usr’ or ‘/usr/local’, the default:
 
 	./configure
 	make windows-bundle             (just the directory powwow-win)
 	make windows-installer          (also powwow-VERSION-setup.exe)
 
-	A -dev version adds the commit it is built from, as #ver shows it:
-	powwow-1.3.2-dev-ebae0231-setup.exe.
+	A -dev version adds the commit it is built from, as ‘#ver’ shows it:
+	‘powwow-1.3.2-dev-ebae0231-setup.exe’.
 
 	The bundle needs the license files of the Cygwin packages that it
 	has, which are only in their source packages: so the first build of
@@ -112,49 +112,51 @@ WINDOWS INSTALLER
 	    -P nano,ca-certificates,xz,zstd,bzip2,lzip
 
 	The installer needs Inno Setup 6.3 or later
-	(https://jrsoftware.org/isinfo.php); cygwin/installer.sh finds its
-	compiler, ISCC.exe, where Inno Setup is installed, or set ISCC to
-	its path.
+	(https://jrsoftware.org/isinfo.php); ‘cygwin/installer.sh’ finds its
+	compiler, ‘ISCC.exe’, where Inno Setup is installed, or set ‘ISCC’
+	to its path.
 
 	The installer is written to the build directory.  It installs powwow
 	with a Start menu shortcut that runs it in Windows Terminal, which
-	the installer requires, through cygwin/powwow-start, in the folder
-	powwow of the Documents folder, such as C:\Users\name\Documents\powwow,
-	where the definition files then go.  Unless unchecked, opening a
-	.powwow file runs powwow with it as the definition file.  The icon,
-	icons/powwow.ico, is a placeholder made by icons/make-icon.sh.
+	the installer requires, through ‘cygwin/powwow-start’, in the folder
+	‘powwow’ of the Documents folder, such as
+	‘C:\Users\name\Documents\powwow’, where the definition files then
+	go.  Unless unchecked, opening a ‘.powwow’ file runs powwow with it
+	as the definition file.  The icon, ‘icons/powwow.ico’, is a
+	placeholder made by ‘icons/make-icon.sh’.
 
 	The programs and libraries of Cygwin bundled are under their own
-	licenses.  The bundle has their license files, which LICENSES.txt
-	lists with where Cygwin has their source; the installer and #help
-	copyright show it.  cygwin/update-licenses.sh downloads the source
-	packages to cygwin-sources in the build directory, and keeps the
-	licenses in cygwin-licenses there.  make update-cygwin-licenses
-	updates them all.  make clean removes powwow-win and the installer,
-	and make maintainer-clean also these two directories.
+	licenses.  The bundle has their license files, which ‘LICENSES.txt’
+	lists with where Cygwin has their source; the installer and ‘#help
+	copyright’ show it.  ‘cygwin/update-licenses.sh’ downloads the source
+	packages to ‘cygwin-sources’ in the build directory, and keeps the
+	licenses in ‘cygwin-licenses’ there.  ‘make update-cygwin-licenses’
+	updates them all.  ‘make clean’ removes ‘powwow-win’ and the
+	installer, and ‘make maintainer-clean’ also these two directories.
 
-	The shortcuts run cygwin/powwow-start, which runs powwow with
-	--windows: file names are written as on Windows, such as
-	C:\Users\Me\Documents\mud.powwow or %USERPROFILE%\mud.powwow, and the
-	commands of #!, of #var $x=!... and the like, and of the editor and
-	the pager, are commands of cmd.exe.  It also sets TMPDIR to the
-	temporary folder of Windows.  With --windows, unless the settings or
-	the environment choose others, the shell is cygwin/powwow-cmd, which
-	runs cmd.exe in UTF-8, with each command as a line of a batch file,
-	where %NAME% is expanded and a % is written %%; the editor is
-	Notepad, in another window, or nano in an ssh session; and the pager
-	is the same, with nano -v, which only views.
+	The shortcuts run ‘cygwin/powwow-start’, which runs powwow with
+	‘--windows’: file names are written as on Windows, such as
+	‘C:\Users\Me\Documents\mud.powwow’ or ‘%USERPROFILE%\mud.powwow’,
+	and the commands of ‘#!’, of ‘#var $x=!...’ and the like, and of the
+	editor and the pager, are commands of ‘cmd.exe’.  It also sets
+	‘TMPDIR’ to the temporary folder of Windows.  With ‘--windows’,
+	unless the settings or the environment choose others, the shell is
+	‘cygwin/powwow-cmd’, which runs ‘cmd.exe’ in UTF-8, with each command
+	as a line of a batch file, where ‘%NAME%’ is expanded and a ‘%’ is
+	written ‘%%’; the editor is Notepad, in another window, or ‘nano’ in
+	an ssh session; and the pager is the same, with ‘nano -v’, which only
+	views.
 
-	To edit with another program, give its command as in cmd.exe, but
-	with each \ in double quotes written \\, as in sh and in the
-	strings of powwow, also in an #alias; the editor gets the path of the
-	file after it, and the description of the text from the MUD in
-	%TITLE%:
+	To edit with another program, give its command as in ‘cmd.exe’, but
+	with each ‘\’ in double quotes written ‘\\’, as in ‘sh’ and in the
+	strings of powwow, also in an ‘#alias’; the editor gets the path of
+	the file after it, and the description of the text from the MUD in
+	‘%TITLE%’:
 
 	#option editor=&"C:\\Program Files\\Notepad++\\notepad++" -multiInst
 
 	The program must not end before the text is saved and closed, or
-	powwow ends the editing session at once: Notepad++ needs -multiInst,
+	powwow ends the editing session at once: Notepad++ needs ‘-multiInst’,
 	which opens a window of its own instead of passing the file to one
 	that is open already.
 
