@@ -26,7 +26,6 @@
  */
 
 #include <assert.h>
-#include <getopt.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -44,6 +43,10 @@
 #include <unistd.h>
 
 #include "defines.h"
+
+#ifdef HAVE_GETOPT_LONG
+#include <getopt.h>             /* getopt() is in <unistd.h> */
+#endif
 
 #include <locale.h>
 
