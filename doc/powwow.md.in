@@ -736,6 +736,7 @@ If you have already typed
 ```
 
 At any time, then, you can either:
+
 - Press your f1 key on you keyboard
 - Execute the command `#key f1`
 and powwow will execute the command "cast 'heal'" for you.
@@ -2247,8 +2248,9 @@ Style names are not case sensitive. A color is one of:
 
 In the 256-color palette, 0-15 are the 16 colors above (as set by your
 terminal's theme), 16-231 are a 6x6x6 color cube where each of red,
-green and blue goes from 0 to 5 and the index is 16 + 36 * red +
-6 * green + blue, and 232-255 are 24 shades of gray from dark to light.
+green and blue goes from 0 to 5 and the index is
+`16 + 36 * red + 6 * green + blue`, and 232-255 are 24 shades of gray
+from dark to light.
 
 Examples: The following are all valid attributes:
 
@@ -2464,10 +2466,10 @@ There are two strategies to avoid such embarassing situations:
 
 1) Use `#send` and calculator. In fact this is NOT dangerous:
 
-```
-#action >+autogroup ^&1 starts following you.=
-	{#print;#send ("group "+$(1))}
-```
+   ```
+   #action >+autogroup ^&1 starts following you.=
+   	{#print;#send ("group "+$(1))}
+   ```
 
    (in the worst case you will send some semicolon-separated commands
    to the MUD, but I saw no MUDs accepting multiple commands as clients
@@ -2697,7 +2699,7 @@ so for example `#print ${target}` just prints literally `${target}`
 and not the contents of the variable.
 If you need step (b) on text you type, you can do something like:
 `#alias /=$0`
-and then prepend all commands with `/ ` :
+and then prepend all commands with `/` and a space:
 
 ```
   / #print ${target}
@@ -2740,6 +2742,7 @@ whatever text it receives from the MUD. It sends to screen both
 newline-ended lines (we'll name these `full lines`)
 and lines not ended with a newline (`incomplete lines`).
 Now, there are two problems:
+
 1) there's no way to know whether an incomplete line is actually
 finished or there is a continuation we still have to receive.
 2) powwow cannot know if the line, or an initial part of it,
