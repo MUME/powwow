@@ -1051,8 +1051,10 @@ on the screen instead.
 A help file is needed and provided for this last feature of `#help`,
 and powwow will look for the file "powwow.help" in the directory
 specified by the environment variable POWWOWHELP. If this variable
-does not exist, powwow looks in the directory specified by POWWOWDIR
-or else where it was installed, and if the file is not there, in the
+does not exist, powwow looks in the directory specified by POWWOWDIR,
+then, if powwow was started by its path, next to it, in
+`../share/powwow` or, in an app bundle of macOS, `../Resources`, or
+else where it was installed, and if the file is not there, in the
 current directory.
 
 ### Command repetition
