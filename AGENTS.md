@@ -83,6 +83,30 @@ committed, understand it, and take responsibility for it as its author.
   string literal into adjacent literals after a `\n` if it has one, or else
   before a space, so that the next literal starts with the spaces:
   `"no such"` then `" variable"`.
+- **Alignment:** align with spaces the parts of consecutive lines that
+  belong together, and when a new line is longer than a column, realign the
+  whole group:
+  - the backslashes that continue a macro, in column 73;
+  - tables, such as the rows of an array initializer, one field per column:
+
+    ```c
+    { "config",        optional_argument, NULL, OPT_CONFIG },
+    { "list-settings", no_argument,       NULL, OPT_LIST },
+    ```
+  - the values of a group of `#define`s, and the comments that end
+    consecutive lines:
+
+    ```c
+    bool no_config = false;             /* --no-config given */
+    const char *get_name = NULL;        /* the setting of --get */
+    ```
+  - the arguments of a call or the parameters of a function continued on
+    the next line, in the column after the opening parenthesis:
+
+    ```c
+    fprintf(stderr, "%s: \"%s\" needs a definition file\n",
+            argv[0], name);
+    ```
 - **Braces:** put the opening brace at the end of the `if`, `else`, `for`,
   `while`, `do` or `switch` line, as in `} else {`. The opening brace of a
   function definition goes on its own line.
