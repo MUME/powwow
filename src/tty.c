@@ -1267,8 +1267,9 @@ void tty_puts(const char *s)
 
 /*
  * write character 'cp' in the locale's charset, which is not UTF-8: the
- * copyright sign as (c) and the dashes as -, whose bytes the charsets do
- * not agree on, except in the input line, which counts one cell for each
+ * copyright sign as (c), the dashes as - and the typographic quotes as '
+ * and ", whose bytes the charsets do not agree on, except in the input
+ * line, which counts one cell for each
  */
 static void tty_put_wc(uint32_t cp)
 {
@@ -1279,9 +1280,14 @@ static void tty_put_wc(uint32_t cp)
             tty_put_wc(')');
             return;
         }
-        /* U+2010 hyphen to U+2015 horizontal bar */
+        /* U+2010 hyphen to U+2015 horizontal bar, U+2018 to U+201B, the
+         * single quotation marks, and U+201C to U+201F, the double ones */
         if (cp >= U'‐' && cp <= U'―')
             cp = '-';
+        else if (cp >= U'‘' && cp <= U'‛')
+            cp = '\'';
+        else if (cp >= U'“' && cp <= U'‟')
+            cp = '"';
     }
 
     size_t r;
