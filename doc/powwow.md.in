@@ -81,6 +81,22 @@ with the same definition file active simultaneously, the
 settings changed in one session can be overwritten by a change
 in another session.
 
+### Completing the command line
+
+`powwow --completion bash` prints a script that completes the arguments
+of powwow in bash: the options, the options of `--tls=`, and the
+definition files, those that end with `.powwow` unless none does, also
+those in `POWWOWDIR`, which powwow looks in first. `make install`
+installs it where the package bash-completion loads it by itself;
+otherwise load it in `~/.bashrc`:
+
+```
+eval "$(powwow --completion bash)"
+```
+
+`powwow --completion zsh` prints it for zsh; load it likewise in
+`~/.zshrc`, after `compinit`.
+
 ## Character sets
 
 Internally, powwow handles text as Unicode (UTF-8); your

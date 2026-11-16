@@ -131,6 +131,16 @@ INSTALLING
 	protocol. This can also be done with an action; see the documentation
 	for details.
 
+	‘make install’ also installs the completion of the arguments of
+	powwow in bash, from ‘powwow --completion bash’, in
+	‘$(datadir)/bash-completion/completions’, where the package
+	bash-completion loads it by itself; configure with
+	‘--with-bash-completion-dir=DIR’ to install it in DIR instead, or
+	with ‘--without-bash-completion-dir’ not to.  Without
+	bash-completion, load it in ‘~/.bashrc’ with
+	‘eval "$(powwow --completion bash)"’, and in zsh, in ‘~/.zshrc’
+	after ‘compinit’, with ‘eval "$(powwow --completion zsh)"’.
+
 BUGS
 
 	If you have any problems with powwow, try to fix them yourself

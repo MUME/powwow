@@ -12,17 +12,26 @@ endif
 powwow_SOURCES = beam.c cmd.c log.c edit.c cmd2.c eval.c \
     utils.c main.c tcp.c list.c map.c tty.c \
     ptr.c tls.c charset.c width.c sgr.c attr.c charname.c \
-    secret.c sha256.c
+    secret.c sha256.c completion.c
 nodist_powwow_SOURCES = gitversion.h
 powwow_LDFLAGS = @dl_ldflags@
 powwowdir = $(pkgincludedir)
 powwow_HEADERS = beam.h cmd.h log.h edit.h cmd2.h eval.h \
     utils.h main.h tcp.h list.h map.h tty.h \
     ptr.h defines.h tls.h charset.h width.h sgr.h attr.h \
-    charname.h regexlib.h secret.h sha256.h
+    charname.h regexlib.h secret.h sha256.h completion.h
 powwow_muc_SOURCES = powwow-muc.c
 powwow_muc_LDADD = @CURSES_LIBS@
 powwow_movieplay_SOURCES = powwow-movieplay.c
+
+# the completion of bash, from powwow --completion bash, installed as
+# powwow where bash-completion finds it
+if BASH_COMPLETION
+bashcompletion_DATA = completion/powwow
+completion/powwow: powwow$(EXEEXT)
+	$(MKDIR_P) completion
+	./powwow$(EXEEXT) --completion bash > $@
+endif
 
 noinst_PROGRAMS = follow
 follow_SOURCES = follow.c
@@ -45,7 +54,7 @@ plugtest.so: plugtest.c
 	$(CC) -shared $(CFLAGS) $(plugin_ldflags) $(LDFLAGS) \
 	    -o plugtest.so plugtest.o
 
-CLEANFILES = plugtest.so gitversion.h
+CLEANFILES = plugtest.so gitversion.h completion/powwow
 MAINTAINERCLEANFILES = Makefile.in
 
 # the commit that a build from a git checkout is of, which #ver shows for

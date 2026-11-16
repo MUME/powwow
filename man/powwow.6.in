@@ -5,6 +5,9 @@ powwow \- telnet protocol client for MUD playing
 .SH SYNOPSIS
 .B powwow
 .RI "[" options "] [" definition-file "] [" host " " port "]"
+.br
+.B powwow
+.BI \-\-completion " shell"
 .SH DESCRIPTION
 .B powwow
 is a client program that implements the telnet protocol, adding some
@@ -148,6 +151,31 @@ display the
 version and exit; given twice, also display the credits and the options
 .B powwow
 was compiled with
+.TP
+.BI \-\-completion " shell"
+print the completion of the arguments of
+.B powwow
+in
+.IR shell ,
+.B bash
+or
+.BR zsh ,
+and exit; it completes the options, those of
+.BR \-\-tls= ,
+and the definition files, those that end with
+.B .powwow
+unless none does, also those in
+.BR POWWOWDIR .
+.B make install
+installs the one of bash where the package bash-completion loads it;
+else load it in
+.I ~/.bashrc
+with
+.BR "eval \(dq$(powwow \-\-completion bash)\(dq" ,
+and that of zsh likewise in
+.IR ~/.zshrc ,
+after
+.B compinit
 .SH ENVIRONMENT
 .TP
 .B TERM

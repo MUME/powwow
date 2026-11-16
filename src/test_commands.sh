@@ -1758,6 +1758,133 @@ LC_ALL=C sed -e "s/$copyright/c/g" -e "s/$dash/-/g" -e "s/$quote/'/g" \
     | awk 'length > 79 { print "powwow.help:" FNR ": " $0 }' > "$tmp/out"
 [ -s "$tmp/out" ] && fail "wrap these lines"
 
+# --completion: the script that completes the arguments of powwow, run
+# as bash and zsh run it: complete_in SHELL LINE prints the completions
+# of LINE in $tmp/compl, each followed by |, which shows the space after
+# it; in zsh, whose own completers complete files and hosts, also the
+# calls of those, of compadd and of compset
+mkdir -p "$tmp/compl/dir" "$tmp/compl/defs"
+: > "$tmp/compl/mume.powwow"
+: > "$tmp/compl/notes.txt"
+: > "$tmp/compl/defs/arda.powwow"
+cat > "$tmp/compl-stubs.zsh" <<'END'
+typeset -A compstate
+compadd() {
+    local suffix=
+    while [[ $1 == -* ]]; do
+        case $1 in
+            -S) suffix=$2; shift 2 ;;
+            --) shift; break ;;
+            *) shift ;;
+        esac
+    done
+    local word
+    for word; do
+        print -r -- "$word$suffix|"
+        (( compstate[nmatches]++ ))
+    done
+}
+_files() { print -r -- "_files${*:+ $*}|"; }
+_hosts() { print -r -- "_hosts${*:+ $*}|"; }
+_command_names() { print -r -- "_command_names${*:+ $*}|"; }
+compset() { print -r -- "compset $*|"; }
+END
+complete_in() {
+    case $1 in
+        bash)
+            bash --norc --noprofile -c '. "$1"
+                COMP_LINE=$2 COMP_POINT=${#2}
+                cd "$3" && _powwow powwow "${2##*[ =:]}" ""
+                [ ${#COMPREPLY[@]} -eq 0 ] \
+                    || printf "%s|\n" "${COMPREPLY[@]}"' \
+                bash "$tmp/compl.bash" "$2" "$tmp/compl" ;;
+        zsh)
+            zsh -f -c 'autoload -U +X compinit && compinit -u -D
+                . "$1"
+                . "$4"
+                words=(${(z)2})
+                [[ $2 == *" " ]] && words+=("")
+                CURRENT=${#words} PREFIX=${words[-1]}
+                cd "$3" && _powwow_zsh_complete' \
+                zsh "$tmp/compl.zsh" "$2" "$tmp/compl" \
+                "$tmp/compl-stubs.zsh" ;;
+    esac 2>&1
+}
+# expect_completion SHELL LINE COMPLETION...: exactly these completions
+expect_completion() {
+    shell=$1 line=$2
+    shift 2
+    : > "$tmp/expected"
+    [ $# -eq 0 ] || printf '%s|\n' "$@" > "$tmp/expected"
+    complete_in "$shell" "$line" > "$tmp/out"
+    cmp -s "$tmp/expected" "$tmp/out" \
+        || fail "$shell completes '$line' as: $(tr '\n' ' ' < "$tmp/out")"
+}
+name='--completion of another shell fails'
+"$POWWOW" --completion fish > "$tmp/out" 2>&1 \
+    && fail 'expected --completion fish to fail'
+grep -Fq 'no completion for fish; only for bash and zsh' "$tmp/out" \
+    || fail "expected the shells: $(cat "$tmp/out")"
+for shell in bash zsh; do
+    command -v $shell > /dev/null 2>&1 || continue
+    name="--completion $shell"
+    "$POWWOW" --completion $shell > "$tmp/compl.$shell" \
+        || fail "--completion $shell failed"
+    $shell -n "$tmp/compl.$shell" || fail "not valid for $shell"
+    # in zsh, the whole word is replaced; in bash, the part after = or :
+    if [ $shell = bash ]; then
+        tls=
+    else
+        tls=--tls=
+    fi
+    expect_completion $shell 'powwow --ver' '--version '
+    expect_completion $shell 'powwow --tls=no' "${tls}no-verify "
+    expect_completion $shell 'powwow --completion ' 'bash ' 'zsh '
+    # the definition files end with .powwow, unless none matches
+    if [ $shell = bash ]; then
+        expect_completion bash 'powwow d' 'defs/' 'dir/'
+        expect_completion bash 'powwow mu' 'mume.powwow '
+        expect_completion bash 'powwow ' 'defs/' 'dir/' 'mume.powwow '
+        expect_completion bash 'powwow n' 'notes.txt '
+    else
+        expect_completion zsh 'powwow mu' '_files -g *.powwow(-.)'
+        expect_completion zsh 'powwow mume.powwow lo' '_hosts'
+    fi
+    POWWOWDIR=$tmp/compl/defs
+    export POWWOWDIR
+    if [ $shell = bash ]; then
+        expect_completion bash 'powwow ar' 'arda.powwow '
+    else
+        expect_completion zsh 'powwow ar' '_files -g *.powwow(-.)' \
+            "_files -W $POWWOWDIR -g *.powwow(-.)"
+    fi
+    unset POWWOWDIR
+done
+
+# in a zsh that completes as one typing in it does, by zpty: a file in
+# HOME by ~, which stays as typed; a key of its own writes the line, as
+# completed, and the output is read, up to what is typed after it, as zsh
+# waits for that
+name='--completion zsh completes ~/ in zsh'
+if command -v zsh > /dev/null 2>&1 \
+   && zsh -f -c 'zmodload zsh/zpty' 2> /dev/null; then
+    cat > "$tmp/zpty.zsh" <<'END'
+zmodload zsh/zpty
+zpty -b z 'PS1="> " zsh -f -i'
+zpty -w z "autoload -U compinit && compinit -u -D; . ${(q)1}"
+zpty -w z "dump() { print -r -- \$BUFFER > ${(q)3}; }; zle -N dump"
+zpty -w z 'bindkey -e; bindkey "^Xd" dump'
+zpty -w -n z "$2"$'\t\C-xd\C-e!END!\n'
+zpty -r z out '*!END!*'
+zpty -d z
+END
+    rm -f "$tmp/zbuf"
+    HOME=$tmp/compl zsh -f "$tmp/zpty.zsh" "$tmp/compl.zsh" 'powwow ~/mu' \
+        "$tmp/zbuf" > /dev/null 2>&1
+    [ "$(cat "$tmp/zbuf" 2> /dev/null)" = 'powwow ~/mume.powwow ' ] \
+        || fail "completed as: '$(cat "$tmp/zbuf" 2> /dev/null)'"
+fi
+
 # powwow-movieplay -a converts a movie to text, without its pauses
 name='powwow-movieplay -a'
 printf 'line hello\nsleep 60000\nprompt HP:10> \n' > "$tmp/movie"

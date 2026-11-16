@@ -9,6 +9,9 @@ bool tls_upgrade(struct connsess *conn, const struct tls_options *tlsopt);
 
 #define NO_TLS_FLAG "--no-tls"
 
+/* the options of --tls=, such as no-verify, ending with NULL */
+extern const char *const tls_option_names[];
+
 /* does not handle NO_TLS_FLAG */
 bool parse_tls_flag(struct tls_options *dst, const char **argp,
                     bool require_prefix);
