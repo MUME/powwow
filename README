@@ -265,6 +265,22 @@ WINDOWS INSTALLER
 	which opens a window of its own instead of passing the file to one
 	that is open already.
 
+MACOS DISK IMAGE
+
+	On macOS, after configure, ‘make macos-dmg’ builds the launcher and
+	makes a disk image of it, ‘powwow-VERSION.dmg’, named as the Windows
+	installer is, with an app, ‘powwow.app’, to drag into Applications.
+	The app has powwow next to the launcher, which runs it, and its help
+	and manual, which powwow finds next to itself; ‘macdeployqt’, of the
+	Qt that CMake found, copies the libraries of both into it, those of
+	Qt and the others, such as GnuTLS, and their licenses go in its
+	folder ‘Resources/licenses’: those of Qt from its sources, with git,
+	as for the Windows installer, and the others from their formulas of
+	Homebrew.  The app is signed ad hoc, not by a developer that Apple
+	knows, so macOS asks before opening it the first time: open it from
+	the Finder with Open in its menu, or allow it in Privacy & Security
+	of System Settings.
+
 INSTALLING
 
 	If you want powwow's definition files to go in a specific directory,

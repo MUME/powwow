@@ -19,6 +19,7 @@ EXTRA_DIST = .clang-tidy AGENTS.md cygwin/bundle.sh cygwin/installer.sh \
              launcher/HiliteEditor.qml launcher/ColorButton.qml \
              launcher/macos.h launcher/macos.mm \
              launcher/powwow-launcher.rc launcher/make-icns.sh \
+             launcher/make-dmg.sh launcher/qt-licenses.sh \
              launcher/gitversion.cmake
 
 # what autogen.sh makes, so that make maintainer-clean leaves the tree as
@@ -86,17 +87,28 @@ windows-bundle: all
 	+$(srcdir)/cygwin/bundle.sh powwow-win
 	$(srcdir)/cygwin/launcher.sh bundle powwow-win '$(QT)'
 
-# a -dev version is named after the commit it is built from, as #ver
-# shows it, such as 1.3.2-dev-ebae0231
-windows-installer: windows-bundle
-	@version='$(VERSION)'; \
-	commit=`sed -n 's/^#define GIT_COMMIT "\(.*\)"$$/\1/p' \
+# the version of an installer or a disk image in $version: a -dev version
+# is named after the commit it is built from, as #ver shows it, such as
+# 1.3.2-dev-ebae0231
+release_version = version='$(VERSION)'; \
+	commit=`sed -n 's/^.define GIT_COMMIT "\(.*\)"$$/\1/p' \
 	        src/gitversion.h`; \
 	case $$version in \
 	    *-dev) test -z "$$commit" || version=$$version-$$commit ;; \
-	esac; \
+	esac
+
+windows-installer: windows-bundle
+	@$(release_version); \
 	echo "$(srcdir)/cygwin/installer.sh powwow-win $$version"; \
 	$(srcdir)/cygwin/installer.sh powwow-win "$$version"
+
+# on macOS: a disk image of the launcher, with powwow in it and the
+# libraries of both (needs macdeployqt of Qt); see README; with +, as the
+# script runs make, which then shares the jobs of make -j
+macos-dmg: all launcher
+	+@$(release_version); \
+	echo "$(srcdir)/launcher/make-dmg.sh $$version"; \
+	$(srcdir)/launcher/make-dmg.sh "$$version"
 
 # download the Cygwin source packages of the bundle again, and update
 # their license files in cygwin-licenses
@@ -107,7 +119,8 @@ update-cygwin-licenses:
 # maintainer-clean removes the licenses and the source packages they come
 # from, which take a download to get again
 clean-local:
-	rm -rf powwow-win powwow-*-setup.exe launcher/build launcher-win
+	rm -rf powwow-win powwow-*-setup.exe launcher/build launcher-win \
+	    powwow-mac powwow-*.dmg
 
 maintainer-clean-local:
 	rm -rf cygwin-licenses cygwin-sources qt-licenses
@@ -146,6 +159,9 @@ if CYGWIN
 	@echo '  update-cygwin-licenses'
 	@echo '                    update cygwin-licenses from the Cygwin sources'
 endif
+if MACOS
+	@echo '  macos-dmg         make a disk image of the launcher with powwow'
+endif
 	@echo '  install           install the programs and data files'
 	@echo '  install-strip     like install, but strip the programs'
 	@echo '  uninstall         remove the installed files'
@@ -154,5 +170,6 @@ endif
 	@echo '  maintainer-clean  also remove the files that autogen.sh makes'
 	@echo '  help              show this list'
 
-.PHONY: lint tidy windows-bundle windows-installer update-cygwin-licenses \
+.PHONY: lint tidy windows-bundle windows-installer macos-dmg \
+	update-cygwin-licenses \
         launcher launcher-tidy help
