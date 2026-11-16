@@ -204,25 +204,30 @@ The options of --tls, separated by colons, are:
 #connect [<session-id> [<initstr>]] [<host> <port>]
          [--tls[=<options>]|--no-tls] [--utf8|--latin1]
 
-Connect a new session.
+Connects a new session, which becomes the default one, or lists the
+open connections.
 
-To connect your first session, use:
-#connect <host> <port>
-where <host> and <port> indicate the host you want to connect to.
-Without a session id, the session is called main; two arguments are an
-address and a port if the second is a number, and otherwise a session id
-and an initstr.
+The number of arguments tells what they are:
 
-Without an address and port, the session connects to the host of #host.
-#connect alone connects the session main to it if no connection is open,
-and otherwise lists the open connections.
+  #connect
+      connect the session main to the host of #host if no connection is
+      open, and otherwise list the open connections
+  #connect <host> <port>
+      connect the session main to <host> and <port>
+  #connect <session-id>
+      connect the session <session-id> to the host of #host
+  #connect <session-id> <initstr>
+      the same, and send <initstr> to the host on connection
+  #connect <session-id> <host> <port>
+      connect the session <session-id> to <host> and <port>
+  #connect <session-id> <initstr> <host> <port>
+      the same, and send <initstr> to the host on connection
 
-For documentation on the --tls, --no-tls, --utf8 and --latin1 options,
-see '#help host'.
+Of two arguments, the second is a <port> if it has only digits, and
+otherwise an <initstr>, which is a single word.  If #host has no host
+yet, the first <host> and <port> connected to become it.
 
-Last opened session will be the default one.
-
-If <initstr> is specified, it is sent to host on connection.
+The flags, which can go anywhere, are those of #host; see '#help host'.
 @keys
 Default editing keys:
 
