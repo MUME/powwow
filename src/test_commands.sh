@@ -249,6 +249,14 @@ has '#no connection named "nosuch"'
 has '#error: missing right parenthesis.'
 has 'alive'
 
+run 'without UTF-8, the greeting and the help quote commands with '"'" \
+    '#help history
+#help -P history'
+grep -Fq "for details type '#help warranty'." "$tmp/out" \
+    || fail "expected '#help warranty' quoted"
+[ "$(grep -c "^'#history' alone shows" "$tmp/out")" -eq 2 ] \
+    || fail "expected '#history' quoted, with and without the pager"
+
 run 'help copyright shows all of COPYING, with and without the pager' \
     '#help copyright
 #help -P copyright'
@@ -1341,7 +1349,7 @@ has '#in [<label> [(<delay>) [<command>]]]'
 lacks 'Normally, powwow prints on screen some messages each time you'
 
 run 'help accepts an abbreviation' '#help speedw' ''
-has 'Execute a speedwalk sequence even if the speedwalk option is disabled.'
+has "Execute a speedwalk sequence even if the 'speedwalk' option is disabled."
 
 # make a save-file like those saved before the readline-like keys, with
 # its C-w bound to the function &$1
@@ -1590,7 +1598,7 @@ run 'Tab completes commands and their arguments' '' \
     "#he	speedw	
 #reset b	C-x-8-e			$(printf '\025')
 "
-has 'Execute a speedwalk sequence even if the speedwalk option is disabled.'
+has "Execute a speedwalk sequence even if the 'speedwalk' option is disabled."
 has 'C-x-8-e-e  C-x-8-e-s'
 
 run 'Tab lists the commands right after completing part of the name' '' \
@@ -1712,24 +1720,27 @@ else
 fi
 
 # the texts that #help shows must be ASCII, except for what tty_put_wc()
-# writes as ASCII where the locale is not UTF-8: the copyright sign, and
-# the dashes U+2010 to U+2015
+# writes as ASCII where the locale is not UTF-8: the copyright sign, the
+# dashes U+2010 to U+2015, and the quotation marks U+2018 to U+201F
 name='the texts of #help have no other non-ASCII characters'
 copyright=$(printf '\302\251')
 dash=$(printf '\342\200[\220-\225]')
+quote=$(printf '\342\200[\230-\237]')
 high=$(printf '[\200-\377]')
 : > "$tmp/out"
 for f in "${srcdir:-.}/../COPYING" "${srcdir:-.}/../doc/unicode-license.txt" \
          "${srcdir:-.}/../doc/powwow.help"; do
-    LC_ALL=C sed -e "s/$copyright//g" -e "s/$dash//g" "$f" \
+    LC_ALL=C sed -e "s/$copyright//g" -e "s/$dash//g" -e "s/$quote//g" "$f" \
         | LC_ALL=C grep -n "$high" | sed "s|^|${f##*/}:|" >> "$tmp/out"
 done
 [ -s "$tmp/out" ] && fail "replace these, or write them as ASCII in tty_put_wc()"
 
-# the help fits in a terminal of 80 columns
+# the help fits in a terminal of 80 columns, each of those characters in
+# one, as awk counts bytes in some locales
 name='the lines of #help are below 80 columns'
-awk 'length > 79 { print "powwow.help:" FNR ": " $0 }' \
-    "${srcdir:-.}/../doc/powwow.help" > "$tmp/out"
+LC_ALL=C sed -e "s/$copyright/c/g" -e "s/$dash/-/g" -e "s/$quote/'/g" \
+    "${srcdir:-.}/../doc/powwow.help" \
+    | awk 'length > 79 { print "powwow.help:" FNR ": " $0 }' > "$tmp/out"
 [ -s "$tmp/out" ] && fail "wrap these lines"
 
 # powwow-movieplay -a converts a movie to text, without its pauses
