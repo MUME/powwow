@@ -31,7 +31,8 @@ committed, understand it, and take responsibility for it as its author.
   `make check TESTS=test_commands.sh` runs one of them, and the results are in
   `src/test-suite.log` and `src/<test>.log`.
 - **Static checks:** `make tidy` (needs clang-tidy) must report nothing; so
-  must `make lint` (needs mandoc) when the man page changes.
+  must `make lint` (needs mandoc) when the man page changes, and when the
+  Markdown changes, if configure found markdownlint-cli2.
   `make -C src foo.tidy` checks only `foo.c`, and `.clang-tidy` lists the
   checks.
 - **New tests:**

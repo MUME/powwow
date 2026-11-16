@@ -10,9 +10,19 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 compile config.guess \
                        config.h.in config.h.in~ config.sub configure \
                        configure~ depcomp install-sh missing test-driver
 
-# check the markup of the man page (needs mandoc)
+# check the markup of the man page (needs mandoc), and of the Markdown
+# with markdownlint-cli2 if configure found it, with its rules in
+# .markdownlint-cli2.yaml
+EXTRA_DIST += .markdownlint-cli2.yaml
 lint:
 	cd man && $(MAKE) $(AM_MAKEFLAGS) lint
+	@if test -n '$(MARKDOWNLINT)'; then \
+	    echo "$(MARKDOWNLINT) AGENTS.md doc/powwow.md"; \
+	    '$(MARKDOWNLINT)' --config $(srcdir)/.markdownlint-cli2.yaml \
+	        $(srcdir)/AGENTS.md doc/powwow.md; \
+	else \
+	    echo 'no markdownlint-cli2: the Markdown is not checked'; \
+	fi
 
 # check the sources (needs clang-tidy)
 tidy:
@@ -29,7 +39,7 @@ help:
 	@echo 'Available targets:'
 	@echo '  all               build everything (the default)'
 	@echo '  check             build and run the tests'
-	@echo '  lint              check the markup of the man page (needs mandoc)'
+	@echo '  lint              check the markup of the man page and markdown'
 	@echo '  tidy              check the sources (needs clang-tidy)'
 	@echo '  install           install the programs and data files'
 	@echo '  install-strip     like install, but strip the programs'

@@ -115,6 +115,8 @@ AC_CACHE_CHECK([for clang-tidy], [ac_cv_path_CLANG_TIDY],
         [ac_cv_path_CLANG_TIDY=clang-tidy],
         [$PATH:/opt/homebrew/opt/llvm/bin:/usr/local/opt/llvm/bin])])
 AC_SUBST([CLANG_TIDY], [$ac_cv_path_CLANG_TIDY])
+# markdownlint-cli2, which make lint runs on the Markdown if it is found
+AC_PATH_PROGS([MARKDOWNLINT], [markdownlint-cli2])
 
 # Checks for libraries.
 
