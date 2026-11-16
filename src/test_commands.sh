@@ -513,9 +513,9 @@ grep -Fq '>not a command' "$tmp/out" && fail "ran the comment"
 run '#! runs the command with sh without POWWOWSHELL' "#! echo it\\'s a | tr a b"
 grep -Fq ">it's b" "$tmp/out" || fail "expected it's b"
 
-run 'without UTF-8, the copyright sign is shown as (c) and dashes as -' \
-    '#print ("x" + *169 + *8211 + *8212 + "y")'
-grep -Fq 'x(c)--y' "$tmp/out" || fail "expected x(c)--y"
+run 'without UTF-8, the copyright sign, the dashes and the quotes are ASCII' \
+    '#print ("x" + *169 + *8211 + *8212 + *8216 + *8217 + *8220 + *8221 + "y")'
+grep -Fq 'x(c)--'"''"'""y' "$tmp/out" || fail "expected x(c)--''\"\"y"
 
 run '#group lists the aliases and actions of a group' '#alias hi@g1=#print hi
 #alias other=#print x
