@@ -1,0 +1,10 @@
+# the rules of markdownlint-cli2 for make lint, as the Markdown of powwow
+# is written: lines wrapped by hand, also in tables, which cannot be;
+# code blocks of commands of powwow, which have no language, and of shell
+# commands without their output; and tabs in the examples of definitions
+config:
+  MD010:
+    code_blocks: false
+  MD013: false
+  MD014: false
+  MD040: false
