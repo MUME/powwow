@@ -1561,6 +1561,21 @@ has '#help [-P|--no-pager] [keys|math|comment|<command>|&<function>]'
 has '#addstatic {<text>|(<expr>)}    add the string to the static completion list'
 lacks "Help on 'help'"
 
+# - as the pager of #help is none, from the option or the environment
+POWWOWPAGER='echo PAGER USED #'
+run '#option help-pager=- is no pager' '#option help-pager=-
+#help help'
+lacks 'PAGER USED'
+has '#help [-P|--no-pager] [keys|math|comment|<command>|&<function>]'
+lacks "Help on 'help'"
+POWWOWHELPPAGER=-
+export POWWOWHELPPAGER
+run '$POWWOWHELPPAGER=- is no pager' '#help help'
+unset POWWOWHELPPAGER
+lacks 'PAGER USED'
+has '#help [-P|--no-pager] [keys|math|comment|<command>|&<function>]'
+POWWOWPAGER=cat
+
 # run from the build directory, powwow finds the help in the source tree
 unset POWWOWHELP
 run 'help from the source tree' '#help -P keys'
@@ -2265,6 +2280,29 @@ run --until '#connection on "n" closed.' \
     "#spawn n sh $tmp/server $tmp
 #spawn o sh $tmp/other $tmp"
 has '#charset: iso-8859-1 (negotiated)'
+
+# - as the pager is none: a text that the MUD sends to view is printed as
+# its other lines, from the option or the environment
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EV24\ntitle\nline one\nline two\n'
+printf '#print after\n'
+EOF
+POWWOWPAGER='echo PAGER USED #'
+run --until '#connection on "n" closed.' '#option pager=- is no pager' \
+    "#option pager=-
+#spawn n sh $tmp/server
+##n #request editor"
+lacks 'PAGER USED'
+has 'line one'
+has 'line two'
+has 'after'
+POWWOWPAGER=-
+run --until '#connection on "n" closed.' '$POWWOWPAGER=- is no pager' \
+    "#spawn n sh $tmp/server
+##n #request editor"
+POWWOWPAGER=cat
+has 'line two'
 
 # MPI messages with a length of 0 or one too large for an int
 cat > "$tmp/server" <<'EOF'

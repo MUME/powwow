@@ -91,7 +91,8 @@ INSTALLING
 	Powwow looks for the editor in the POWWOWEDITOR enviroment variable,
 	and if it doesn't exist, in EDITOR, and uses "emacs" as default.  For
 	text viewing, powwow looks for POWWOWPAGER, then PAGER, then uses
-	"more" as default; #help looks for POWWOWHELPPAGER first.
+	"more" as default; #help looks for POWWOWHELPPAGER first.  A pager
+	of - is none: the texts are printed instead.
 
 	If you are on a multi-window terminal (such as an X terminal or NCSA
 	telnet from a Mac or PC), powwow will let you start the editor in

@@ -77,7 +77,12 @@ and others.  The options
 .B help-pager=
 and
 .B shell=
-come before these variables.
+come before these variables.  A pager of
+.RB \(lq \- \(rq
+(a hyphen) is none:
+.B #help
+prints its text as other messages, and the texts that the MUD sends to
+view are printed as its other lines.
 .PP
 If the first character of the editor is \[oq]&\[cq] (which is then
 skipped), the editor is assumed to run in another window and
@@ -157,7 +162,9 @@ will store and search for its files by default.
 Name of editor to use.
 .TP
 .BR POWWOWPAGER " or " PAGER
-Name of pager to use.
+Name of pager to use;
+.B \-
+for none.
 .TP
 .B POWWOWHELPPAGER
 Name of pager to use for

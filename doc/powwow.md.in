@@ -1045,7 +1045,8 @@ You can also have help on specific commands, using for example
 function does, and the keys bound to it.
 The text is shown with the pager in `#option help-pager`,
 `POWWOWHELPPAGER`, `#option pager`, `POWWOWPAGER` or `PAGER`, or `more`;
-with `-P` or `--no-pager` it is printed on the screen instead.
+with `-P` or `--no-pager`, or a pager of `-` (a hyphen), it is printed
+on the screen instead.
 A help file is needed and provided for this last feature of `#help`,
 and powwow will look for the file "powwow.help" in the directory
 specified by the environment variable POWWOWHELP. If this variable
@@ -1282,7 +1283,9 @@ runs `#!` and the commands after `!` of `#var` and others. Each comes
 before its environment variable, `POWWOWEDITOR`, `POWWOWPAGER`,
 `POWWOWHELPPAGER` and `POWWOWSHELL`, and they are saved with the other
 options. An empty command clears one, and
-`#option =name` puts it in the input line to edit.
+`#option =name` puts it in the input line to edit. A pager of `-` (a
+hyphen) is none: `#help` prints its text as other messages, and the texts
+that the MUD sends to view are printed as its other lines.
 
 The editor and the pager get the text in a temporary file, whose name
 is their last argument, in the directory `TMPDIR`, or `/tmp` if it is
@@ -1292,7 +1295,7 @@ not set.
 #option editor=&emacsclient
 #option shell=zsh -c
 #option help-pager=less
-#option pager=
+#option pager=-
 ```
 
 #### `#option exit`

@@ -349,6 +349,61 @@ static void finish_edit(editsess *sp)
 }
 
 /*
+ * the command that edits a text, or shows it if 'view', or shows #help if
+ * 'builtin': #help first uses #option help-pager, then $POWWOWHELPPAGER;
+ * then #option pager and editor come first, then the environment; "-" is
+ * no pager
+ */
+static const char *editor_command(bool view, bool builtin)
+{
+    const char *editor = NULL;
+    if (builtin) {
+        editor = opt_help_pager;
+        if (editor == NULL)
+            editor = getenv("POWWOWHELPPAGER");
+    }
+    if (editor == NULL)
+        editor = view ? opt_pager : opt_editor;
+    if (editor == NULL)
+        editor = getenv(view ? "POWWOWPAGER" : "POWWOWEDITOR");
+    if (editor == NULL)
+        editor = getenv(view ? "PAGER" : "EDITOR");
+    if (editor == NULL)
+        editor = view ? "more" : "vi";
+    return editor;
+}
+
+/*
+ * print the 'len' bytes of 'text' that the MUD of 'conn' sent to view, as
+ * the lines that it sends, without running the actions on them
+ */
+static void print_view_text(connsess *conn, const char *text, size_t len)
+{
+    if (len > (SIZE_MAX - 1) / 3) {
+        wrap_printf("#warning: text to view too long");
+        return;
+    }
+    char *utf8 = xmalloc(3 * len + 1);
+    if (conn != NULL && conn->ideditor_utf8)
+        len = utf8_sanitize(text, len, utf8);
+    else
+        len = latin1_to_utf8(text, len, utf8);
+    utf8[len] = '\0';
+    for (char *line = utf8; *line != '\0';) {
+        char *end = strchr(line, '\n');
+        char *next = end != NULL ? end + 1 : line + strlen(line);
+        if (end == NULL)
+            end = next;
+        if (end > line && end[-1] == '\r')
+            --end;
+        *end = '\0';
+        smart_print(line, true);
+        line = next;
+    }
+    free(utf8);
+}
+
+/*
  * start an editing session: process the EDIT/VIEW message
  * if view is true, text will be viewed, else edited
  */
@@ -388,6 +443,18 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
     /* the description, converted to UTF-8, takes up to 3 bytes per byte */
     if (!builtin && strlen(descr) > (SIZE_MAX - 1) / 3) {
         tty_puts(errdesc);
+        free(text);
+        return;
+    }
+
+    /* without a pager, #help prints the text as its messages, and that of
+     * the MUD as its other lines */
+    const char *editor = editor_command(view, builtin);
+    if (view && strcmp(editor, "-") == 0) {
+        if (builtin)
+            message_printf("%s", text + i);
+        else
+            print_view_text(conn, text + i, msglen - i);
         free(text);
         return;
     }
@@ -463,23 +530,6 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
             return;
         }
     }
-
-    /* #help first uses #option help-pager, then $POWWOWHELPPAGER; then
-     * #option pager and editor come first, then the environment */
-    const char *editor = NULL;
-    if (builtin) {
-        editor = opt_help_pager;
-        if (editor == NULL)
-            editor = getenv("POWWOWHELPPAGER");
-    }
-    if (editor == NULL)
-        editor = view ? opt_pager : opt_editor;
-    if (editor == NULL)
-        editor = getenv(view ? "POWWOWPAGER" : "POWWOWEDITOR");
-    if (editor == NULL)
-        editor = getenv(view ? "PAGER" : "EDITOR");
-    if (editor == NULL)
-        editor = view ? "more" : "vi";
 
     bool waitforeditor = true;
     if (editor[0] == '&') {
