@@ -267,19 +267,21 @@ static void show_help(const char *prog)
 #define VER_ARG  "--version, -v      "
 #define VER_DESC "display the powwow version (twice: with details)"
 #else
-#define HELP_ARG "-h                "
-#define TLS_ARG  "-t, -T TLS-OPTIONS"
-#define NTLS_ARG "-n                "
-#define UTF8_ARG "-u                "
-#define LAT1_ARG "-l                "
-#define VER_ARG  "-v                "
+#define HELP_ARG "-h                 "
+#define TLS_ARG  "-t, -T TLS-OPTIONS "
+#define NTLS_ARG "-n                 "
+#define UTF8_ARG "-u                 "
+#define LAT1_ARG "-l                 "
+#define VER_ARG  "-v                 "
 #define VER_DESC "display the powwow version (-vv: with details)"
 #endif
 
 #ifdef USE_TLS
-#define TLS_DESC " (default); available TLS-OPTIONS:\n"         \
-    "        no-verify     do not verify CA certificate\n"      \
-    "        host=HOST     assume the CA hostname is HOST"
+#define TLS_DESC " (default) with colon-separated TLS-OPTIONS:\n"       \
+    "                           no-verify  do not verify the CA"        \
+    " certificate\n"                                                    \
+    "                           host=HOST  assume the CA host name"     \
+    " is HOST"
 #else
 #define TLS_DESC " (not supported)"
 #endif
