@@ -329,6 +329,45 @@ static void names_file_path(char *path, const char *name)
 }
 
 /*
+ * the folder of the data of powwow next to the program 'argv0', in 'dir'
+ * of BUFSIZE bytes, if it has the help file: share/powwow next to its
+ * folder bin, as where powwow was moved with its data, or Resources next
+ * to MacOS, as in an app bundle of macOS
+ */
+static bool data_beside_program(char *dir, const char *argv0)
+{
+    const char *slash = strrchr(argv0, '/');
+    if (slash == NULL)
+        return false;           /* found in $PATH */
+    char bin[BUFSIZE];
+    snprintf(bin, sizeof(bin), "%.*s",
+             slash == argv0 ? 1 : (int)(slash - argv0), argv0);
+    char *real = realpath(bin, NULL);
+    if (real == NULL)
+        return false;
+    static const char *const beside[] = {
+        "/../share/powwow", "/../Resources"
+    };
+    bool found = false;
+    for (size_t i = 0; !found && i < sizeof(beside) / sizeof(*beside); ++i) {
+        /* without the .., as it is shown */
+        char path[BUFSIZE];
+        snprintf(path, sizeof(path), "%s%s", real, beside[i]);
+        char *data = realpath(path, NULL);
+        if (data == NULL)
+            continue;
+        snprintf(dir, BUFSIZE, "%s", data);
+        free(data);
+        if (snprintf(path, sizeof(path), "%s/%s", dir, helpname)
+            >= (int)sizeof(path))
+            continue;
+        found = access(path, R_OK) == 0;
+    }
+    free(real);
+    return found;
+}
+
+/*
  * does powwow run from its build directory, as the 'argv0' it was run as
  * says? then it uses the documentation in its source tree
  */
@@ -458,6 +497,8 @@ int main(int argc, char **argv)
     }
 
     bool from_build_dir = in_build_dir(argv[0]);
+    char beside[BUFSIZE];       /* the data next to the program, if any */
+    bool data_beside = !from_build_dir && data_beside_program(beside, argv[0]);
     const char *help = getenv("POWWOWHELP");
     if (help != NULL)
         strcpy(helpfile, help);
@@ -465,6 +506,8 @@ int main(int argc, char **argv)
         strcpy(helpfile, powwow_dir);
     else if (from_build_dir)
         strcpy(helpfile, POWWOW_SOURCE_DIR "/doc");
+    else if (data_beside)
+        strcpy(helpfile, beside);
     else
         strcpy(helpfile, POWWOW_DIR);
 
@@ -481,6 +524,8 @@ int main(int argc, char **argv)
         strcpy(copyfile, powwow_dir);
     else if (from_build_dir)
         strcpy(copyfile, POWWOW_SOURCE_DIR);
+    else if (data_beside)
+        strcpy(copyfile, beside);
     else
         strcpy(copyfile, POWWOW_DIR);
     if (copyfile[strlen(copyfile) - 1] != '/')

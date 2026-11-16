@@ -1568,6 +1568,24 @@ POWWOWHELP=${srcdir:-.}/../doc
 export POWWOWHELP
 has 'C-x 8 Ret   &insert-char'
 
+# moved with its data, powwow finds the help beside it: in share/powwow
+# next to its bin, and in Resources next to the MacOS of an app bundle
+for layout in bin:share/powwow Contents/MacOS:Contents/Resources; do
+    rm -rf "$tmp/moved"
+    mkdir -p "$tmp/moved/${layout%%:*}" "$tmp/moved/${layout#*:}"
+    cp "$POWWOW" "$tmp/moved/${layout%%:*}/powwow"
+    printf '@keys\nhelp beside the program\n' \
+        > "$tmp/moved/${layout#*:}/powwow.help"
+    unset POWWOWHELP
+    saved=$POWWOW
+    POWWOW=$tmp/moved/${layout%%:*}/powwow
+    run "help beside the program in ${layout#*:}" '#help -P keys'
+    POWWOW=$saved
+    POWWOWHELP=${srcdir:-.}/../doc
+    export POWWOWHELP
+    has 'help beside the program'
+done
+
 run 'Tab completes commands and their arguments' '' \
     "#he	speedw	
 #reset b	C-x-8-e			$(printf '\025')
