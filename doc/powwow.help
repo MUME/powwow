@@ -424,10 +424,13 @@ The command options editor, pager, help-pager and shell are the commands
 that edit the texts of the MUD, show texts such as #help, show #help
 only, and run #! and the commands after ! of #var and others; they come
 before $POWWOWEDITOR, $POWWOWPAGER, $POWWOWHELPPAGER and $POWWOWSHELL,
-are saved, and take the rest of the line:
+are saved, and take the rest of the line.  A pager of - is none: #help
+prints its text as other messages, and the texts that the MUD sends to
+view are printed as its other lines.
 
      #option editor=&emacsclient  edit in another window
      #option help-pager=less      show #help with less
+     #option pager=-              print the texts to view
      #option shell=               clear it: use $POWWOWSHELL, or /bin/sh
 
 @put
@@ -786,7 +789,8 @@ what a line-editing function does, and the keys bound to it.
 
 The text is shown with the pager in #option help-pager, $POWWOWHELPPAGER,
 #option pager, $POWWOWPAGER or $PAGER, or more(1).
-With -P or --no-pager, it is printed on the screen instead.
+With -P or --no-pager, or a pager of -, it is printed on the screen
+instead.
 @identify
 #identify [<startedit> [<endedit>]]
 
