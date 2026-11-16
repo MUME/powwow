@@ -128,20 +128,6 @@ INSTALLING
 	protocol. This can also be done with an action; see the documentation
 	for details.
 
-	For editing Mudlle programs with emacs, there is a special mode that
-	helps you with indenting. To use it, put mudlle.el in a suitable
-	place, and add the two following lines to your .emacs file:
-
-	(setq load-path (append load-path '("mydirectory")))
-	(autoload 'mudlle-mode "mudlle.el" "Turns on mudlle editing mode" t)
-
-	where you replace mydirectory with the directory where mudlle.el can
-	be found. If you put the string -*-mudlle-*- in the first line of
-	a mudlle program (i.e. in a comment), then emacs will automatically
-	turn on mudlle mode for that file when you edit it.
-	The mudlle mode can be customized to some extent. See the source for
-	details.
-
 BUGS
 
 	If you have any problems with powwow, try to fix them yourself
@@ -154,20 +140,14 @@ BUGS
 
 AUTHORS OF CANCAN
 
-	Since powwow is based on cancan, we report also this.
-
-	Mattias Engdegård <f91-men@nada.kth.se> was the original author.
-	Many other people have contributed at least as much, including
-	Finn Arne Gangstad <finnag@pvv.unit.no>, David Gay <dgay@di.epfl.ch>,
-	Gary Dezern <gdezern@satelnet.org>
-	and Lai-Chang Woo <vivriel@scs.com.sg>.
-	It is unclear who the current maintainer is, but it seems to be
-	Finn Arne Gangstad. Ask around at MUME to find out more about cancan.
+	Powwow is based on cancan, by Mattias Engdegård, Finn Arne Gangstad,
+        David Gay, Gary Dezern, Lai-Chang Woo, Thuzzle and others, which is no
+        longer maintained.
 
 AUTHORS OF POWWOW
 
 	Massimiliano Ghilardi <max@Linuz.sns.it>, alias Cosmos, is the original
-	author, and Gustav Hållberg contributed a lot of new features.
+	author, and Gustav Hållberg contributed several new features.
 	Steve Slaven contributed as the maintainer from 2005.
 
 	Powwow is maintained at https://github.com/MUME/powwow
