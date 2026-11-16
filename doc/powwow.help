@@ -179,7 +179,7 @@ file; a #hilite in #init changes them when connecting.
 
 See "#help mark" for the syntax of attributes.
 @host
-#host [<hostname> <port> [--tls[=<options>]|--no-tls] [--utf8|--latin1]]
+#host [<host> <port> [--tls[=<options>]|--no-tls] [--utf8|--latin1]]
 
 Sets the default host that powwow connects to when you use #connect.
 
@@ -199,16 +199,16 @@ The flags are:
 The options of --tls, separated by colons, are:
 
   no-verify    do not verify the CA certificate
-  host=<host>  assume the CA certificate host name is <host>
+  host=<name>  assume the CA certificate host name is <name>
 @connect
-#connect [<session-id> [<initstr>]] [<address> <port>]
+#connect [<session-id> [<initstr>]] [<host> <port>]
          [--tls[=<options>]|--no-tls] [--utf8|--latin1]
 
 Connect a new session.
 
 To connect your first session, use:
-#connect <address> <port>
-where <address> and <port> indicate the host you want to connect to.
+#connect <host> <port>
+where <host> and <port> indicate the host you want to connect to.
 Without a session id, the session is called main; two arguments are an
 address and a port if the second is a number, and otherwise a session id
 and an initstr.

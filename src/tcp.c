@@ -896,7 +896,7 @@ static connsess *output_connection; /* to which socket buffer should be sent */
 
 static void warn_no_output(void)
 {
-    wrap_printf("#no open connections. Use '#connect <address> <port>' to "
+    wrap_printf("#no open connections. Use '#connect <host> <port>' to "
                 "open a connection.");
 }
 

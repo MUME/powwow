@@ -63,7 +63,7 @@ $ powwow
 
 and you will enter test-mode: you will be able to use internal commands
 but you will need to start a session manually
-(`#connect <address> <port>`) if you want to connect to a MUD.
+(`#connect <host> <port>`) if you want to connect to a MUD.
 
 To solve the problem met in MUME, where you may have to try many
 different servers to connect to the game, a fourth syntax has been
@@ -176,7 +176,7 @@ There are various ways to enter powwow test mode:
 Remember that to connect to a MUD from test mode you must use:
 
 ```
-#connect <address> <port>
+#connect <host> <port>
 ```
 
 ## Command chaining
