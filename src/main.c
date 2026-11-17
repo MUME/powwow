@@ -686,7 +686,7 @@ int main(int argc, char **argv)
     tty_putc('\n');
     col0 = 0;
     tty_gotoxy(col0, lines - 2);
-    tty_puts("Type #help for help.\n");
+    tty_message("Type #help for help.\n");
     line0 = lines - 1;
 
     session_started = true;
