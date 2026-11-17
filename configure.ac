@@ -31,11 +31,12 @@ AC_ARG_ENABLE([shell],
 AS_IF([ test "${enable_shell}" != no ],
     [ AC_DEFINE(USE_SHELL, 1, [Define to enable the "#!" command.]) ])
 
-# _XOPEN_SOURCE hides extensions such as SIGWINCH; make these systems
-# show them
+# _XOPEN_SOURCE hides extensions such as SIGWINCH and mkstemps(); make
+# these systems show them
 is_darwin=
 feature_cppflags=
 case "${host_os}" in
+    cygwin* | linux*) feature_cppflags=-D_DEFAULT_SOURCE ;;
     darwin*) is_darwin=t; feature_cppflags=-D_DARWIN_C_SOURCE ;;
     freebsd* | dragonfly*) feature_cppflags=-D__BSD_VISIBLE=1 ;;
     openbsd*) feature_cppflags=-D_BSD_SOURCE ;;
@@ -142,6 +143,10 @@ AC_CHECK_FUNC([getopt_long],
 # flock(), which locks the definition file of a session; without it,
 # nothing stops two sessions from saving the same file
 AC_CHECK_FUNCS([flock])
+
+# mkstemps(), which names the temporary files of the editor and the pager
+# with .txt at the end, as Windows and editors take for text
+AC_CHECK_FUNCS([mkstemps])
 
 # Dynamic modules
 AC_SEARCH_LIBS(dlopen,[dl],[
