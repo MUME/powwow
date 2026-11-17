@@ -159,7 +159,6 @@ Which gives you the perl command that can be used like:
 #perl powwow::exec( "say it is " . scalar(localtime()) )
 
 The commands added and their syntax varies depending on the module.
-
 @history
 #history [{<number>|(<expr>)}]
 
@@ -411,7 +410,6 @@ It is best used from your ‘#init’ command, for example:
 
 If the ‘static-completions’ file contains a number of ‘#addstatic’
 commands, all those words will always be possible to Tab-complete on.
-
 @option
 #option [[+|-|=]<option>|list]...
 #option <command-option>=[<command>]
@@ -434,11 +432,15 @@ line.  A pager of ‘-’ (a hyphen) is none: ‘#help’ prints its text as oth
 messages, and the texts that the MUD sends to view are printed as its
 other lines.
 
+An editor or pager that starts with ‘&’ runs in another window: powwow
+goes on without waiting for it. Both get the description of the text from
+the MUD in the environment variable ‘TITLE’: ‘$TITLE’ in sh, ‘%TITLE%’ in
+cmd on Windows.
+
      #option editor=&emacsclient  edit in another window
      #option help-pager=less      show ‘#help’ with less
      #option pager=-              print the texts to view
      #option shell=               clear it: use ‘$POWWOWSHELL’, or /bin/sh
-
 @put
 #put {<text>|(<expr>)}
 
