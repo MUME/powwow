@@ -64,6 +64,9 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  Unicode name or code point, such as in #print or #send.
 
 	Commands, attributes and messages:
+	* A session locks its definition file: a second powwow started
+	  with it warns, and does not save it on exit unless the first
+	  has quit by then, but #save saves it anyway.
 	* `#option identify' identifies to MUME as an editing client each
 	  time powwow connects, before #init. An #init that starts with
 	  #identify, as in `#init ={#identify;look}', is converted to the

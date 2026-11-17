@@ -1545,6 +1545,13 @@ before exiting.
 the definition file only if write succeeds. This is to avoid wiping out
 definition file in case of `disk full` or other errors.
 
+A session locks its definition file, so that a second powwow started
+with the same file does not overwrite what the first saves: it warns
+that the file is in use by another powwow, and does not save it on
+exiting, unless the first has quit by then, but `#save` saves it anyway.
+The lock is a file in the directory `XDG_RUNTIME_DIR`, or else `TMPDIR`,
+or `/tmp`, and needs `flock()`.
+
 ### Set definition-file and load settings from it
 
 ```

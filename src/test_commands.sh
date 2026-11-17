@@ -12,6 +12,10 @@ HOME=$tmp
 TERM=xterm
 LC_ALL=C
 export HOME TERM LC_ALL
+# the temporary files, and the lock files of definition files, in $tmp too
+TMPDIR=$tmp
+export TMPDIR
+unset XDG_RUNTIME_DIR
 # fill memory when it is allocated and freed, on macOS and with glibc, so
 # that using a field that was never set, or freed memory, finds no zeros
 MallocPreScribble=1
@@ -1406,6 +1410,63 @@ has '#warning: text after the expression ignored: "\;(y)"'
     || fail 'expected no warning about the spaces after an expression'
 has '2'
 
+# a session locks its definition file: another session of it warns, and
+# does not save it on exit unless the first has quit by then, but #save
+# saves it
+printf '#alias base=1\n' > "$tmp/lock.pw"
+# a session in the background, until the file $tmp/lock-quit exists
+start_first() {
+    rm -f "$tmp/lock-quit" "$tmp/first.out"
+    {
+        until [ -e "$tmp/lock-quit" ]; do sleep 0.05; done
+        printf '%s\n#quit\n' "$1"
+    } | "$POWWOW" "$tmp/lock.pw" > "$tmp/first.out" 2>&1 &
+    first=$!
+    i=0
+    until grep -q 'Type #help' "$tmp/first.out" 2>/dev/null \
+            || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+}
+start_first '#alias first=1'
+run --args "$tmp/lock.pw" 'a second session of a definition file warns' \
+    '#alias second=1'
+grep -Fq 'is in use by another powwow (pid' "$tmp/out" \
+    || fail 'expected a warning that the file is in use by another powwow'
+has '#definition file not saved: it is in use by another powwow'
+grep -q 'second' "$tmp/lock.pw" && fail 'the second session saved the file'
+run --args "$tmp/lock.pw" '#save saves a definition file open elsewhere' \
+    '#alias saved=1
+#save'
+grep -q 'saved' "$tmp/lock.pw" || fail '#save did not save the file'
+touch "$tmp/lock-quit"
+wait $first
+grep -q 'first' "$tmp/lock.pw" || fail 'the first session did not save'
+run --args "$tmp/lock.pw" 'a session after the first has quit saves' \
+    '#alias third=1'
+grep -Fq 'in use by another powwow' "$tmp/out" && fail 'unexpected warning'
+grep -q 'third' "$tmp/lock.pw" || fail 'the session did not save'
+name='a second session saves if the first has quit before it'
+start_first ''
+rm -f "$tmp/second-quit"
+{
+    until [ -e "$tmp/second-quit" ]; do sleep 0.05; done
+    printf '#alias later=1\n#quit\n'
+} | "$POWWOW" "$tmp/lock.pw" > "$tmp/second.out" 2>&1 &
+second=$!
+i=0
+until grep -q 'Type #help' "$tmp/second.out" 2>/dev/null || [ $i -ge 500 ]
+do
+    sleep 0.01
+    i=$((i + 1))
+done
+touch "$tmp/lock-quit"
+wait $first
+touch "$tmp/second-quit"
+wait $second
+grep -q 'later' "$tmp/lock.pw" || fail 'the second session did not save'
+
 # "# " starts a comment, up to the next ;, typed, in a definition file and
 # in a file that #exe reads
 printf '%s\n' '#savefile-version 9' '#reset bind' '# a comment; #alias good=x' \
@@ -2739,7 +2800,7 @@ run --until '#editor: text' 'temporary file in TMPDIR' \
 && echo \"in TMPDIR \${0##*/}\" && cat \"\$0\"'
 #spawn n sh $tmp/server
 ##n #request editor"
-unset TMPDIR
+TMPDIR=$tmp
 grep -Eq '^#editor: in TMPDIR powwow\.5\.[^/]{6}$' "$tmp/out" \
     || fail "the file is not in TMPDIR"
 

@@ -438,6 +438,19 @@ static bool print_completion_of(const char *shell)
 }
 #endif
 
+/* the settings are loaded and the screen is set up, for the messages */
+static bool session_started = false;
+
+/* the definition file is in use by another powwow: say what that means */
+static void warn_deffile_busy(void)
+{
+    char pid[32] = "";
+    if (deffile_owner > 0)
+        snprintf(pid, sizeof pid, " (pid %ld)", deffile_owner);
+    wrap_printf("#warning: \"%s\" is in use by another powwow%s: it is not "
+                "saved on exit, but %s saves it", deffile, pid, u8"‘#save’");
+}
+
 int main(int argc, char **argv)
 {
     if (setlocale(LC_ALL, "") == NULL)
@@ -611,6 +624,10 @@ int main(int argc, char **argv)
                      u8"‘#help warranty’", u8"‘#help copyright’");
     }
 
+    /* the definition file locked while this session has it, also one of
+     * #load or #save, so that another session does not save it */
+    deffile_locking = true;
+
     bool read_file = false;     /* run initstr ? */
     if (nargs == 0 || nargs == 2) {
         tty_add_initial_binds();
@@ -671,6 +688,10 @@ int main(int argc, char **argv)
     tty_gotoxy(col0, lines - 2);
     tty_puts("Type #help for help.\n");
     line0 = lines - 1;
+
+    session_started = true;
+    if (deffile_busy)
+        warn_deffile_busy();
 
     FD_ZERO(&fdset);
     FD_SET(tty_read_fd, &fdset);
@@ -2852,6 +2873,12 @@ void set_deffile(char *arg)
     } else {
         strcpy(deffile, arg);
     }
+
+    /* said at once for #load and #save, and when starting once the
+     * settings, with their #hilite, are loaded */
+    if (deffile_locking && !lock_deffile() && deffile_busy
+        && session_started)
+        warn_deffile_busy();
 }
 
 /*

@@ -84,6 +84,14 @@ void escape_specials(char *dst, const char *src);
 char *skipspace(const char *p);
 #define skipspace(p) CONST_GENERIC((p), (skipspace)(p))
 noreturn void exit_powwow(void);
+
+/* lock the definition file as set_deffile() sets it, as sessions do */
+extern bool deffile_locking;
+/* the definition file is in use by another powwow, whose pid is
+ * deffile_owner, or 0 if unknown: it is not saved on exit */
+extern bool deffile_busy;
+extern long deffile_owner;
+bool lock_deffile(void);
 void suspend_powwow(int signum);
 function_signal sig_permanent(int signum, function_signal sighandler);
 

@@ -941,6 +941,9 @@ or left blank, walk all the way back to where automapping started.
 Set the definition file and save settings to it. Powwow also saves them
 automatically before exiting. The definition file is overwritten only if
 writing succeeds.
+
+A definition file in use by another powwow is not saved on exiting, as
+that powwow saves it, unless it has quit by then; ‘#save’ saves it anyway.
 @secret
 #secret [add|delete [<number>]|=<hash>]
 
