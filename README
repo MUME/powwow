@@ -128,8 +128,8 @@ INSTALLING
 
 	If you want to use the editing functions, you must execute the
 	‘#identify’ command to notify the server that the client supports the
-	protocol. This can also be done with an action; see the documentation
-	for details.
+	protocol: ‘#option +identify’ does it each time powwow connects.  This
+	can also be done with an action; see the documentation for details.
 
 	‘make install’ also installs the completion of the arguments of
 	powwow in bash, from ‘powwow --completion bash’, in

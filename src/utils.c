@@ -1517,6 +1517,50 @@ static void load_missing_stuff(int n)
  * try to save the definition file even if it got
  * a broken or empty one.
  */
+/*
+ * an #init that identifies as an editing client first, as written before
+ * #option identify: #identify, {#identify} or {#identify;...}, with
+ * spaces around #identify allowed; that option, and #init the rest
+ */
+static void convert_identify_init(void)
+{
+    static const char identify[] = "#identify";
+    const char *p = skipspace(initstr);
+    bool braces = *p == '{';
+    if (braces)
+        p = skipspace(p + 1);
+    if (strncmp(p, identify, sizeof identify - 1) != 0)
+        return;
+    p = skipspace(p + sizeof identify - 1);
+
+    /* the commands after it, up to the closing brace */
+    const char *end = initstr + strlen(initstr);
+    while (end > p && isspace((unsigned char)end[-1]))
+        --end;
+    if (braces) {
+        if (end == p || end[-1] != '}')
+            return;
+        --end;
+        if (*p == ';')
+            p = skipspace(p + 1);
+        else if (p != end)
+            return;
+        while (end > p && isspace((unsigned char)end[-1]))
+            --end;
+    } else if (p != end) {
+        return;
+    }
+
+    char buf[BUFSIZE];
+    if (end > p)
+        snprintf(buf, sizeof buf, "{%.*s}", (int)(end - p), p);
+    else
+        buf[0] = '\0';
+    strcpy(initstr, buf);
+    opt_identify = true;
+    wrap_printf("#init: %s", u8"‘#identify’ is now ‘#option +identify’");
+}
+
 int read_settings(void)
 {
     if (*deffile == '\0') {
@@ -1687,6 +1731,8 @@ int read_settings(void)
     if (ptrbuf != NULL)
         ptrdel(&ptrbuf);
 
+    if (failed > 0)
+        convert_identify_init();
     tty_flush();
     return failed;
 }

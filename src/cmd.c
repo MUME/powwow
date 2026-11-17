@@ -2821,6 +2821,8 @@ static const struct {
       .doc = "automatically exit powwow when mud connection closes" },
     { .name = "history", .option = &opt_history,
       .doc = "enable saving command history" },
+    { .name = "identify", .option = &opt_identify,
+      .doc = "tell MUME on connecting that powwow edits texts" },
     { .name = "info", .option = &opt_info,
       .doc = "print information about command effects" },
     { .name = "keyecho", .option = &opt_keyecho,

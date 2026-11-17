@@ -805,9 +805,12 @@ printed on the screen instead.
 #identify [<startedit> [<endedit>]]
 
 Tell the server that powwow supports editing functions (currently only
-MUME). It is best attached to an action triggered by a string in the
-login screen. The startedit/endedit parameters are commands issued when an
-editing session starts/ends.
+MUME). The startedit/endedit parameters are commands issued when an
+editing session starts/ends. ‘#option +identify’ does it each time powwow
+connects to the MUD of the definition file, before ‘#init’; an ‘#init’
+that starts with ‘#identify’, as older definition files have, is
+converted to that option when the file is read. It can also be attached
+to an action triggered by a string in the login screen:
 
 #action >mume ***  MUME=#identify
 @init
@@ -816,7 +819,7 @@ editing session starts/ends.
 Set up the command to execute on establishing a connection.
 
 #init                           (shows the command)
-#init ={#identify;#speedwalk}   (sets the command)
+#init ={look;#speedwalk}        (sets the command)
 #init =                         (clears it)
 @isprompt
 #isprompt [{<number>|(<expr>)}]

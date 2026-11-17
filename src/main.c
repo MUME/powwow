@@ -128,6 +128,8 @@ bool opt_compact = false;       /* true if to clear prompt between remote
 bool opt_debug = false;         /* true if to echo every line before executing
                                  * it */
 bool opt_speedwalk = false;     /* true: speedwalk on */
+bool opt_identify = false;      /* true: identify as an editing client on
+                                 * connecting */
 bool opt_wrap = false;          /* true: word wrap active */
 bool opt_autoprint = false;     /* true: automatically #print lines matched by
                                  * actions */
@@ -689,11 +691,21 @@ int main(int argc, char **argv)
     return 0;
 }
 
-/* connect the session main to the host of #host, running #init */
+/*
+ * connect the session main to the host of #host, identifying as an editing
+ * client with #option identify, then running #init
+ */
 void connect_default(void)
 {
-    tcp_open("main", (*initstr != '\0' ? initstr : NULL), hostinfo.name,
-             hostinfo.port, &hostinfo.tlsopt, hostinfo.utf8);
+    if (!tcp_open("main", NULL, hostinfo.name, hostinfo.port,
+                  &hostinfo.tlsopt, hostinfo.utf8))
+        return;
+    if (opt_identify)
+        mpi_identify(current_connection);
+    if (*initstr != '\0') {
+        parse_instruction(initstr, false, false, true);
+        history_done = 0;
+    }
 }
 
 /*
