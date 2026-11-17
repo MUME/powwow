@@ -23,6 +23,10 @@
 #include <unistd.h>
 #include <signal.h>
 #include <time.h>
+#include <stdint.h>
+#ifdef HAVE_FLOCK
+#  include <sys/file.h>
+#endif
 
 #include "main.h"
 #include "utils.h"
@@ -2028,6 +2032,99 @@ void update_now(void)
     }
 }
 
+bool deffile_locking = false;
+bool deffile_busy = false;
+long deffile_owner = 0;
+
+#ifdef HAVE_FLOCK
+static int lock_fd = -1;                /* the lock held, or -1 */
+static char lock_path[BUFSIZE];         /* the file of lock_fd */
+
+/*
+ * the lock file of the definition file 'path' in 'buf' of 'size' bytes:
+ * in the folder of the temporary files, named after the full path of the
+ * file, so that two names of the same file have the same lock
+ */
+static void lock_file_name(const char *path, char *buf, size_t size)
+{
+    char *real = realpath(path, NULL);
+    char cwd[BUFSIZE];
+    char full[2 * BUFSIZE];
+    if (real != NULL)
+        path = real;
+    else if (path[0] != '/' && getcwd(cwd, sizeof cwd) != NULL) {
+        snprintf(full, sizeof full, "%s/%s", cwd, path);
+        path = full;
+    }
+    uint64_t hash = 14695981039346656037ULL;        /* FNV-1a */
+    for (const char *p = path; *p != '\0'; ++p) {
+        hash ^= (unsigned char)*p;
+        hash *= 1099511628211ULL;
+    }
+    free(real);
+
+    const char *dir = getenv("XDG_RUNTIME_DIR");
+    if (dir == NULL || *dir == '\0')
+        dir = getenv("TMPDIR");
+    if (dir == NULL || *dir == '\0')
+        dir = "/tmp";
+    snprintf(buf, size, "%s/powwow-%lu-%016llx.lock", dir,
+             (unsigned long)getuid(), (unsigned long long)hash);
+}
+#endif
+
+/*
+ * lock the definition file for this powwow, letting go of the one locked
+ * before: set deffile_busy if another powwow has it locked, and
+ * deffile_owner to its pid. Without flock(), or if the lock file cannot be
+ * made, nothing is locked. Return whether this powwow has it
+ */
+bool lock_deffile(void)
+{
+    deffile_busy = false;
+    deffile_owner = 0;
+#ifdef HAVE_FLOCK
+    char path[BUFSIZE] = "";
+    if (*deffile != '\0')
+        lock_file_name(deffile, path, sizeof path);
+    if (lock_fd >= 0 && strcmp(path, lock_path) == 0)
+        return true;
+    if (lock_fd >= 0) {
+        close(lock_fd);
+        lock_fd = -1;
+        *lock_path = '\0';
+    }
+    if (*path == '\0')
+        return false;
+    /* never deleted, as another powwow may be locking it */
+    int fd = open(path, O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+    if (fd < 0)
+        return false;
+    if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
+        if (errno == EWOULDBLOCK) {
+            char buf[32];
+            ssize_t n = pread(fd, buf, sizeof buf - 1, 0);
+            buf[n > 0 ? n : 0] = '\0';
+            deffile_busy = true;
+            deffile_owner = atol(buf);
+        }
+        close(fd);
+        return false;
+    }
+    /* the pid and the file, for the messages of the others */
+    char buf[BUFSIZE + 32];
+    int len = snprintf(buf, sizeof buf, "%ld\n%s\n", (long)getpid(), deffile);
+    if (ftruncate(fd, 0) < 0 || pwrite(fd, buf, (size_t)len, 0) < 0) {
+        /* the lock still holds; the pid is only for the messages */
+    }
+    lock_fd = fd;
+    snprintf(lock_path, sizeof lock_path, "%s", path);
+    return true;
+#else
+    return false;
+#endif
+}
+
 /*
  * terminate powwow as cleanly as possible
  */
@@ -2040,7 +2137,14 @@ void exit_powwow(void)
         fclose(recordfile);
     if (moviefile != NULL)
         fclose(moviefile);
-    save_settings();
+    /* the other powwow that had the definition file may have quit since */
+    if (deffile_busy)
+        lock_deffile();
+    if (deffile_busy)
+        wrap_printf("#definition file not saved: it is in use by another "
+                    "powwow");
+    else
+        save_settings();
     tty_quit();
     exit(0);
 }
