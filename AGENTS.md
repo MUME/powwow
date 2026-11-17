@@ -23,6 +23,9 @@ committed, understand it, and take responsibility for it as its author.
 - **C23:** the code must also compile as C23, where a `u8` string literal
   is an array of `unsigned char`: write both branches of a `?:` as `u8`
   literals, `utf8 ? u8"©" : u8"(c)"`.
+- **File names in messages** are in typographic single quotes, with the
+  macros of `defines.h` in the format: `"#save-file set to " LQUOTE "%s"
+  RQUOTE`.
 
 ## Testing
 

@@ -14,6 +14,15 @@
 #include "attr.h"
 
 /*
+ * the typographic quotes of file names in messages, which the terminal
+ * shows as ' where it cannot show them, as tty_put_wc() writes them;
+ * escaped, as the source has non-ASCII text only in u8 literals, which
+ * cannot be formats in C23
+ */
+#define LQUOTE "\u2018"
+#define RQUOTE "\u2019"
+
+/*
  * the result of 'call', a call of a function returning a (char *) into
  * the string 'str', made const if 'str' is const, like C23's strchr()
  */
