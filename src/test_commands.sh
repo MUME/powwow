@@ -1410,6 +1410,12 @@ has '#warning: text after the expression ignored: "\;(y)"'
     || fail 'expected no warning about the spaces after an expression'
 has '2'
 
+# the greeting has the attributes of the messages, as the warnings after it
+printf '#hilite messages bold\n' > "$tmp/hilite.pw"
+run --args "$tmp/hilite.pw" 'Type #help for help. is shown as a message' ''
+grep -Fq '<ESC>[1mType #help for help.' "$tmp/out" \
+    || fail 'expected Type #help for help. in the attributes of messages'
+
 # a session locks its definition file: another session of it warns, and
 # does not save it on exit unless the first has quit by then, but #save
 # saves it
