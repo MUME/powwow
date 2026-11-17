@@ -352,24 +352,35 @@ static void finish_edit(editsess *sp)
  * the command that edits a text, or shows it if 'view', or shows #help if
  * 'builtin': #help first uses #option help-pager, then $POWWOWHELPPAGER;
  * then #option pager and editor come first, then the environment; "-" is
- * no pager
+ * no pager. If 'from' is not NULL, set it to where the command comes from:
+ * NULL for the option asked for itself, "#option pager" for that option
+ * for #help, the name of an environment variable, or "" for the default
  */
-static const char *editor_command(bool view, bool builtin)
+const char *editor_command(bool view, bool builtin, const char **from)
 {
     const char *editor = NULL;
+    const char *source = NULL;
     if (builtin) {
         editor = opt_help_pager;
-        if (editor == NULL)
-            editor = getenv("POWWOWHELPPAGER");
+        if (editor == NULL && (editor = getenv("POWWOWHELPPAGER")) != NULL)
+            source = "POWWOWHELPPAGER";
     }
-    if (editor == NULL)
-        editor = view ? opt_pager : opt_editor;
-    if (editor == NULL)
-        editor = getenv(view ? "POWWOWPAGER" : "POWWOWEDITOR");
-    if (editor == NULL)
-        editor = getenv(view ? "PAGER" : "EDITOR");
-    if (editor == NULL)
+    if (editor == NULL && (editor = view ? opt_pager : opt_editor) != NULL)
+        source = builtin ? "#option pager" : NULL;
+    if (editor == NULL) {
+        source = view ? "POWWOWPAGER" : "POWWOWEDITOR";
+        editor = getenv(source);
+    }
+    if (editor == NULL) {
+        source = view ? "PAGER" : "EDITOR";
+        editor = getenv(source);
+    }
+    if (editor == NULL) {
+        source = "";
         editor = view ? "more" : "vi";
+    }
+    if (from != NULL)
+        *from = source;
     return editor;
 }
 
@@ -449,7 +460,7 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
 
     /* without a pager, #help prints the text as its messages, and that of
      * the MUD as its other lines */
-    const char *editor = editor_command(view, builtin);
+    const char *editor = editor_command(view, builtin, NULL);
     if (view && strcmp(editor, "-") == 0) {
         if (builtin)
             message_printf("%s", text + i);

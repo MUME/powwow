@@ -10,6 +10,8 @@ void mpi_identify(struct connsess *conn);
 void message_edit(struct connsess *conn, char *text, int msglen, bool view,
                   bool builtin);
 void sig_chld_bottomhalf(void);
+/* the command of the editor or pager, and where it comes from */
+const char *editor_command(bool view, bool builtin, const char **from);
 /* add the output fds of background editors to 'set'; return the new
  * maximum fd */
 int edit_output_fds(fd_set *set, int max_fd);

@@ -1532,16 +1532,42 @@ grep -Eq '(^|>)pager /' "$tmp/out" && fail 'expected no pager'
 
 run '#option list aligns the descriptions, also after a long command' \
     '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst
-#option list'
+#option help-pager=-
+#option pager=cat
+#option shell=sh
+#option list
+#option help-pager=
+#option pager=
+#option shell='
 has '#option +autoclear       clear input line before executing commands'
 # with the quotes as ASCII, as the locale is not UTF-8
-has "#option help-pager=      program for showing '#help'"
-has "#option pager=           program for showing texts"
-has "#option shell=           program for running '#!' and '!'"
+has "#option help-pager=-     program for showing '#help'"
+has "#option pager=cat        program for showing texts"
+has "#option shell=sh         program for running '#!' and '!'"
 has '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst'
 has "#                        program for editing texts"
 grep -Fxq '#hilite input red' "$tmp/cfg" || fail "#hilite input not saved"
 grep -Fxq '#hilite messages bold' "$tmp/cfg" || fail "#hilite messages not saved"
+
+# for a command option that is not set, #option list shows the command
+# used instead, and where it comes from
+unset POWWOWEDITOR POWWOWHELPPAGER POWWOWSHELL
+EDITOR=nano
+export EDITOR
+run '#option list shows the commands used for command options not set' \
+    '#option list'
+has '#option editor=nano (from $EDITOR)'
+has '#option help-pager=cat (from $POWWOWPAGER)'
+has '#option pager=cat (from $POWWOWPAGER)'
+has '#option shell=/bin/sh (the default)'
+run 'clearing a command option says what its default is' \
+    '#option editor=vi
+#option editor=
+#option shell=
+#option +info'
+has '#option editor is now the default: nano (from $EDITOR)'
+has '#option shell is now the default: /bin/sh'
+unset EDITOR
 
 run 'help aligns the list of commands' '#help' ''
 has '#addstatic {<text>|(<expr>)}    add the string to the static completion list'
