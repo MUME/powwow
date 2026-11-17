@@ -718,13 +718,28 @@ static void cmd_clear(char *arg)
 }
 
 /*
+ * the shell of #!, as for editor_command(): #option shell, or
+ * POWWOWSHELL, with 'from' set to NULL or "POWWOWSHELL"; NULL for none,
+ * as /bin/sh runs the commands then
+ */
+static const char *shell_choice(const char **from)
+{
+    *from = NULL;
+    if (opt_shell != NULL)
+        return opt_shell;
+    *from = "POWWOWSHELL";
+    return getenv("POWWOWSHELL");
+}
+
+/*
  * the command for /bin/sh that #!, and the ! of #var and others, run
  * 'arg' with: 'arg' itself, or, if POWWOWSHELL is set, such as to
  * "zsh -c", that shell with 'arg' as its last argument, to be freed
  */
 static char *shell_command(const char *arg)
 {
-    const char *shell = opt_shell != NULL ? opt_shell : getenv("POWWOWSHELL");
+    const char *from;
+    const char *shell = shell_choice(&from);
     if (shell == NULL || *shell == '\0')
         return xstrdup(arg);
 
@@ -2906,6 +2921,41 @@ const char *command_option_name(int i)
 }
 
 /*
+ * the command of the command option 'i': its value, with 'from' NULL, or if
+ * it is not set, the command used instead, with where it comes from in
+ * 'from': "" for powwow's own default, a variable such as "EDITOR", or
+ * "#option pager"
+ */
+static const char *command_option_used(int i, const char **from)
+{
+    const char *name = command_options[i].name;
+    const char *value = *command_options[i].value;
+    *from = NULL;
+    if (value != NULL)
+        return value;
+    if (strcmp(name, "shell") == 0) {
+        value = shell_choice(from);
+        if (value == NULL || *value == '\0') {
+            value = "/bin/sh";
+            *from = "";
+        }
+        return value;
+    }
+    bool help = strcmp(name, "help-pager") == 0;
+    return editor_command(help || strcmp(name, "pager") == 0, help, from);
+}
+
+/* " (from $EDITOR)" in 'buf' of 'size' bytes for 'from' of
+ * command_option_used(), or "" if it is NULL or powwow's own default */
+static const char *from_note(char *buf, size_t size, const char *from)
+{
+    if (from == NULL || *from == '\0')
+        return "";
+    snprintf(buf, size, " (from %s%s)", *from == '#' ? "" : "$", from);
+    return buf;
+}
+
+/*
  * #option <name>=[<command>] and #option =<name>, if 'word', of 'len'
  * bytes, names a command option: set it to 'rest', the text after the
  * '=' to the end of the line, or clear it if that is empty; or put it in
@@ -2948,9 +2998,16 @@ static bool command_option(const char *word, int len, const char *rest)
         if (*value != NULL)
             message_printf("#option %s is now: %s\n", command_options[i].name,
                            *value);
-        else
-            message_printf("#option %s is now not set.\n",
-                           command_options[i].name);
+        else {
+            /* the default, and what it is now */
+            const char *from;
+            const char *used = command_option_used(i, &from);
+            /* such as " (from $EDITOR)" */
+            char note[64];
+            message_printf("#option %s is now the default: %s%s\n",
+                           command_options[i].name, used,
+                           from_note(note, sizeof note, from));
+        }
     }
     return true;
 }
@@ -2960,6 +3017,25 @@ static bool command_option(const char *word, int len, const char *rest)
  * 'doc' in a column, also where it wraps; after a command option set to
  * a command longer than the column, on the next line
  */
+/*
+ * the line of #option list of the command option 'i' in 'buf' of 'size'
+ * bytes: if it is not set, with the command that is used instead and where
+ * it comes from, such as "#option editor=vi (from $EDITOR)"
+ */
+static void command_option_line(char *buf, size_t size, int i)
+{
+    const char *name = command_options[i].name;
+    const char *from;
+    const char *value = command_option_used(i, &from);
+    /* such as " (from $EDITOR)" */
+    char note[64];
+    if (from != NULL && *from == '\0')
+        snprintf(buf, size, "#option %s=%s (the default)", name, value);
+    else
+        snprintf(buf, size, "#option %s=%s%s", name, value,
+                 from_note(note, sizeof note, from));
+}
+
 static void print_option_doc(const char *opt, const char *doc)
 {
     static const char cont[] = "#                        ";
@@ -3026,10 +3102,7 @@ static void cmd_option(char *arg)
                     print_option_doc(opt, options[i].doc);
                 }
                 for (i = 0; command_options[i].name != NULL; ++i) {
-                    const char *value = *command_options[i].value;
-                    snprintf(opt, sizeof opt, "#option %s=%s",
-                             command_options[i].name,
-                             value != NULL ? value : "");
+                    command_option_line(opt, sizeof opt, i);
                     print_option_doc(opt, command_options[i].doc);
                 }
             } else {
