@@ -1534,10 +1534,12 @@ run '#option list aligns the descriptions, also after a long command' \
     '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst
 #option list'
 has '#option +autoclear       clear input line before executing commands'
-has '#option help-pager=      show #help with this, not $POWWOWHELPPAGER'
-has '#option pager=           show texts, such as #help, with this, not $POWWOWPAGER'
+# with the quotes as ASCII, as the locale is not UTF-8
+has "#option help-pager=      program for showing '#help'"
+has "#option pager=           program for showing texts"
+has "#option shell=           program for running '#!' and '!'"
 has '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst'
-has '#                        edit texts of the MUD with this, not $POWWOWEDITOR'
+has "#                        program for editing texts"
 grep -Fxq '#hilite input red' "$tmp/cfg" || fail "#hilite input not saved"
 grep -Fxq '#hilite messages bold' "$tmp/cfg" || fail "#hilite messages not saved"
 

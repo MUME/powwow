@@ -2795,7 +2795,7 @@ static const struct {
     { .name = "autoclear", .option = &opt_autoclear,
       .doc = "clear input line before executing commands" },
     { .name = "autoprint", .option = &opt_autoprint,
-      .doc = "#print lines matched by actions" },
+      .doc = (const char *)u8"‘#print’ lines matched by actions" },
     { .name = "compact", .option = &opt_compact,
       .doc = "remove prompt when receiving new messages from mud" },
     { .name = "debug", .option = &opt_debug,
@@ -2805,7 +2805,7 @@ static const struct {
     { .name = "exit", .option = &opt_exit,
       .doc = "automatically exit powwow when mud connection closes" },
     { .name = "history", .option = &opt_history,
-      .doc = "also save command history" },
+      .doc = "enable saving command history" },
     { .name = "info", .option = &opt_info,
       .doc = "print information about command effects" },
     { .name = "keyecho", .option = &opt_keyecho,
@@ -2815,9 +2815,9 @@ static const struct {
     { .name = "sendsize", .option = &opt_sendsize,
       .doc = "send terminal size when opening connection" },
     { .name = "speedwalk", .option = &opt_speedwalk,
-      .doc = "enable speed walking (ness3ew...)" },
+      .doc = (const char *)u8"enable speed walking (‘ness3ew...’)" },
     { .name = "words", .option = &opt_words,
-      .doc = "also save word history" },
+      .doc = "enable saving word history" },
     { .name = "wrap", .option = &opt_wrap,
       .doc = "enable word wrapping" },
     { 0 }
@@ -2832,13 +2832,13 @@ static const struct {
     const char *doc;
 } command_options[] = {
     { .name = "editor", .value = &opt_editor,
-      .doc = "edit texts of the MUD with this, not $POWWOWEDITOR" },
+      .doc = "program for editing texts" },
     { .name = "help-pager", .value = &opt_help_pager,
-      .doc = "show #help with this, not $POWWOWHELPPAGER" },
+      .doc = (const char *)u8"program for showing ‘#help’" },
     { .name = "pager", .value = &opt_pager,
-      .doc = "show texts, such as #help, with this, not $POWWOWPAGER" },
+      .doc = "program for showing texts" },
     { .name = "shell", .value = &opt_shell,
-      .doc = "run #! and ! commands with this, not $POWWOWSHELL" },
+      .doc = (const char *)u8"program for running ‘#!’ and ‘!’" },
     { 0 }
 };
 
