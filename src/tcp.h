@@ -110,7 +110,7 @@ void tcp_write(connsess *conn, const char *data);
 void tcp_main_write(const char *data);
 void tcp_flush(void);
 void tcp_set_main(connsess *conn);
-void tcp_open(const char *id, char *initstring, const char *host,
+bool tcp_open(const char *id, char *initstring, const char *host,
               int port, const struct tls_options *tlsopt, bool utf8);
 void tcp_set_charset(connsess *conn, enum charset cs, const char *why);
 connsess *tcp_find_connection(const char *id);

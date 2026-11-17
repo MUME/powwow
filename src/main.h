@@ -120,6 +120,7 @@ extern bool opt_echo;
 extern bool opt_info;
 extern bool opt_keyecho;
 extern bool opt_speedwalk;
+extern bool opt_identify;
 extern bool opt_autoprint;
 extern bool opt_reprint;
 extern bool opt_sendsize;

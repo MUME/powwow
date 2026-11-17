@@ -64,6 +64,10 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  Unicode name or code point, such as in #print or #send.
 
 	Commands, attributes and messages:
+	* `#option identify' identifies to MUME as an editing client each
+	  time powwow connects, before #init. An #init that starts with
+	  #identify, as in `#init ={#identify;look}', is converted to the
+	  option when a definition file is read.
 	* #(<expr>) warns about text after the expression, which it
 	  ignores, such as a comment written after it.
 	* #secret keeps lines with a password or other secret out of the

@@ -1748,8 +1748,8 @@ has 'black  blink  blue   bold'
 run 'Tab lists the words down and then across' '' \
     "#option 		$(printf '\025')
 "
-has 'autoclear    echo         history      pager=       speedwalk'
-has 'debug        help-pager=  list         shell='
+has 'autoclear    echo         history      list         shell='
+has 'debug        help-pager=  keyecho      sendsize     wrap'
 
 name='powwow-movieplay -a converts lines longer than 4 KB'
 long=$(printf '%05000d' 0)
@@ -2170,6 +2170,58 @@ EOF
     has 'HP:>(say <redacted>)'
     has 'HP:>(look)'
     grep -q 'hunter22' "$tmp/out" && fail 'the secret was reprinted'
+
+    # a MUD that keeps what it gets up to the line "look" in the file $2;
+    # the #init of a definition file written before #option identify,
+    # { #identify ; look}, is that option and {look}, which identifies when
+    # connecting, before #init runs
+    cat > "$tmp/server.py" <<'EOF'
+import os, socket, sys
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+got = b''
+while b'look\n' not in got:
+    data = c.recv(1024)
+    if not data:
+        break
+    got += data
+with open(sys.argv[2], 'wb') as f:
+    f.write(got)
+c.sendall(b'Bye\r\n')
+c.close()
+EOF
+    name='#option identify identifies before #init, as #init {#identify;...} did'
+    rm -f "$tmp/port" "$tmp/got"
+    python3 -I "$tmp/server.py" "$tmp/port" "$tmp/got" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+    printf '#savefile-version 9\n#host 127.0.0.1 %s --no-tls\n' \
+        "$(cat "$tmp/port")" > "$tmp/identify.pw"
+    printf '#init ={ #identify ; look}\n' >> "$tmp/identify.pw"
+    : > "$tmp/raw"
+    {
+        wait_for 'Bye'
+        printf '#save\n#quit\n'
+    } | "$POWWOW" "$tmp/identify.pw" > "$tmp/raw" 2>&1
+    wait $server
+    printf '~$#EI1\n1look\n' > "$tmp/expected"
+    cmp -s "$tmp/got" "$tmp/expected" \
+        || fail "unexpected identification: $(od -c "$tmp/got")"
+    grep -Fq "#init: '#identify' is now '#option +identify'" "$tmp/raw" \
+        || fail 'expected the conversion of #init to be reported'
+    grep -Fxq '#init ={look}' "$tmp/identify.pw" \
+        || fail 'expected #init without #identify'
+    grep -Eq '^#option .*[+]identify' "$tmp/identify.pw" \
+        || fail 'expected #option +identify'
 
     # a MUD that echoes again before the password is typed, and asks again
     cat > "$tmp/server.py" <<'EOF'

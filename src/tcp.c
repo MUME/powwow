@@ -1146,18 +1146,18 @@ static const struct io_fns tcp_io_fns = {
 };
 
 /*
- * open another connection
+ * open another connection; return whether it opened
  */
-void tcp_open(const char *id, char *initstring, const char *host,
+bool tcp_open(const char *id, char *initstring, const char *host,
               int port, const struct tls_options *tlsopt, bool utf8)
 {
     if (tcp_count + tcp_attachcount >= MAX_CONNECTS) {
         message_printf("#too many open connections.\n");
-        return;
+        return false;
     }
     if (tcp_find_connection(id) != NULL) {
         wrap_printf("#connection \"%s\" already open.", id);
-        return;
+        return false;
     }
 
     /* find a free slot */
@@ -1166,7 +1166,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
         ++i;
     if (i == MAX_CONNECTS) {
         wrap_printf("#internal error, connection table full :(");
-        return;
+        return false;
     }
 
     char *conn_host = xstrdup(host);
@@ -1177,7 +1177,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
     if (newtcp_fd < 0) {
         free(conn_host);
         free(conn_id);
-        return;
+        return false;
     }
 
     CONN_INDEX(i) = (connsess){
@@ -1196,7 +1196,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
     if (tlsopt->use_tls && !tls_upgrade(&CONN_INDEX(i), tlsopt)) {
         current_connection = &CONN_INDEX(i);
         tcp_close(NULL);
-        return;
+        return false;
     }
 
     if (tcp_max_fd < newtcp_fd)
@@ -1220,6 +1220,7 @@ void tcp_open(const char *id, char *initstring, const char *host,
         parse_instruction(initstring, false, false, true);
         history_done = 0;
     }
+    return true;
 }
 
 /*

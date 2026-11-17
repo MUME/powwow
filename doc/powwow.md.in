@@ -148,7 +148,7 @@ ISO-8859-1 connection) are sent as `?`.
 
 `#capture`, `#movie` and `#record` files are written in the character
 set of the connection, and so are the files used for remote
-editing (see `#identify`). Definition files and other text files
+editing (see `#option identify`). Definition files and other text files
 powwow reads or writes (`#send`, `#exe`, `#var`, `#write`, the help file)
 use UTF-8; definition files written by older versions of powwow
 are converted from ISO-8859-1 when loaded, and saved as UTF-8.
@@ -586,7 +586,7 @@ new words are added. They are not saved by `#save`, so it is best used
 from your `#init` command. Example:
 
 ```
-#init ={#identify;#exe <static-completions}
+#init ={#exe <static-completions}
 		(with #addstatic commands in that file)
 ```
 
@@ -1220,7 +1220,7 @@ Example:
 | Command | Effect |
 | --- | --- |
 | `#init` | shows the string |
-| `#init ={#identify;#speedwalk}` | sets the string |
+| `#init ={look;#speedwalk}` | sets the string |
 | `#init =` | clears the whole string |
 
 ### Identify as an editing client
@@ -1230,11 +1230,12 @@ Example:
 ```
 
 This command sends an identification string to the server, to
-indicate that the client supports editing functions. It is
-best attached to an action trigged by a string in the login
-screen, but can also be entered by hand.
-This command must be issued for the cooperative editing to work
-on servers that support it (currently only MUME).
+indicate that the client supports editing functions.
+It must be issued for the cooperative editing to work
+on servers that support it (currently only MUME):
+`#option +identify` issues it each time powwow connects to the MUD
+of the definition file, before `#init`. It can also be attached to an
+action triggered by a string in the login screen, or entered by hand.
 On UTF-8 and US-ASCII connections, powwow also tells the server
 that it supports UTF-8, and the texts to edit are UTF-8 encoded;
 otherwise, they are ISO-8859-1 encoded. If the connection's
@@ -1279,8 +1280,8 @@ editor has not ended yet, are left alone.
 
 Currently available option names are
 `autoclear`, `autoprint`, `compact`, `debug`, `echo`, `exit`, `history`,
-`info`, `keyecho`, `reprint`, `sendsize`, `speedwalk`, `words` and
-`wrap`.
+`identify`, `info`, `keyecho`, `reprint`, `sendsize`, `speedwalk`,
+`words` and `wrap`.
 
 | Command | Effect |
 | --- | --- |
@@ -1393,6 +1394,15 @@ margin to the next line. This command lets you turn it off and on.
 
 If `autoprint` is on, powwow prints lines matched by an `#action`
 even without an explicit `#print`.
+
+#### `#option identify`
+
+If `identify` is on (off by default), powwow tells the MUD that it
+edits texts locally, as `#identify` does, each time it connects to the
+MUD of the definition file, before it runs `#init`. A definition file
+whose `#init` starts with `#identify`, such as `#init ={#identify}` or
+`#init ={#identify;look}`, as older versions of powwow suggested, gets
+this option instead when it is read, and keeps the rest of its `#init`.
 
 #### `#option sendsize`
 
