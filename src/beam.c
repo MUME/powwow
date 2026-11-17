@@ -473,14 +473,32 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
     const char *tmpdir = getenv("TMPDIR");
     if (tmpdir == NULL || *tmpdir == '\0')
         tmpdir = "/tmp";
+    /* named after what the text is, as the editor or the pager may show
+     * the name, such as in the title of its window */
+    char kind[32];
+    if (builtin)
+        snprintf(kind, sizeof kind, "help");
+    else if (view)
+        snprintf(kind, sizeof kind, "view");
+    else
+        snprintf(kind, sizeof kind, "edit-%u", key);
+#ifdef HAVE_MKSTEMPS
+    static const char suffix[] = ".txt";
+#else
+    static const char suffix[] = "";
+#endif
     char tmpname[BUFSIZE];
-    int len = snprintf(tmpname, sizeof tmpname, "%s/powwow.%u.XXXXXX",
-                       tmpdir, key);
+    int len = snprintf(tmpname, sizeof tmpname, "%s/powwow-%s-XXXXXX%s",
+                       tmpdir, kind, suffix);
     int tmpfd = -1;
     if (len < 0 || len >= (int)sizeof tmpname)
         errno = ENAMETOOLONG;
     else
+#ifdef HAVE_MKSTEMPS
+        tmpfd = mkstemps(tmpname, (int)strlen(suffix));
+#else
         tmpfd = mkstemp(tmpname);
+#endif
     if (tmpfd < 0) {
         errmsg("cannot create %s", tmpname);
         free(text);

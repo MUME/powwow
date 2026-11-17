@@ -2793,7 +2793,7 @@ run --until '#editor: text' 'temporary file in TMPDIR' \
 #spawn n sh $tmp/server
 ##n #request editor"
 TMPDIR=$tmp
-grep -Eq '^#editor: in TMPDIR powwow\.5\.[^/]{6}$' "$tmp/out" \
+grep -Eq '^#editor: in TMPDIR powwow-edit-5-[^/]{6}(\.txt)?$' "$tmp/out" \
     || fail "the file is not in TMPDIR"
 
 # every command must have a help entry with the syntax shown by #help, and
