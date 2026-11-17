@@ -447,8 +447,9 @@ static void warn_deffile_busy(void)
     char pid[32] = "";
     if (deffile_owner > 0)
         snprintf(pid, sizeof pid, " (pid %ld)", deffile_owner);
-    wrap_printf("#warning: \"%s\" is in use by another powwow%s: it is not "
-                "saved on exit, but %s saves it", deffile, pid, u8"‘#save’");
+    wrap_printf("#warning: " LQUOTE "%s" RQUOTE " is in use by another "
+                "powwow%s: it is not saved on exit, but " LQUOTE "#save"
+                RQUOTE " saves it", deffile, pid);
 }
 
 int main(int argc, char **argv)

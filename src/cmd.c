@@ -596,7 +596,8 @@ static void show_copyright(bool use_pager)
     size_t len = sizeof title - 1;
     char *text = xstrdup(title);
     if (!append_file(&text, &len, copyfile, false)) {
-        wrap_printf("#cannot read \"%s\": %s", copyfile, strerror(errno));
+        wrap_printf("#cannot read "
+                    LQUOTE "%s" RQUOTE ": %s", copyfile, strerror(errno));
         free(text);
         return;
     }
@@ -665,7 +666,8 @@ static void cmd_help(char *arg)
 
     FILE *f = fopen(helpfile, "r");
     if (f == NULL) {
-        wrap_printf("#cannot open help file \"%s\": %s", helpfile,
+        wrap_printf("#cannot open help file "
+                    LQUOTE "%s" RQUOTE ": %s", helpfile,
                     strerror(errno));
         return;
     }
@@ -1658,7 +1660,7 @@ static void cmd_emulate(char *arg)
 
         FILE *fp = (kind == '!') ? shell_popen(arg, "r") : fopen(arg, "r");
         if (fp == NULL) {
-            wrap_printf("#emulate: #error opening \"%s\"", arg);
+            wrap_printf("#emulate: #error opening " LQUOTE "%s" RQUOTE, arg);
             error = SYNTAX_ERROR;
             print_error(error);
             ptrdel(&pbuf);
@@ -1716,7 +1718,7 @@ static void cmd_exe(char *arg)
 
         FILE *fp = (kind == '!') ? shell_popen(arg, "r") : fopen(arg, "r");
         if (fp == NULL) {
-            wrap_printf("#exe: #error opening \"%s\"", arg);
+            wrap_printf("#exe: #error opening " LQUOTE "%s" RQUOTE, arg);
             error = SYNTAX_ERROR;
             ptrdel(&pbuf);
             return;
@@ -1770,7 +1772,7 @@ static void cmd_print(char *arg)
         char buf[BUFSIZE];
         FILE *fp = (kind == '!') ? shell_popen(arg, "r") : fopen(arg, "r");
         if (fp == NULL) {
-            wrap_printf("#print: #error opening \"%s\"", arg);
+            wrap_printf("#print: #error opening " LQUOTE "%s" RQUOTE, arg);
             error = SYNTAX_ERROR;
             ptrdel(&pbuf);
             return;
@@ -1802,7 +1804,7 @@ static void cmd_send(char *arg)
         char buf[BUFSIZE];
         FILE *fp = (kind == '!') ? shell_popen(arg, "r") : fopen(arg, "r");
         if (fp == NULL) {
-            wrap_printf("#send: #error opening \"%s\"", arg);
+            wrap_printf("#send: #error opening " LQUOTE "%s" RQUOTE, arg);
             error = SYNTAX_ERROR;
             ptrdel(&pbuf);
             return;
@@ -1916,7 +1918,7 @@ static void cmd_write(char *arg)
                     ? shell_popen(arg, "w")
                     : fopen(arg, kind != 0 ? "w" : "a"));
         if (fp == NULL) {
-            wrap_printf("#write: #error opening \"%s\"", arg);
+            wrap_printf("#write: #error opening " LQUOTE "%s" RQUOTE, arg);
             error = SYNTAX_ERROR;
             goto write_cleanup2;
         }
@@ -2167,7 +2169,7 @@ static void cmd_var(char *arg)
         char buf2[BUFSIZE];
         FILE *fp = (from == '!') ? shell_popen(arg, "r") : fopen(arg, "r");
         if (fp == NULL) {
-            wrap_printf("#var: #error opening \"%s\"", arg);
+            wrap_printf("#var: #error opening " LQUOTE "%s" RQUOTE, arg);
             error = SYNTAX_ERROR;
             ptrdel(&pbuf);
             return;
@@ -2458,7 +2460,8 @@ static void cmd_capture(char *arg)
             fclose(capturefile);
             capturefile = NULL;
             if (opt_info) {
-                wrap_printf("#end of capture to \"%s\".", name);
+                wrap_printf("#end of capture to "
+                            LQUOTE "%s" RQUOTE ".", name);
             }
         } else {
             wrap_printf("#capture to what file?");
@@ -2475,12 +2478,12 @@ static void cmd_capture(char *arg)
             }
             capturefile = fopen(arg, append ? "a" : "w");
             if (capturefile == NULL) {
-                wrap_printf("#error writing file \"%s\"", arg);
+                wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, arg);
             } else {
                 snprintf(name, sizeof(name), "%s", arg);
                 if (opt_info)
-                    wrap_printf("#capture to \"%s\" active, \"#capture\""
-                                " ends.", arg);
+                    wrap_printf("#capture to " LQUOTE "%s" RQUOTE " active, "
+                                LQUOTE "#capture" RQUOTE " ends.", arg);
             }
         }
     }
@@ -2498,7 +2501,7 @@ static void cmd_movie(char *arg)
             fclose(moviefile);
             moviefile = NULL;
             if (opt_info) {
-                wrap_printf("#end of movie to \"%s\".", name);
+                wrap_printf("#end of movie to " LQUOTE "%s" RQUOTE ".", name);
             }
         } else {
             wrap_printf("#movie to what file?");
@@ -2509,11 +2512,11 @@ static void cmd_movie(char *arg)
         } else {
             moviefile = fopen(arg, "w");
             if (moviefile == NULL) {
-                wrap_printf("#error writing file \"%s\"", arg);
+                wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, arg);
             } else {
                 if (opt_info) {
-                    wrap_printf("#movie to \"%s\" active, \"#movie\" ends.",
-                                arg);
+                    wrap_printf("#movie to " LQUOTE "%s" RQUOTE " active, "
+                                LQUOTE "#movie" RQUOTE " ends.", arg);
                 }
                 snprintf(name, sizeof(name), "%s", arg);
                 update_now();
@@ -2535,7 +2538,7 @@ static void cmd_record(char *arg)
             fclose(recordfile);
             recordfile = NULL;
             if (opt_info) {
-                wrap_printf("#end of record to \"%s\".", name);
+                wrap_printf("#end of record to " LQUOTE "%s" RQUOTE ".", name);
             }
         } else {
             wrap_printf("#record to what file?");
@@ -2546,12 +2549,12 @@ static void cmd_record(char *arg)
         } else {
             recordfile = fopen(arg, "w");
             if (recordfile == NULL) {
-                wrap_printf("#error writing file \"%s\"", arg);
+                wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, arg);
             } else {
                 snprintf(name, sizeof(name), "%s", arg);
                 if (opt_info)
-                    wrap_printf("#record to \"%s\" active, \"#record\" ends.",
-                                arg);
+                    wrap_printf("#record to " LQUOTE "%s" RQUOTE " active, "
+                                LQUOTE "#record" RQUOTE " ends.", arg);
             }
         }
     }
@@ -3148,7 +3151,7 @@ static void cmd_file(char *arg)
         set_deffile(++arg);
         if (opt_info) {
             if (*arg != '\0') {
-                wrap_printf("#save-file set to \"%s\"", deffile);
+                wrap_printf("#save-file set to " LQUOTE "%s" RQUOTE, deffile);
             } else {
                 wrap_printf("#save-file is now undefined.");
             }
@@ -3167,7 +3170,7 @@ static void cmd_save(char *arg)
     if (*arg != '\0') {
         set_deffile(arg);
         if (opt_info) {
-            wrap_printf("#save-file set to \"%s\"", deffile);
+            wrap_printf("#save-file set to " LQUOTE "%s" RQUOTE, deffile);
         }
     } else if (*deffile == '\0') {
         wrap_printf("#save-file not defined.");
@@ -3175,7 +3178,7 @@ static void cmd_save(char *arg)
     }
 
     if (*deffile != '\0' && save_settings() > 0 && opt_info) {
-        wrap_printf("#settings saved to \"%s\".", deffile);
+        wrap_printf("#settings saved to " LQUOTE "%s" RQUOTE ".", deffile);
     }
 }
 
@@ -3186,7 +3189,7 @@ static void cmd_load(char *arg)
     if (*arg != '\0') {
         set_deffile(arg);
         if (opt_info) {
-            wrap_printf("#save-file set to \"%s\"", deffile);
+            wrap_printf("#save-file set to " LQUOTE "%s" RQUOTE, deffile);
         }
     } else if (*deffile == '\0') {
         wrap_printf("#save-file not defined.");

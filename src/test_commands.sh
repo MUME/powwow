@@ -1771,7 +1771,7 @@ run 'Tab completes file names, and directories without a space' '' \
 #save $tmp/defs/		$(printf '\025')
 "
 has 'loaded'
-has "#error writing file \"$tmp/defs/sub/\""
+has "#error writing file '$tmp/defs/sub/'"
 has 'mud.powwow  sub/'
 
 # file names in any case where the file system ignores case, as on macOS
@@ -1983,10 +1983,11 @@ run '#save and the end of #capture, #movie and #record name the file' \
 #movie
 #record $tmp/rec
 #record"
-has "#settings saved to \"$tmp/defs.cfg\"."
-has "#end of capture to \"$tmp/cap\"."
-has "#end of movie to \"$tmp/mov\"."
-has "#end of record to \"$tmp/rec\"."
+# file names in quotes, as ASCII, as the locale is not UTF-8
+has "#settings saved to '$tmp/defs.cfg'."
+has "#end of capture to '$tmp/cap'."
+has "#end of movie to '$tmp/mov'."
+has "#end of record to '$tmp/rec'."
 
 long=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 run 'messages wrap before the words that do not fit' "#alias $long"

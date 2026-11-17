@@ -1574,7 +1574,8 @@ int read_settings(void)
 
     FILE *f = fopen(deffile, "r");
     if (f == NULL) {
-        wrap_printf("#error: cannot open file \"%s\": %s", deffile,
+        wrap_printf("#error: cannot open file "
+                    LQUOTE "%s" RQUOTE ": %s", deffile,
                     strerror(errno));
         return 0;
     }
@@ -1646,7 +1647,8 @@ int read_settings(void)
 
         if (cmd == NULL) {
             if (feof(f)) {
-                wrap_printf("#error: missing newline at end of file \"%s\"",
+                wrap_printf("#error: missing newline at end of file "
+                            LQUOTE "%s" RQUOTE,
                             deffile);
                 break;
             }
@@ -1711,7 +1713,8 @@ int read_settings(void)
     if (error != NO_ERROR) {
         failed = -1;
     } else if (ferror(f) && !feof(f)) {
-        wrap_printf("#error: cannot read file \"%s\": %s", deffile,
+        wrap_printf("#error: cannot read file "
+                    LQUOTE "%s" RQUOTE ": %s", deffile,
                     strerror(errno));
         failed = -1;
     } else if (limit_mem_hit) {
@@ -1745,7 +1748,9 @@ static char tmpname[BUFSIZE];
 
 static void fail_msg(void)
 {
-    wrap_printf("#error: cannot write to temporary file \"%s\": %s", tmpname,
+    wrap_printf("#error: cannot write to temporary file "
+                LQUOTE "%s" RQUOTE ": %s",
+                tmpname,
                 strerror(errno));
 }
 
@@ -2008,8 +2013,9 @@ int save_settings(void)
     } else {
         failed = rename(tmpname, deffile);
         if (failed == -1) {
-            wrap_printf("#error: cannot move temporary file \"%s\" to "
-                        "\"%s\": %s", tmpname, deffile, strerror(errno));
+            wrap_printf("#error: cannot move temporary file " LQUOTE "%s"
+                        RQUOTE " to " LQUOTE "%s" RQUOTE ": %s", tmpname,
+                        deffile, strerror(errno));
         } else {
             failed = 1;
         }
