@@ -1549,10 +1549,6 @@ static void load_missing_stuff(int n)
                      "#compatibility aliases loaded: #lines, #settimer");
         message_wrap(WRAP_CONT, "#max text/strings length set to 1048576 "
                      "bytes; use \"#setvar mem\" to change it");
-        tty_message("#wait...");
-        tty_flush();
-        sleep(1);
-        tty_puts("ok\n");
     }
     if (n < READLINE_KEYS_SAVEFILEVER)
         tty_add_new_binds(n);
