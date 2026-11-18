@@ -1102,12 +1102,15 @@ static void complete_hilite(struct word_list *l, int arg, const char *args,
     if ((len == 5 && strncmp(args, "input", 5) == 0)
         || (len == 8 && strncmp(args, "messages", 8) == 0)) {
         args += len;
-        if (arg == 1)
+        if (arg == 1) {
             word_list_add(l, "default");
+            word_list_add(l, "off");
+        }
     } else if (arg == 0) {
         word_list_add(l, "input");
         word_list_add(l, "messages");
         word_list_add(l, "default");
+        word_list_add(l, "off");
     }
     attr_next_words(args, add_word, l);
 }

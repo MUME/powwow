@@ -146,7 +146,7 @@ static cmdstruct default_commands[] =
     C("groupdelim", cmd_groupdelim,
       "[<delimiter>]\tchange delimiter for action/alias groups"),
     C("hilite",     cmd_hilite,
-      "[input|messages] [<attribute>|default]\thighlight your input line"
+      "[input|messages] [<attribute>|off|default]\thighlight your input line"
       " or powwow's messages"),
     C("history",    cmd_history,
       "[{<number>|(<expr>)}]\tlist/execute commands in history"),
@@ -994,16 +994,54 @@ static void cmd_do(char *arg)
     }
 }
 
+/* print #hilite input or messages as it is now, as #hilite takes it */
+static void show_hilite(bool messages)
+{
+    const struct hilite *h = messages ? &message_hilite : &input_hilite;
+    char buf[BUFSIZE];
+    attr_format(hilite_attr(h), buf, sizeof buf);
+    message_printf("#hilite %s %s%s\n", messages ? "messages" : "input",
+                   buf, h->own ? "" : " (user-wide default)");
+}
+
 static void cmd_hilite(char *arg)
 {
     arg = skipspace(arg);
     size_t len = strcspn(arg, " ");
     bool messages = false;
+    bool kind = true;
     if (len == 8 && strncmp(arg, "messages", 8) == 0) {
         messages = true;
         arg = skipspace(arg + len);
     } else if (len == 5 && strncmp(arg, "input", 5) == 0) {
         arg = skipspace(arg + len);
+    } else {
+        kind = false;
+    }
+
+    len = strlen(arg);
+    while (len > 0 && arg[len - 1] == ' ')
+        --len;
+    /* without an attribute, only show it, or both */
+    if (len == 0) {
+        if (kind) {
+            show_hilite(messages);
+        } else {
+            show_hilite(false);
+            show_hilite(true);
+        }
+        return;
+    }
+    /* without input or messages, off, none and default are for both */
+    if (!kind && ((len == 3 && strncmp(arg, "off", 3) == 0)
+                  || (len == 4 && strncmp(arg, "none", 4) == 0)
+                  || (len == 7 && strncmp(arg, "default", 7) == 0))) {
+        char both[sizeof "messages default"];
+        snprintf(both, sizeof both, "input %.*s", (int)len, arg);
+        cmd_hilite(both);
+        snprintf(both, sizeof both, "messages %.*s", (int)len, arg);
+        cmd_hilite(both);
+        return;
     }
 
     /* the user-wide one in the user-wide settings file, else the MUD's
@@ -1011,15 +1049,14 @@ static void cmd_hilite(char *arg)
     struct hilite *h = messages ? &message_hilite : &input_hilite;
     struct attr attr;
     char why[BUFSIZE];
-    len = strlen(arg);
-    while (len > 0 && arg[len - 1] == ' ')
-        --len;
+    /* off is none */
+    const char *text = len == 3 && strncmp(arg, "off", 3) == 0 ? "none" : arg;
     if (len == 7 && strncmp(arg, "default", 7) == 0) {
         if (reading_config)
             h->user = (struct attr){ 0 };
         else
             h->own = false;
-    } else if (attr_parse_why(arg, &attr, why, sizeof(why))) {
+    } else if (attr_parse_why(text, &attr, why, sizeof(why))) {
         if (reading_config) {
             h->user = attr;
         } else {
@@ -1030,7 +1067,7 @@ static void cmd_hilite(char *arg)
         message_printf("#hilite: %s.\n", why);
         if (opt_info) {
             message_printf("#syntax: #hilite [input|messages]"
-                           " [<attribute>|default]\n");
+                           " [<attribute>|off|default]\n");
             show_attr_syntax();
         }
         return;

@@ -493,6 +493,32 @@ grep -Fxq '#hilite input bold' "$tmp/hl.conf" \
     || fail 'expected the user-wide #hilite input to stay'
 grep -Fxq '#hilite messages underline' "$tmp/hl.conf" \
     || fail 'expected the user-wide #hilite messages to stay'
+# without an attribute, #hilite shows it, or both, and off turns it off
+run --args "--config=$tmp/hl.conf $tmp/hl.pw" \
+    '#hilite without an attribute shows it, and off turns it off' \
+    '#hilite
+#hilite input off
+#hilite input'
+has '#hilite input bold (user-wide default)'
+has '#hilite messages none'
+has '#hilite input none'
+lacks '#hilite input none (user-wide default)'
+# without input or messages, off and default are for both
+run --args "--config=$tmp/hl.conf $tmp/hl.pw" \
+    '#hilite off and default are for both' \
+    '#hilite off
+#hilite
+#hilite default
+#hilite'
+has '#input highlighting is now off.'
+has '#message highlighting is now off.'
+has '#hilite input none'
+has '#hilite messages none'
+# the messages are underlined again
+for k in input messages; do
+    grep -aq "#hilite $k underline (user-wide default)" "$tmp/out" \
+        || fail "expected the user-wide #hilite $k after default"
+done
 # without --config, the user-wide one goes in the definition file too
 mkdir -p "$tmp/.config/powwow"
 printf '#hilite input bold\n' > "$tmp/.config/powwow/powwow.conf"
@@ -809,7 +835,7 @@ run 'hilite with an invalid attribute' '#hilite ?
 has '#hilite: "?" is not a style or a color.'
 has '#hilite: "blue" follows the color: write "on" before a background color.'
 has '#hilite: "purple" is not a style or a color.'
-has '#syntax: #hilite [input|messages] [<attribute>|default]'
+has '#syntax: #hilite [input|messages] [<attribute>|off|default]'
 has '  example:  bold yellow on blue'
 
 run 'bright colors with a capital first letter' '#mark foo=White on BLUE

@@ -16,6 +16,9 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	  uses another file, and --no-config none.  A #hilite typed or in
 	  the definition file is the MUD's own, which wins over the
 	  user-wide one.
+	* #hilite without an attribute shows it, and off or none turns it
+	  off; without input or messages, off, none and default are for
+	  both.
 
 	Platforms and building:
 	* Windows using Cygwin is supported, along with WSL2.  Cygwin
