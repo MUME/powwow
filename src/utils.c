@@ -499,6 +499,28 @@ int wrap_width(void)
  * 'text' wrapped to wrap_width() before the words that do not fit, which
  * go on a new line after 'cont'
  */
+/* the length of the word at 'word', up to a space or the end of the line,
+ * but with the spaces in quotes, such as those of a file name in
+ * LQUOTE and RQUOTE, which are not broken */
+static size_t word_length(const char *word)
+{
+    const size_t lquote = sizeof LQUOTE - 1, rquote = sizeof RQUOTE - 1;
+    bool quoted = false;
+    const char *p = word;
+    while (*p != '\0' && *p != '\n' && (quoted || *p != ' ')) {
+        if (strncmp(p, LQUOTE, lquote) == 0) {
+            quoted = true;
+            p += lquote;
+        } else if (strncmp(p, RQUOTE, rquote) == 0) {
+            quoted = false;
+            p += rquote;
+        } else {
+            ++p;
+        }
+    }
+    return (size_t)(p - word);
+}
+
 static char *wrap_text(const char *text, const char *cont)
 {
     int max = wrap_width();
@@ -517,7 +539,7 @@ static char *wrap_text(const char *text, const char *cont)
         /* the spaces before a word, then the word */
         size_t spaces = strspn(p, " ");
         const char *word = p + spaces;
-        size_t len = strcspn(word, " \n");
+        size_t len = word_length(word);
         int width = text_width(word, len);
         if (len > 0 && col > line_start
             && col + (int)spaces + width > max) {
