@@ -164,6 +164,11 @@ joined() {
 run --eof 'powwow quits at the end of its input' '#print ("at" + " end")'
 has 'at end'
 
+run --eof 'the messages at the end of the input are not in its attribute' \
+    '#hilite input bold'
+grep -aq '<ESC>\[1m<ESC>[^#]*#warning: no save-file defined' "$tmp/out" \
+    || fail 'expected the end of the bold before the warning'
+
 # reading a directory fails on most systems
 if ! cat < / > /dev/null 2>&1; then
     name='powwow quits when reading its input fails'
