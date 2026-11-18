@@ -21,7 +21,20 @@ void cmd_add_command( cmdstruct *cmd );
 
 void initialize_cmd(void);
 
-int print_all_options(FILE *file);
+/* the options that print_options() prints */
+enum option_scope {
+    OPTIONS_ALL,
+    OPTIONS_LOCAL,              /* those of a definition file */
+    OPTIONS_GLOBAL,             /* those of the user-wide settings file */
+};
+
+int print_options(FILE *file, enum option_scope scope);
+
+/* the user-wide settings as when powwow starts */
+void reset_user_wide_settings(void);
+
+/* show the attributes of #hilite as they are now */
+void hilite_update(void);
 
 /* the name of option 'i', or NULL after the last one */
 const char *option_name(int i);

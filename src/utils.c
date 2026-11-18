@@ -27,6 +27,7 @@
 #ifdef HAVE_FLOCK
 #  include <sys/file.h>
 #endif
+#include <sys/stat.h>
 #ifdef HAVE_CYGWIN_CONV_PATH
 #include <sys/cygwin.h>
 #endif
@@ -515,8 +516,14 @@ void ptrunescape(ptr *p)
 }
 
 /* the attributes of the input line and of the messages, for #hilite */
-struct attr input_attr, message_attr;
+struct hilite input_hilite, message_hilite;
 char msgattrbeg[ATTR_SGR_MAX], msgattrend[ATTR_SGR_MAX];
+
+/* the attribute of 'h' that shows */
+const struct attr *hilite_attr(const struct hilite *h)
+{
+    return h->own ? &h->mud : &h->user;
+}
 
 /*
  * print a message of powwow, with the attribute of #hilite messages
@@ -1726,6 +1733,10 @@ static void convert_identify_init(void)
     wrap_printf("#init: %s", u8"‘#identify’ is now ‘#option +identify’");
 }
 
+/* running a settings file, whose user-wide settings are not saved at once */
+static int settings_depth;
+bool reading_config;
+
 /*
  * run the commands of the settings file 'f', called 'path' in messages;
  * set '*version' to its #savefile-version, or 0 if it has none; return
@@ -1746,6 +1757,7 @@ static int run_settings_file(FILE *f, const char *path, int *version)
     size_t linesize = 0;
     int savefilever = 0;
     bool limit_mem_hit = false;
+    ++settings_depth;
     while (left > 0 && fgets(buf + len, left + 1, f) != NULL) {
         /* WARNING: accessing private field ->len */
         int n = strlen(buf + len);
@@ -1825,6 +1837,7 @@ static int run_settings_file(FILE *f, const char *path, int *version)
             break;
         }
     }
+    --settings_depth;
 
     int failed = 1;
     if (error != NO_ERROR) {
@@ -1887,6 +1900,9 @@ int read_settings(void)
         delete_keynode(&keydefs);
     while (substitutions != NULL)
         delete_substnode(&substitutions);
+    /* the file's own #hilite, if any, over the user-wide ones */
+    input_hilite.own = message_hilite.own = false;
+    hilite_update();
     for (int n = 0; n < MAX_HASH; ++n) {
         while (named_vars[VAR_NUM].buckets[n] != NULL)
             delete_varnode(&named_vars[VAR_NUM].buckets[n], VAR_NUM);
@@ -1941,7 +1957,246 @@ static void fail_msg(void)
 }
 
 /*
- * save settings in definition file
+ * open a temporary file, as tmpname, in the directory of the file 'path',
+ * to write it and then move it over 'path' with finish_temp(); return
+ * NULL on failure
+ */
+static FILE *open_temp(const char *path)
+{
+    snprintf(tmpname, sizeof tmpname, "%s", path);
+    int dirlen = strlen(tmpname) - 1;
+    while (dirlen > 0 && !is_path_sep(tmpname[dirlen]))
+        --dirlen;
+    if (dirlen > 0)
+        ++dirlen;
+
+    snprintf(tmpname + dirlen, sizeof tmpname - dirlen, "tmpsav%d%d",
+             getpid(), rand() >> 8);
+    FILE *f = fopen(tmpname, "w");
+    if (f == NULL)
+        fail_msg();
+    return f;
+}
+
+/*
+ * close the temporary file 'f' of open_temp(), and move it over 'path'
+ * unless writing it failed ('failed' <= 0); return 1 on success, -1 on
+ * failure
+ */
+static int finish_temp(FILE *f, int failed, const char *path)
+{
+    fclose(f);
+
+    if (error != NO_ERROR) {
+        print_error(error);
+        failed = -1;
+    } else if (failed <= 0) {
+        fail_msg();
+    } else if (rename(tmpname, path) == -1) {
+        wrap_printf("#error: cannot move temporary file " LQUOTE "%s" RQUOTE
+                    " to " LQUOTE "%s" RQUOTE ": %s", tmpname, path,
+                    strerror(errno));
+        failed = -1;
+    }
+    return failed > 0 ? 1 : -1;
+}
+
+/* write the secrets of #secret to 'f'; return what fprintf() last did */
+static int write_secrets(FILE *f)
+{
+    int failed = 1;
+    for (int i = 0; i < secret_count() && failed > 0; ++i) {
+        char buf[SECRET_STR_MAX];
+        secret_format(secret_get(i), buf);
+        failed = fprintf(f, "#secret =%s\n", buf);
+    }
+    return failed;
+}
+
+/*
+ * create the directories of the file 'path' that do not exist; return
+ * false, having said why, if one cannot be created
+ */
+static bool make_dirs(const char *path)
+{
+    char dir[BUFSIZE];
+    snprintf(dir, sizeof dir, "%s", path);
+    for (char *p = dir + 1; *p != '\0'; ++p) {
+        if (*p != '/')
+            continue;
+        *p = '\0';
+        if (mkdir(dir, 0777) != 0 && errno != EEXIST) {
+            wrap_printf("#error: cannot create directory "
+                        LQUOTE "%s" RQUOTE ": %s", dir, strerror(errno));
+            return false;
+        }
+        *p = '/';
+    }
+    return true;
+}
+
+/*
+ * the user-wide settings file as this powwow last read or wrote it, to
+ * tell when another program, such as the launcher or another session,
+ * writes it, as they write a new file in its place
+ */
+static struct {
+    bool exists;
+    dev_t dev;
+    ino_t ino;
+    off_t size;
+    time_t mtime;
+} config_seen;
+
+/* whether 'st', of stat() of the user-wide settings file, which 'exists',
+ * is the file as last seen */
+static bool config_is_seen(bool exists, const struct stat *st)
+{
+    if (exists != config_seen.exists)
+        return false;
+    return (!exists
+            || (st->st_dev == config_seen.dev && st->st_ino == config_seen.ino
+                && st->st_size == config_seen.size
+                && st->st_mtime == config_seen.mtime));
+}
+
+static void note_config(void)
+{
+    struct stat st;
+    config_seen.exists = stat(config_file, &st) == 0;
+    if (config_seen.exists) {
+        config_seen.dev = st.st_dev;
+        config_seen.ino = st.st_ino;
+        config_seen.size = st.st_size;
+        config_seen.mtime = st.st_mtime;
+    }
+}
+
+/* write "#hilite KIND ATTR" of 'attr' to 'f', unless it is NULL; return as
+ * fprintf() does, or 1 if nothing is written */
+static int write_hilite(FILE *f, const char *kind, const struct attr *attr)
+{
+    if (attr == NULL)
+        return 1;
+    char buf[ATTR_NAME_MAX];
+    attr_format(attr, buf, sizeof buf);
+    return fprintf(f, "#hilite %s %s\n", kind, buf);
+}
+
+/*
+ * save the user-wide settings, which the user-wide settings file has: the
+ * command options, such as editor, the user-wide on/off options, such as
+ * save, the user-wide #hilite, and the secrets of #secret; return > 0 on
+ * success, < 0 on failure
+ */
+static int save_config(void)
+{
+    if (!make_dirs(config_file))
+        return -1;
+    FILE *f = open_temp(config_file);
+    if (f == NULL)
+        return -1;
+    int failed = fprintf(f, "#savefile-version %d\n", SAVEFILEVER);
+    if (failed > 0) {
+        const struct attr *user = &input_hilite.user;
+        failed = write_hilite(f, "input", attr_is_none(user) ? NULL : user);
+    }
+    if (failed > 0) {
+        const struct attr *user = &message_hilite.user;
+        failed = write_hilite(f, "messages",
+                              attr_is_none(user) ? NULL : user);
+    }
+    if (failed > 0)
+        failed = write_secrets(f);
+    if (failed > 0)
+        failed = print_options(f, OPTIONS_GLOBAL);
+    failed = finish_temp(f, failed, config_file);
+    if (failed > 0)
+        note_config();
+    return failed;
+}
+
+/*
+ * a user-wide setting changed in this session: with --config, save the
+ * user-wide settings file at once, so that the launcher and the other
+ * sessions see it; not while a settings file runs
+ */
+void config_changed(void)
+{
+    if (settings_depth == 0 && config_global && *config_file != '\0')
+        save_config();
+}
+
+/*
+ * with --config, read the user-wide settings file again if another
+ * program wrote it since, as when its settings are changed in the
+ * launcher: at most once a second, unless 'at_once'
+ */
+void config_refresh(bool at_once)
+{
+    static time_t checked;
+    if (settings_depth > 0 || !config_global || *config_file == '\0')
+        return;
+    time_t t = time(NULL);
+    if (!at_once && t == checked)
+        return;
+    checked = t;
+    struct stat st;
+    bool exists = stat(config_file, &st) == 0;
+    if (config_is_seen(exists, &st))
+        return;
+    reset_user_wide_settings();
+    read_config();
+    if (opt_info)
+        wrap_printf("#user-wide settings read again from "
+                    LQUOTE "%s" RQUOTE, config_file);
+}
+
+/*
+ * read the user-wide settings file, if there is one, quietly
+ * return > 0 if success, 0 if there is none, < 0 if fail.
+ */
+int read_config(void)
+{
+    if (*config_file == '\0')
+        return 0;
+    FILE *f = fopen(config_file, "r");
+    if (f == NULL) {
+        if (errno == ENOENT) {
+            note_config();
+            return 0;
+        }
+        wrap_printf("#error: cannot open file " LQUOTE "%s" RQUOTE ": %s",
+                    config_file, strerror(errno));
+        return -1;
+    }
+    bool info = opt_info;
+    opt_info = false;
+    reading_config = true;
+    int version;
+    int failed = run_settings_file(f, config_file, &version);
+    reading_config = false;
+    opt_info = info;
+    fclose(f);
+    note_config();
+    return failed;
+}
+
+/*
+ * the attribute of 'h' that the definition file has, or NULL: the MUD's
+ * own, and else the user-wide one unless it is none, where it is 'split'
+ * into the user-wide settings file
+ */
+static const struct attr *deffile_hilite(const struct hilite *h, bool split)
+{
+    if (h->own)
+        return &h->mud;
+    return split || attr_is_none(&h->user) ? NULL : &h->user;
+}
+
+/*
+ * save settings in definition file, and the user-wide ones in the user-wide
+ * settings file instead if powwow was started with --config
  * return > 0 if success, < 0 if fail.
  * NEVER call syserr() from here or powwow will
  * enter an infinite loop!
@@ -1954,28 +2209,22 @@ int save_settings(void)
     }
     error = NO_ERROR;
 
+    bool split = config_global && *config_file != '\0';
+    /* not over what another program wrote meanwhile */
+    if (split)
+        config_refresh(true);
+    int config_failed = split ? save_config() : 1;
+
     if (*deffile == '\0') {
+        if (split)
+            return config_failed;
         wrap_printf("#warning: no save-file defined");
         return -1;
     }
 
-    /*
-     * Create a temporary file in the same directory as deffile,
-     * and write settings there
-     */
-    strcpy(tmpname, deffile);
-    int dirlen = strlen(tmpname) - 1;
-    while (dirlen != 0 && !is_path_sep(tmpname[dirlen]))
-        --dirlen;
-    if (dirlen != 0)
-        ++dirlen;
-
-    sprintf(tmpname + dirlen, "tmpsav%d%d", getpid(), rand() >> 8);
-    FILE *f = fopen(tmpname, "w");
-    if (f == NULL) {
-        fail_msg();
+    FILE *f = open_temp(deffile);
+    if (f == NULL)
         return -1;
-    }
 
     int failed = 1;
     ptr *pp = ptrnew(PARAMLEN);
@@ -2002,14 +2251,15 @@ int save_settings(void)
         }
     }
 
-    char attr[ATTR_NAME_MAX];
-    if (failed > 0 && !attr_is_none(&input_attr)) {
-        attr_format(&input_attr, attr, sizeof(attr));
-        failed = fprintf(f, "#hilite input %s\n", attr);
+    /* the MUD's own, and the user-wide one too where it has no user-wide
+     * settings file to go in */
+    if (failed > 0) {
+        failed = write_hilite(f, "input",
+                              deffile_hilite(&input_hilite, split));
     }
-    if (failed > 0 && !attr_is_none(&message_attr)) {
-        attr_format(&message_attr, attr, sizeof(attr));
-        failed = fprintf(f, "#hilite messages %s\n", attr);
+    if (failed > 0) {
+        failed = write_hilite(f, "messages",
+                              deffile_hilite(&message_hilite, split));
     }
 
     if (failed > 0)
@@ -2031,11 +2281,8 @@ int save_settings(void)
         failed = fprintf(f, "#setvar keepalive=%d\n", keepalive);
 
     /* before the history, which they keep lines out of when loaded */
-    for (int i = 0; i < secret_count() && failed > 0; ++i) {
-        char buf[SECRET_STR_MAX];
-        secret_format(secret_get(i), buf);
-        failed = fprintf(f, "#secret =%s\n", buf);
-    }
+    if (failed > 0 && !split)
+        failed = write_secrets(f);
 
     for (aliasnode *alp = sortedaliases; alp != NULL && failed > 0;
          alp = alp->snext) {
@@ -2191,29 +2438,14 @@ int save_settings(void)
     }
 
     if (failed > 0)
-        failed = print_all_options(f);
+        failed = print_options(f, split ? OPTIONS_LOCAL : OPTIONS_ALL);
 
-    fclose(f);
-
-    if (error != NO_ERROR) {
-        print_error(error);
-    } else if (failed <= 0) {
-        fail_msg();
-    } else {
-        failed = rename(tmpname, deffile);
-        if (failed == -1) {
-            wrap_printf("#error: cannot move temporary file " LQUOTE "%s"
-                        RQUOTE " to " LQUOTE "%s" RQUOTE ": %s", tmpname,
-                        deffile, strerror(errno));
-        } else {
-            failed = 1;
-        }
-    }
+    failed = finish_temp(f, failed, deffile);
 
     if (pp != NULL)
         ptrdel(&pp);
 
-    return failed > 0 ? 1 : -1;
+    return failed > 0 && config_failed > 0 ? 1 : -1;
 }
 
 /*
@@ -2337,11 +2569,17 @@ void exit_powwow(void)
          * since */
         if (deffile_busy)
             lock_deffile();
-        if (deffile_busy)
-            wrap_printf("#definition file not saved: it is in use by another "
-                        "powwow");
-        else
+        if (!deffile_busy) {
             save_settings();
+        } else {
+            /* the user-wide settings file is not the other's */
+            if (config_global && *config_file != '\0') {
+                config_refresh(true);
+                save_config();
+            }
+            wrap_printf("#definition file not saved: it is in use by "
+                        "another powwow");
+        }
     }
     tty_quit();
     exit(0);

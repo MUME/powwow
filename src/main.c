@@ -49,6 +49,9 @@
 #endif
 
 #include <locale.h>
+#ifdef HAVE_CYGWIN_CONV_PATH
+#include <sys/cygwin.h>
+#endif
 
 #include "beam.h"
 #include "cmd.h"
@@ -155,6 +158,8 @@ bool default_tls = false;
 
 static char powwow_dir[BUFSIZE];   /* default path to definition files */
 char deffile[BUFSIZE];             /* name and path of definition file */
+char config_file[BUFSIZE];         /* the user-wide settings file, or "" */
+bool config_global = false;        /* --config: user-wide settings in it */
 char helpfile[BUFSIZE];            /* name and path of help file */
 char copyfile[BUFSIZE];            /* name and path of copyright file */
 aliasnode *aliases[MAX_HASH];      /* head of alias hash list */
@@ -294,6 +299,11 @@ static void show_help(const char *prog)
 #ifdef __CYGWIN__
 #define WIN_ARG  "--windows, -w      "
 #endif
+#define CONFIG_HELP                                                     \
+    "  --config[=FILE]        save the user-wide settings in the shared"  \
+    " settings\n"                                                      \
+    "                         file, or in FILE\n"                      \
+    "  --no-config            do not read the user-wide settings file\n"
 #else
 #define HELP_ARG "-h                 "
 #define TLS_ARG  "-t, -T TLS-OPTIONS "
@@ -306,6 +316,7 @@ static void show_help(const char *prog)
 #ifdef __CYGWIN__
 #define WIN_ARG  "-w                 "
 #endif
+#define CONFIG_HELP ""
 #endif
 
 #ifdef USE_TLS
@@ -339,6 +350,7 @@ static void show_help(const char *prog)
            "  " LAT1_ARG "    assume and prefer ISO-8859-1 on the connection\n"
            "  " VER_ARG  "    " VER_DESC "\n"
            WIN_HELP
+           CONFIG_HELP
            COMPL_HELP,
            prog);
 #undef HELP_ARG
@@ -353,6 +365,7 @@ static void show_help(const char *prog)
 #undef WIN_ARG
 #endif
 #undef WIN_HELP
+#undef CONFIG_HELP
 #undef TLS_DESC
 }
 
@@ -433,11 +446,13 @@ static bool in_build_dir(const char *argv0)
 }
 
 /* the options that have no letter */
-enum { OPT_COMPLETION = 256 };
+enum { OPT_CONFIG = 256, OPT_NO_CONFIG, OPT_COMPLETION };
 
 #ifdef HAVE_GETOPT_LONG
 /* the long options, which --completion also lists */
 static const struct option longopts[] = {
+    { "config",     optional_argument, NULL, OPT_CONFIG },
+    { "no-config",  no_argument,       NULL, OPT_NO_CONFIG },
     { "completion", required_argument, NULL, OPT_COMPLETION },
     { "help",       no_argument,       NULL, 'h' },
     { "tls",        optional_argument, NULL, 't' },
@@ -477,6 +492,52 @@ static bool print_completion_of(const char *shell)
     return print_completion(shell, options);
 }
 #endif
+
+/*
+ * the user-wide settings file in 'buf' of 'size' bytes, where the OS keeps
+ * the files of an app: %APPDATA%\powwow on Windows, ~/Library/Application
+ * Support/powwow on macOS (or ~/.config/powwow if it exists), and
+ * $XDG_CONFIG_HOME/powwow, by default ~/.config/powwow, elsewhere; "" if
+ * there is no such folder
+ */
+static void default_config_file(char *buf, size_t size)
+{
+    static const char name[] = "powwow/powwow.conf";
+    buf[0] = '\0';
+#ifdef HAVE_CYGWIN_CONV_PATH
+    const char *appdata = getenv("APPDATA");
+    if (appdata != NULL && *appdata != '\0') {
+        char *dir = cygwin_create_path(CCP_WIN_A_TO_POSIX | CCP_ABSOLUTE,
+                                       appdata);
+        if (dir != NULL) {
+            snprintf(buf, size, "%s/%s", dir, name);
+            free(dir);
+            return;
+        }
+    }
+#endif
+    const char *home = getenv("HOME");
+    if (home == NULL || *home == '\0')
+        home = NULL;
+#ifdef HAVE_LIBRARY_DIRS
+    if (home != NULL) {
+        char dir[BUFSIZE];
+        snprintf(dir, sizeof dir, "%s/.config/powwow", home);
+        struct stat st;
+        if (stat(dir, &st) == 0 && S_ISDIR(st.st_mode))
+            snprintf(buf, size, "%s/.config/%s", home, name);
+        else
+            snprintf(buf, size, "%s/Library/Application Support/%s", home,
+                     name);
+    }
+#else
+    const char *xdg = getenv("XDG_CONFIG_HOME");
+    if (xdg != NULL && xdg[0] == '/')
+        snprintf(buf, size, "%s/%s", xdg, name);
+    else if (home != NULL)
+        snprintf(buf, size, "%s/.config/%s", home, name);
+#endif
+}
 
 #ifdef __CYGWIN__
 /*
@@ -529,6 +590,8 @@ int main(int argc, char **argv)
     if (setlocale(LC_ALL, "") == NULL)
         fprintf(stderr, "Failed setlocale(LC_ALL, \"\")\n");
 
+    const char *cmdline_config = NULL;  /* the file of --config=FILE */
+    bool no_config = false;             /* --no-config given */
     int cmdline_utf8 = -1;      /* --utf8: 1, --latin1: 0 */
     struct tls_options cmdline_tlsopt = { .use_tls = false };
     bool cmdline_tls = false;   /* --tls or --no-tls given */
@@ -576,6 +639,13 @@ int main(int argc, char **argv)
             break;
         case 'w':
             windows_mode = true;
+            break;
+        case OPT_CONFIG:
+            config_global = true;
+            cmdline_config = optarg;
+            break;
+        case OPT_NO_CONFIG:
+            no_config = true;
             break;
 #ifdef HAVE_GETOPT_LONG
         case OPT_COMPLETION:
@@ -699,6 +769,14 @@ int main(int argc, char **argv)
                      " %s for details.",
                      u8"‘#help warranty’", u8"‘#help copyright’");
     }
+
+    if (no_config)
+        config_global = false;
+    else if (cmdline_config != NULL)
+        my_strncpy(config_file, cmdline_config, BUFSIZE - 1);
+    else
+        default_config_file(config_file, BUFSIZE);
+    read_config();
 
     /* the definition file locked while this session has it, also one of
      * #load or #save, so that another session does not save it */
@@ -1070,6 +1148,10 @@ static noreturn void mainloop(void)
 
         if (flashback)
             putbackcursor();
+
+        /* before what was typed or received meanwhile: the user-wide
+         * settings changed since, such as in the launcher */
+        config_refresh(false);
 
         if (err > 0)
             err -= edit_read_output(&readfds);

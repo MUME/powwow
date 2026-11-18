@@ -36,6 +36,13 @@ is defined,
 will look there first for definition files (and create new ones
 there).
 .PP
+Before the definition file,
+.B powwow
+reads the user-wide settings file, which has the settings for all MUDs;
+see
+.B USER-WIDE SETTINGS FILE
+below.
+.PP
 Lines that begin with \[oq]#\[cq] are assumed to be special commands
 to be processed locally.  Help is available with the
 .I #help
@@ -180,6 +187,14 @@ in any case, with a backslash after folders; and
 .B #spawn
 is not available
 .TP
+\fB\-\-config\fR[=\fIfile\fR]
+save the user-wide settings in their own file, or in
+.I file
+if given, which is also read instead of the user-wide settings file
+.TP
+.B \-\-no\-config
+do not read the user-wide settings file
+.TP
 .BI \-\-completion " shell"
 print the completion of the arguments of
 .B powwow
@@ -190,6 +205,8 @@ or
 .BR zsh ,
 and exit; it completes the options, those of
 .BR \-\-tls= ,
+the file of
+.BR \-\-config= ,
 and the definition files, those that end with
 .B .powwow
 unless none does, also those in
@@ -231,13 +248,66 @@ instead of the one above.
 Where the editor and the pager get the temporary file of the text;
 .I /tmp
 if not set.
+.SH USER-WIDE SETTINGS FILE
+The user-wide settings file has the settings for all MUDs: the command
+options, such as
+.BR "#option editor=" ,
+the secrets of
+.BR #secret ,
+.BR "#option save" ,
+and the attributes of
+.BR #hilite .
+.B powwow
+reads it before the definition file, which can override them.  When
+.B powwow
+saves, these settings go in the definition file, unless it was started
+with
+.BR \-\-config ,
+as the launcher starts it: then they go in the user-wide settings file,
+at once when one changes, and
+.B powwow
+reads it again when another program, such as the launcher, writes it.
+.B \-\-config=\fIfile\fR
+reads and saves
+.I file
+instead, and
+.B \-\-no\-config
+does not read it.
+.PP
+It is in the folder where each system keeps the settings of programs:
+.\" each path and the words with it on lines of their own, as justified
+.\" lines with them have wide gaps, and the paths not hyphenated
+.TP
+Linux and FreeBSD
+.IR \%$XDG_CONFIG_HOME/powwow/powwow.conf ,
+.br
+by\ default
+.I \%\[ti]/.config/powwow/powwow.conf
+.TP
+macOS
+.RI \(dq "\%\[ti]/Library/Application \%Support/powwow/powwow.conf" \(dq,
+.br
+or
+.I \%\[ti]/.config/powwow/powwow.conf
+.br
+if
+.I \%\[ti]/.config/powwow
+exists
+.TP
+Windows
+.I \%%APPDATA%\epowwow\epowwow.conf
 .SH FILES
-.TP \w'$\[lC]POWWOWDIR\[rC]/*\ \ \ 'u
+.TP \w'$POWWOWDIR/*\ \ \ 'u
 powwow
 The binary.
 .TP
-$\[lC]POWWOWDIR\[rC]/*
+$POWWOWDIR/*
 Definition files for aliases, etc.
+.TP
+powwow.conf
+The user-wide settings file; see
+.B USER-WIDE SETTINGS FILE
+above.
 .SH DIAGNOSTICS
 Messages from
 .B powwow

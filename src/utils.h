@@ -53,7 +53,14 @@ bool in_path(const char *name);
 bool is_path_sep(char c);
 bool has_path_sep(const char *path);
 const char *env_name(const char *name, char *buf, size_t size);
-extern struct attr input_attr, message_attr;
+/* an attribute of #hilite: the user-wide one, of the user-wide settings
+ * file, and the MUD's own, if it has one, which wins over it */
+struct hilite {
+    struct attr user, mud;
+    bool own;
+};
+extern struct hilite input_hilite, message_hilite;
+const struct attr *hilite_attr(const struct hilite *h);
 extern char msgattrbeg[], msgattrend[];
 
 /*
@@ -98,6 +105,13 @@ extern bool deffile_locking;
 extern bool deffile_busy;
 extern long deffile_owner;
 bool lock_deffile(void);
+
+/* the user-wide settings file: save it at once after a change, and read it
+ * again if another program wrote it */
+void config_changed(void);
+void config_refresh(bool at_once);
+/* reading the user-wide settings file, whose #hilite is user-wide */
+extern bool reading_config;
 void suspend_powwow(int signum);
 function_signal sig_permanent(int signum, function_signal sighandler);
 
@@ -115,6 +129,7 @@ void errmsg(const char *format, ...) PRINTF_FUNCTION(1, 2);
 noreturn void syserr(const char *msg);
 noreturn void exec_failed(const char *what);
 int read_settings(void);
+int read_config(void);
 int save_settings(void);
 void movie_write(char *str, int newline);
 

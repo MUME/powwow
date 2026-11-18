@@ -179,13 +179,17 @@ of lines in your screen.
 
 ‘#history’ commands are not placed in history.
 @hilite
-#hilite [input|messages] [<attribute>]
+#hilite [input|messages] [<attribute>|default]
 
 This sets the attribute of your entered text, or with messages, of the
 messages of powwow, such as those starting with #, and the labels it shows
 in the input line, such as that of ‘C-r’, to the given attribute.
-Without an attribute, it turns it off. Both are saved in the definition
-file; a ‘#hilite’ in ‘#init’ changes them when connecting.
+Without an attribute, it turns it off.
+
+A ‘#hilite’ in the user-wide settings file sets the attribute for all
+MUDs; one typed or in the definition file sets the MUD's own, which wins
+over it and is saved in the definition file, until default drops it. A
+‘#hilite’ in ‘#init’ changes them when connecting.
 
 See ‘#help mark’ for the syntax of attributes.
 @host
@@ -427,7 +431,7 @@ commands, all those words will always be possible to Tab-complete on.
 This command lets you list or change various options of powwow.
 
      #option            lists all current option settings
-     #option list       long list of current options
+     #option list       long list of the options, by where they are saved
      #option =<option>  edit current setting of <option>
      #option +<option>  enable <option>
      #option -<option>  disable <option>
@@ -437,8 +441,8 @@ The command options ‘editor’, ‘pager’, ‘help-pager’ and ‘shell’ 
 commands that edit the texts of the MUD, show texts such as ‘#help’, show
 ‘#help’ only, and run ‘#!’ and the commands after ‘!’ of ‘#var’ and
 others; they come before ‘$POWWOWEDITOR’, ‘$POWWOWPAGER’,
-‘$POWWOWHELPPAGER’ and ‘$POWWOWSHELL’, are saved, and take the rest of the
-line.  A pager of ‘-’ (a hyphen) is none: ‘#help’ prints its text as other
+‘$POWWOWHELPPAGER’ and ‘$POWWOWSHELL’, and take the rest of the line.  A
+pager of ‘-’ (a hyphen) is none: ‘#help’ prints its text as other
 messages, and the texts that the MUD sends to view are printed as its
 other lines.  With ‘--windows’, as the installer for Windows runs
 powwow, the editor and the pager are Notepad by default, or nano in an
@@ -453,6 +457,12 @@ the MUD in the environment variable ‘$TITLE’.
      #option help-pager=less      show ‘#help’ with less
      #option pager=-              print the texts to view
      #option shell=               clear it: ‘$POWWOWSHELL’ or the default
+
+The options ‘editor’, ‘pager’, ‘help-pager’, ‘shell’ and ‘save’ are
+user-wide settings, the same for all MUDs: ‘#save’ writes them in the
+user-wide settings file if powwow was started with ‘--config’, as the
+launcher starts it, or else in the definition file, with the other
+options.
 @put
 #put {<text>|(<expr>)}
 
@@ -979,9 +989,11 @@ as the messages of powwow (see ‘#hilite’): with the secret ‘password’,
 ‘abc passworddef’ is left as ‘abc <redacted>def’.
 
 Powwow keeps only a salted hash of each secret, which ‘#save’ writes as
-‘#secret =<hash>’. It has only 32 bits: too few to tell a strong password
-from the many others with the same hash, but a weak one, such as a word of
-a dictionary, can be found from it, and so can a password kept in several
+‘#secret =<hash>’: in the user-wide settings file if powwow was started
+with ‘--config’, as the launcher starts it, or else in the definition
+file. The hash has only 32 bits: too few to tell a strong password from
+the many others with the same hash, but a weak one, such as a word of a
+dictionary, can be found from it, and so can a password kept in several
 definition files. Powwow warns about a secret shorter than 8 bytes, which
 may also match other text.
 @setvar
