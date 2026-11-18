@@ -515,8 +515,16 @@ void ptrunescape(ptr *p)
     p->len = memunescape(ptrdata(p), ptrlen(p), raw_escapes);
 }
 
-/* the attributes of the input line and of the messages, for #hilite */
-struct hilite input_hilite, message_hilite;
+/* the attributes of the input line and of the messages, for #hilite: by
+ * default bold, and italic bright blue */
+#define INPUT_HILITE { .flags = ATTR_BOLD }
+#define MESSAGE_HILITE {                                                \
+        .flags = ATTR_ITALIC, .fg = { .kind = COLOR_NAMED, .value = 12 } \
+    }
+struct hilite input_hilite = { .user = INPUT_HILITE, .def = INPUT_HILITE };
+struct hilite message_hilite = {
+    .user = MESSAGE_HILITE, .def = MESSAGE_HILITE
+};
 char msgattrbeg[ATTR_SGR_MAX], msgattrend[ATTR_SGR_MAX];
 
 /* the attribute of 'h' that shows */
@@ -2083,6 +2091,12 @@ static int write_hilite(FILE *f, const char *kind, const struct attr *attr)
     return fprintf(f, "#hilite %s %s\n", kind, buf);
 }
 
+/* the user-wide attribute of 'h', or NULL if it is powwow's own */
+static const struct attr *user_hilite(const struct hilite *h)
+{
+    return attr_equal(&h->user, &h->def) ? NULL : &h->user;
+}
+
 /*
  * save the user-wide settings, which the user-wide settings file has: the
  * command options, such as editor, the user-wide on/off options, such as
@@ -2097,15 +2111,10 @@ static int save_config(void)
     if (f == NULL)
         return -1;
     int failed = fprintf(f, "#savefile-version %d\n", SAVEFILEVER);
-    if (failed > 0) {
-        const struct attr *user = &input_hilite.user;
-        failed = write_hilite(f, "input", attr_is_none(user) ? NULL : user);
-    }
-    if (failed > 0) {
-        const struct attr *user = &message_hilite.user;
-        failed = write_hilite(f, "messages",
-                              attr_is_none(user) ? NULL : user);
-    }
+    if (failed > 0)
+        failed = write_hilite(f, "input", user_hilite(&input_hilite));
+    if (failed > 0)
+        failed = write_hilite(f, "messages", user_hilite(&message_hilite));
     if (failed > 0)
         failed = write_secrets(f);
     if (failed > 0)
@@ -2184,14 +2193,14 @@ int read_config(void)
 
 /*
  * the attribute of 'h' that the definition file has, or NULL: the MUD's
- * own, and else the user-wide one unless it is none, where it is 'split'
- * into the user-wide settings file
+ * own, and else the user-wide one unless it is powwow's own, or it is
+ * 'split' into the user-wide settings file
  */
 static const struct attr *deffile_hilite(const struct hilite *h, bool split)
 {
     if (h->own)
         return &h->mud;
-    return split || attr_is_none(&h->user) ? NULL : &h->user;
+    return split ? NULL : user_hilite(h);
 }
 
 /*

@@ -976,9 +976,13 @@ shows in the input line, such as that of `C-r`, to the given attribute;
 `none` or `off` turns it off.
 Without `input` or `messages`, `none`, `off` and `default` are for both.
 Without an attribute, it shows it, or both.
-A `#hilite` in the user-wide settings file sets the attribute for all
-MUDs; one typed or in the definition file sets the MUD's own, which wins
-over it and is saved in the definition file, until `default` drops it.
+By default, entered text is `bold`, and messages are `italic Blue`
+(bright blue).
+A `#hilite` in the user-wide settings file sets the user-wide default,
+for all MUDs, and `default` there goes back to the default of powwow.
+One typed or in the definition file sets the MUD's own, which wins over
+the user-wide default and is saved in the definition file, until
+`default` drops it.
 A `#hilite` in `#init` changes them when connecting.
 See "Attributes: colors and other highlighting" below for more syntax.
 

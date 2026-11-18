@@ -54,9 +54,10 @@ bool is_path_sep(char c);
 bool has_path_sep(const char *path);
 const char *env_name(const char *name, char *buf, size_t size);
 /* an attribute of #hilite: the user-wide one, of the user-wide settings
- * file, and the MUD's own, if it has one, which wins over it */
+ * file, or else powwow's own, and the MUD's own, if it has one, which wins
+ * over it */
 struct hilite {
-    struct attr user, mud;
+    struct attr user, mud, def;
     bool own;
 };
 extern struct hilite input_hilite, message_hilite;
