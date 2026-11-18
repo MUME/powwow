@@ -674,6 +674,10 @@ run 'mark the first word' '#mark ^$=bold
 #print ("foo x bar")'
 has '<ESC>[1mfoo<ESC>[m x bar'
 
+run 'a mark puts the colors of the text back after it' '#mark foo=red
+#print ("\033[32ma foo b\033[m")'
+has '<ESC>[32ma <ESC>[31mfoo<ESC>[m<ESC>[32m b<ESC>[m'
+
 # in a terminal with RGB, up to the attr operator
 COLORTERM=truecolor
 export COLORTERM
