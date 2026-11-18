@@ -25,7 +25,8 @@ import time
 
 ROWS = 24
 SETTLE = 0.2                    # seconds without change: drawn
-WORKERS = 4
+# the scenarios mostly wait for the screen, so more than one per CPU
+WORKERS = min(16, 2 * (os.cpu_count() or 2))
 
 
 def utf8_locale():
