@@ -834,14 +834,30 @@ static bool match_mark_or_subst(basenode *bp, const char *src)
 }
 
 /*
- * add marks to line. write in dst.
+ * Graphic rendition (colors etc.) of the text from the MUD:
+ * sgr_stream is in effect after the last text printed for good, and
+ * sgr_prompt where the current prompt starts.  Drawing a prompt, which
+ * may be erased and redrawn later, may change the terminal's rendition;
+ * then sgr_dirty is set, and the rendition is restored before printing
+ * more text.
  */
-static ptr *ptrmaddmarks(ptr *dst, const char *line, int len)
+static struct sgr_state sgr_stream, sgr_prompt;
+static bool sgr_dirty;
+
+/*
+ * add marks to line. write in dst.  The end of a mark resets the
+ * rendition, so after it comes that of the text from the MUD there, from
+ * 'base', the rendition where the line starts
+ */
+static ptr *ptrmaddmarks(ptr *dst, const char *line, int len,
+                         const struct sgr_state *base)
 {
     ptrzero(dst);
 
     if (line == NULL || len <= 0)
         return dst;
+
+    const char *const linestart = line;
 
     for (marknode *mp = markers; mp != NULL; mp = mp->next)
         mp->b.start = NULL;
@@ -893,6 +909,13 @@ static ptr *ptrmaddmarks(ptr *dst, const char *line, int len)
             dst = ptrmcat(dst, end, strlen(end));
             if (mem_error())
                 break;
+            if (end[0] != '\0') {
+                struct sgr_state st = *base;
+                sgr_apply(&st, linestart, line - linestart);
+                dst = ptrmcat(dst, st.seq, st.len);
+                if (mem_error())
+                    break;
+            }
         }
     } while (mfirst != NULL);
 
@@ -961,12 +984,14 @@ static ptr *ptrmaddsubst(ptr *dst, const char *line, int len)
 }
 
 /*
- * add substitutions and markers to line. write in dst.
+ * add substitutions and markers to line, where the rendition of the
+ * text from the MUD is 'base'. write in dst.
  */
-ptr *ptrmaddsubst_and_marks(ptr *dst, const char *line, int len)
+static ptr *subst_and_marks(ptr *dst, const char *line, int len,
+                            const struct sgr_state *base)
 {
     if (substitutions == NULL)
-        return ptrmaddmarks(dst, line, len);
+        return ptrmaddmarks(dst, line, len, base);
     if (markers == NULL)
         return ptrmaddsubst(dst, line, len);
 
@@ -976,7 +1001,13 @@ ptr *ptrmaddsubst_and_marks(ptr *dst, const char *line, int len)
         ptrzero(dst);
         return dst;
     }
-    return ptrmaddmarks(dst, ptrdata(ptrbuf), ptrlen(ptrbuf));
+    return ptrmaddmarks(dst, ptrdata(ptrbuf), ptrlen(ptrbuf), base);
+}
+
+/* the same, for a line printed after the text from the MUD so far */
+ptr *ptrmaddsubst_and_marks(ptr *dst, const char *line, int len)
+{
+    return subst_and_marks(dst, line, len, &sgr_stream);
 }
 
 /*
@@ -1002,24 +1033,15 @@ ptr *ptrsubstdef(ptr *dst, bool mbeg, char *pattern, char *replacement)
     return ptrmescape(dst, replacement, strlen(replacement), true);
 }
 
+/* the same, for the prompt */
 ptr *ptraddsubst_and_marks(ptr *dst, ptr *line)
 {
     if (line != NULL)
-        return ptrmaddsubst_and_marks(dst, ptrdata(line), ptrlen(line));
+        return subst_and_marks(dst, ptrdata(line), ptrlen(line),
+                               &sgr_prompt);
     ptrzero(dst);
     return dst;
 }
-
-/*
- * Graphic rendition (colors etc.) of the text from the MUD:
- * sgr_stream is in effect after the last text printed for good, and
- * sgr_prompt where the current prompt starts.  Drawing a prompt, which
- * may be erased and redrawn later, may change the terminal's rendition;
- * then sgr_dirty is set, and the rendition is restored before printing
- * more text.
- */
-static struct sgr_state sgr_stream, sgr_prompt;
-static bool sgr_dirty;
 
 /*
  * end a line from the MUD that has escape sequences and is wider than
