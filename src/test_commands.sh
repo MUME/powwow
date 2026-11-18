@@ -2451,6 +2451,51 @@ EOF
         > "$tmp/expected"
     cmp -s "$tmp/got" "$tmp/expected" \
         || fail "unexpected bytes: $(od -c "$tmp/got")"
+
+    # powwow in a terminal that hangs up, by closing it as when its window
+    # is closed if $3 is "close", or else by SIGHUP alone, after a change
+    # to the definition file $2; the exit status of powwow, or the signal
+    # that killed it, goes in $4
+    cat > "$tmp/hup.py" <<'EOF'
+import os, pty, select, signal, sys, time
+powwow, deffile, how, out = sys.argv[1:5]
+pid, fd = pty.fork()
+if pid == 0:
+    os.environ['TERM'] = 'xterm'
+    os.execv(powwow, [powwow, deffile])
+shown = bytearray()
+# read what powwow prints, for at most 5 seconds, until it has 'text'
+def wait_for(text):
+    end = time.time() + 5
+    while text not in shown and time.time() < end:
+        if select.select([fd], [], [], 0.1)[0]:
+            try:
+                shown.extend(os.read(fd, 4096))
+            except OSError:
+                break
+wait_for(b'Type #help')
+os.write(fd, b'#alias hup=#print ("hung " + "up")\n#print ("<sy" + "nc>")\n')
+wait_for(b'<sync>')
+if how == 'close':
+    os.close(fd)
+else:
+    os.kill(pid, signal.SIGHUP)
+_, status = os.waitpid(pid, 0)
+with open(out, 'w') as f:
+    f.write('exit %d' % os.WEXITSTATUS(status) if os.WIFEXITED(status)
+            else 'signal %d' % os.WTERMSIG(status))
+EOF
+    for how in close kill; do
+        name="a terminal that hangs up ($how) saves the definition file"
+        printf '#alias base=1\n' > "$tmp/hup.pw"
+        rm -f "$tmp/hup.status"
+        python3 -I "$tmp/hup.py" "$POWWOW" "$tmp/hup.pw" $how \
+            "$tmp/hup.status"
+        [ "$(cat "$tmp/hup.status" 2>/dev/null)" = 'exit 0' ] \
+            || fail "expected exit 0, got: $(cat "$tmp/hup.status")"
+        grep -Fq '#alias hup=' "$tmp/hup.pw" \
+            || fail 'expected the new alias to be saved'
+    done
 fi
 
 # a spawned command is a connection that uses the telnet protocol too:

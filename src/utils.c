@@ -1308,6 +1308,13 @@ static void sig_chld_handler(int signum)
     sig_wake();
 }
 
+static void sig_hup_handler(int signum)
+{
+    sig_hup_got = 1;
+    sig_pending = 1;
+    sig_wake();
+}
+
 static noreturn void sig_term_handler(int signum)
 {
     tty_printf("%s\n#termination signal.\n", edattrend);
@@ -1416,6 +1423,11 @@ void signal_start(void)
         sig_permanent(SIGTSTP, suspend_powwow);
         can_suspend = true;
     }
+    /* unless ignored, as by nohup, quit as usual when the terminal hangs
+     * up, such as when its window is closed, and save the definition
+     * file */
+    if (sig_permanent(SIGHUP, SIG_IGN) != SIG_IGN)
+        sig_permanent(SIGHUP, sig_hup_handler);
     sig_permanent(SIGCHLD,  sig_chld_handler);
     sig_permanent(SIGQUIT,  sig_intr_handler);
     sig_permanent(SIGTERM,  sig_term_handler);
@@ -1433,6 +1445,10 @@ void signal_start(void)
 void sig_bottomhalf(void)
 {
     sig_pending = 0;
+    if (sig_hup_got != 0) {
+        tty_hangup();
+        exit_powwow();
+    }
     if (sig_chld_got != 0) {
         sig_chld_got = 0;
         sig_chld_bottomhalf();
