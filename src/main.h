@@ -81,7 +81,8 @@ extern const bool *edlabels;    /* which bytes of edbuf are labels, or NULL */
 extern char edattrbeg[], edattrend[];
 extern bool edattrbg;
 
-extern volatile sig_atomic_t sig_pending, sig_winch_got, sig_chld_got;
+extern volatile sig_atomic_t sig_pending, sig_winch_got, sig_chld_got,
+    sig_hup_got;
 
 extern long received, sent;
 

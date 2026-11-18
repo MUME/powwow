@@ -1539,7 +1539,8 @@ before quitting.
 
 Useful after you write large chunks of code.
 Remember anyway that powwow automatically saves the settings
-before exiting.
+before exiting, also when its terminal window is closed, which hangs up
+the terminal (`SIGHUP`).
 
 `#save` actually writes settings to a temporary file and overwrites
 the definition file only if write succeeds. This is to avoid wiping out

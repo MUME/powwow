@@ -239,7 +239,7 @@ char edattrend[ATTR_SGR_MAX];   /* ending input line attributes */
 bool edattrbg;            /* input line attributes do change bg color */
 
 /* signals handling */
-volatile sig_atomic_t sig_pending, sig_winch_got, sig_chld_got;
+volatile sig_atomic_t sig_pending, sig_winch_got, sig_chld_got, sig_hup_got;
 
 /* different ID characters for different action types */
 /*
@@ -2098,6 +2098,11 @@ static void get_user_input(void)
         return;
     }
 
+    /* the terminal hung up before powwow got SIGHUP: quit as for it */
+    if (j < 0 && (errno == EIO || tty_hung_up())) {
+        tty_hangup();
+        exit_powwow();
+    }
     if (j < 0 || (chunk == 1 && j != chunk))
         syserr("cannot read from the terminal");
 

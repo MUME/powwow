@@ -142,6 +142,8 @@ static void tty_set_input(bool input)
 
 static struct termios ttybsave;
 static bool tty_started;        /* ttybsave holds the state to restore */
+/* has the terminal hung up? */
+static bool tty_gone = false;
 
 /*
  * the name of the interrupt key of the terminal, as C-c, which stops the
@@ -234,6 +236,8 @@ void tty_quit(void)
     if (!tty_started)
         return;
     tty_started = false;
+    if (tty_gone)
+        return;
     tcsetattr(tty_read_fd, TCSANOW, &ttybsave);
     tty_puts(kpadend);
     tty_flush();
@@ -1419,6 +1423,17 @@ static size_t tty_out_start = 0, tty_out_used = 0;
 /* has reading the terminal found the end of the input? */
 static bool tty_eof = false;
 
+void tty_hangup(void)
+{
+    tty_gone = true;
+    tty_write_state.used = 0;
+}
+
+bool tty_hung_up(void)
+{
+    return tty_gone;
+}
+
 bool tty_at_eof(void)
 {
     return tty_eof;
@@ -1572,6 +1587,10 @@ void tty_gets(char *s, int size)
 
 void tty_flush(void)
 {
+    if (tty_gone) {
+        tty_write_state.used = 0;
+        return;
+    }
     size_t n = tty_write_state.used;
     char *data = tty_write_state.data;
     while (n > 0) {
@@ -1582,6 +1601,11 @@ void tty_flush(void)
                 break;
             if (errno == EINTR)
                 continue;
+            if (errno == EIO || errno == ENXIO) {
+                /* the terminal hung up before powwow got SIGHUP */
+                tty_hangup();
+                return;
+            }
             if (errno != EAGAIN) {
                 fprintf(stderr, "Cannot write to tty: %s\n", strerror(errno));
                 abort();

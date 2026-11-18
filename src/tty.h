@@ -60,5 +60,9 @@ void tty_flush(void);
 void tty_raw_write(char *data, size_t len);
 bool tty_has_chars(void);
 bool tty_at_eof(void);
+/* the terminal hung up, such as when its window was closed: what powwow
+ * writes to it from then on is dropped */
+void tty_hangup(void);
+bool tty_hung_up(void);
 
 #endif /* _TTY_H_ */
