@@ -967,13 +967,15 @@ is already defined, you cannot change its place in the list.
 ### Input highlighting
 
 ```
-#hilite [input|messages] [<attribute>|default]
+#hilite [input|messages] [<attribute>|off|default]
 ```
 
 This sets the attribute of your entered text, or with `messages`, of the
 messages of powwow, such as those starting with `#`, and the labels it
-shows in the input line, such as that of `C-r`, to the given attribute.
-Without an attribute, it turns it off.
+shows in the input line, such as that of `C-r`, to the given attribute;
+`none` or `off` turns it off.
+Without `input` or `messages`, `none`, `off` and `default` are for both.
+Without an attribute, it shows it, or both.
 A `#hilite` in the user-wide settings file sets the attribute for all
 MUDs; one typed or in the definition file sets the MUD's own, which wins
 over it and is saved in the definition file, until `default` drops it.
