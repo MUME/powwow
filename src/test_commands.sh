@@ -313,6 +313,12 @@ run '#load does not report the #option editor it sets' "#load $tmp/options.pw
 lacks '#option editor is now: my ed\;it -x'
 has '#option editor=my ed\;it -x'
 
+# a file name in quotes is not broken at its spaces when wrapping, but goes
+# on a line of its own
+dir="$tmp/Application Support/powwow with a long name"
+run 'wrapping does not break a file name in quotes' "#file =$dir/x.powwow"
+has "#    '$dir/x.powwow'"
+
 run '#setvar buffer rejects sizes too large for powwow' \
     '#setvar buffer=4294968296
 #setvar'
