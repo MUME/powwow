@@ -394,6 +394,20 @@ void tty_bootstrap(void)
 
     gotocost = strlen(tgoto(curgoto, cols - 1, lines - 1));
 
+    /* the colors of #hilite, #mark and the like: RGB where the terminal
+     * says it has it, as COLORTERM does, or in Windows Terminal, which
+     * has RGB without saying so; else the 256-color palette if the
+     * terminal data base has it, or the 16 named colors */
+    const char *colorterm = getenv("COLORTERM");
+    if ((colorterm != NULL && (strcmp(colorterm, "truecolor") == 0
+                               || strcmp(colorterm, "24bit") == 0))
+        || getenv("WT_SESSION") != NULL)
+        attr_colors = ATTR_COLORS_RGB;
+    else if (tgetnum("Co") >= 256)
+        attr_colors = ATTR_COLORS_256;
+    else
+        attr_colors = ATTR_COLORS_16;
+
     /* this must be before getting window size */
     wrapglitch = tgetflag("xn");
     /* for the default size, kept if the window has it or has none */

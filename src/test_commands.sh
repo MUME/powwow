@@ -16,6 +16,8 @@ export HOME TERM LC_ALL
 TMPDIR=$tmp
 export TMPDIR
 unset XDG_RUNTIME_DIR
+# the colors of xterm, which has 8, not those of the terminal of the tests
+unset COLORTERM WT_SESSION
 # fill memory when it is allocated and freed, on macOS and with glibc, so
 # that using a field that was never set, or freed memory, finds no zeros
 MallocPreScribble=1
@@ -661,6 +663,9 @@ run 'mark the first word' '#mark ^$=bold
 #print ("foo x bar")'
 has '<ESC>[1mfoo<ESC>[m x bar'
 
+# in a terminal with RGB, up to the attr operator
+COLORTERM=truecolor
+export COLORTERM
 run 'mark with 256 and RGB colors' '#mark foo=bold 208 on #202020
 #mark bar=italic strike on 22
 #mark
@@ -694,6 +699,7 @@ has '#mark bar=bold Red'
 
 run 'attr operator' '#print (attr "dim #ff8700" + "x")'
 has '<ESC>[2;38;2;255;135;0mx'
+unset COLORTERM
 
 run 'substitute the first word' '#substitute ^$=Z
 #print ("foo x bar")'
@@ -1796,6 +1802,18 @@ run 'Tab completes the arguments of #hilite' '' \
 grep -aq 'input highlighting is now <ESC>\[4;93;46mon' "$tmp/out" \
     || fail "expected underline Yellow on cyan"
 has 'black  blink  blue   bold'
+
+# RGB as the terminal shows colors: as it is with COLORTERM=truecolor, or
+# else the nearest of the named colors, as xterm has 8
+COLORTERM=truecolor
+export COLORTERM
+run '#hilite in RGB where the terminal has RGB' '#hilite input #ff8700'
+grep -aq 'input highlighting is now <ESC>\[38;2;255;135;0mon' "$tmp/out" \
+    || fail 'expected the RGB of #ff8700'
+unset COLORTERM
+run '#hilite in RGB as the nearest named color' '#hilite input #ff8700'
+grep -aq 'input highlighting is now <ESC>\[33mon' "$tmp/out" \
+    || fail 'expected yellow, the named color nearest to #ff8700'
 
 run 'Tab lists the words down and then across' '' \
     "#option 		$(printf '\025')

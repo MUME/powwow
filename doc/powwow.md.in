@@ -2287,6 +2287,13 @@ green and blue goes from 0 to 5 and the index is
 `16 + 36 * red + 6 * green + blue`, and 232-255 are 24 shades of gray
 from dark to light.
 
+In a terminal without RGB, an RGB color is shown as the nearest color of
+the palette, of the cube or of the grays, or as the nearest of the 16
+colors if the terminal has no palette either, as the terminal data base
+says; the colors of the palette are shown as the nearest of the 16 then
+too. RGB is taken to be there if `COLORTERM` is `truecolor` or `24bit`,
+and in Windows Terminal, which has RGB without saying so.
+
 Examples: The following are all valid attributes:
 
 | Attribute | Effect |

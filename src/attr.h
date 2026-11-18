@@ -38,6 +38,14 @@ struct attr {
     struct color fg, bg;
 };
 
+/*
+ * the colors that the terminal shows, which attr_sgr() writes: RGB and
+ * the 256-color palette, or the nearest of the palette for RGB, or the
+ * nearest of the 16 named colors for both; RGB unless set
+ */
+enum attr_colors { ATTR_COLORS_16, ATTR_COLORS_256, ATTR_COLORS_RGB };
+extern enum attr_colors attr_colors;
+
 /* size of a buffer that can hold any attribute's escape sequence */
 #define ATTR_SGR_MAX 80
 /* size of a buffer that can hold any attribute's description */
