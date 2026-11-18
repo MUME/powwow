@@ -108,6 +108,21 @@ int main(void)
           "bold blink underline inverse dim italic hidden strike overline"
           " #ffffff on #ffffff");
 
+    /* RGB as the nearest color that the terminal shows: of the 6x6x6
+     * colors or of the grays of the palette, or of the 16 named colors */
+    attr_colors = ATTR_COLORS_256;
+    check("#ff8700", E "[38;5;208m", "#ff8700");
+    check("#808080", E "[38;5;244m", "#808080");
+    check("#000000 on #ffffff", E "[38;5;16;48;5;231m",
+          "#000000 on #ffffff");
+    check("208", E "[38;5;208m", "208");
+    attr_colors = ATTR_COLORS_16;
+    check("#ff0000", E "[91m", "#ff0000");
+    check("#cd0000 on #0000ee", E "[31;44m", "#cd0000 on #0000ee");
+    check("244", E "[90m", "244");
+    check("12", E "[94m", "12");
+    attr_colors = ATTR_COLORS_RGB;
+
     check_invalid("purple");
     check_invalid("256");
     check_invalid("1000");

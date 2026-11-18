@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
@@ -299,14 +300,100 @@ static void append(char *buf, size_t size, size_t *len,
         *len = size - 1;
 }
 
+enum attr_colors attr_colors = ATTR_COLORS_RGB;
+
+/* the squared distance of the colors 0xRRGGBB 'a' and 'b' */
+static long rgb_distance(uint32_t a, uint32_t b)
+{
+    long d = 0;
+    for (int shift = 0; shift <= 16; shift += 8) {
+        long c = (long)((a >> shift) & 0xff) - (long)((b >> shift) & 0xff);
+        d += c * c;
+    }
+    return d;
+}
+
+/* the levels of each of red, green and blue of the 6x6x6 colors 16-231 */
+static const uint32_t cube_levels[6] = { 0, 95, 135, 175, 215, 255 };
+
+/* the color 0xRRGGBB of 'index' of the 256-color palette, as in xterm */
+static uint32_t index_rgb(uint32_t index)
+{
+    /* the 16 named colors, which terminals often change */
+    static const uint32_t named[16] = {
+        0x000000, 0xcd0000, 0x00cd00, 0xcdcd00, 0x0000ee, 0xcd00cd,
+        0x00cdcd, 0xe5e5e5, 0x7f7f7f, 0xff0000, 0x00ff00, 0xffff00,
+        0x5c5cff, 0xff00ff, 0x00ffff, 0xffffff,
+    };
+    if (index < 16)
+        return named[index];
+    if (index < 232) {
+        index -= 16;
+        return (cube_levels[index / 36] << 16
+                | cube_levels[index / 6 % 6] << 8 | cube_levels[index % 6]);
+    }
+    uint32_t gray = 8 + 10 * (index - 232);
+    return gray << 16 | gray << 8 | gray;
+}
+
+/*
+ * the index of the color of the 256-color palette nearest to 0xRRGGBB
+ * 'rgb': of the 6x6x6 colors or of the 24 grays, whichever is nearer, so
+ * that grays stay gray
+ */
+static uint32_t nearest_index(uint32_t rgb)
+{
+    uint32_t cube = 16;
+    for (int shift = 16, mul = 36; shift >= 0; shift -= 8, mul /= 6) {
+        uint32_t c = (rgb >> shift) & 0xff;
+        uint32_t level = 0;
+        for (uint32_t l = 1; l < 6; ++l) {
+            if (abs((int)cube_levels[l] - (int)c)
+                < abs((int)cube_levels[level] - (int)c))
+                level = l;
+        }
+        cube += level * (uint32_t)mul;
+    }
+    uint32_t average = (((rgb >> 16) & 0xff) + ((rgb >> 8) & 0xff)
+                        + (rgb & 0xff)) / 3;
+    uint32_t gray = average < 8 ? 232 : average > 238 ? 255
+        : 232 + (average - 3) / 10;
+    return (rgb_distance(rgb, index_rgb(gray))
+            < rgb_distance(rgb, index_rgb(cube)) ? gray : cube);
+}
+
+/* the named color, 0-15, nearest to 0xRRGGBB 'rgb' */
+static uint32_t nearest_named(uint32_t rgb)
+{
+    uint32_t best = 0;
+    for (uint32_t i = 1; i < 16; ++i) {
+        if (rgb_distance(rgb, index_rgb(i))
+            < rgb_distance(rgb, index_rgb(best)))
+            best = i;
+    }
+    return best;
+}
+
 /* append the SGR parameters selecting 'color'; base is 30 or 40 */
 static void append_color_params(char *buf, size_t size, size_t *len,
                                 const struct color *color, int base)
 {
     const char *sep = *len > 0 ? ";" : "";
-    uint32_t v = color->value;
+    struct color shown = *color;
 
-    switch (color->kind) {
+    /* as the terminal shows colors */
+    if (shown.kind == COLOR_RGB && attr_colors != ATTR_COLORS_RGB) {
+        shown.kind = COLOR_INDEX;
+        shown.value = nearest_index(shown.value & 0xffffff);
+    }
+    if (shown.kind == COLOR_INDEX && attr_colors == ATTR_COLORS_16) {
+        shown.kind = COLOR_NAMED;
+        shown.value = (shown.value < 16 ? shown.value
+                       : nearest_named(index_rgb(shown.value)));
+    }
+    uint32_t v = shown.value;
+
+    switch (shown.kind) {
     case COLOR_NONE:
         break;
     case COLOR_NAMED:

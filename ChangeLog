@@ -64,6 +64,10 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	  Unicode name or code point, such as in #print or #send.
 
 	Commands, attributes and messages:
+	* RGB colors of attributes are shown as the nearest of the
+	  256-color palette in a terminal without RGB, or of the 16 colors
+	  without a palette either; RGB is taken to be there if COLORTERM
+	  is truecolor or 24bit, and in Windows Terminal.
 	* A session locks its definition file: a second powwow started
 	  with it warns, and does not save it on exit unless the first
 	  has quit by then, but #save saves it anyway.

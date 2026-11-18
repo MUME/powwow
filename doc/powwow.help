@@ -121,6 +121,11 @@ Colors:   black, red, green, yellow, blue, magenta, cyan, white
           #rrggbb (RGB)
           none (default color)
 
+In a terminal without RGB, an RGB color is shown as the nearest of the
+256-color palette, or of the 16 colors if it has no palette either; RGB
+is taken to be there if ‘$COLORTERM’ is ‘truecolor’ or ‘24bit’, and in
+Windows Terminal.
+
 Examples:
 
 #mark Sizzler=bold                (mark Sizzler in bold)
