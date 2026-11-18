@@ -2089,9 +2089,12 @@ static void get_user_input(void)
     while ((j = tty_read(c, chunk)) < 0 && errno == EINTR)
         ;
     if (j == 0) {
-        /* such as at the end of commands piped into powwow */
-        if (tty_at_eof())
+        /* such as at the end of commands piped into powwow; the messages
+         * on exit are not in the attribute of the input line */
+        if (tty_at_eof()) {
+            tty_puts(edattrend);
             exit_powwow();
+        }
         return;
     }
 

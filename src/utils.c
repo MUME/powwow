@@ -1243,7 +1243,7 @@ char *split_first_word(char *dst, int dstlen, char *src)
 
 static void sig_pipe_handler(int signum)
 {
-    tty_puts("\n#broken pipe.\n");
+    tty_printf("%s\n#broken pipe.\n", edattrend);
 }
 
 /* a pipe that the signal handlers write to, to wake up select() */
@@ -1330,8 +1330,8 @@ void suspend_powwow(int signum)
         tty_start();
         tty_sig_winch_bottomhalf();  /* in case size changed meanwhile */
     } else {
-        tty_puts("\n#cannot suspend: powwow was not started by a shell"
-                 " with job control.\n");
+        tty_printf("%s\n#cannot suspend: powwow was not started by a shell"
+                   " with job control.\n", edattrend);
     }
     status(1);
 }
