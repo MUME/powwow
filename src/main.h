@@ -60,6 +60,8 @@ extern bool default_tls;
 #define charset_flag_str(utf8) ((utf8) ? " " UTF8_FLAG : " " LATIN1_FLAG)
 
 extern char deffile[], helpfile[], copyfile[];
+extern char config_file[];
+extern bool config_global;
 
 extern int cols, lines, cols_1; /* terminal window size */
 extern int olines;              /* previous terminal window size */

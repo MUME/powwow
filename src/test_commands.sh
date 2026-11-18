@@ -18,6 +18,8 @@ export TMPDIR
 unset XDG_RUNTIME_DIR
 # the colors of xterm, which has 8, not those of the terminal of the tests
 unset COLORTERM WT_SESSION
+# the user-wide settings file is then in $HOME, where the tests put it
+unset APPDATA XDG_CONFIG_HOME
 # fill memory when it is allocated and freed, on macOS and with glibc, so
 # that using a field that was never set, or freed memory, finds no zeros
 MallocPreScribble=1
@@ -421,6 +423,86 @@ has '#1: 8 bytes'
 lacks_history hunter22
 has_history 'keep this'
 
+# the user-wide settings file, read before the definition file; without
+# --config, #save puts its settings in the definition file
+mkdir -p "$tmp/.config/powwow"
+printf '#option editor=from-config\n' > "$tmp/.config/powwow/powwow.conf"
+printf '#alias kept=yes\n' > "$tmp/shared.pw"
+run --args "$tmp/shared.pw" 'powwow reads the user-wide settings file' \
+    '#option'
+has '#option editor=from-config'
+grep -Fxq '#option editor=from-config' "$tmp/shared.pw" \
+    || fail 'expected the user-wide settings in the definition file'
+run --args --no-config '--no-config skips the user-wide settings file' \
+    '#option'
+lacks '#option editor=from-config'
+rm -r "$tmp/.config"
+
+if [ "$(uname -s)" = Darwin ]; then
+    conf="$tmp/Library/Application Support/powwow/powwow.conf"
+    mkdir -p "${conf%/*}"
+    printf '#option editor=from-library\n' > "$conf"
+    run 'on macOS, the user-wide settings file is in ~/Library' '#option'
+    has '#option editor=from-library'
+    rm -r "$tmp/Library"
+fi
+
+# with --config, the user-wide settings go in their own file, which powwow
+# creates with its folders, and the others in the definition file
+hash=$(sed -n 's/^#secret =//p' "$tmp/secret.pw" | head -n 1)
+printf '#alias kept=yes\n#option editor=local\n' > "$tmp/launched.pw"
+run --args "--config=$tmp/new/dir/powwow.conf $tmp/launched.pw" \
+    '--config saves the user-wide settings in their own file' \
+    "#option editor=global
+#secret =$hash
+#option -save
+#save"
+grep -Fxq '#option editor=global' "$tmp/new/dir/powwow.conf" \
+    || fail 'expected #option editor in the user-wide settings file'
+grep -Fxq "#secret =$hash" "$tmp/new/dir/powwow.conf" \
+    || fail 'expected #secret in the user-wide settings file'
+grep -Fxq '#option -save' "$tmp/new/dir/powwow.conf" \
+    || fail 'expected #option -save in the user-wide settings file'
+grep -q 'editor=\|^#secret\|[+-]save' "$tmp/launched.pw" \
+    && fail 'expected no user-wide settings in the definition file'
+grep -Fxq '#alias kept=yes' "$tmp/launched.pw" \
+    || fail 'expected the alias in the definition file'
+run --args "--config=$tmp/new/dir/powwow.conf" \
+    '--config reads the user-wide settings file it names' '#option'
+has '#option editor=global'
+
+# the #hilite of the user-wide settings file is user-wide, and a MUD's own
+# wins over it until "default" drops it; only a MUD's own is saved in its
+# definition file
+printf '#hilite input bold\n#hilite messages underline\n' > "$tmp/hl.conf"
+printf '#option +info\n#hilite input red\n' > "$tmp/hl.pw"
+run --args "--config=$tmp/hl.conf $tmp/hl.pw" \
+    "a MUD's own #hilite wins over the user-wide one" \
+    '#print ("plain")
+#hilite input default
+#hilite messages none
+#save'
+grep -aq 'input highlighting is now .*<ESC>\[1mon<ESC>\[m.* (user-wide def' \
+    "$tmp/out" || fail 'expected the user-wide bold after default'
+has '#message highlighting is now off.'
+grep -Fxq '#hilite messages none' "$tmp/hl.pw" \
+    || fail "expected the MUD's own #hilite messages in its file"
+grep -Fq '#hilite input' "$tmp/hl.pw" \
+    && fail 'expected no #hilite input in the definition file'
+grep -Fxq '#hilite input bold' "$tmp/hl.conf" \
+    || fail 'expected the user-wide #hilite input to stay'
+grep -Fxq '#hilite messages underline' "$tmp/hl.conf" \
+    || fail 'expected the user-wide #hilite messages to stay'
+# without --config, the user-wide one goes in the definition file too
+mkdir -p "$tmp/.config/powwow"
+printf '#hilite input bold\n' > "$tmp/.config/powwow/powwow.conf"
+printf '#alias kept=yes\n' > "$tmp/hl2.pw"
+run --args "$tmp/hl2.pw" \
+    'without --config, #save saves the user-wide #hilite too' '#save'
+grep -Fxq '#hilite input bold' "$tmp/hl2.pw" \
+    || fail 'expected the user-wide #hilite input in the definition file'
+rm -r "$tmp/.config"
+
 run '#secret add deletes the lines and words with the secret' \
     "#put say hunter22
 #put keep this
@@ -727,7 +809,7 @@ run 'hilite with an invalid attribute' '#hilite ?
 has '#hilite: "?" is not a style or a color.'
 has '#hilite: "blue" follows the color: write "on" before a background color.'
 has '#hilite: "purple" is not a style or a color.'
-has '#syntax: #hilite [input|messages] [<attribute>]'
+has '#syntax: #hilite [input|messages] [<attribute>|default]'
 has '  example:  bold yellow on blue'
 
 run 'bright colors with a capital first letter' '#mark foo=White on BLUE
@@ -1530,6 +1612,49 @@ touch "$tmp/second-quit"
 wait $second
 grep -q 'later' "$tmp/lock.pw" || fail 'the second session did not save'
 
+# with --config, a user-wide setting changed in a session is saved in the
+# user-wide settings file at once, and the session reads that file again
+# when another program, such as the launcher, writes a new one
+name='a session saves the user-wide settings at once, and reads them again'
+printf '#alias base=1\n#option +info\n' > "$tmp/live.pw"
+rm -f "$tmp/live.conf" "$tmp/live-go" "$tmp/live.out"
+{
+    printf '#option editor=from-session\n'
+    until [ -e "$tmp/live-go" ]; do sleep 0.05; done
+    # once a second at most, so that it is seen after a second
+    sleep 1.2
+    printf '#option list\n#hilite messages default\n#quit\n'
+} | "$POWWOW" "--config=$tmp/live.conf" "$tmp/live.pw" > "$tmp/live.out" \
+    2>&1 &
+live=$!
+i=0
+until grep -q 'editor is now' "$tmp/live.out" 2>/dev/null || [ $i -ge 500 ]
+do
+    sleep 0.01
+    i=$((i + 1))
+done
+grep -Fxq '#option editor=from-session' "$tmp/live.conf" \
+    || fail 'expected the editor in the user-wide settings file at once'
+# as the launcher writes it: a new file in its place
+printf '#savefile-version 9\n#option pager=from-file\n#hilite messages bold\n' \
+    > "$tmp/live.new"
+mv "$tmp/live.new" "$tmp/live.conf"
+touch "$tmp/live-go"
+wait $live
+sed -e "s/$esc\[[0-9;?]*[A-Za-z]//g" "$tmp/live.out" | tr -d '\r' \
+    > "$tmp/out"
+grep -q '^#user-wide settings read again' "$tmp/out" \
+    || fail 'expected the user-wide settings file to be read again'
+sed -n '/^#option list/,$p' "$tmp/out" > "$tmp/list"
+grep -Fq '#option pager=from-file' "$tmp/list" \
+    || fail 'expected the pager of the new user-wide settings file'
+grep -Fq '#option editor=from-session' "$tmp/list" \
+    && fail 'expected the editor of the old file to be gone'
+grep -Fxq '#option pager=from-file' "$tmp/live.conf" \
+    || fail 'expected the session not to save over the new file'
+grep -Fxq '#message highlighting is now on (user-wide default).' "$tmp/out" \
+    || fail 'expected the #hilite of the new user-wide settings file'
+
 # "# " starts a comment, up to the next ;, typed, in a definition file and
 # in a file that #exe reads
 printf '%s\n' '#savefile-version 9' '#reset bind' '# a comment; #alias good=x' \
@@ -1670,6 +1795,8 @@ has "#option pager=cat        program for showing texts"
 has "#option shell=sh         program for running '#!' and '!'"
 has '#option editor=&"C:\\Program Files\\Notepad++\\notepad++.exe" -multiInst'
 has "#                        program for editing texts"
+has '#options, not saved without a definition file:'
+lacks '#user-wide options'
 grep -Fxq '#hilite input red' "$tmp/cfg" || fail "#hilite input not saved"
 grep -Fxq '#hilite messages bold' "$tmp/cfg" || fail "#hilite messages not saved"
 
@@ -1742,6 +1869,33 @@ export POWWOWPAGER
 run --args --windows '--windows: #help names variables as %NAME%' \
     '#help option'
 has "others; they come before '%POWWOWEDITOR%', '%POWWOWPAGER%',"
+
+printf '#alias kept=yes\n' > "$tmp/groups.pw"
+run --args "--config=$tmp/groups.conf $tmp/groups.pw" \
+    '#option list groups the options by the file that they are saved in' \
+    '#option list'
+has "#user-wide options, saved in '$tmp/groups.conf':"
+has "#options of this MUD, saved in '$tmp/groups.pw':"
+grep -B1 '^#options of this MUD' "$tmp/out" | head -n 1 | grep -q '^$' \
+    || fail 'expected an empty line between the groups'
+sed -n '/^#user-wide/,/^#options of/p' "$tmp/out" > "$tmp/user-wide"
+grep -q '^#option +save ' "$tmp/user-wide" || fail 'save is not user-wide'
+grep -q '^#option editor=' "$tmp/user-wide" || fail 'editor is not user-wide'
+grep -q '^#option +autoclear ' "$tmp/user-wide" \
+    && fail 'autoclear is user-wide'
+run --args "$tmp/groups.pw" \
+    '#option list: without --config, all are saved in the definition file' \
+    '#option list'
+has "#options, saved in '$tmp/groups.pw':"
+lacks '#user-wide options'
+lacks '#options of this MUD'
+# nor in #option list
+dir="$tmp/Application Support/powwow with a long name"
+run --args "--config=$tmp/groups.conf" \
+    '#option list does not break a file name at its spaces' \
+    "#file =$dir/mume.powwow
+#option list"
+has "#    '$dir/mume.powwow':"
 
 run 'help aligns the list of commands' '#help' ''
 has '#addstatic {<text>|(<expr>)}    add the string to the static completion list'
@@ -2084,9 +2238,11 @@ for shell in bash zsh; do
         expect_completion bash 'powwow mu' 'mume.powwow '
         expect_completion bash 'powwow ' 'defs/' 'dir/' 'mume.powwow '
         expect_completion bash 'powwow n' 'notes.txt '
+        expect_completion bash 'powwow --config=di' 'dir/'
     else
         expect_completion zsh 'powwow mu' '_files -g *.powwow(-.)'
         expect_completion zsh 'powwow mume.powwow lo' '_hosts'
+        expect_completion zsh 'powwow --config=di' 'compset -P *=' '_files'
     fi
     POWWOWDIR=$tmp/compl/defs
     export POWWOWDIR

@@ -82,14 +82,37 @@ with the same definition file active simultaneously, the
 settings changed in one session can be overwritten by a change
 in another session.
 
+### The user-wide settings file
+
+Before the definition file, powwow reads the user-wide settings file, which
+has the settings for all MUDs: the command options, such as
+`#option editor=`, the secrets of `#secret`, `#option save`, and the
+attributes of `#hilite`. It is written like a definition file, and kept
+where each system keeps the settings of an app:
+
+| System | User-wide settings file |
+| --- | --- |
+| Windows | `%APPDATA%\powwow\powwow.conf` |
+| macOS | `~/Library/Application Support/powwow/powwow.conf`, or `~/.config/powwow/powwow.conf` if `~/.config/powwow` exists |
+| Linux, FreeBSD | `$XDG_CONFIG_HOME/powwow/powwow.conf`, by default `~/.config/powwow/powwow.conf` |
+
+The definition file is read after it, so its settings win. When powwow
+saves, the settings of the user-wide settings file go in the definition
+file too, unless powwow was started with `--config`, as the launcher
+starts it: then they go in the user-wide settings file, at once when one
+changes, powwow reads that file again when another program, such as the
+launcher, writes it, and the definition file has the others.
+`--config=FILE` reads and saves `FILE` instead, and
+`--no-config` does not read the user-wide settings file.
+
 ### Completing the command line
 
 `powwow --completion bash` prints a script that completes the arguments
-of powwow in bash: the options, the options of `--tls=`, and the
-definition files, those that end with `.powwow` unless none does, also
-those in `POWWOWDIR`, which powwow looks in first. `make install`
-installs it where the package bash-completion loads it by itself;
-otherwise load it in `~/.bashrc`:
+of powwow in bash: the options, the options of `--tls=`, the file of
+`--config=`, and the definition files, those that end with `.powwow`
+unless none does, also those in `POWWOWDIR`, which powwow looks in
+first. `make install` installs it where the package bash-completion
+loads it by itself; otherwise load it in `~/.bashrc`:
 
 ```
 eval "$(powwow --completion bash)"
@@ -644,10 +667,13 @@ drawn as the messages of powwow (see `#hilite`): with the secret
 `password`, `abc passworddef` is left as `abc <redacted>def`.
 
 Powwow keeps only a salted hash of each secret, which `#save` writes as
-`#secret =<hash>`. It has only 32 bits: too few to tell a strong password
-from the many others with the same hash, but a weak one, such as a word
-of a dictionary, can be found from it, and so can a password kept in
-several definition files.
+`#secret =<hash>`: in the user-wide settings file if powwow was started
+with `--config`, as the launcher starts it, or else in the definition file
+(see "The user-wide settings file").
+The hash has only 32 bits: too few to tell a strong password from the
+many others with the same hash, but a weak one, such as a word of a
+dictionary, can be found from it, and so can a password kept in several
+definition files.
 Powwow warns about a secret shorter than 8 bytes, which may also match
 other text.
 
@@ -941,14 +967,17 @@ is already defined, you cannot change its place in the list.
 ### Input highlighting
 
 ```
-#hilite [input|messages] [<attribute>]
+#hilite [input|messages] [<attribute>|default]
 ```
 
 This sets the attribute of your entered text, or with `messages`, of the
 messages of powwow, such as those starting with `#`, and the labels it
 shows in the input line, such as that of `C-r`, to the given attribute.
-Without an attribute, it turns it off. Both are saved in the
-definition file; a `#hilite` in `#init` changes them when connecting.
+Without an attribute, it turns it off.
+A `#hilite` in the user-wide settings file sets the attribute for all
+MUDs; one typed or in the definition file sets the MUD's own, which wins
+over it and is saved in the definition file, until `default` drops it.
+A `#hilite` in `#init` changes them when connecting.
 See "Attributes: colors and other highlighting" below for more syntax.
 
 ### Capture output to file
@@ -1290,8 +1319,8 @@ editor has not ended yet, are left alone.
 
 Currently available option names are
 `autoclear`, `autoprint`, `compact`, `debug`, `echo`, `exit`, `history`,
-`identify`, `info`, `keyecho`, `reprint`, `sendsize`, `speedwalk`,
-`words` and `wrap`.
+`identify`, `info`, `keyecho`, `reprint`, `save`, `sendsize`,
+`speedwalk`, `words` and `wrap`.
 
 | Command | Effect |
 | --- | --- |
@@ -1299,6 +1328,12 @@ Currently available option names are
 | `#option -name` | turns it off |
 | `#option name` | toggles it |
 | `#option =name` | reports its status |
+
+The options `editor`, `pager`, `help-pager`, `shell` and `save` are
+user-wide settings, the same for all MUDs: `#save` writes them in the
+user-wide settings file if powwow was started with `--config`, as the
+launcher starts it, or else in the definition file, with the other
+options (see "The user-wide settings file").
 
 #### `#option editor`, `pager`, `help-pager` and `shell`
 
@@ -1311,14 +1346,14 @@ the texts that the MUD sends to edit, `pager` shows texts such as
 `#help`, `help-pager` shows only `#help`, before `pager`, and `shell`
 runs `#!` and the commands after `!` of `#var` and others. Each comes
 before its environment variable, `POWWOWEDITOR`, `POWWOWPAGER`,
-`POWWOWHELPPAGER` and `POWWOWSHELL`, and they are saved with the other
-options. With `--windows`, as the installer for Windows runs powwow,
-the editor and the pager are Notepad by default, or nano in an ssh
-session, and the shell is powwow-cmd, which runs the commands with cmd,
-where they are found. An empty command clears one, and
-`#option =name` puts it in the input line to edit. A pager of `-` (a
-hyphen) is none: `#help` prints its text as other messages, and the texts
-that the MUD sends to view are printed as its other lines.
+`POWWOWHELPPAGER` and `POWWOWSHELL`. With `--windows`, as the installer
+for Windows runs powwow, the editor and the pager are Notepad by
+default, or nano in an ssh session, and the shell is powwow-cmd, which
+runs the commands with cmd, where they are found. An empty command
+clears one, and `#option =name` puts it in the input line to edit. A
+pager of `-` (a hyphen) is none: `#help` prints its text as other
+messages, and the texts that the MUD sends to view are printed as its
+other lines.
 
 The editor and the pager get the text in a temporary file, whose name
 is their last argument, in the directory `TMPDIR`, or `/tmp` if it is

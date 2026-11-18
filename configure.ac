@@ -45,6 +45,10 @@ case "${host_os}" in
     netbsd*) feature_cppflags=-D_NETBSD_SOURCE ;;
 esac
 AC_SUBST(feature_cppflags)
+AS_IF([test -n "${is_darwin}"], [
+    AC_DEFINE(HAVE_LIBRARY_DIRS, 1,
+              [Define to keep the settings in ~/Library/Application Support,
+               as on macOS.]) ])
 # make help lists the cygwin targets only on Cygwin
 AM_CONDITIONAL([CYGWIN], [test -n "${is_cygwin}"])
 

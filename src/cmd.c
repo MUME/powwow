@@ -146,8 +146,8 @@ static cmdstruct default_commands[] =
     C("groupdelim", cmd_groupdelim,
       "[<delimiter>]\tchange delimiter for action/alias groups"),
     C("hilite",     cmd_hilite,
-      "[input|messages] [<attribute>]\thighlight your input line or"
-      " powwow's messages"),
+      "[input|messages] [<attribute>|default]\thighlight your input line"
+      " or powwow's messages"),
     C("history",    cmd_history,
       "[{<number>|(<expr>)}]\tlist/execute commands in history"),
     C("host",       cmd_host,
@@ -789,6 +789,7 @@ static const char *shell_choice(const char **from)
  */
 char *shell_command(const char *arg, const char *file)
 {
+    config_refresh(true);
     const char *from;
     const char *shell = shell_choice(&from);
     bool has_shell = shell != NULL && *shell != '\0';
@@ -1005,36 +1006,59 @@ static void cmd_hilite(char *arg)
         arg = skipspace(arg + len);
     }
 
+    /* the user-wide one in the user-wide settings file, else the MUD's
+     * own, which "default" drops */
+    struct hilite *h = messages ? &message_hilite : &input_hilite;
     struct attr attr;
     char why[BUFSIZE];
-    if (!attr_parse_why(arg, &attr, why, sizeof(why))) {
+    len = strlen(arg);
+    while (len > 0 && arg[len - 1] == ' ')
+        --len;
+    if (len == 7 && strncmp(arg, "default", 7) == 0) {
+        if (reading_config)
+            h->user = (struct attr){ 0 };
+        else
+            h->own = false;
+    } else if (attr_parse_why(arg, &attr, why, sizeof(why))) {
+        if (reading_config) {
+            h->user = attr;
+        } else {
+            h->mud = attr;
+            h->own = true;
+        }
+    } else {
         message_printf("#hilite: %s.\n", why);
         if (opt_info) {
             message_printf("#syntax: #hilite [input|messages]"
-                           " [<attribute>]\n");
+                           " [<attribute>|default]\n");
             show_attr_syntax();
         }
-    } else if (messages) {
-        message_attr = attr;
-        attr_string(&attr, msgattrbeg, msgattrend);
-        if (opt_info) {
-            message_printf("#message highlighting is now %s.\n",
-                           attr_is_none(&attr) ? "off" : "on");
-        }
-    } else {
-        input_attr = attr;
-        attr_string(&attr, edattrbeg, edattrend);
-
-        edattrbg = ((attr.flags & (ATTR_INVERSE | ATTR_BLINK)) != 0
-                    || attr.bg.kind != COLOR_NONE);
-
-        if (opt_info) {
-            /* "on" in the input attribute, and then the message one again */
-            wrap_printf("#input highlighting is now %s%so%s%s%s.", msgattrend,
-                        edattrbeg, attr_is_none(&attr) ? "ff" : "n", edattrend,
-                        msgattrbeg);
-        }
+        return;
     }
+    hilite_update();
+
+    if (!opt_info)
+        return;
+    const char *user = h->own ? "" : " (user-wide default)";
+    if (messages) {
+        message_printf("#message highlighting is now %s%s.\n",
+                       attr_is_none(hilite_attr(h)) ? "off" : "on", user);
+    } else {
+        /* "on" in the input attribute, and then the message one again */
+        wrap_printf("#input highlighting is now %s%so%s%s%s%s.", msgattrend,
+                    edattrbeg, attr_is_none(hilite_attr(h)) ? "ff" : "n",
+                    edattrend, msgattrbeg, user);
+    }
+}
+
+/* the escape sequences of the attributes of #hilite, as they are now */
+void hilite_update(void)
+{
+    attr_string(hilite_attr(&message_hilite), msgattrbeg, msgattrend);
+    const struct attr *attr = hilite_attr(&input_hilite);
+    attr_string(attr, edattrbeg, edattrend);
+    edattrbg = ((attr->flags & (ATTR_INVERSE | ATTR_BLINK)) != 0
+                || attr->bg.kind != COLOR_NONE);
 }
 
 static void cmd_history(char *arg)
@@ -2908,10 +2932,13 @@ static void cmd_quit(char *arg)
         exit_powwow();
 }
 
+/* the on/off options; the user-wide ones, and all the command options, go
+ * in the user-wide settings file when powwow saves it */
 static const struct {
     const char *name;
     bool *option;
     const char *doc;
+    bool global;
 } options[] = {
     { .name = "autoclear", .option = &opt_autoclear,
       .doc = "clear input line before executing commands" },
@@ -2936,7 +2963,7 @@ static const struct {
     { .name = "reprint", .option = &opt_reprint,
       .doc = "reprint sent commands when getting new prompt" },
     { .name = "save", .option = &opt_save,
-      .doc = "save the definition file when powwow exits" },
+      .doc = "save the definition file when powwow exits", .global = true },
     { .name = "sendsize", .option = &opt_sendsize,
       .doc = "send terminal size when opening connection" },
     { .name = "speedwalk", .option = &opt_speedwalk,
@@ -2987,30 +3014,43 @@ static int print_command_options(FILE *file)
     return 1;
 }
 
-/* print all options to 'file', or the tty, as messages, if it is NULL;
- * return -1 on error, 1 on success */
-int print_all_options(FILE *file)
+/* write the line 'line' of options to 'file', or the tty, as a message,
+ * if it is NULL; return -1 on error */
+static int print_option_line(FILE *file, const char *line)
+{
+    return (file != NULL ? fprintf(file, "%s\n", line)
+            : tty_message("%s\n", line));
+}
+
+/* print the options of 'scope' to 'file', or the tty, as messages, if it
+ * is NULL; return -1 on error, 1 on success */
+int print_options(FILE *file, enum option_scope scope)
 {
     /* in a file, the command options come first, as #load reports them
      * once the line of the other options turns +info back on */
-    if (file != NULL && print_command_options(file) < 0)
+    if (file != NULL && scope != OPTIONS_LOCAL
+        && print_command_options(file) < 0)
         return -1;
     int width = (file != NULL ? WRAP_COLUMNS : wrap_width() + 1) - 16;
     char line[BUFSIZE];
     int len = 0;
     for (int i = 0; options[i].name != NULL; ++i) {
+        if ((scope == OPTIONS_LOCAL && options[i].global)
+            || (scope == OPTIONS_GLOBAL && !options[i].global))
+            continue;
         if (len == 0)
             len = sprintf(line, "#option");
         len += snprintf(line + len, sizeof line - len, " %c%s",
                         *options[i].option ? '+' : '-', options[i].name);
         /* each line whole, so that messages have their attributes once */
-        if (len >= width || options[i + 1].name == NULL) {
-            if ((file != NULL ? fprintf(file, "%s\n", line)
-                 : tty_message("%s\n", line)) < 0)
+        if (len >= width) {
+            if (print_option_line(file, line) < 0)
                 return -1;
             len = 0;
         }
     }
+    if (len > 0 && print_option_line(file, line) < 0)
+        return -1;
     if (file == NULL) {
         if (print_command_options(NULL) < 0)
             return -1;
@@ -3106,6 +3146,7 @@ static bool command_option(const char *word, int len, const char *rest)
     if (*rest != '\0') {
         *value = xstrdup(rest);
     }
+    config_changed();
     if (opt_info) {
         if (*value != NULL)
             message_printf("#option %s is now: %s\n", command_options[i].name,
@@ -3161,11 +3202,78 @@ static void print_option_doc(const char *opt, const char *doc)
     }
 }
 
+/* the heading of options of #option list that #save writes to 'file' */
+static void print_option_heading(const char *title, const char *file)
+{
+    if (*file != '\0')
+        message_wrap(WRAP_CONT, "%s, saved in " LQUOTE "%s" RQUOTE ":", title,
+                     file);
+    else
+        message_wrap(WRAP_CONT, "%s, not saved without a definition file:",
+                     title);
+}
+
+/* print the user-wide options, if 'global', or else those of the MUD */
+static void print_option_group(bool global)
+{
+    char opt[BUFSIZE];
+    for (int i = 0; options[i].name != NULL; ++i) {
+        assert(options[i].option != NULL);
+        if (options[i].global != global)
+            continue;
+        snprintf(opt, sizeof opt, "#option %c%s",
+                 *options[i].option ? '+' : '-', options[i].name);
+        print_option_doc(opt, options[i].doc);
+    }
+    /* the command options, which are all user-wide */
+    for (int i = 0; global && command_options[i].name != NULL; ++i) {
+        command_option_line(opt, sizeof opt, i);
+        print_option_doc(opt, command_options[i].doc);
+    }
+}
+
+/*
+ * print the options as #option list does, under where #save writes them:
+ * with --config, the user-wide ones in the user-wide settings file and
+ * those of the MUD in the definition file, else all in the definition file
+ */
+static void print_option_list(void)
+{
+    if (config_global && *config_file != '\0') {
+        print_option_heading("#user-wide options", config_file);
+        print_option_group(true);
+        /* after an empty line */
+        print_option_heading("\n#options of this MUD", deffile);
+    } else {
+        print_option_heading("#options", deffile);
+        print_option_group(true);
+    }
+    print_option_group(false);
+}
+
+/*
+ * the user-wide settings as when powwow starts, before the user-wide
+ * settings file is read again: the command options not set, #option save
+ * on, no user-wide #hilite, and no secrets
+ */
+void reset_user_wide_settings(void)
+{
+    for (int i = 0; command_options[i].name != NULL; ++i) {
+        free(*command_options[i].value);
+        *command_options[i].value = NULL;
+    }
+    opt_save = true;
+    input_hilite.user = message_hilite.user = (struct attr){ 0 };
+    hilite_update();
+    while (secret_count() > 0)
+        secret_delete(0);
+}
+
 static void cmd_option(char *arg)
 {
     arg = skipspace(arg);
     if (*arg == '\0') {
-        print_all_options(NULL);
+        print_options(NULL, OPTIONS_ALL);
         return;
     }
 
@@ -3206,18 +3314,7 @@ static void cmd_option(char *arg)
         }
         if (varp == NULL) {
             if (strncmp("list", p, len) == 0) {
-                char opt[BUFSIZE];
-                tty_message("#list of options:\n");
-                for (i = 0; options[i].name != NULL; ++i) {
-                    assert(options[i].option != NULL);
-                    snprintf(opt, sizeof opt, "#option %c%s",
-                             *options[i].option ? '+' : '-', options[i].name);
-                    print_option_doc(opt, options[i].doc);
-                }
-                for (i = 0; command_options[i].name != NULL; ++i) {
-                    command_option_line(opt, sizeof opt, i);
-                    print_option_doc(opt, command_options[i].doc);
-                }
+                print_option_list();
             } else {
                 tty_message("#syntax: #option [[+|-|=]<option>|list]..."
                             " | <option>=[<command>]\n");
@@ -3234,6 +3331,8 @@ static void cmd_option(char *arg)
         case MODE_OFF:    *varp = false; break;
         case MODE_TOGGLE: *varp = !*varp; break;
         }
+        if (mode != MODE_REP && options[i].global)
+            config_changed();
         /*
          * reset the reprint buffer if changing its status
          */
@@ -3407,6 +3506,7 @@ void secret_entered(const char *s, size_t len)
             struct secret sec = secret_make(&salt, s, len);
             secret_add(&sec);
             purge_secrets();
+            config_changed();
             message_printf("#secret number %d added.\n", secret_count());
             if (len < SECRET_WARN_LEN)
                 wrap_printf("#warning: a secret shorter than %d bytes may"
@@ -3419,6 +3519,7 @@ void secret_entered(const char *s, size_t len)
             message_printf("#no such secret.\n");
         } else {
             secret_delete(i);
+            config_changed();
             message_printf("#secret deleted.\n");
         }
     }
@@ -3450,6 +3551,7 @@ static void delete_secret(const char *arg)
         message_printf("#no secret %s.\n", arg);
     } else {
         secret_delete((int)n - 1);
+        config_changed();
         message_printf("#secret %ld deleted.\n", n);
     }
 }
@@ -3468,8 +3570,11 @@ static void cmd_secret(char *arg)
         struct secret sec;
         if (!secret_parse(&sec, arg + 1))
             wrap_printf("#secret: invalid hash \"%s\"", arg + 1);
-        else if (secret_add(&sec) && opt_info)
-            message_printf("#new secret of %zu bytes.\n", sec.len);
+        else if (secret_add(&sec)) {
+            config_changed();
+            if (opt_info)
+                message_printf("#new secret of %zu bytes.\n", sec.len);
+        }
     } else if (strcmp(word, "add") == 0 && *rest == '\0') {
         read_secret(SECRET_ADD);
     } else if (strcmp(word, "delete") == 0 && *rest == '\0') {

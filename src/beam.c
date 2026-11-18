@@ -509,6 +509,7 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
 
     /* without a pager, #help prints the text as its messages, and that of
      * the MUD as its other lines */
+    config_refresh(true);       /* such as an editor set in the launcher */
     const char *editor = editor_command(view, builtin, NULL);
     if (view && strcmp(editor, "-") == 0) {
         if (builtin)

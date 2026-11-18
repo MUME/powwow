@@ -113,6 +113,7 @@ static const char *const functions[] = {
     "                    word=\"${cur##*[=:]}\"\n",
     "                    _powwow_add \"${cur%\"$word\"}\" \"$_powwow_tls\""
     " \"$word\" ;;\n",
+    "                --config=*) _powwow_files --config= \"${cur#*=}\" ;;\n",
     "                -*) _powwow_add \"\" \"$_powwow_options\" \"$cur\" ;;\n",
     "                *)\n",
     "                    # a definition file, also one in\n",
