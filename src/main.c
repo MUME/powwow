@@ -776,6 +776,8 @@ int main(int argc, char **argv)
         my_strncpy(config_file, cmdline_config, BUFSIZE - 1);
     else
         default_config_file(config_file, BUFSIZE);
+    /* the #hilite of powwow, unless the files have one */
+    hilite_update();
     read_config();
 
     /* the definition file locked while this session has it, also one of

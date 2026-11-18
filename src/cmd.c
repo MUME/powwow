@@ -1053,7 +1053,7 @@ static void cmd_hilite(char *arg)
     const char *text = len == 3 && strncmp(arg, "off", 3) == 0 ? "none" : arg;
     if (len == 7 && strncmp(arg, "default", 7) == 0) {
         if (reading_config)
-            h->user = (struct attr){ 0 };
+            h->user = h->def;
         else
             h->own = false;
     } else if (attr_parse_why(text, &attr, why, sizeof(why))) {
@@ -3300,7 +3300,8 @@ void reset_user_wide_settings(void)
         *command_options[i].value = NULL;
     }
     opt_save = true;
-    input_hilite.user = message_hilite.user = (struct attr){ 0 };
+    input_hilite.user = input_hilite.def;
+    message_hilite.user = message_hilite.def;
     hilite_update();
     while (secret_count() > 0)
         secret_delete(0);

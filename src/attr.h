@@ -71,6 +71,9 @@ void attr_next_words(const char *text, attr_word_fn fn, void *data);
 /* true if 'attr' changes nothing */
 bool attr_is_none(const struct attr *attr);
 
+/* true if 'a' and 'b' are the same attribute */
+bool attr_equal(const struct attr *a, const struct attr *b);
+
 /* write the escape sequence selecting 'attr' to 'buf', or "" */
 void attr_sgr(const struct attr *attr, char *buf, size_t size);
 

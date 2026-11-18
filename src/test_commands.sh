@@ -20,6 +20,14 @@ unset XDG_RUNTIME_DIR
 unset COLORTERM WT_SESSION
 # the user-wide settings file is then in $HOME, where the tests put it
 unset APPDATA XDG_CONFIG_HOME
+# that file, which tests that need another write over, without the
+# highlighting of powwow, so that what powwow prints has no attributes
+no_hilite() {
+    mkdir -p "$tmp/.config/powwow"
+    printf '#hilite input none\n#hilite messages none\n' \
+        > "$tmp/.config/powwow/powwow.conf"
+}
+no_hilite
 # fill memory when it is allocated and freed, on macOS and with glibc, so
 # that using a field that was never set, or freed memory, finds no zeros
 MallocPreScribble=1
@@ -425,8 +433,7 @@ has_history 'keep this'
 
 # the user-wide settings file, read before the definition file; without
 # --config, #save puts its settings in the definition file
-mkdir -p "$tmp/.config/powwow"
-printf '#option editor=from-config\n' > "$tmp/.config/powwow/powwow.conf"
+printf '#option editor=from-config\n' >> "$tmp/.config/powwow/powwow.conf"
 printf '#alias kept=yes\n' > "$tmp/shared.pw"
 run --args "$tmp/shared.pw" 'powwow reads the user-wide settings file' \
     '#option'
@@ -436,16 +443,24 @@ grep -Fxq '#option editor=from-config' "$tmp/shared.pw" \
 run --args --no-config '--no-config skips the user-wide settings file' \
     '#option'
 lacks '#option editor=from-config'
-rm -r "$tmp/.config"
+no_hilite
 
 if [ "$(uname -s)" = Darwin ]; then
     conf="$tmp/Library/Application Support/powwow/powwow.conf"
     mkdir -p "${conf%/*}"
-    printf '#option editor=from-library\n' > "$conf"
+    mv "$tmp/.config/powwow/powwow.conf" "$conf"
+    printf '#option editor=from-library\n' >> "$conf"
+    rm -r "$tmp/.config"
     run 'on macOS, the user-wide settings file is in ~/Library' '#option'
     has '#option editor=from-library'
     rm -r "$tmp/Library"
+    no_hilite
 fi
+
+# without a #hilite, typed text is bold, and the messages italic Blue
+run --args --no-config 'powwow highlights in bold and italic Blue' '#hilite'
+has '<ESC>[3;94m#hilite input bold (user-wide default)<ESC>[m'
+has '<ESC>[3;94m#hilite messages italic Blue (user-wide default)<ESC>[m'
 
 # with --config, the user-wide settings go in their own file, which powwow
 # creates with its folders, and the others in the definition file
@@ -467,6 +482,8 @@ grep -q 'editor=\|^#secret\|[+-]save' "$tmp/launched.pw" \
     && fail 'expected no user-wide settings in the definition file'
 grep -Fxq '#alias kept=yes' "$tmp/launched.pw" \
     || fail 'expected the alias in the definition file'
+printf '#hilite input none\n#hilite messages none\n' \
+    >> "$tmp/new/dir/powwow.conf"
 run --args "--config=$tmp/new/dir/powwow.conf" \
     '--config reads the user-wide settings file it names' '#option'
 has '#option editor=global'
@@ -474,7 +491,7 @@ has '#option editor=global'
 # the #hilite of the user-wide settings file is user-wide, and a MUD's own
 # wins over it until "default" drops it; only a MUD's own is saved in its
 # definition file
-printf '#hilite input bold\n#hilite messages underline\n' > "$tmp/hl.conf"
+printf '#hilite input underline\n#hilite messages underline\n' > "$tmp/hl.conf"
 printf '#option +info\n#hilite input red\n' > "$tmp/hl.pw"
 run --args "--config=$tmp/hl.conf $tmp/hl.pw" \
     "a MUD's own #hilite wins over the user-wide one" \
@@ -482,14 +499,14 @@ run --args "--config=$tmp/hl.conf $tmp/hl.pw" \
 #hilite input default
 #hilite messages none
 #save'
-grep -aq 'input highlighting is now .*<ESC>\[1mon<ESC>\[m.* (user-wide def' \
-    "$tmp/out" || fail 'expected the user-wide bold after default'
+grep -aq 'input highlighting is now .*<ESC>\[4mon<ESC>\[m.* (user-wide def' \
+    "$tmp/out" || fail 'expected the user-wide underline after default'
 has '#message highlighting is now off.'
 grep -Fxq '#hilite messages none' "$tmp/hl.pw" \
     || fail "expected the MUD's own #hilite messages in its file"
 grep -Fq '#hilite input' "$tmp/hl.pw" \
     && fail 'expected no #hilite input in the definition file'
-grep -Fxq '#hilite input bold' "$tmp/hl.conf" \
+grep -Fxq '#hilite input underline' "$tmp/hl.conf" \
     || fail 'expected the user-wide #hilite input to stay'
 grep -Fxq '#hilite messages underline' "$tmp/hl.conf" \
     || fail 'expected the user-wide #hilite messages to stay'
@@ -499,7 +516,7 @@ run --args "--config=$tmp/hl.conf $tmp/hl.pw" \
     '#hilite
 #hilite input off
 #hilite input'
-has '#hilite input bold (user-wide default)'
+has '#hilite input underline (user-wide default)'
 has '#hilite messages none'
 has '#hilite input none'
 lacks '#hilite input none (user-wide default)'
@@ -521,13 +538,13 @@ for k in input messages; do
 done
 # without --config, the user-wide one goes in the definition file too
 mkdir -p "$tmp/.config/powwow"
-printf '#hilite input bold\n' > "$tmp/.config/powwow/powwow.conf"
+printf '#hilite input underline\n' > "$tmp/.config/powwow/powwow.conf"
 printf '#alias kept=yes\n' > "$tmp/hl2.pw"
 run --args "$tmp/hl2.pw" \
     'without --config, #save saves the user-wide #hilite too' '#save'
-grep -Fxq '#hilite input bold' "$tmp/hl2.pw" \
+grep -Fxq '#hilite input underline' "$tmp/hl2.pw" \
     || fail 'expected the user-wide #hilite input in the definition file'
-rm -r "$tmp/.config"
+no_hilite
 
 run '#secret add deletes the lines and words with the secret' \
     "#put say hunter22
@@ -1897,6 +1914,7 @@ run --args --windows '--windows: #help names variables as %NAME%' \
 has "others; they come before '%POWWOWEDITOR%', '%POWWOWPAGER%',"
 
 printf '#alias kept=yes\n' > "$tmp/groups.pw"
+printf '#hilite input none\n#hilite messages none\n' > "$tmp/groups.conf"
 run --args "--config=$tmp/groups.conf $tmp/groups.pw" \
     '#option list groups the options by the file that they are saved in' \
     '#option list'

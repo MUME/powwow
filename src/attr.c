@@ -284,6 +284,13 @@ bool attr_is_none(const struct attr *attr)
             && attr->bg.kind == COLOR_NONE);
 }
 
+bool attr_equal(const struct attr *a, const struct attr *b)
+{
+    return (a->flags == b->flags && a->fg.kind == b->fg.kind
+            && a->fg.value == b->fg.value && a->bg.kind == b->bg.kind
+            && a->bg.value == b->bg.value);
+}
+
 /* append printf-style output to 'buf', which holds *len characters */
 static void append(char *buf, size_t size, size_t *len,
                    const char *format, ...)
