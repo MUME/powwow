@@ -2260,7 +2260,7 @@ EOF
         printf '#secret add\nhunter22\n#option +reprint\n'
         printf '#prompt >p ^HP:=#isprompt\n'
         printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
-        wait_for 'HP:0>'
+        wait_for 'connected!'
         printf 'x\rsay hunter22\rlook\r'
         wait_for 'Bye'
         printf '#quit\n'
@@ -2393,7 +2393,8 @@ def mud():
         if not data:
             break
         got.extend(data)
-threading.Thread(target=mud, daemon=True).start()
+server = threading.Thread(target=mud, daemon=True)
+server.start()
 pid, fd = pty.fork()
 if pid == 0:
     os.environ['TERM'] = 'xterm'
@@ -2401,24 +2402,39 @@ if pid == 0:
 def size(rows, cols):
     fcntl.ioctl(fd, termios.TIOCSWINSZ,
                 struct.pack('HHHH', rows, cols, 0, 0))
+shown = bytearray()
 def drain():
     # read what powwow prints, so that it does not block
     try:
-        while os.read(fd, 4096):
-            pass
+        while True:
+            data = os.read(fd, 4096)
+            if not data:
+                break
+            shown.extend(data)
     except OSError:
         pass
 threading.Thread(target=drain, daemon=True).start()
+# wait, for at most 5 seconds, until done() is true
+def wait_until(done):
+    for _ in range(500):
+        if done():
+            return
+        time.sleep(0.01)
 size(24, 80)
-time.sleep(0.5)
+wait_until(lambda: b'Type #help' in shown)
 os.write(fd, b'#connect m --no-tls 127.0.0.1 %d\n' % s.getsockname()[1])
-time.sleep(1)
+wait_until(lambda: b'Welcome' in shown)
 size(30, 100)
 os.kill(pid, signal.SIGWINCH)
-time.sleep(1)
+# WILL NAWS and two window sizes, or a command run after the resize
+if ask:
+    wait_until(lambda: len(got) >= 21)
+else:
+    os.write(fd, b'#print ("<sy" + "nc>")\n')
+    wait_until(lambda: b'<sync>' in shown)
 os.write(fd, b'#quit\n')
 os.waitpid(pid, 0)
-time.sleep(0.3)
+server.join(5)
 with open(out, 'wb') as f:
     f.write(got)
 EOF
@@ -2452,9 +2468,9 @@ joined | grep -Eqx 'got 255 251 31 255 250 31( [0-9]+){4} 255 240' \
 # an unterminated line of a spawned command, then a read without text
 cat > "$tmp/server" <<'EOF'
 printf '#print ("a" + '
-sleep 1
+sleep 0.2
 printf '\377\361'
-sleep 1
+sleep 0.2
 printf '"b")\n'
 EOF
 run --until '#connection on "n" closed.' \
@@ -2600,16 +2616,16 @@ cat > "$tmp/server" <<'EOF'
 printf '\377\372\052\001;ISO-8859-1'
 touch "$1/sent"
 until [ -e "$1/done" ]; do
-    sleep 1
+    sleep 0.01
 done
 printf '\377\360'
 EOF
 cat > "$tmp/other" <<'EOF'
 until [ -e "$1/sent" ]; do
-    sleep 1
+    sleep 0.01
 done
 printf '\377\372\143\377\360'
-sleep 1
+sleep 0.2
 touch "$1/done"
 EOF
 run --until '#connection on "n" closed.' \
@@ -2661,7 +2677,7 @@ cat > "$tmp/server" <<'EOF'
 read -r identify
 printf '~$#EE6000\nM5\ndescr\n'
 awk 'BEGIN { for (i = 0; i < 5991; ++i) printf "x" }'
-sleep 1
+sleep 0.2
 printf '~$#EE8001\nM6\ndescr\n#print after\n'
 EOF
 run --until '#connection on "n" closed.' 'MPI messages and #setvar mem' \
@@ -2687,7 +2703,7 @@ has '#connection "n" closed in the middle of an MPI message'
 cat > "$tmp/server" <<'EOF'
 read -r identify
 printf '~$#EE100\n'
-sleep 1
+sleep 0.2
 printf 'abc'
 EOF
 run --until '#connection on "n" closed.' \
@@ -2707,7 +2723,7 @@ for parts in '\n\r~$#|EE15\nM1\ndescr1\ntext\n' \
              '~$#EE1|5\nM5\ndescr5\ntext\n' \
              '~$#EE15\r|\nM6\ndescr6\ntext\n'; do
     printf "${parts%%|*}"
-    sleep 1
+    sleep 0.2
     printf "${parts#*|}"
 done
 cat > /dev/null
@@ -2729,7 +2745,7 @@ has '#cancelled session descr6 (6)'
 cat > "$tmp/server" <<'EOF'
 read -r identify
 printf 'prompt> '
-sleep 1
+sleep 0.2
 printf '~$#EE15\nM1\ndescr1\ntext\n\n~$#EE15\nM2\ndescr2\ntext\n'
 cat > /dev/null
 EOF
