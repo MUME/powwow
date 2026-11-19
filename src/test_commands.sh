@@ -600,6 +600,42 @@ grep -Fq '#hilite' "$conf" && fail 'expected no #hilite in the user-wide file'
 "$POWWOW" "--config=$conf" --set mud-hilite-input=bold > /dev/null 2>&1 \
     && fail 'expected --set mud-hilite-input to need a definition file'
 
+name="#setvar keepalive is user-wide, and a MUD's own wins over it"
+"$POWWOW" "--config=$conf" --set keepalive=300 > /dev/null 2>&1 \
+    || fail '--set keepalive=300 failed'
+grep -Fxq '#setvar keepalive=300' "$conf" \
+    || fail 'expected the keepalive in the user-wide settings file'
+printf '#alias k=x\n' > "$tmp/ka.pw"
+[ "$("$POWWOW" "--config=$conf" --get mud-keepalive "$tmp/ka.pw" \
+    2> /dev/null)" = default ] || fail 'expected default for no own keepalive'
+"$POWWOW" "--config=$conf" --set mud-keepalive=0 "$tmp/ka.pw" \
+    > /dev/null 2>&1 || fail '--set mud-keepalive=0 failed'
+grep -Fxq '#setvar keepalive=0' "$tmp/ka.pw" \
+    || fail "expected the MUD's own keepalive, off, in its file"
+[ "$("$POWWOW" "--config=$conf" --get keepalive "$tmp/ka.pw" \
+    2> /dev/null)" = 300 ] || fail 'expected the user-wide keepalive kept'
+run --args "--config=$conf $tmp/ka.pw" \
+    "a MUD's own keepalive wins over the user-wide one" '#setvar'
+grep -Fq '#setvar keepalive=0<' "$tmp/out" \
+    || fail "expected the MUD's own keepalive, 0"
+"$POWWOW" "--config=$conf" --set mud-keepalive=default "$tmp/ka.pw" \
+    > /dev/null 2>&1 || fail '--set mud-keepalive=default failed'
+grep -Fq '#setvar keepalive' "$tmp/ka.pw" \
+    && fail 'expected no keepalive in the definition file once default'
+run --args "--config=$conf $tmp/ka.pw" \
+    'the user-wide keepalive is used without a MUD of its own' '#setvar'
+grep -Fq '#setvar keepalive=300 (user-wide default)' "$tmp/out" \
+    || fail 'expected the user-wide keepalive, 300'
+run '#setvar default is only for keepalive' '#setvar mem=default'
+grep -Fq '#setvar: not an integer: default' "$tmp/out" \
+    || fail 'expected default to be rejected for mem'
+"$POWWOW" "--config=$conf" --set keepalive=86401 > /dev/null 2>&1 \
+    && fail 'expected --set keepalive=86401 to fail'
+"$POWWOW" "--config=$conf" --set keepalive=0 > /dev/null 2>&1 \
+    || fail '--set keepalive=0 failed'
+grep -Fq '#setvar keepalive' "$conf" \
+    && fail 'expected no keepalive in the user-wide file once off'
+
 name='--set saves as with --config, and needs a file for the others'
 "$POWWOW" "--config=$conf" --set 'editor=vi -y' "$tmp/m.pw" \
     > /dev/null 2>&1 || fail '--set with a definition file failed'

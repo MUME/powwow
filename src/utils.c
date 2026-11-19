@@ -1911,6 +1911,8 @@ int read_settings(void)
     /* the file's own #hilite, if any, over the user-wide ones */
     input_hilite.own = message_hilite.own = false;
     hilite_update();
+    keepalive_own = false;
+    keepalive_update();
     for (int n = 0; n < MAX_HASH; ++n) {
         while (named_vars[VAR_NUM].buckets[n] != NULL)
             delete_varnode(&named_vars[VAR_NUM].buckets[n], VAR_NUM);
@@ -2115,6 +2117,8 @@ static int save_config(void)
         failed = write_hilite(f, "input", user_hilite(&input_hilite));
     if (failed > 0)
         failed = write_hilite(f, "messages", user_hilite(&message_hilite));
+    if (failed > 0 && keepalive_user != 0)
+        failed = fprintf(f, "#setvar keepalive=%d\n", keepalive_user);
     if (failed > 0)
         failed = write_secrets(f);
     if (failed > 0)
@@ -2286,8 +2290,12 @@ int save_settings(void)
             failed = fprintf(f, "#setvar buffer=%d\n", size);
     }
 
-    if (failed > 0 && keepalive != 0)
-        failed = fprintf(f, "#setvar keepalive=%d\n", keepalive);
+    /* the MUD's own, also 0, and else the user-wide one, unless it goes
+     * in the user-wide settings file */
+    if (failed > 0 && keepalive_own)
+        failed = fprintf(f, "#setvar keepalive=%d\n", keepalive_mud);
+    else if (failed > 0 && !split && keepalive_user != 0)
+        failed = fprintf(f, "#setvar keepalive=%d\n", keepalive_user);
 
     /* before the history, which they keep lines out of when loaded */
     if (failed > 0 && !split)

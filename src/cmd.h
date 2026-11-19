@@ -57,9 +57,13 @@ enum setting_kind {
     SETTING_ON_OFF,             /* on or off, such as save */
     SETTING_HOST,               /* host, as #host takes it */
     SETTING_ATTR,               /* an attribute, such as hilite-input */
+    SETTING_NUMBER,             /* a number, such as keepalive */
     SETTING_FILE,               /* a file of powwow, which --set cannot set */
 };
 enum setting_kind setting_kind(const char *name);
+
+/* #setvar keepalive in effect: the MUD's own, or else the user-wide one */
+void keepalive_update(void);
 
 /* the name of option 'i', or NULL after the last one */
 const char *option_name(int i);
