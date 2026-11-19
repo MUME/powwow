@@ -120,6 +120,8 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Memory exhaustion ends powwow with `#fatal error: out of memory',
 	  without saving the definition file, instead of skipping what
 	  needed the memory and going on.
+	* An empty EDITOR, PAGER, POWWOWEDITOR, POWWOWPAGER or
+	  POWWOWHELPPAGER counts as unset, rather than as a command.
 	* #setvar reads a number as expressions do, in decimal, such as
 	  0123 as 123 rather than in octal, or such as #ff, and reports a
 	  value that is not one, instead of taking 0 or the digits it

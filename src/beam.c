@@ -348,6 +348,13 @@ static void finish_edit(editsess *sp)
         errmsg("cannot delete %s", sp->file);
 }
 
+/* the environment variable 'name', or NULL if it is not set or is empty */
+static const char *env_command(const char *name)
+{
+    const char *value = getenv(name);
+    return value != NULL && *value != '\0' ? value : NULL;
+}
+
 /*
  * the command that edits a text, or shows it if 'view', or shows #help if
  * 'builtin': #help first uses #option help-pager, then $POWWOWHELPPAGER;
@@ -362,18 +369,19 @@ const char *editor_command(bool view, bool builtin, const char **from)
     const char *source = NULL;
     if (builtin) {
         editor = opt_help_pager;
-        if (editor == NULL && (editor = getenv("POWWOWHELPPAGER")) != NULL)
+        if (editor == NULL
+            && (editor = env_command("POWWOWHELPPAGER")) != NULL)
             source = "POWWOWHELPPAGER";
     }
     if (editor == NULL && (editor = view ? opt_pager : opt_editor) != NULL)
         source = builtin ? "#option pager" : NULL;
     if (editor == NULL) {
         source = view ? "POWWOWPAGER" : "POWWOWEDITOR";
-        editor = getenv(source);
+        editor = env_command(source);
     }
     if (editor == NULL) {
         source = view ? "PAGER" : "EDITOR";
-        editor = getenv(source);
+        editor = env_command(source);
     }
     if (editor == NULL) {
         source = "";
