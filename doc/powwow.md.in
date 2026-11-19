@@ -113,8 +113,10 @@ or `off`, `host`, as `#host` takes it, or the user-wide attributes of
 `hilite-messages`, as `#hilite` takes them, or empty for none, which
 `--set` sets back to those of powwow with `default`, and the MUD's own,
 `mud-hilite-input` and `mud-hilite-messages`, or `default` when it has
-none; `--get` also prints the paths of the user-wide settings file,
-`config-file`, and
+none, and the seconds of `#setvar keepalive`, the user-wide one,
+`keepalive`, 0 for off, and the MUD's own, `mud-keepalive`, or `default`
+when it has none; `--get` also prints the paths of the user-wide
+settings file, `config-file`, and
 of this manual, `manual`, and `in-use`, the process ID of a powwow that
 has the definition file open, or nothing; `--set` then fails, as that
 powwow would write over it.
@@ -2085,6 +2087,11 @@ Known internal variables are:
   the NOP keeps it, and finds a dead connection sooner, as sending to
   it fails. Only a MUD that has sent a telnet command gets it, as
   another would show it as text. The default is 0, off; at most 86400.
+  In the user-wide settings file, it sets the user-wide one, for all
+  MUDs, which the settings of the launcher set; typed or in the
+  definition file, the MUD's own, which wins over the user-wide one and
+  is saved in the definition file, until `#setvar keepalive=default`
+  drops it.
 
 - `lines`: the number of lines your terminal has. Powwow usually
   autodetects it correctly, but on few terminals you may have to set it

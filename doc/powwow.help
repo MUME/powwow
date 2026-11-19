@@ -1012,7 +1012,9 @@ buffer     bytes of recent text from the MUD to keep and write at the
 keepalive  seconds without sending anything to a MUD that uses telnet,
            after which powwow sends it a telnet NOP, which does nothing,
            so that a router that forgets idle connections keeps it
-           (default 0: off; up to 86400, such as 300)
+           (default 0: off; up to 86400, such as 300); in the user-wide
+           settings file, the user-wide one, for all MUDs, and else the
+           MUD's own, until ‘#setvar keepalive=default’ drops it
 lines      the number of lines of your terminal (1 to 2147483647)
 mem        the maximum length of a text or string, in bytes (default
            1048576; 0: no limit)

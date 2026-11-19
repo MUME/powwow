@@ -2350,10 +2350,14 @@ static void cmd_setvar(char *arg)
     char *name = arg;
     arg = first_regular(arg, '=');
     bool set = false;           /* else show */
+    bool def = false;           /* default, for keepalive */
     long buf;
     if (*arg != '\0') {
         *arg++ = '\0';
-        if (*arg != '\0') {
+        if (strcmp(arg, "default") == 0) {
+            def = true;
+            buf = 0;
+        } else if (*arg != '\0') {
             set = true;
             if (*arg == '(') {
                 ++arg;
@@ -2385,6 +2389,11 @@ static void cmd_setvar(char *arg)
 
     strip_end(name);
     int i = strlen(name);
+    /* default is only for keepalive */
+    if (def && (i == 0 || strncmp(name, "keepalive", i) != 0)) {
+        message_printf("#setvar: not an integer: default\n");
+        return;
+    }
     if (i != 0 && strncmp(name, "timer", i) == 0) {
         update_now();
         if (!set)
@@ -2421,15 +2430,30 @@ static void cmd_setvar(char *arg)
             }
         }
     } else if (i != 0 && strncmp(name, "keepalive", i) == 0) {
-        if (!set)
-            fmt_next_edit("#setvar keepalive=%d", keepalive);
-        else if (buf < 0 || buf > 86400) {
+        /* the user-wide one in the user-wide settings file, else the
+         * MUD's own, which "default" drops */
+        if (!set && !def) {
+            if (keepalive_own)
+                fmt_next_edit("#setvar keepalive=%d", keepalive_mud);
+            else
+                fmt_next_edit("#setvar keepalive=default");
+        } else if (!def && (buf < 0 || buf > 86400)) {
             message_printf("#keepalive must be from 0 to 86400 seconds\n");
         } else {
-            keepalive = (int)buf;
+            if (reading_config)
+                keepalive_user = def ? 0 : (int)buf;
+            else if (def)
+                keepalive_own = false;
+            else {
+                keepalive_mud = (int)buf;
+                keepalive_own = true;
+            }
+            keepalive_update();
             if (opt_info) {
                 message_printf("#setvar: keepalive=%d%s\n", keepalive,
-                               keepalive != 0 ? "" : " (off)");
+                               (keepalive_own ? (keepalive != 0 ? "" : " (off)")
+                                : (keepalive != 0 ? " (user-wide default)"
+                                   : " (off, the user-wide default)")));
             }
         }
     } else if (i != 0 && strncmp(name, "buffer", i) == 0) {
@@ -2440,12 +2464,13 @@ static void cmd_setvar(char *arg)
     } else {
         update_now();
         message_printf("#setvar buffer=%d\n"
-                       "#setvar keepalive=%d\n"
+                       "#setvar keepalive=%d%s\n"
                        "#setvar lines=%d\n"
                        "#setvar mem=%d\n"
                        "#setvar timer=%ld\n",
-                       log_getsize(), keepalive, lines, limit_mem,
-                       diff_vtime(&now, &ref_time));
+                       log_getsize(), keepalive,
+                       keepalive_own ? "" : " (user-wide default)", lines,
+                       limit_mem, diff_vtime(&now, &ref_time));
     }
 }
 
@@ -3288,6 +3313,11 @@ static void print_option_list(void)
     print_option_group(false);
 }
 
+void keepalive_update(void)
+{
+    keepalive = keepalive_own ? keepalive_mud : keepalive_user;
+}
+
 /*
  * the user-wide settings as when powwow starts, before the user-wide
  * settings file is read again: the command options not set, #option save
@@ -3303,6 +3333,8 @@ void reset_user_wide_settings(void)
     input_hilite.user = input_hilite.def;
     message_hilite.user = message_hilite.def;
     hilite_update();
+    keepalive_user = 0;
+    keepalive_update();
     while (secret_count() > 0)
         secret_delete(0);
 }
@@ -3367,6 +3399,17 @@ bool print_setting(const char *name)
         printf("%s\n", buf);
         return true;
     }
+    if (strcmp(name, "keepalive") == 0) {
+        printf("%d\n", keepalive_user);
+        return true;
+    }
+    if (strcmp(name, "mud-keepalive") == 0) {
+        if (keepalive_own)
+            printf("%d\n", keepalive_mud);
+        else
+            printf("default\n");
+        return true;
+    }
     /* the files of powwow, as paths on Windows on Cygwin, as the launcher
      * there opens them */
     if (strcmp(name, "config-file") == 0) {
@@ -3414,6 +3457,7 @@ static int compare_names(const void *a, const void *b)
 /* the settings of --get besides the options, and the files of powwow,
  * which --set cannot set */
 static const char *const other_settings[] = { "host" };
+static const char *const number_settings[] = { "keepalive", "mud-keepalive" };
 static const char *const hilite_settings[] = {
     "hilite-input", "hilite-messages", "mud-hilite-input",
     "mud-hilite-messages"
@@ -3431,6 +3475,10 @@ size_t setting_names(const char **names, size_t size)
         names[count++] = options[i].name;
     for (size_t i = 0; i < sizeof other_settings / sizeof *other_settings; ++i)
         names[count++] = other_settings[i];
+    for (size_t i = 0; i < sizeof number_settings / sizeof *number_settings;
+         ++i) {
+        names[count++] = number_settings[i];
+    }
     for (size_t i = 0; i < sizeof hilite_settings / sizeof *hilite_settings;
          ++i) {
         names[count++] = hilite_settings[i];
@@ -3453,6 +3501,11 @@ enum setting_kind setting_kind(const char *name)
     for (size_t i = 0; i < sizeof file_settings / sizeof *file_settings; ++i)
         if (strcmp(name, file_settings[i]) == 0)
             return SETTING_FILE;
+    for (size_t i = 0; i < sizeof number_settings / sizeof *number_settings;
+         ++i) {
+        if (strcmp(name, number_settings[i]) == 0)
+            return SETTING_NUMBER;
+    }
     bool own;
     if (hilite_setting(name, strlen(name), &own) != NULL)
         return SETTING_ATTR;
@@ -3481,6 +3534,8 @@ bool setting_is_global(const char *name)
     for (int i = 0; options[i].name != NULL; ++i)
         if (strcmp(name, options[i].name) == 0)
             return options[i].global;
+    if (strcmp(name, "keepalive") == 0)
+        return true;
     bool own;
     return hilite_setting(name, strlen(name), &own) != NULL && !own;
 }
@@ -3540,6 +3595,26 @@ bool set_setting(const char *spec)
     }
     if (ok && h != NULL)
         hilite_update();
+    bool mud_keepalive = len == 13 && strncmp(spec, "mud-keepalive", len) == 0;
+    if (!ok && h == NULL && mud_keepalive && strcmp(value, "default") == 0) {
+        keepalive_own = false;
+        keepalive_update();
+        ok = true;
+    } else if (!ok && h == NULL
+               && (mud_keepalive
+                   || (len == 9 && strncmp(spec, "keepalive", len) == 0))) {
+        char *end;
+        long n = strtol(value, &end, 10);
+        if (*value != '\0' && *end == '\0' && n >= 0 && n <= 86400) {
+            if (mud_keepalive) {
+                keepalive_mud = (int)n;
+                keepalive_own = true;
+            } else
+                keepalive_user = (int)n;
+            keepalive_update();
+            ok = true;
+        }
+    }
     if (!ok && h == NULL && len == 4 && strncmp(spec, "host", len) == 0) {
         snprintf(buf, sizeof buf, "%s", value);
         cmd_host(buf);

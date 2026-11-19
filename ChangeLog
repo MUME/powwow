@@ -37,6 +37,11 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	* `powwow --get NAME', `--set NAME=VALUE' and --list-settings read
 	  and set the settings of the user-wide settings file and of a
 	  definition file without a session, as the launcher does.
+	* `#setvar keepalive' in the user-wide settings file sets the
+	  user-wide one, for all MUDs, which the settings of the launcher
+	  set, and typed or in the definition file the MUD's own, which
+	  Advanced of a MUD sets, until `#setvar keepalive=default' drops
+	  it.
 
 	Platforms and building:
 	* Windows using Cygwin is supported, along with WSL2.  Cygwin

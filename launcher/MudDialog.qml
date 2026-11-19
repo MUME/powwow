@@ -44,7 +44,7 @@ PowwowDialog {
               text: qsTr("Show every command as it runs, to debug aliases"
                          + " and actions") },
         ] },
-        { title: qsTr("Connection"), options: [
+        { title: qsTr("Connection"), keepalive: true, options: [
             { name: "sendsize",
               text: qsTr("Send the window size on connecting") },
             { name: "exit",
@@ -74,6 +74,13 @@ PowwowDialog {
           text: qsTr("Messages"), sample: qsTr("#connected to the MUD") },
     ]
     property var mudHilites: ({})
+    // #setvar keepalive: the MUD's own, as --get prints it, "default" for
+    // none, and the user-wide one of Settings, "0" for none; and the
+    // checkbox and field of "Advanced" that choose it
+    property string mudKeepalive: "default"
+    property string userKeepalive: "0"
+    property var keepaliveBox: null
+    property var keepaliveField: null
     property var chosenHilites: ({})
     property var userHilites: ({})
 
@@ -90,6 +97,29 @@ PowwowDialog {
         const values = Object.assign({}, chosenHilites)
         values[name] = value
         chosenHilites = values
+    }
+
+    // the MUD's own keepalive as chosen in "Advanced", or "default"; as it
+    // was if the field has no number
+    function chosenKeepalive() {
+        if (keepaliveBox === null || keepaliveField === null
+            || keepaliveBox.checked)
+            return "default"
+        const text = keepaliveField.text.trim()
+        if (text === "")
+            return "0"
+        return keepaliveField.acceptableInput ? String(parseInt(text, 10))
+                                              : mudKeepalive
+    }
+
+    // the keepalive in "Advanced" as the MUD has it
+    function showKeepalive() {
+        if (keepaliveBox === null || keepaliveField === null)
+            return
+        const own = mudKeepalive !== "default"
+        keepaliveBox.checked = !own
+        const value = own ? mudKeepalive : userKeepalive
+        keepaliveField.text = value === "0" ? "" : value
     }
 
     // Return, in a text field, as the button Add or Save
@@ -143,6 +173,9 @@ PowwowDialog {
         mudHilites = own
         chosenHilites = Object.assign({}, own)
         userHilites = user
+        mudKeepalive = settings["mud-keepalive"] ?? "default"
+        userKeepalive = settings["keepalive"] || "0"
+        showKeepalive()
         name.forceActiveFocus()
         name.selectAll()
     }
@@ -166,6 +199,9 @@ PowwowDialog {
                 && !Launcher.set(h.name, chosenHilites[h.name], file))
                 break
         }
+        const keepalive = chosenKeepalive()
+        if (keepalive !== mudKeepalive)
+            Launcher.set("mud-keepalive", keepalive, file)
         done(file)
     }
 
@@ -434,6 +470,64 @@ PowwowDialog {
                                 dialog.optionBoxes[modelData.name] = box
 
                             FocusRing {}
+                        }
+                    }
+                    // #setvar keepalive: that of Settings, or the MUD's own
+                    CheckBox {
+                        id: keepaliveBox
+
+                        visible: group.modelData.keepalive === true
+                        text: qsTr("Use the keepalive from Settings")
+                        onToggled: {
+                            if (checked)
+                                keepaliveField.text = (dialog.userKeepalive
+                                                       === "0"
+                                                       ? ""
+                                                       : dialog.userKeepalive)
+                        }
+                        Component.onCompleted: {
+                            if (group.modelData.keepalive === true) {
+                                dialog.keepaliveBox = keepaliveBox
+                                dialog.showKeepalive()
+                            }
+                        }
+
+                        FocusRing {}
+                    }
+                    RowLayout {
+                        visible: group.modelData.keepalive === true
+                        Layout.leftMargin: 28
+                        spacing: 8
+
+                        Label {
+                            enabled: !keepaliveBox.checked
+                            text: qsTr("Send a keepalive after")
+                        }
+                        EntryField {
+                            id: keepaliveField
+
+                            Layout.preferredWidth: 100
+                            enabled: !keepaliveBox.checked
+                            placeholderText: qsTr("never")
+                            validator: IntValidator {
+                                bottom: 0
+                                top: 86400
+                            }
+                            // 0 is never, which the empty field shows
+                            onEditingFinished: {
+                                if (acceptableInput && parseInt(text, 10) === 0)
+                                    text = ""
+                            }
+                            Component.onCompleted: {
+                                if (group.modelData.keepalive === true) {
+                                    dialog.keepaliveField = keepaliveField
+                                    dialog.showKeepalive()
+                                }
+                            }
+                        }
+                        Label {
+                            enabled: !keepaliveBox.checked
+                            text: qsTr("idle seconds")
                         }
                     }
                 }

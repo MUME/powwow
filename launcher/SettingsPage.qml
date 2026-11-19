@@ -20,6 +20,8 @@ Page {
     // the values saved, by the names of the command options, so that a
     // field is saved only when it changed
     property var saved: ({})
+    // #setvar keepalive as saved, "0" for off
+    property string savedKeepalive: "0"
     // whether powwow runs with --windows, which has defaults of its own and
     // writes environment variables as %NAME%
     readonly property bool windows: Qt.platform.os === "windows"
@@ -43,6 +45,8 @@ Page {
         for (const h of hilites)
             h.editor.value = Launcher.get(h.name) ?? ""
         save.checked = Launcher.get("save") !== "off"
+        savedKeepalive = Launcher.get("keepalive") || "0"
+        keepalive.text = savedKeepalive === "0" ? "" : savedKeepalive
         terminal.currentIndex = Launcher.terminal
         terminalCommand.text = Launcher.terminalCommand
         if (Launcher.hasScrollback)
@@ -91,6 +95,19 @@ Page {
             Launcher.setTerminal(terminal.currentIndex, terminalCommand.text)
     }
 
+    // #setvar keepalive, empty or 0 for off
+    function saveKeepalive() {
+        const text = keepalive.text.trim()
+        if (!loaded || (text !== "" && !keepalive.acceptableInput))
+            return
+        const value = text === "" ? "0" : String(parseInt(text, 10))
+        if (value !== savedKeepalive && Launcher.set("keepalive", value))
+            savedKeepalive = value
+        // 0 is never, which the empty field shows
+        if (value === "0")
+            keepalive.text = ""
+    }
+
     function saveScrollback() {
         if (loaded && Launcher.hasScrollback && scrollback.acceptableInput
             && parseInt(scrollback.text) !== Launcher.scrollback())
@@ -105,6 +122,7 @@ Page {
         if (loaded && terminalCommand.text !== Launcher.terminalCommand)
             saveTerminal()
         saveScrollback()
+        saveKeepalive()
     }
 
     // the settings as powwow and the launcher have them without any: the
@@ -116,7 +134,7 @@ Page {
             if (!Launcher.set(c.name, ""))
                 return
         }
-        if (!Launcher.set("save", "on"))
+        if (!Launcher.set("save", "on") || !Launcher.set("keepalive", "0"))
             return
         for (const h of hilites) {
             if (!Launcher.set(h.name, "default"))
@@ -449,6 +467,37 @@ Page {
                 FocusRing {}
             }
             RowLayout {
+                spacing: 12
+
+                Label {
+                    text: qsTr("Send a keepalive after")
+                }
+                EntryField {
+                    id: keepalive
+
+                    Layout.preferredWidth: 100
+                    placeholderText: qsTr("never")
+                    onEditingFinished: page.saveKeepalive()
+                    validator: IntValidator {
+                        bottom: 0
+                        top: 86400
+                    }
+                }
+                Label {
+                    text: qsTr("idle seconds")
+                }
+            }
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("A telnet no-op, sent when nothing was sent to the"
+                           + " MUD for that long, keeps routers that forget"
+                           + " idle connections, often after a few minutes,"
+                           + " from cutting it. Advanced can give a MUD its"
+                           + " own.")
+                wrapMode: Text.Wrap
+                opacity: 0.65
+            }
+            RowLayout {
                 visible: Launcher.hasScrollback
                 spacing: 12
 
@@ -545,6 +594,8 @@ Page {
                     qsTr("clear the editor, the pagers and the shell, so that"
                          + " powwow chooses them itself"),
                     qsTr("save the definition file on exit again"),
+                    qsTr("send no keepalives, except to the MUDs that have"
+                         + " their own"),
                     qsTr("highlight typed text in bold and messages in"
                          + " italic bright blue again, except where a MUD"
                          + " has its own"),

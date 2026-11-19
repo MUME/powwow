@@ -120,7 +120,11 @@ int line_status = 0;    /* input line status: 0 = ready -> nothing to do;
 
 int limit_mem = 1048576; /* if != 0, max len of a string or text */
 int keepalive = 0;       /* if != 0, seconds without sending to a MUD
-                          * after which it gets a telnet NOP */
+                          * after which it gets a telnet NOP: the MUD's
+                          * own, or else the user-wide one */
+int keepalive_user = 0;  /* the user-wide one */
+int keepalive_mud = 0;   /* the MUD's own, if keepalive_own */
+bool keepalive_own = false;
 
 bool opt_echo = true;           /* true if text sent to MUD must be echoed */
 bool opt_keyecho = true;        /* true if binds must be echoed */
