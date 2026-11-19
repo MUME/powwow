@@ -25,6 +25,8 @@ MallocScribble=1
 MALLOC_PERTURB_=170
 export MallocPreScribble MallocScribble MALLOC_PERTURB_
 unset POWWOWDIR POWWOWHELP
+# the commands of the user, which would show in the tests
+unset EDITOR PAGER POWWOWEDITOR POWWOWHELPPAGER POWWOWSHELL
 POWWOWHELP=${srcdir:-.}/../doc
 POWWOWPAGER=cat
 export POWWOWHELP POWWOWPAGER
@@ -1672,6 +1674,12 @@ has '#option editor=nano (from $EDITOR)'
 has '#option help-pager=cat (from $POWWOWPAGER)'
 has '#option pager=cat (from $POWWOWPAGER)'
 has '#option shell=/bin/sh (the default)'
+POWWOWPAGER= PAGER=
+export PAGER
+run 'an empty variable of the environment is no command' '#option list'
+has '#option pager=more (the default)'
+POWWOWPAGER=cat
+unset PAGER
 run 'clearing a command option says what its default is' \
     '#option editor=vi
 #option editor=
