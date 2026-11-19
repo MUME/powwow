@@ -338,6 +338,18 @@ run '#setvar lines rejects numbers out of range' \
 has '#lines must be from 1 to 2147483647'
 has '#setvar lines=30'
 
+run '#setvar reads numbers as expressions do, and rejects others' \
+    '#setvar lines=030
+#setvar mem=0x10
+#setvar mem=12x
+#setvar buffer=#7d0
+#setvar'
+has '#setvar: not an integer: 0x10'
+has '#setvar: not an integer: 12x'
+has '#setvar buffer=2000'
+has '#setvar lines=30'
+has '#setvar mem=1048576'
+
 run 'texts are limited to 1 MB by default' '#setvar
 #($a = "x" * 1048576)
 #($a = "x" * 1048577)'

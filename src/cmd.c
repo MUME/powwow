@@ -2234,8 +2234,17 @@ static void cmd_setvar(char *arg)
                     error = NO_NUM_VALUE_ERROR;
                 else if (!real_error() && *arg != ')')
                     error = MISSING_PAREN_ERROR;
-            } else
-                buf = strtol(arg, NULL, 0);
+            } else {
+                /* a number as in expressions, decimal or such as #ff */
+                char *value = arg;
+                int i = evall(&buf, &arg);
+                if (real_error() || i != EVAL_TYPE_NUM
+                    || *skipspace(arg) != '\0') {
+                    error = NO_ERROR;
+                    message_printf("#setvar: not an integer: %s\n", value);
+                    return;
+                }
+            }
         } else
             buf = 0;
 
