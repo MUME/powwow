@@ -1897,6 +1897,9 @@ int save_settings(void)
             failed = fprintf(f, "#setvar buffer=%d\n", size);
     }
 
+    if (failed > 0 && keepalive != 0)
+        failed = fprintf(f, "#setvar keepalive=%d\n", keepalive);
+
     /* before the history, which they keep lines out of when loaded */
     for (int i = 0; i < secret_count() && failed > 0; ++i) {
         char buf[SECRET_STR_MAX];

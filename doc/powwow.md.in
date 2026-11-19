@@ -1978,6 +1978,14 @@ Known internal variables are:
   To discard the text stored in memory by `buffer`, change its value
   (for example, set it to zero and then back to a non-zero value).
 
+- `keepalive`: if not zero, the number of seconds without sending
+  anything to a MUD after which powwow sends it a telnet NOP, a
+  command that does nothing. Many home routers and firewalls forget a
+  connection that is idle for a few minutes, which then stops working;
+  the NOP keeps it, and finds a dead connection sooner, as sending to
+  it fails. Only a MUD that has sent a telnet command gets it, as
+  another would show it as text. The default is 0, off; at most 86400.
+
 - `lines`: the number of lines your terminal has. Powwow usually
   autodetects it correctly, but on few terminals you may have to set it
   manually, from 1 to 2147483647.
@@ -2006,6 +2014,7 @@ Example:
 | `#setvar timer=20000` | make internal timer restart from 20000 milliseconds |
 | `#setvar timer` | show timer and let you edit it |
 | `#setvar mem=0` | strings have no maximum length |
+| `#setvar keepalive=300` | send a telnet NOP after 5 minutes without sending |
 
 ### Send raw data to MUD
 

@@ -36,6 +36,7 @@ ptr **text_var(int n);
 /* shared vars from main.c */
 extern int prompt_status, line_status;
 extern int limit_mem;
+extern int keepalive;
 extern volatile bool confirm;
 extern int history_done;
 extern int linemode;

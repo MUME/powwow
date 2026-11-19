@@ -2283,6 +2283,18 @@ static void cmd_setvar(char *arg)
                                limit_mem != 0 ? "" : " (unlimited)");
             }
         }
+    } else if (i != 0 && strncmp(name, "keepalive", i) == 0) {
+        if (!set)
+            fmt_next_edit("#setvar keepalive=%d", keepalive);
+        else if (buf < 0 || buf > 86400) {
+            message_printf("#keepalive must be from 0 to 86400 seconds\n");
+        } else {
+            keepalive = (int)buf;
+            if (opt_info) {
+                message_printf("#setvar: keepalive=%d%s\n", keepalive,
+                               keepalive != 0 ? "" : " (off)");
+            }
+        }
     } else if (i != 0 && strncmp(name, "buffer", i) == 0) {
         if (!set)
             fmt_next_edit("#setvar buffer=%d", log_getsize());
@@ -2291,10 +2303,11 @@ static void cmd_setvar(char *arg)
     } else {
         update_now();
         message_printf("#setvar buffer=%d\n"
+                       "#setvar keepalive=%d\n"
                        "#setvar lines=%d\n"
                        "#setvar mem=%d\n"
                        "#setvar timer=%ld\n",
-                       log_getsize(), lines, limit_mem,
+                       log_getsize(), keepalive, lines, limit_mem,
                        diff_vtime(&now, &ref_time));
     }
 }

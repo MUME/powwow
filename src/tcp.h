@@ -73,6 +73,8 @@ typedef struct connsess {
     bool ideditor;              /* sent #request editor */
     bool ideditor_utf8;         /* and announced UTF-8 support in it */
     bool naws;                  /* the MUD asked for the window size */
+    bool telnet;                /* the MUD sent a telnet command */
+    vtime last_sent;            /* when powwow last sent to it */
     enum telnet_state state;
     enum telnet_state old_state;
     unsigned char subopt[MAX_SUBOPT]; /* telnet suboption being read */
@@ -108,6 +110,7 @@ void tcp_write_chars(connsess *conn, const char *data, size_t len);
 void tcp_write_tty_size(connsess *conn);
 void tcp_write(connsess *conn, const char *data);
 void tcp_main_write(const char *data);
+int tcp_keepalive(void);
 void tcp_flush(void);
 void tcp_set_main(connsess *conn);
 bool tcp_open(const char *id, char *initstring, const char *host,
