@@ -44,6 +44,7 @@
 #include "tty.h"
 #include "edit.h"
 #include "beam.h"
+#include "list.h"
 #include "log.h"
 #include "secret.h"
 
@@ -259,6 +260,17 @@ static void dosubopt(connsess *conn, byte *str, size_t len)
     }
 }
 
+/* write to 'conn' as its write does, noting when, for #setvar keepalive */
+static ssize_t conn_write(connsess *conn, const void *data, size_t len)
+{
+    ssize_t n = conn->fns->write(conn, data, len);
+    if (n > 0) {
+        update_now();
+        conn->last_sent = now;
+    }
+    return n;
+}
+
 /*
  * send an option negotiation
  * 'what' is one of WILL, WONT, DO, DONT
@@ -268,7 +280,7 @@ static void sendopt(connsess *conn, byte what, byte opt)
     byte buf[] = { IAC, what, opt };
     int i;
 
-    while ((i = conn->fns->write(conn, buf, sizeof buf)) < 0
+    while ((i = conn_write(conn, buf, sizeof buf)) < 0
            && errno == EINTR)
         ;
     if (i != sizeof buf) {
@@ -618,6 +630,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             break;
 
         case TELNET_GOT_IAC:
+            conn->telnet = true;
             switch (*s) {
             case WILL:
                 state = TELNET_GOT_WILL;
@@ -815,7 +828,7 @@ static void internal_tcp_raw_write(connsess *conn, const char *data, int len)
 {
     while (len > 0) {
         int i;
-        while ((i = conn->fns->write(conn, data, len)) < 0
+        while ((i = conn_write(conn, data, len)) < 0
                && errno == EINTR)
             ;
         if (i < 0) {
@@ -1020,8 +1033,7 @@ void tcp_flush(void)
     char *p = output_buffer;
     while (output_len != 0) {
         int n;
-        while ((n = output_connection->fns->write(
-                    output_connection, p, output_len)) < 0
+        while ((n = conn_write(output_connection, p, output_len)) < 0
                && errno == EINTR)
             ;
         if (n < 0) {
@@ -1180,7 +1192,9 @@ bool tcp_open(const char *id, char *initstring, const char *host,
         return false;
     }
 
+    update_now();
     CONN_INDEX(i) = (connsess){
+        .last_sent   = now,
         .host        = conn_host,
         .id          = conn_id,
         .active      = true,
@@ -1221,6 +1235,39 @@ bool tcp_open(const char *id, char *initstring, const char *host,
         history_done = 0;
     }
     return true;
+}
+
+/*
+ * #setvar keepalive: send a telnet NOP to each MUD that sent a telnet
+ * command, and that nothing was sent to for 'keepalive' seconds, so that
+ * a router or firewall that forgets idle connections keeps it, and a
+ * dead one is found; return the milliseconds until the next one is due,
+ * or -1 if none is
+ */
+int tcp_keepalive(void)
+{
+    if (keepalive <= 0)
+        return -1;
+    update_now();
+    long next = -1;
+    for (int i = 0; i < conn_max_index; ++i) {
+        connsess *conn = &CONN_INDEX(i);
+        if (conn->id == NULL || conn->spawn || !conn->telnet)
+            continue;
+        vtime due = conn->last_sent;
+        due.tv_sec += keepalive;
+        long left = diff_vtime(&due, &now);
+        if (left <= 0) {
+            static const char nop[] = { IAC, NOP };
+            tcp_raw_write(conn, nop, sizeof nop);
+            /* also if it failed, not again at once */
+            conn->last_sent = now;
+            left = keepalive * (long)mSEC_PER_SEC;
+        }
+        if (next < 0 || left < next)
+            next = left;
+    }
+    return (int)next;
 }
 
 /*
@@ -1294,6 +1341,7 @@ void tcp_close(const char *id)
     conn->ideditor = false;
     conn->ideditor_utf8 = false;
     conn->naws = false;
+    conn->telnet = false;
     conn->state = TELNET_NORMAL;
     conn->old_state = TELNET_NORMAL;
     conn->mpi_headlen = 0;
@@ -1405,6 +1453,7 @@ void tcp_spawn(const char *id, char *cmd)
     CONN_INDEX(i).ideditor = false;
     CONN_INDEX(i).ideditor_utf8 = false;
     CONN_INDEX(i).naws = false;
+    CONN_INDEX(i).telnet = false;
     CONN_INDEX(i).state = TELNET_NORMAL;
     CONN_INDEX(i).old_state = TELNET_NORMAL;
     CONN_INDEX(i).mpi_headlen = 0;

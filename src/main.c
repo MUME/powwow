@@ -116,6 +116,8 @@ int line_status = 0;    /* input line status: 0 = ready -> nothing to do;
                          */
 
 int limit_mem = 1048576; /* if != 0, max len of a string or text */
+int keepalive = 0;       /* if != 0, seconds without sending to a MUD
+                          * after which it gets a telnet NOP */
 
 bool opt_echo = true;           /* true if text sent to MUD must be echoed */
 bool opt_keyecho = true;        /* true if binds must be echoed */
@@ -878,8 +880,12 @@ static void redraw_everything(void)
     }
 }
 
-/* how much can we sleep in select() ? */
-static void compute_sleeptime(vtime **timeout, bool force_zero)
+/*
+ * how much can we sleep in select() ? at most 'keep_wait' milliseconds,
+ * until the next telnet NOP of #setvar keepalive, unless it is -1
+ */
+static void compute_sleeptime(vtime **timeout, bool force_zero,
+                              int keep_wait)
 {
     static vtime tbuf;
     if (force_zero) {
@@ -902,6 +908,8 @@ static void compute_sleeptime(vtime **timeout, bool force_zero)
     int wait = typed_hint_wait();
     if (wait >= 0 && (sleeptime == 0 || sleeptime > wait))
         sleeptime = wait > 0 ? wait : 1;
+    if (keep_wait >= 0 && (sleeptime == 0 || sleeptime > keep_wait))
+        sleeptime = keep_wait > 0 ? keep_wait : 1;
 
     if (sleeptime != 0) {
         tbuf.tv_sec = sleeptime / mSEC_PER_SEC;
@@ -933,6 +941,7 @@ static noreturn void mainloop(void)
                 sig_bottomhalf(); /* this might set errno... */
 
             tcp_flush();
+            int keep_wait = tcp_keepalive();
 
             if (!(pos <= edlen)) {
                 message_printf("\n#*ARGH* assertion failed (pos <= edlen)\n");
@@ -945,7 +954,8 @@ static noreturn void mainloop(void)
 
             vtime *timeout;
             compute_sleeptime(&timeout,
-                              ncache_read_fds > 0 || tty_has_chars());
+                              ncache_read_fds > 0 || tty_has_chars(),
+                              keep_wait);
 
             error = NO_ERROR;
             now_updated = false;

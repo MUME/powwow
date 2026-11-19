@@ -2284,6 +2284,60 @@ EOF
     has 'HP:>(look)'
     grep -q 'hunter22' "$tmp/out" && fail 'the secret was reprinted'
 
+    # a MUD that tells after how long it got a telnet NOP, if within 3
+    # seconds; with $2, it speaks telnet, sending a NOP itself first
+    cat > "$tmp/server.py" <<'EOF'
+import os, select, socket, sys, time
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+c.sendall((b'\xff\xf1' if len(sys.argv) > 2 else b'') + b'Hi\r\n')
+start = time.time()
+got = b''
+while b'\xff\xf1' not in got and time.time() - start < 3:
+    r, _, _ = select.select([c], [], [], 0.05)
+    if r:
+        data = c.recv(1024)
+        if not data:
+            break
+        got += data
+if b'\xff\xf1' in got:
+    c.sendall(b'Got a NOP after %d s\r\n' % round(time.time() - start))
+else:
+    c.sendall(b'No NOP\r\n')
+c.close()
+EOF
+    for telnet in yes ''; do
+        rm -f "$tmp/port"
+        python3 -I "$tmp/server.py" "$tmp/port" $telnet &
+        server=$!
+        i=0
+        until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+            sleep 0.01
+            i=$((i + 1))
+        done
+        : > "$tmp/raw"
+        {
+            printf '#setvar keepalive=1\n'
+            printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
+            wait_for 'NOP'
+            printf '#quit\n'
+        } | "$POWWOW" > "$tmp/raw" 2>&1
+        wait $server
+        sed -e "s/$cr//g" "$tmp/raw" > "$tmp/out"
+        if [ -n "$telnet" ]; then
+            name='#setvar keepalive sends a telnet NOP when idle'
+            has 'Got a NOP after 1 s'
+        else
+            name='#setvar keepalive sends nothing to a MUD without telnet'
+            has 'No NOP'
+        fi
+    done
+
     # a MUD that keeps what it gets up to the line "look" in the file $2;
     # the #init of a definition file written before #option identify,
     # { #identify ; look}, is that option and {look}, which identifies when
