@@ -351,8 +351,9 @@ variable `$n`. If the pattern contains `&n`, powwow matches a string
 (possibly more than one word) of the shortest possible length
 from the remote line and puts it in the variable `$n`.
 
-As in aliases, `$n` can be from `$1` to `$9`. *Note*: `$0` is a variable as well,
-but `#action` automatically places in it the whole line from remote host.
+As in aliases, `$n` can be from `$1` to `$9`. *Note*: `$0` is a variable
+as well, but `#action` automatically places in it the whole line from
+remote host.
 As well, `&n` can be from `&1` to `&9`.
 
 To match a `$` or `&` itself, write it after two backslashes: unescaping
@@ -510,7 +511,8 @@ You will need to use it only if you want to mess with the prompt
 that your MUD sends, which is often not needed. Also, to use it
 you need to understand exactly how powwow recognizes prompts,
 so the description is considered an advanced topic and is placed
-near the end of this file, in the "Advanced topic: the special command `#prompt`" section.
+near the end of this file, in the "Advanced topic: the special command
+`#prompt`" section.
 
 ## Missing: substitution and unescaping
 
@@ -869,7 +871,8 @@ marks can match the replaced text. Replaced text is not searched again
 for other substitutions.
 
 Wildcards and a leading `^` are allowed in the pattern, as in `#mark`. The
-characters `;`, `{`, `}`, `(`, `)`, `"` and `=` in the text must be escaped with a backslash.
+characters `;`, `{`, `}`, `(`, `)`, `"` and `=` in the text must be
+escaped with a backslash.
 As `#nice` does for marks, it also sets the place of new substitutions in
 the list.
 
@@ -2045,7 +2048,8 @@ is that `#rawprint` does NOT add a final newline. On the other hand,
 ## Inline calculator
 
 The inline calculator is used to evaluate expressions inside
-`#()`, `#print` (), `#exe` (), `#send` (), `#if` (), `#while()`, `#for` (), `#do` (),
+`#()`, `#print` (), `#exe` (), `#send` (), `#if` (), `#while()`,
+`#for` (), `#do` (),
 expressions in pattern of `#actions` and in other commands allowing ()
 
 The inline calculator recognizes the following objects:
