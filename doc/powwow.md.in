@@ -150,6 +150,84 @@ eval "$(powwow --completion bash)"
 `powwow --completion zsh` prints it for zsh; load it likewise in
 `~/.zshrc`, after `compinit`.
 
+## The launcher
+
+`powwow-launcher` is a desktop program that keeps a list of your MUDs and
+starts powwow for one of them in a terminal window, so that you need not
+type commands to begin. The Windows installer and the disk image for
+macOS include it, and their shortcuts and `.powwow` files open it; README
+tells how to build it elsewhere.
+
+It has four pages: MUDs, Settings, the manual and About.
+
+### MUDs
+
+Each MUD is a definition file, in `POWWOWDIR` if it is set, or else in:
+
+| System | Folder of the definition files |
+| --- | --- |
+| Windows | the folder `powwow` of your Documents folder |
+| macOS | `~/Library/Application Support/powwow`, or `~/.config/powwow` if it exists |
+| Linux, FreeBSD | `$XDG_DATA_HOME/powwow`, by default `~/.local/share/powwow` |
+
+The list shows them in an order of your own, which you change by
+dragging. Double-click one, or choose Connect, to start powwow with it in
+a terminal: Windows Terminal on Windows, iTerm2 if it is installed, or
+else Terminal, on macOS, and elsewhere the terminal of `TERMINAL`, or
+one found, such as `x-terminal-emulator` or `xterm`. Settings can choose
+another one on macOS and elsewhere.
+
+- **Add** asks for what `#host` sets: the name of the MUD, which names
+  its file, the address, the port, the character encoding, and whether
+  to encrypt the connection (TLS) and verify the certificate of the
+  server. **MUME handshake** turns on `#option identify`, which tells
+  MUME that powwow edits texts locally.
+- **Advanced…**, in Add and Edit, sets the on/off options of the MUD,
+  and a keepalive of its own (see `#setvar keepalive`), or that of
+  Settings. **Highlighting…** gives the MUD its own `#hilite input` and
+  `#hilite messages`, or those of Settings.
+- **Import…** copies existing definition files into the folder, and
+  converts those of older versions of powwow.
+- **Edit…**, **Duplicate…** and **Remove…** change, copy and remove a
+  MUD; a removed file goes to the trash. A MUD that a powwow has open
+  cannot be edited or removed until it quits.
+- **Info…** shows what the definition file has, such as its aliases,
+  actions and settings.
+
+Given a definition file, such as when you open a `.powwow` file, the
+launcher starts powwow with it without showing its window.
+
+### Settings
+
+The settings for all MUDs, which powwow keeps in the user-wide settings
+file (see "The user-wide settings file"), and which each changes as soon
+as you change it:
+
+- the editor, the pager, the help pager and the shell, `#option editor`
+  and the others, or empty for powwow to choose them;
+- the highlighting of typed text and of the messages of powwow,
+  `#hilite input` and `#hilite messages`, for the MUDs without their own;
+- whether powwow saves the definition file on exit, `#option save`;
+- the keepalive, `#setvar keepalive`, for the MUDs without their own:
+  after how many seconds without sending anything a MUD gets a telnet
+  NOP, or empty for never;
+- the terminal, on macOS and elsewhere, or a command, where `%c` is the
+  command that runs powwow, such as `open -na Ghostty --args -e %c`;
+- on Windows, the lines of scrollback of the profile of powwow in
+  Windows Terminal.
+
+**Restore Defaults…** sets them back to those of powwow, except where a
+MUD has its own.
+
+The launcher starts powwow with `--config`, so that powwow saves these
+settings in the user-wide settings file, and reads and sets them with
+`powwow --get` and `--set`. It keeps its own settings, such as the order
+of the MUDs and the terminal, apart from those of powwow: in
+`$XDG_CONFIG_HOME/powwow/launcher.conf`, by default
+`~/.config/powwow/launcher.conf`, in
+`~/Library/Preferences/com.powwow.launcher.plist` on macOS, and in the
+registry, `HKEY_CURRENT_USER\Software\powwow\launcher`, on Windows.
+
 ## Character sets
 
 Internally, powwow handles text as Unicode (UTF-8); your
