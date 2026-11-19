@@ -686,6 +686,12 @@ the command you want and then shows you again the input line.
 | `#bind f5=&prev-line` | `&prev-line` is one of the reserved commands for line-editing functions, see bottom of this file |
 | `#bind Up=u` | Up is an editing key, but can be redefined |
 
+A key bound to `ESC O` and `A` to `D`, `H` or `F`, such as Up, also
+works when the terminal sends `ESC [` and the same letter instead, and
+the reverse, unless that sequence has a binding of its own. Terminals
+send one form or the other depending on their mode, so a definition file
+saved in one terminal also works in another.
+
 By default, the vt100 numeric keypad is partially used to walk around
 with:
 

@@ -74,6 +74,10 @@ powwow can record the control sequence your terminal sends. Examples:
 #bind edit                                      (lists editing keys)
 #bind functions                                 (lists all editing functions)
 
+A key bound to ESC O and A to D, H or F, such as Up, also works when the
+terminal sends ESC [ and the same letter instead, and the reverse, unless
+that sequence has a binding of its own.
+
 By default, the vt100 numeric keypad is partially used to walk around
 @key
 #key <name>

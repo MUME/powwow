@@ -2071,6 +2071,27 @@ static int unbound_key_len(const char *seq, int n)
 }
 
 /*
+ * the binding of the other form of a cursor key, if 'seq', of 'n' bytes,
+ * is one that is not bound itself, or NULL: a terminal sends Up as ESC [ A,
+ * or as ESC O A in application cursor mode, which the terminal data base
+ * turns on for some terminals, so that a definition file saved in one kind
+ * of terminal works in the other; also for Down, Right, Left, Home and End
+ */
+static keynode *other_cursor_form(const char *seq, int n)
+{
+    if (n != 3 || seq[0] != ASCII_ESC || (seq[1] != '[' && seq[1] != 'O')
+        || memchr("ABCDHF", seq[2], 6) == NULL)
+        return NULL;
+    char other = seq[1] == '[' ? 'O' : '[';
+    for (keynode *p = keydefs; p != NULL; p = p->next) {
+        if (p->seqlen == 3 && p->sequence[0] == ASCII_ESC
+            && p->sequence[1] == other && p->sequence[2] == seq[2])
+            return p;
+    }
+    return NULL;
+}
+
+/*
  * read terminal input and send to parser.
  * decode keys that send escape sequences
  */
@@ -2166,6 +2187,8 @@ static void get_user_input(void)
                               || memcmp(typed, p->sequence, nchars) != 0));
                          p = p->next)
                         ;
+                    if (p == NULL)
+                        p = other_cursor_form(typed, nchars);
                 }
 
                 if (p == NULL) {
