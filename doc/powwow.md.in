@@ -1959,7 +1959,9 @@ from within an `#alias`, `#action` or whatever you like.
 ```
 
 Evaluate the expression and get result, then set the internal
-variable `name` to that value.
+variable `name` to that value, a whole number. A number is read as in
+expressions: in decimal, so that `0123` is 123, or in another base, such
+as `#ff`; anything else is an error.
 
 Known internal variables are:
 

@@ -120,6 +120,10 @@ Changes from 1.3.1 to 1.3.2 (unreleased)
 	* Memory exhaustion ends powwow with `#fatal error: out of memory',
 	  without saving the definition file, instead of skipping what
 	  needed the memory and going on.
+	* #setvar reads a number as expressions do, in decimal, such as
+	  0123 as 123 rather than in octal, or such as #ff, and reports a
+	  value that is not one, instead of taking 0 or the digits it
+	  starts with.
 	* `#setvar keepalive' sends a telnet NOP to a MUD after that many
 	  seconds without sending it anything, so that routers and
 	  firewalls that forget idle connections keep it.
