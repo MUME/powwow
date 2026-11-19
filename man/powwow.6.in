@@ -216,9 +216,17 @@ Messages from
 are prefixed with a \[oq]#\[cq] to separate them from the output
 of the remote host.
 .SH BUGS
-Report bugs and send patches to the maintainer; see
-.BR AUTHORS .
+Report bugs as issues and send patches as pull requests at
+.UR https://github.com/MUME/powwow
+GitHub
+.UE .
 .SH AUTHORS
+.B powwow
+is maintained at
+.UR https://github.com/MUME/powwow
+GitHub
+.UE .
+.PP
 .MT max@Linuz.sns.it
 Massimiliano Ghilardi
 .ME
@@ -249,12 +257,6 @@ Lai-Chang Woo
 .ME .
 .PP
 Steve Slaven contributed as the maintainer from 2005.
-.PP
-.B powwow
-is maintained at
-.UR https://github.com/MUME/powwow
-GitHub
-.UE .
 .PP
 .B powwow
 was originally inspired by Peter Unold\[cq]s
