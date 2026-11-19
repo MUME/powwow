@@ -796,6 +796,18 @@ run 'Home and End move to the start and end of the line' '' \
 "
 has 'abcd'
 
+# with TERM=xterm, Up is ^[OA; a terminal that ignores application cursor
+# mode sends ^[[A, which works too, unless it is bound itself
+run 'the cursor keys also work in their other form' '' \
+    "#print one
+${esc}[A
+#bind Up2 ^[[B=#print two
+${esc}[B
+"
+count=$(awk '$0 == "one"' "$tmp/out" | wc -l)
+[ "$count" -eq 2 ] || fail "expected one twice, got $count"
+has 'two'
+
 run 'M-t swaps the word at the cursor with the one before' '' \
     "#print one two three$(printf '\002\002')${esc}t!
 "
