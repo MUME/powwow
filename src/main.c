@@ -932,9 +932,14 @@ int main(int argc, char **argv)
     tty_puts(tty_clreoscr);
     tty_putc('\n');
     col0 = 0;
-    tty_gotoxy(col0, lines - 2);
-    tty_message("Type #help for help.\n");
     line0 = lines - 1;
+    /* the greeting is for new users, who start without a definition file */
+    if (read_file) {
+        tty_gotoxy(col0, line0);
+    } else {
+        tty_gotoxy(col0, line0 - 1);
+        tty_message("Type #help for help.\n");
+    }
 
     session_started = true;
     if (deffile_busy)

@@ -1764,15 +1764,20 @@ has '#warning: text after the expression ignored: "\;(y)"'
 has '2'
 
 # the greeting has the attributes of the messages, as the warnings after it
-printf '#hilite messages bold\n' > "$tmp/hilite.pw"
-run --args "$tmp/hilite.pw" 'Type #help for help. is shown as a message' ''
+printf '#hilite messages bold\n' > "$tmp/.config/powwow/powwow.conf"
+run 'Type #help for help. is shown as a message' ''
 grep -Fq '<ESC>[1mType #help for help.' "$tmp/out" \
     || fail 'expected Type #help for help. in the attributes of messages'
+no_hilite
+# but not with a definition file
+printf '#alias greet=1\n' > "$tmp/greet.pw"
+run --args "$tmp/greet.pw" 'a definition file has no greeting' ''
+grep -Fq 'Type #help' "$tmp/out" && fail 'unexpected greeting'
 
 # a session locks its definition file: another session of it warns, and
 # does not save it on exit unless the first has quit by then, but #save
 # saves it
-printf '#alias base=1\n' > "$tmp/lock.pw"
+printf '#alias base=1\n#init =#print ("<rea" + "dy>")\n' > "$tmp/lock.pw"
 # a session in the background, until the file $tmp/lock-quit exists
 start_first() {
     rm -f "$tmp/lock-quit" "$tmp/first.out"
@@ -1782,7 +1787,7 @@ start_first() {
     } | "$POWWOW" "$tmp/lock.pw" > "$tmp/first.out" 2>&1 &
     first=$!
     i=0
-    until grep -q 'Type #help' "$tmp/first.out" 2>/dev/null \
+    until grep -q '<ready>' "$tmp/first.out" 2>/dev/null \
             || [ $i -ge 500 ]; do
         sleep 0.01
         i=$((i + 1))
@@ -1815,7 +1820,7 @@ rm -f "$tmp/second-quit"
 } | "$POWWOW" "$tmp/lock.pw" > "$tmp/second.out" 2>&1 &
 second=$!
 i=0
-until grep -q 'Type #help' "$tmp/second.out" 2>/dev/null || [ $i -ge 500 ]
+until grep -q '<ready>' "$tmp/second.out" 2>/dev/null || [ $i -ge 500 ]
 do
     sleep 0.01
     i=$((i + 1))
@@ -3116,7 +3121,7 @@ def wait_for(text):
                 shown.extend(os.read(fd, 4096))
             except OSError:
                 break
-wait_for(b'Type #help')
+wait_for(b'<ready>')
 os.write(fd, b'#alias hup=#print ("hung " + "up")\n#print ("<sy" + "nc>")\n')
 wait_for(b'<sync>')
 if how == 'close':
@@ -3130,7 +3135,8 @@ with open(out, 'w') as f:
 EOF
     for how in close kill; do
         name="a terminal that hangs up ($how) saves the definition file"
-        printf '#alias base=1\n' > "$tmp/hup.pw"
+        printf '#alias base=1\n#init =#print ("<rea" + "dy>")\n' \
+            > "$tmp/hup.pw"
         rm -f "$tmp/hup.status"
         python3 -I "$tmp/hup.py" "$POWWOW" "$tmp/hup.pw" $how \
             "$tmp/hup.status"
