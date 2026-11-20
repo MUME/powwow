@@ -63,12 +63,14 @@ to be processed locally.  Help is available with the
 .I #help
 command; the complete manual is the file
 .IR powwow.md ,
-installed in the same directory as the help text.  Notably,
+installed in the same directory as the help text; the launcher also
+shows it.  Notably,
 semicolons (\[oq];\[cq]) separate commands on a single line.  To send
 a literal semicolon, prefix it with a backslash: \[oq]\e;\[cq].
 .PP
 .B powwow
-also supports the MUME editing protocol for editing texts locally.
+also supports the MUME client protocol for editing and viewing the
+texts of MUME locally.
 The name of the editor is taken from the environment variable
 .B POWWOWEDITOR
 or
@@ -109,11 +111,16 @@ come before these variables.  A pager of
 prints its text as other messages, and the texts that the MUD sends to
 view are printed as its other lines.
 .PP
-If the first character of the editor is \[oq]&\[cq] (which is then
-skipped), the editor is assumed to run in another window and
+If the first character of the editor or the pager is \[oq]&\[cq]
+(which is then skipped), it runs in a window of its own, and
 .B powwow
-will run concurrently with the editor without waiting for it to
-finish.  Such an editor reads its standard input from
+goes on running without waiting for it.  The editor must not end before
+the text is saved and closed, or
+.B powwow
+ends the editing session at once: give it the option that makes it
+wait, such as
+.B \-\-wait
+for Visual Studio Code.  Such an editor reads its standard input from
 .IR /dev/null ,
 and what it writes to its standard output and standard error is
 shown as lines beginning with \[oq]#editor:\[cq].
