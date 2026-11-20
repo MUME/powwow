@@ -10,9 +10,9 @@ It is primarily designed for DikuMUDs, but nothing prevents its use
 for other types of muds.  Powwow is based on another client, cancan,
 and cancan was originally inspired by tintin (yet another client)
 by Peter Unold (`pjunold@daimi.aau.dk`), but is entirely re-written.
-Powwow also implements the MUME remote editing protocol, which
-enables you to edit texts on the mud using your own favourite
-editor, several texts at once if you have a windowing terminal.
+Powwow also implements the MUME client protocol, with which you edit
+and view the texts of MUME with your own favourite editor and pager,
+several texts at once with an editor in a window of its own.
 
 ## Starting powwow
 
@@ -77,7 +77,7 @@ $ powwow definition-file netaddress portnumber
 With this syntax powwow reads settings from definition file,
 but overwrites the old address with the newly specified one.
 
-*Note*: If you have several sessions (different invokations)
+*Note*: If you have several sessions (different invocations)
 with the same definition file active simultaneously, the
 settings changed in one session can be overwritten by a change
 in another session.
@@ -300,7 +300,7 @@ gracefully from the mud before doing that. If you wish to cut
 your link manually, you can also press the break key on your
 system twice (usually `C-c`) (You must hit it twice
 because hitting only once is used to stop command parsing -
-see the bottom of this file).
+see "The break key" below).
 
 Powwow also quits at the end of its input, such as when it runs
 commands piped into it, as in `printf '#print hi\n' | powwow`.
@@ -348,7 +348,7 @@ Also, if you want to use a `{` or `}` literally, prefix it with a backslash
 as you do with semicolons.
 
 Another use of semicolons is to send a `<new-line>` character to the MUD
-you are connected to. Infact powwow sends a `<new-line>` every time it
+you are connected to. In fact powwow sends a `<new-line>` every time it
 meets a null command (0 chars) followed by a semicolon.
 
 Examples:
@@ -361,7 +361,7 @@ Examples:
 | `> ;;;` | three `<new-line>` ... |
 
 Of course multiple `<new-line>` are considered as multiple commands,
-so you usually have to surrond them with braces. If directly typed
+so you usually have to surround them with braces. If directly typed
 from keyboard, the braces are optional.
 
 | Command | Effect |
@@ -448,7 +448,7 @@ Aliases can contain other aliases, and an alias can also contain itself
 Aliases are not expanded in verbatim mode.
 
 Where aliases contain other aliases, one or more `\` can be prepended
-to `$n` to delay text substition or to use the symbol `$n` literally.
+to `$n` to delay text substitution or to use the symbol `$n` literally.
 
 Example:
 
@@ -497,7 +497,7 @@ intercepted with an `#action`. So if you want to print them, you
 must explicitly use a `#print` or set the `#option +autoprint`
 (the help on `#print` and `#option` is below in this text)
 If you want to intercept a prompt, use `#prompt` instead of `#action`.
-(the help on `#prompt` is near the end of this file)
+(see "Advanced topic: the special command `#prompt`" below)
 
 If the first character of the pattern is `^` (caret), the match
 will only be possible at the beginning of a line.
@@ -505,7 +505,7 @@ The match is case-sensitive.
 If 'label' is specified, the action is labeled; otherwise it is
 numbered.
 
-If an `<expression surrounded by parentheses>` is used insted of pattern,
+If an `<expression surrounded by parentheses>` is used instead of pattern,
 powwow evaluates the expression with the inline calculator (see below)
 and then uses the result as pattern.
 
@@ -641,16 +641,15 @@ There is another special command quite similar to `#action`:
 You will need to use it only if you want to mess with the prompt
 that your MUD sends, which is often not needed. Also, to use it
 you need to understand exactly how powwow recognizes prompts,
-so the description is considered an advanced topic and is placed
-near the end of this file, in the "Advanced topic: the special command
-`#prompt`" section.
+so it is described in "Advanced topic: the special command `#prompt`"
+below.
 
 ## Missing: substitution and unescaping
 
-Also, only intuitive definitions of substitution, delayed substition
+Also, only intuitive definitions of substitution, delayed substitution
 and escaping/unescaping have been given so far. If you want the real,
-rigorous thing, read the "Advanced topic: substitutions and unescaping"
-section near the end of this file. That section also explains
+rigorous thing, read "Advanced topic: substitutions and unescaping"
+below, which also explains
 `just in time` substitution, not yet introduced.
 
 ## Special commands: all others
@@ -819,7 +818,7 @@ the command you want and then shows you again the input line.
 
 | Command | Effect |
 | --- | --- |
-| `#bind f5=&prev-line` | `&prev-line` is one of the reserved commands for line-editing functions, see bottom of this file |
+| `#bind f5=&prev-line` | `&prev-line` is one of the reserved commands for line-editing functions, see "Command line editing" |
 | `#bind Up=u` | Up is an editing key, but can be redefined |
 
 A key bound to `ESC O` and `A` to `D`, `H` or `F`, such as Up, also
@@ -843,8 +842,8 @@ with:
 | 9 | `u` |
 
 The reserved names that powwow identifies as line-editing functions
-are at the end of this file, together with the default keys used for
-them.
+are in "Command line editing" below, together with the default keys used
+for them.
 
 Remember that ALL keys can be redefined...
 
@@ -902,8 +901,7 @@ and powwow will execute the command "cast 'heal'" for you.
 Using `#key`, for example, can be useful from inside an
 `#alias` or `#action`, since powwow cannot press f1 for you.
 
-Since 1.1.5, powwow allows `#key` also for editing functions.
-If you have already
+`#key` also works for editing functions. If you have already
 
 ```
   #bind Up=&prev-line
@@ -1174,8 +1172,8 @@ Example:
 
 ```
 > #! who | sort | less
-> #! nethack
-> #! xbiff &
+> #! vi notes.txt
+> #! sleep 600 && tput bel &
 ```
 
 Note that semicolons, escapes and braces need to be escaped if they
@@ -1291,7 +1289,7 @@ with calculator (if specified), then repeats the following cycle:
 ```
 
 As with `#while`, `#for` performs the parameter substitution in 'command',
-so the only significative difference between `#while` and `#for` is that
+so the only significant difference between `#while` and `#for` is that
 `#for` allows you to execute an initialization before the repeat cycle.
 
 Example:
@@ -1663,9 +1661,16 @@ compile options.
 | `##<session-id>` | set `<session-id>` as default session |
 | `##<session-id> command` | execute command on `<session-id>` session |
 
-No docs here. If multiplaying is allowed on you MUD (and many
-do NOT allow) you can experiment a little to find how they work.
-Or you can open two connections to two different MUDs :)
+Powwow can have several connections open at once, each with a name:
+`#connect` with a host and port opens `main`, `#connect <id> <host>
+<port>` opens another, and `#connect` alone lists them. What you type
+goes to the default connection, at first `main`; `##<id>` makes `<id>`
+the default, and `##<id> <command>` sends one command to it instead.
+The text from every active connection is shown, and actions and the like
+apply to it; `#snoop <id>` makes a connection inactive, so that its text
+is dropped, or active again. `#zap <id>` closes it. Many MUDs do not
+allow playing several characters at once, but you can also connect to
+several MUDs.
 
 ### Spawn an external program
 
@@ -1804,7 +1809,7 @@ placing them in `{ }` )
 If you do not specify the command, powwow assumes the label is already
 defined, and changes its delay.
 A delay less than zero means the delayed label is disabled,
-but still in powwow's memory, similar to what happems when you
+but still in powwow's memory, similar to what happens when you
 turn off an `#action`.
 A delay of zero deletes the delayed label.
 
@@ -1820,7 +1825,7 @@ and places the delayed label in the same list of `#in`.
 since (0) means midnight.
 One more thing: it is not possible do define disabled labels using `#at`,
 because a time `<` 0 is an error, and a time `<` current-time is assumed
-to be refering to the following day.
+to be referring to the following day.
 
 *Last note*: after executing a delayed command, powwow does not delete
 it, but simply disables it.
@@ -1834,19 +1839,6 @@ it, but simply disables it.
 All active delayed commands are set to 'disabled', but are not deleted
 from memory. Useful to stop infinite loops due to self-reactivating
 delayed commands.
-
-### Set save file options
-
-```
-#option [none]|[words][history]
-```
-
-Controls wether command history and completion words shall be saved
-in the save file.
-
-Without arguments, `#option` displays the current settings.
-To turn off both words and history, use `#option` none; otherwise
-use `#option` followed by words and/or history.
 
 ### Evaluate expression with calculator, and trash result
 
@@ -1877,7 +1869,7 @@ of expression) to be name of a file, and displays the contents of
 that file.
 
 Instead if ! precedes the text or expression, `#print` assumes text (or
-result of expression) to be a Bourne shell command, whose output is
+result of expression) to be a shell command, whose output is
 displayed.
 
 Example:
@@ -1941,10 +1933,10 @@ before an expression:
 #print !(string-expr;[start];[end])
 ```
 
-In this case, powwow executes the Bourne shell command contained in
+In this case, powwow executes the shell command contained in
 the string, and prints ONLY lines from `<start>` to `<end>` of its output.
 
-Also here, you can use expressions instead of Bourne shell command,
+Also here, you can use expressions instead of a shell command,
 start and end, and powwow still begins from first line if `<start>`
 is not specified and/or stops at the end of the output if `<end>`
 is not specified.
@@ -2075,7 +2067,7 @@ If `>` is specified, `#write` deletes the contents of the file before
 actually writing the text.
 
 If ! is specified, `#write` assumes second parameter to be
-a Bourne shell command (instead of a file name) that is executed
+a shell command (instead of a file name) that is executed
 using the text as its input.
 
 Example:
@@ -2954,7 +2946,7 @@ internal difficulties. As a workaround, step (c) (unescaping)
 is instead performed on regexp patterns.
 
 Since powwow 1.1.3, unescaping is performed also on the text coming
-from substition and jit. This causes subtle incompatibilities with
+from substitution and jit. This causes subtle incompatibilities with
 previous versions in case `$n` contains any `\` or `` \` `` .
 I tried to avoid this incompatibility, but it is really complicated
 to do since I want the text coming from substitution to be subject
