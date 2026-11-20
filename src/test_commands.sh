@@ -1878,7 +1878,7 @@ touch "$tmp/live-go"
 wait $live
 sed -e "s/$esc\[[0-9;?]*[A-Za-z]//g" "$tmp/live.out" | tr -d '\r' \
     > "$tmp/out"
-grep -q '^#user-wide settings read again' "$tmp/out" \
+grep -q '^#reloaded user-wide settings from' "$tmp/out" \
     || fail 'expected the user-wide settings file to be read again'
 sed -n '/^#option list/,$p' "$tmp/out" > "$tmp/list"
 grep -Fq '#option pager=from-file' "$tmp/list" \

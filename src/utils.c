@@ -2161,7 +2161,7 @@ void config_refresh(bool at_once)
     reset_user_wide_settings();
     read_config();
     if (opt_info)
-        wrap_printf("#user-wide settings read again from "
+        wrap_printf("#reloaded user-wide settings from "
                     LQUOTE "%s" RQUOTE, config_file);
 }
 
