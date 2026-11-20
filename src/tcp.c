@@ -308,6 +308,10 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
 
     status(1);
 
+    /* one line for looking up the host and connecting to it */
+    tty_message("#connecting to %s:%d (%s)... ", addr, port, protocol);
+    tty_flush();
+
     char service[16];
     snprintf(service, sizeof(service), "%d", port);
     struct addrinfo hints = {
@@ -319,21 +323,14 @@ static int tcp_connect(const char *addr, int port, const char *protocol)
     int gai = getaddrinfo(addr, service, &hints, &addrs);
     if (gai == EAI_NONAME) {
         /* not a numeric address: look up the host name */
-        if (opt_info)
-            tty_message("#looking up %s... ", addr);
-        tty_flush();
         hints.ai_flags = AI_NUMERICSERV;
         gai = getaddrinfo(addr, service, &hints, &addrs);
-        if (opt_info)
-            tty_message("%s", gai == 0 ? "found.\n" : "not found.\n");
     }
     if (gai != 0) {
+        tty_putc('\n');
         tty_message("#cannot look up %s: %s\n", addr, gai_strerror(gai));
         return -1;
     }
-
-    tty_message("#trying %s:%d (%s)... ", addr, port, protocol);
-    tty_flush();
 
     /*
      * BSD systems do not restart an interrupted connect(), even with
@@ -1223,7 +1220,8 @@ bool tcp_open(const char *id, char *initstring, const char *host,
 
     tcp_set_fdmode(newtcp_fd);
 
-    if (opt_info && tcp_count != 0)
+    /* only when it was another connection */
+    if (opt_info && tcp_count > 1)
         wrap_printf("#default connection is now \"%s\"", id);
     current_connection = &CONN_INDEX(i);
     tcp_set_main(current_connection);
