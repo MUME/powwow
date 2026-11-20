@@ -2454,6 +2454,22 @@ for shell in bash zsh; do
     "$POWWOW" --completion $shell > "$tmp/compl.$shell" \
         || fail "--completion $shell failed"
     $shell -n "$tmp/compl.$shell" || fail "not valid for $shell"
+    # eval without the double quotes gets the script on one line: it
+    # says so, fails and defines nothing; with them, it says nothing
+    (cd "$tmp/compl/dir" && $shell -c 'eval $(cat "$1") && echo succeeded
+        command -v _powwow > /dev/null && echo defined' \
+        $shell "$tmp/compl.$shell") > "$tmp/out" 2>&1
+    grep -Fq "write eval \"\$(powwow --completion $shell)\" with the" \
+        "$tmp/out" && ! grep -q -e defined -e succeeded "$tmp/out" \
+        || fail "unquoted eval in $shell: $(cat "$tmp/out")"
+    if [ $shell = bash ]; then
+        bash --norc --noprofile -c 'eval "$(cat "$1")"' bash \
+            "$tmp/compl.bash"
+    else
+        zsh -f -c 'autoload -U +X compinit && compinit -u -D
+            eval "$(cat "$1")"' zsh "$tmp/compl.zsh"
+    fi > "$tmp/out" 2>&1
+    [ -s "$tmp/out" ] && fail "quoted eval in $shell: $(cat "$tmp/out")"
     # in zsh, the whole word is replaced; in bash, the part after = or :
     if [ $shell = bash ]; then
         set=

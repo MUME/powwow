@@ -303,6 +303,14 @@ bool print_completion(const char *shell, const char *const *options)
     bool zsh = strcmp(shell, "zsh") == 0;
     if (!zsh && strcmp(shell, "bash") != 0)
         return false;
+    /* without the double quotes, eval $(powwow --completion bash) gets
+     * the script on one line, where the newline in _powwow_newline is a
+     * space, and the comment that follows hides the rest */
+    printf("_powwow_newline='\n';\n"
+           "[ \"$_powwow_newline\" = ' ' ] && echo 'powwow: the completion"
+           " is not loaded: write eval \"$(powwow --completion %s)\""
+           " with the double quotes' >&2 && false\n",
+           shell);
     printf("# the completion of the command line of powwow in %s; load it"
            " with\n"
            "#     eval \"$(powwow --completion %s)\"\n"

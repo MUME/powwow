@@ -15,6 +15,9 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 
 	Completion and Unicode input:
 	* Tab completes file names that have spaces in them.
+	* The script of `powwow --completion bash' or zsh, evaluated without
+	  the double quotes of `eval "$(powwow --completion bash)"', says so
+	  instead of doing nothing.
 
 	Commands, attributes and messages:
 	* `#option save', on by default, saves the definition file on
