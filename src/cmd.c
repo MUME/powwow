@@ -1610,7 +1610,7 @@ static void cmd_rebindall(char *arg)
         const char *seq = kp->sequence;
         /* control keys, keys that follow one, such as C-x 8 Ret, and M-
          * with a letter or digit */
-        bool trivial = ((seq[0] >= 0 && seq[0] < ' ' && seq[0] != ASCII_ESC)
+        bool trivial = (((unsigned char)seq[0] < ' ' && seq[0] != ASCII_ESC)
                         || (kp->seqlen == 2 && seq[0] == ASCII_ESC
                             && isalnum((unsigned char)seq[1])));
         if (every || !trivial) {
