@@ -295,8 +295,10 @@ int main(int argc, char *argv[])
             fseek(in, new_pos, SEEK_SET);
 
             /* read to next newline so we don't break up
-               lines seeking around */
-            getline(&buf, &size, in);
+               lines seeking around; at the end of the file, the
+               next lines read are those written to it since */
+            if (getline(&buf, &size, in) == -1)
+                clearerr(in);
             new_pos = ftell(in);
 
             /* Make a note of moving */
