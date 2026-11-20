@@ -25,6 +25,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QStringDecoder>
+#include <QTemporaryFile>
 #include <QTextBlock>
 #include <QTextCursor>
 #include <QTextDocument>
@@ -864,12 +865,6 @@ static QString sh_quote(QString s)
 #endif
 
 #if defined(Q_OS_MACOS)
-// 's' in a string of AppleScript
-static QString applescript_quote(QString s)
-{
-    return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
-}
-
 // whether iTerm2 is installed
 static bool has_iterm()
 {
@@ -881,32 +876,27 @@ static bool has_iterm()
     return false;
 }
 
-// the AppleScript that runs 'command' in a new window of Terminal or of
-// iTerm2, the program 'app', in the window that it opens if it was not
-// running; without activating it, which would bring all its windows to the
-// front, rather than the one made
-static QString applescript_for(bool iterm, const QString &app,
-                               const QString &command)
+// a script that removes itself and runs 'command', which Terminal and
+// iTerm2 run in a new window when they open it; its path, or "" if it
+// cannot be written; it clears the screen and the scrollback, where
+// Terminal shows the login and the path of the script typed in its shell
+static QString command_script(const QString &command)
 {
-    QString running = "application id \"" + app + "\" is running";
-    QString script = "set was_running to " + running + "\n"
-        + "tell application id \"" + app + "\"\n";
-    if (iterm) {
-        script += "if was_running or (count of windows) is 0 then\n"
-            "set w to (create window with default profile)\n"
-            "else\n"
-            "set w to current window\n"
-            "end if\n"
-            "tell current session of w to write text "
-            + applescript_quote(command) + "\n";
-    } else {
-        script += "if was_running or (count of windows) is 0 then\n"
-            "do script " + applescript_quote(command) + "\n"
-            "else\n"
-            "do script " + applescript_quote(command) + " in window 1\n"
-            "end if\n";
+    QTemporaryFile file(QDir::tempPath() + "/powwow-XXXXXX.command");
+    file.setAutoRemove(false);
+    if (!file.open())
+        return QString();
+    QByteArray script = "#!/bin/sh\nrm -f -- \"$0\"\n"
+        "printf '\\033[H\\033[2J\\033[3J'\n"
+        + command.toUtf8() + "\n";
+    if (file.write(script) != script.size()
+        || !file.setPermissions(QFileDevice::ReadOwner
+                                | QFileDevice::WriteOwner
+                                | QFileDevice::ExeOwner)) {
+        file.remove();
+        return QString();
     }
-    return script + "end tell\n";
+    return file.fileName();
 }
 #endif
 
@@ -955,20 +945,25 @@ bool Launcher::connectFile(const QString &path)
 #  if defined(Q_OS_MACOS)
     bool iterm = kind == "iterm" || (kind == "auto" && has_iterm());
     QString app = iterm ? "com.googlecode.iterm2" : "com.apple.Terminal";
-    auto *osascript = new QProcess(this);
-    // once the window is made, the terminal in front with it alone
-    QObject::connect(osascript, &QProcess::finished, this,
-                     [osascript, app] {
-                         activate_application(app.toUtf8().constData());
-                         osascript->deleteLater();
-                     });
-    osascript->start("osascript",
-                     { "-e", applescript_for(iterm, app, command) });
-    if (!osascript->waitForStarted()) {
-        delete osascript;
-        return fail(tr("Cannot start %1.")
-                    .arg(iterm ? "iTerm2" : "Terminal"));
+    QString name = iterm ? "iTerm2" : "Terminal";
+    // opened rather than told what to run with AppleScript, for which
+    // macOS would ask the user to let the launcher control the terminal
+    QString script = command_script(command);
+    if (script.isEmpty())
+        return fail(tr("Cannot write the script that starts powwow in"
+                       " %1.").arg(name));
+    // in the background, and then the terminal in front with the window
+    // alone, rather than all its windows; waited for, as it returns at
+    // once, and the launcher may exit when this returns
+    QProcess opener;
+    opener.start("open", { "-g", "-b", app, script });
+    if (!opener.waitForFinished()
+        || opener.exitStatus() != QProcess::NormalExit
+        || opener.exitCode() != 0) {
+        QFile::remove(script);
+        return fail(tr("Cannot start %1.").arg(name));
     }
+    activate_application(app.toUtf8().constData());
     return true;
 #  else
     // the terminal of the user, or one that is there
