@@ -178,11 +178,14 @@ int process_message(connsess *conn, char *buf, int len)
             }
         }
         i = to - text;
-        tty_printf("\rgot %d chars out of %d", i, msglen);
+        tty_printf("\r%s#got %d chars out of %d%s", msgattrbeg, i, msglen,
+                   msgattrend);
         tty_flush();
         progress = true;
     }
-    tty_printf("\rread all %d chars.%s\n", msglen, tty_clreoln);
+    /* as a message, over the progress */
+    tty_printf("\r%s", tty_clreoln);
+    tty_message("#read all %d chars.\n", msglen);
 
     switch (*buf) {
     case 'E':
