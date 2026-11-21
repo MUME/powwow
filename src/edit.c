@@ -1084,6 +1084,7 @@ static void complete_reset(struct word_list *l, int arg, const char *args,
         for (size_t i = 0; i < sizeof(lists) / sizeof(*lists); ++i)
             word_list_add(l, lists[i]);
     } else if (arg == 1 && strncmp(args, "bind ", 5) == 0) {
+        word_list_add(l, "--missing");
         add_key_names(l);
     }
 }

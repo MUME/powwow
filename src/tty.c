@@ -682,6 +682,44 @@ void tty_add_new_binds(int version)
 }
 
 /*
+ * add the 'n' keys of 'binds' that are not bound, by name or sequence, to
+ * the list 'added' of length *len, of 'size'
+ */
+static void add_missing_binds(const default_bind *binds, size_t n,
+                              char *added, size_t *len, size_t size)
+{
+    for (size_t i = 0; i < n; ++i) {
+        if (*binds[i].seq == '\0'
+            || key_is_bound(binds[i].label, binds[i].seq))
+            continue;
+        add_keynode(binds[i].label, binds[i].seq, 0, binds[i].funct,
+                    binds[i].command);
+        *len += snprintf(added + *len, size - *len, "%s%s",
+                         *len > 0 ? ", " : "", binds[i].label);
+        if (*len >= size)
+            *len = size - 1;
+    }
+}
+
+/*
+ * add the default editing and keypad keys that are not bound, by name or
+ * sequence, as #reset bind --missing does, and tell which
+ */
+void tty_add_missing_binds(void)
+{
+    char added[BUFSIZE] = "";
+    size_t len = 0;
+    add_missing_binds(default_binds, sizeof(default_binds)
+                      / sizeof(*default_binds), added, &len, sizeof(added));
+    add_missing_binds(walk_binds, sizeof(walk_binds) / sizeof(*walk_binds),
+                      added, &len, sizeof(added));
+    if (len > 0)
+        message_wrap(WRAP_CONT, "#default keys added: %s", added);
+    else
+        message_wrap(WRAP_CONT, "#no default keys are missing.");
+}
+
+/*
  * find the default binding of the key 'label'; return NULL if it has none
  */
 const default_bind *tty_default_bind(const char *label)

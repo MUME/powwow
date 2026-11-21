@@ -20,6 +20,7 @@ const char *tty_intr_key(void);
 void tty_sig_winch_bottomhalf(void);
 void tty_add_walk_binds(void);
 void tty_add_initial_binds(void);
+void tty_add_missing_binds(void);
 void tty_add_new_binds(int version);
 /*
  * a default key binding: an editing function, or the command 'command' if
