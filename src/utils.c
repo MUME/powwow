@@ -1484,6 +1484,12 @@ void suspend_powwow(int signum)
 
         signal_start();
         tty_start();
+        /* the input line at the bottom again, after what the shell wrote,
+         * rather than where it was, as after #! */
+        col0 = 0;
+        line0 = lines - 1;
+        tty_gotoxy(col0, line0);
+        tty_puts(tty_clreoln);
         tty_sig_winch_bottomhalf();  /* in case size changed meanwhile */
     } else {
         tty_printf("%s\n#cannot suspend: powwow was not started by a shell"

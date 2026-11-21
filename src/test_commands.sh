@@ -1972,6 +1972,55 @@ name='the keys typed so far are shown again after a message'
 sed -n '/later/,$p' "$tmp/raw" | grep -q 'C-x-' \
     || fail 'expected C-x- after the message'
 
+# resumed after C-z, in a shell with job control in tmux, the input line
+# and the cursor are at the bottom, also after the line took two rows and
+# then one again
+if command -v tmux > /dev/null 2>&1; then
+    name='the cursor is on the input line after C-z and fg'
+    tm() { env -u TMUX tmux -L "powwow-test-$$" -f /dev/null "$@"; }
+    tm_wait() {
+        i=0
+        until tm capture-pane -p -t t | grep -Fq -e "$1" || [ $i -ge 500 ]
+        do
+            sleep 0.01
+            i=$((i + 1))
+        done
+    }
+    case $POWWOW in
+        /*) pw=$POWWOW ;;
+        *) pw=$PWD/$POWWOW ;;
+    esac
+    tm new-session -d -s t -x 80 -y 24 \
+        "env -i HOME=$tmp TERM=xterm PATH=/usr/bin:/bin PS1='shell> ' sh -i"
+    tm_wait 'shell>'
+    tm send-keys -t t -l "$pw --no-config"
+    tm send-keys -t t Enter
+    tm_wait '#help'
+    # a prompt, as from the MUD, which a line that took two rows starts
+    tm send-keys -t t -l "#emulate !printf 'mud-%s> ' prompt"
+    tm send-keys -t t Enter
+    tm_wait 'mud-prompt> '
+    line=$(printf 'x%.0s' 1 2 3 4 5 6 7 8 9 10 11 12)
+    line=$line$line$line$line$line
+    tm send-keys -t t -l "${line}yyyyyyyyyyyyyyy"
+    tm_wait yyyyy
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+        tm send-keys -t t BSpace
+    done
+    tm send-keys -t t C-a C-z
+    tm_wait Stopped
+    # not without job control
+    if tm capture-pane -p -t t | grep -q Stopped; then
+        tm send-keys -t t -l fg
+        tm send-keys -t t Enter
+        tm_wait 'shell> fg'
+        sleep 0.5
+        at=$(tm display -p -t t '#{cursor_x},#{cursor_y}')
+        [ "$at" = 12,23 ] || fail "the cursor at $at, not 12,23"
+    fi
+    tm kill-server 2>/dev/null
+fi
+
 run '#help &<function> shows an editing function and its keys' \
     '#help &abort
 #help &nosuch'
