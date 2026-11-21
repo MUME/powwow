@@ -124,6 +124,9 @@ Changes from 1.3.1 to 1.3.2
 	  changed, and makes C-w delete a word if it is bound to &to-history
 	  as it was by default.
 	* `#reset bind KEY' resets one key to its default binding.
+	* `#reset bind --missing' adds the default keys that are not bound,
+	  such as those added since a definition file was saved, and keeps
+	  the others.
 	* `#bind functions' lists all the editing functions by group, with
 	  the keys bound to them.
 

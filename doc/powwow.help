@@ -92,7 +92,7 @@ At any time, then, you can either:
 - Execute the command ‘#key f1’
 and powwow will execute the command ‘flee’ for you.
 @reset
-#reset {all|<list-name>|bind [<key>]}
+#reset {all|<list-name>|bind [<key>|--missing]}
 
 Argument:       Effect:
 action          clear all actions
@@ -103,6 +103,8 @@ bind            clear all key bindings and restore the default ones,
                 also for the editing keys
 bind <key>      reset the key to its default binding, or delete it
                 if it has none
+bind --missing  add the default keys that are not bound, by name or
+                sequence, and keep the other keys
 in              clear all delayed commands, like at
 mark            clear all markers
 prompt          clear all prompts

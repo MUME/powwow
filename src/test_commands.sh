@@ -1935,6 +1935,21 @@ has '#default key binding: KP8 ^[Ox=n'
 has '#deleting key binding: foo ^[[20~=bar'
 has '#no key named "nosuch", and no default for it.'
 
+run '#reset bind --missing adds the default keys not bound' \
+    '#bind C-x-8-Ret=
+#bind KP8=
+#bind M-c ^[c=&upcase-word
+#bind foo ^[[20~=bar
+#reset bind --missing
+#reset bind --missing
+#bind edit
+#bind'
+has '#default keys added: C-x-8-Ret, KP8'
+has '#no default keys are missing.'
+has '#bind C-x-8-Ret ^X8^M=&insert-char'
+has '#bind M-c ^[c=&upcase-word'
+has '#bind foo ^[[20~=bar'
+
 run '#reset rejects unknown lists' '#bind foo ^[[20~=bar
 #reset bind 
 #bind foo

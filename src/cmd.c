@@ -222,9 +222,9 @@ static cmdstruct default_commands[] =
     C("request",    cmd_request,
       "[editor][all]\tsend various identification strings"),
     C("reset",      cmd_reset,
-      "{all|<list-name>|bind [<key>]}\tclear the whole defined list"
-      " and reload"
-      " default, or reset one key"),
+      "{all|<list-name>|bind [<key>|--missing]}\tclear the whole defined"
+      " list and reload default, reset one key, or add the default keys"
+      " missing"),
     C("retrace",    cmd_retrace,
       "[<number>]\tretrace the last number steps"),
     C("save",       cmd_save,
@@ -1627,8 +1627,8 @@ static void reset_usage(const char *arg)
         message_printf("#reset: must specify one of:\n");
     else
         wrap_printf("#reset: unknown list \"%s\", must specify one of:", arg);
-    tty_puts(" action, alias, all, at, bind [<key>], in, mark, prompt,"
-             " substitute, var.\n");
+    tty_puts(" action, alias, all, at, bind [<key>|--missing], in, mark,"
+             " prompt, substitute, var.\n");
 }
 
 static void cmd_reset(char *arg)
@@ -1638,6 +1638,10 @@ static void cmd_reset(char *arg)
         arg[len - 1] = '\0';
     if (*arg == '\0') {
         reset_usage(arg);
+        return;
+    }
+    if (strcmp(arg, "bind --missing") == 0) {
+        tty_add_missing_binds();
         return;
     }
     if (strncmp(arg, "bind ", 5) == 0) {
