@@ -2727,6 +2727,58 @@ if command -v openssl > /dev/null 2>&1 \
     fi
 fi
 
+# after a pager that powwow waits for, here cat for an MPI view from
+# openssl as the MUD, in tmux, the input line and the cursor are at the
+# bottom, also after the line took two rows and then one again
+if command -v tmux > /dev/null 2>&1 && [ -f "$tmp/cert.pem" ]; then
+    name='the cursor is on the input line after a pager'
+    port=$((20000 + ($$ + 1) % 20000))
+    {
+        sleep 2
+        printf 'mud-prompt> \377\371'
+        sleep 3
+        printf '\r\n~$#EV%d\nview\n' 765
+        for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 \
+                 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40
+        do
+            printf 'view line %08d\n' "$i"
+        done
+        sleep 15
+    } | openssl s_server -quiet -naccept 1 -accept "$port" \
+            -cert "$tmp/cert.pem" -key "$tmp/key.pem" > /dev/null 2>&1 &
+    server=$!
+    sleep 1
+    tm new-session -d -s t -x 80 -y 24 \
+        "env -i HOME=$tmp TERM=xterm PATH=/usr/bin:/bin POWWOWPAGER=cat $pw --no-config"
+    tm_wait '#help'
+    tm send-keys -t t -l "#connect main 127.0.0.1 $port --tls=no-verify"
+    tm send-keys -t t Enter
+    tm_wait 'connected!'
+    if tm capture-pane -p -t t | grep -q '(TLS)'; then
+        tm send-keys -t t -l '#request editor'
+        tm send-keys -t t Enter
+        # tmux leaves out the space at the end
+        tm_wait 'mud-prompt>'
+        line=$(printf 'x%.0s' 1 2 3 4 5 6 7 8 9 10 11 12)
+        line=$line$line$line$line$line
+        tm send-keys -t t -l "${line}yyyyyyyyyyyyyyy"
+        tm_wait yyyyy
+        for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+            tm send-keys -t t BSpace
+        done
+        tm send-keys -t t C-a
+        tm_wait 'view line 00000040'
+        # drawn again, after the view scrolled it away
+        tm_wait 'mud-prompt> xxxxx'
+        sleep 0.2
+        at=$(tm display -p -t t '#{cursor_x},#{cursor_y}')
+        [ "$at" = 12,23 ] || fail "the cursor at $at, not 12,23"
+    fi
+    tm kill-server 2>/dev/null
+    kill $server 2>/dev/null
+    wait $server 2>/dev/null
+fi
+
 run 'random numbers' "$(for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
     echo '#print (rand 6)'
 done)"

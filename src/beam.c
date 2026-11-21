@@ -744,6 +744,12 @@ void message_edit(connsess *conn, char *text, int msglen, bool view,
             tty_gotoxy(0, lines - 1);
             tty_putc('\n');
         }
+        /* the input line at the bottom again, after what the editor or
+         * the pager wrote, rather than where it was, as after #! */
+        col0 = 0;
+        line0 = lines - 1;
+        tty_gotoxy(col0, line0);
+        tty_puts(tty_clreoln);
 
         if (wpid == -1)
             errmsg("cannot wait for the editor");
