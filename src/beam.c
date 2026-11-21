@@ -79,7 +79,8 @@ void mpi_identify(connsess *conn)
  */
 int process_message(connsess *conn, char *buf, int len)
 {
-    status(1);
+    /* the input line, and the prompt, drawn again after the message */
+    clear_input_line(true);
 
     /* the length must be positive and fit in an int */
     int msglen = 0;

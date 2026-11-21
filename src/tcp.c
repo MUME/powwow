@@ -535,6 +535,10 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     byte *linestart = p;
     /* MPI messages are accepted only at the start of a line */
     bool midline = conn->midline;
+    /* this read comes after a prompt, or another unterminated line, also
+     * one kept over MPI messages */
+    bool after_prompt = midline || conn->prompt_kept;
+    bool kept = false;
     for (byte *s = rawbuf; i != 0; ++s, --i) {
         switch (state) {
         case TELNET_NORMAL:
@@ -607,6 +611,17 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
                         wrap_printf("#warning: ignored an MPI message that"
                                     " may be spoofed");
                     } else {
+                        /*
+                         * the newline before a message right after a
+                         * prompt only starts the line of the message:
+                         * not text, so that the prompt stays, and is drawn
+                         * again after the message
+                         */
+                        if (after_prompt && linestart == (byte *)buffer + 1
+                            && *(byte *)buffer == '\n') {
+                            linestart = buffer;
+                            kept = true;
+                        }
                         unsigned generation = conn->generation;
                         int used = process_message(conn, (char *)s + 1,
                                                    i - 1);
@@ -814,6 +829,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     conn->state = state;
     conn->old_state = old_state;
     conn->midline = midline || p != linestart || state == TELNET_GOT_CR;
+    conn->prompt_kept = p == (byte *)buffer && (kept || conn->prompt_kept);
 
     if (!conn->spawn)
         log_write(buffer, (char *)p - (char *)buffer, false, conn->charset);
@@ -1344,6 +1360,7 @@ void tcp_close(const char *id)
     conn->old_state = TELNET_NORMAL;
     conn->mpi_headlen = 0;
     conn->midline = false;
+    conn->prompt_kept = false;
     conn->ended = false;
     conn->port = 0;
     free(conn->host);

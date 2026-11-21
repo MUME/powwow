@@ -1942,6 +1942,13 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
     /* commands run by an MPI message may have closed the connection */
     if (conn->generation != generation)
         return;
+    /* data that TLS read and keeps, which select() does not see, such as
+     * a prompt after an MPI message that took all the text of this read */
+    if (!FD_ISSET(conn->fd, read_fds)
+        && conn->fns->can_read(conn)) {
+        FD_SET(conn->fd, read_fds);
+        ++*ncache_read_fds;
+    }
     if (got == 0) {
         /* keep the unterminated line for the next read with text */
         if (len != 0) {
@@ -1949,11 +1956,6 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
             conn->fragment = xstrdup(buffer);
         }
         return;
-    }
-    if (!FD_ISSET(conn->fd, read_fds)
-        && conn->fns->can_read(conn)) {
-        FD_SET(conn->fd, read_fds);
-        ++*ncache_read_fds;
     }
 
     /* Safe, there is space. Do it now not to forget it later */
