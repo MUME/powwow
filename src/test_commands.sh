@@ -2595,6 +2595,51 @@ run '#connect without an argument connects to the host of #host' \
 #connect'
 has '#cannot connect to 127.0.0.1:1: Connection refused'
 
+# MPI messages longer than a read, with openssl as the MUD, if powwow has
+# TLS: the prompt before them, which the newlines before them do not end,
+# is drawn again after each; and the prompt at the end of the TLS record
+# with the end of one, which GnuTLS has read and select() does not see,
+# is drawn at once
+if command -v openssl > /dev/null 2>&1 \
+   && openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=localhost \
+        -days 1 -keyout "$tmp/key.pem" -out "$tmp/cert.pem" \
+        > /dev/null 2>&1; then
+    port=$((20000 + $$ % 20000))
+    x=$(printf '%020000d' 0)
+    {
+        sleep 2
+        printf 'mud-prompt>\377\371'
+        sleep 0.5
+        printf '\r\n~$#EV20007\nstats\n%s\n' "$x"
+        sleep 0.5
+        printf '\r\n~$#EV20007\nstats\n%s\n' "$x"
+        sleep 0.5
+        printf 'second-prompt>\377\371'
+        sleep 0.5
+        printf '\r\n~$#EV20007\nstats\n%s\nnext-prompt>\377\371' "$x"
+        # open until powwow gives up waiting for the prompt, as closing
+        # the connection would show it
+        sleep 15
+    } | openssl s_server -quiet -naccept 1 -accept "$port" \
+            -cert "$tmp/cert.pem" -key "$tmp/key.pem" > /dev/null 2>&1 &
+    server=$!
+    sleep 1
+    run --until 'next-prompt>' 'the prompts around long MPI messages' \
+        "#option pager=&true
+#connect main 127.0.0.1 $port --tls=no-verify
+#request editor"
+    kill $server 2>/dev/null
+    wait $server 2>/dev/null
+    if grep -q "#connecting to 127.0.0.1:$port (TLS)" "$tmp/out"; then
+        all='read all 20007 chars\.'
+        m="$all.*mud-prompt>.*$all.*mud-prompt>.*$all.*second-prompt>"
+        m="$m.*next-prompt>"
+        tr -d '\n' < "$tmp/out" \
+            | grep -q "$m" \
+            || fail 'expected the prompts after the messages'
+    fi
+fi
+
 run 'random numbers' "$(for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
     echo '#print (rand 6)'
 done)"
