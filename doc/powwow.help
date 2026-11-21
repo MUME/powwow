@@ -756,12 +756,15 @@ the given session is cancelled. The corresponding editor processes are
 brutally killed. Sessions already cancelled, whose editor has not ended
 yet, are left alone.
 @capture
-#capture [[>]<filename>]
+#capture [[--telnet] [>]<filename>]
 
 Capture all output from the main MUD connection and your typed commands
 to a local file. Type ‘#capture’ without argument to close the file.
 If the filename starts with a ‘>’, new text is appended to the end of the
 file instead of overwriting it. See also ‘#setvar buffer’.
+With ‘--telnet’, the file gets the bytes exactly as the MUD sends them,
+with the telnet commands, such as IAC GA after a prompt, and without your
+typed commands.
 @clear
 #clear
 

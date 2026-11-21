@@ -1288,6 +1288,15 @@ static void complete_file(struct word_list *l, int arg, const char *args,
     closedir(d);
 }
 
+/* the argument of #capture: --telnet, and a file name, after it too */
+static void complete_capture(struct word_list *l, int arg, const char *args,
+                             const char *word)
+{
+    if (arg == 0 && *args == '\0')
+        word_list_add(l, "--telnet");
+    complete_file(l, 0, "", word);
+}
+
 /*
  * how the arguments of commands are completed: a function that adds the
  * words that argument 'arg' can be, after the arguments 'args' before it,
@@ -1305,7 +1314,7 @@ static const struct {
     { "alias", complete_alias, "" },
     { "at", complete_delay, "" },
     { "bind", complete_bind, "" },
-    { "capture", complete_file, ">" },
+    { "capture", complete_capture, ">" },
     { "connect", complete_connect, "" },
     { "delim", complete_delim, "" },
     { "file", complete_file, "=" },
@@ -1488,8 +1497,17 @@ static bool complete_command(void)
                 return false;
 
             /* a file name is the rest of the line, which may have spaces */
-            if (arg_completions[i].complete == complete_file)
+            file_names = arg_completions[i].complete == complete_file
+                         || arg_completions[i].complete == complete_capture;
+            if (file_names) {
                 word = args;
+                if (arg_completions[i].complete == complete_capture
+                    && strncmp(edbuf + args, "--telnet ", 9) == 0) {
+                    word += 9;
+                    while (word < pos && edbuf[word] == ' ')
+                        ++word;
+                }
+            }
             int arg = 0;
             for (int p = args; p < word; ++p) {
                 if (edbuf[p] == ' ' && edbuf[p + 1] != ' ')
@@ -1504,7 +1522,6 @@ static bool complete_command(void)
             char typed[BUFSIZE];
             snprintf(typed, sizeof(typed), "%.*s", pos - word, edbuf + word);
             arg_completions[i].complete(&l, arg, before, typed);
-            file_names = arg_completions[i].complete == complete_file;
         }
     }
     if (l.count > 0)            /* else words is NULL, which qsort rejects */

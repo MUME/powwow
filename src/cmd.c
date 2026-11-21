@@ -118,7 +118,7 @@ static cmdstruct default_commands[] =
     C("cancel",     cmd_cancel,
       "[<number>]\tcancel editing session"),
     C("capture",    cmd_capture,
-      "[[>]<filename>]\tbegin/end of capture to file"),
+      "[[--telnet] [>]<filename>]\tbegin/end of capture to file"),
     C("clear",      cmd_clear,
       "\tclear input line (use from spawned programs)"),
     C("connect",    cmd_connect,
@@ -2645,7 +2645,14 @@ static void cmd_capture(char *arg)
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
 
-    if (*arg == '\0') {
+    /* --telnet: the bytes from the MUD, before the telnet protocol is
+     * interpreted */
+    bool telnet = strncmp(arg, "--telnet", 8) == 0
+                  && (arg[8] == ' ' || arg[8] == '\0');
+    if (telnet)
+        arg = skipspace(arg + 8);
+
+    if (*arg == '\0' && !telnet) {
         if (capturefile != NULL) {
             log_flush();
             fclose(capturefile);
@@ -2654,29 +2661,44 @@ static void cmd_capture(char *arg)
                 wrap_printf("#end of capture to "
                             LQUOTE "%s" RQUOTE ".", name);
             }
+        } else if (telnetfile != NULL) {
+            fclose(telnetfile);
+            telnetfile = NULL;
+            if (opt_info) {
+                wrap_printf("#end of telnet capture to "
+                            LQUOTE "%s" RQUOTE ".", name);
+            }
         } else {
             wrap_printf("#capture to what file?");
         }
+    } else if (capturefile != NULL || telnetfile != NULL) {
+        message_printf("#capture already active.\n");
+    } else if (*arg == '\0') {
+        wrap_printf("#capture --telnet to what file?");
     } else {
-        if (capturefile != NULL) {
-            message_printf("#capture already active.\n");
+        bool append = false;
+        /* Append to log file, if the name starts with '>' */
+        if (*arg == '>') {
+            ++arg;
+            append = true;
+        }
+        char buf[BUFSIZE];
+        const char *file = file_name(arg, buf, sizeof(buf));
+        /* binary for --telnet, where \r\n stays as it is on Windows */
+        FILE *f = fopen(file, telnet ? (append ? "ab" : "wb")
+                                     : (append ? "a" : "w"));
+        if (f == NULL) {
+            wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, file);
         } else {
-            bool append = false;
-            /* Append to log file, if the name starts with '>' */
-            if (*arg == '>') {
-                ++arg;
-                append = true;
-            }
-            char buf[BUFSIZE];
-            const char *file = file_name(arg, buf, sizeof(buf));
-            capturefile = fopen(file, append ? "a" : "w");
-            if (capturefile == NULL) {
-                wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, file);
-            } else {
-                snprintf(name, sizeof(name), "%s", file);
-                if (opt_info)
-                    wrap_printf("#capture to " LQUOTE "%s" RQUOTE " active, "
-                                LQUOTE "#capture" RQUOTE " ends.", file);
+            if (telnet)
+                telnetfile = f;
+            else
+                capturefile = f;
+            snprintf(name, sizeof(name), "%s", file);
+            if (opt_info) {
+                wrap_printf("#%s to " LQUOTE "%s" RQUOTE " active, "
+                            LQUOTE "#capture" RQUOTE " ends.",
+                            telnet ? "telnet capture" : "capture", file);
             }
         }
     }

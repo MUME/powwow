@@ -2370,6 +2370,27 @@ has 'loaded'
 has "#error writing file '$tmp/defs/sub/'"
 has 'mud.powwow  sub/'
 
+mkdir -p "$tmp/tel"
+: > "$tmp/tel/raw.txt"
+run 'Tab completes --telnet of #capture, and a file name after it' '' \
+    "#capture --te	$tmp/tel/ra	
+#capture
+#capture 		$(printf '\025')
+"
+has "#end of telnet capture to '$tmp/tel/raw.txt'."
+grep -q '^--telnet  ' "$tmp/out" || fail 'expected --telnet in the list'
+
+run '#capture --telnet starts and ends, and is one capture with #capture' \
+    "#capture --telnet $tmp/tel/a
+#capture $tmp/tel/b
+#capture
+#capture --telnet"
+has "#telnet capture to '$tmp/tel/a' active, '#capture' ends."
+has '#capture already active.'
+has "#end of telnet capture to '$tmp/tel/a'."
+has '#capture --telnet to what file?'
+[ -f "$tmp/tel/b" ] && fail "unexpected $tmp/tel/b"
+
 # file names in any case where the file system ignores case, as on macOS
 mkdir -p "$tmp/case"
 echo '#print ("upper" + "case")' > "$tmp/case/Mud.powwow"
@@ -3088,6 +3109,43 @@ EOF
         > "$tmp/out"
     has 'More> '
     has 'HP:>'
+
+    # a MUD that sends a prompt with a telnet GA after it
+    cat > "$tmp/server.py" <<'EOF'
+import os, socket, sys, time
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+c.sendall(b'A room.\r\nMore> \xff\xf9')
+time.sleep(0.5)
+c.sendall(b'HP:>\r\nBye\r\n')
+c.close()
+EOF
+    name='#capture --telnet writes the bytes the MUD sends'
+    rm -f "$tmp/port" "$tmp/telnet"
+    python3 -I "$tmp/server.py" "$tmp/port" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+    : > "$tmp/raw"
+    {
+        printf '#capture --telnet %s\n' "$tmp/telnet"
+        printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
+        wait_for 'Bye'
+        printf '#capture\n#quit\n'
+    } | "$POWWOW" > "$tmp/raw" 2>&1
+    wait $server
+    sed -e "s/$esc/<ESC>/g" "$tmp/raw" > "$tmp/out"
+    printf 'A room.\r\nMore> \377\371HP:>\r\nBye\r\n' > "$tmp/expected"
+    cmp -s "$tmp/telnet" "$tmp/expected" \
+        || fail "unexpected bytes: $(od -c "$tmp/telnet")"
 
     # a MUD that tells after how long it got a telnet NOP, if within 3
     # seconds; with $2, it speaks telnet, sending a NOP itself first

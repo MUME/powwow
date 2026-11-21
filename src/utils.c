@@ -2601,6 +2601,8 @@ void exit_powwow(void)
     log_flush();
     if (capturefile != NULL)
         fclose(capturefile);
+    if (telnetfile != NULL)
+        fclose(telnetfile);
     if (recordfile != NULL)
         fclose(recordfile);
     if (moviefile != NULL)

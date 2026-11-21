@@ -29,6 +29,7 @@
 
 vtime movie_last;                   /* time movie_file was last written */
 FILE *capturefile = NULL;           /* capture file or NULL */
+FILE *telnetfile = NULL;            /* #capture --telnet file or NULL */
 FILE *moviefile = NULL;             /* movie file or NULL */
 FILE *recordfile = NULL;            /* record file or NULL */
 
@@ -294,6 +295,16 @@ void log_write(const char *str, int len, bool newline, enum charset cs)
             str = next + 1;
         }
     } while (next != NULL && len > 0);
+}
+
+/*
+ * write to the #capture --telnet file the 'len' bytes at 'data', as the
+ * MUD sent them
+ */
+void log_telnet(const void *data, size_t len)
+{
+    if (telnetfile != NULL && len > 0)
+        fwrite(data, 1, len, telnetfile);
 }
 
 /*

@@ -1095,7 +1095,7 @@ See "Attributes: colors and other highlighting" below for more syntax.
 ### Capture output to file
 
 ```
-#capture [[>]<filename>]
+#capture [[--telnet] [>]<filename>]
 ```
 
 This captures all output from the main MUD connection and your typed
@@ -1115,6 +1115,20 @@ Example:
 
 It is possible to capture in the `#capture` file even text that you have
 *already* received: see `#setvar buffer`.
+
+With `--telnet`, the file gets the bytes exactly as the MUD sends them,
+before powwow interprets the telnet protocol: with the telnet commands,
+such as `IAC GA` (bytes 255 249) after a prompt, the `\r` of each line
+and MUME's MPI messages, but without your typed commands.
+The text already received is not in it.
+Look at it with a hex dump, such as `xxd`:
+
+```
+> #capture --telnet raw
+> look
+> #capture
+> #! xxd raw
+```
 
 ### Record typed commands to file
 

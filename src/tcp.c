@@ -521,6 +521,10 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
         tcp_close(NULL);
         return 0;
     }
+    /* the bytes just read, before the telnet protocol is interpreted;
+     * those held were written when they were read */
+    if (conn == main_connection && !conn->spawn)
+        log_telnet(rawbuf + held, i);
     i += held;
     conn->mpi_headlen = 0;
 
