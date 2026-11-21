@@ -2626,17 +2626,20 @@ if command -v openssl > /dev/null 2>&1 \
     sleep 1
     run --until 'next-prompt>' 'the prompts around long MPI messages' \
         "#option pager=&true
+#hilite messages bold
 #connect main 127.0.0.1 $port --tls=no-verify
 #request editor"
     kill $server 2>/dev/null
     wait $server 2>/dev/null
     if grep -q "#connecting to 127.0.0.1:$port (TLS)" "$tmp/out"; then
-        all='read all 20007 chars\.'
+        all='#read all 20007 chars\.'
         m="$all.*mud-prompt>.*$all.*mud-prompt>.*$all.*second-prompt>"
         m="$m.*next-prompt>"
         tr -d '\n' < "$tmp/out" \
             | grep -q "$m" \
             || fail 'expected the prompts after the messages'
+        grep -q "<ESC>\\[1m$all" "$tmp/out" \
+            || fail 'expected read all as a message'
     fi
 fi
 
