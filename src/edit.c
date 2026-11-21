@@ -953,7 +953,7 @@ static void complete_setvar(struct word_list *l, int arg, const char *args,
                             const char *word)
 {
     static const char *const names[] = {
-        "buffer", "keepalive", "lines", "mem", "timer", NULL
+        "buffer", "editmem", "keepalive", "lines", "mem", "timer", NULL
     };
     if (arg == 0)
         add_words(l, names);

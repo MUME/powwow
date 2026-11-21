@@ -119,6 +119,8 @@ int line_status = 0;    /* input line status: 0 = ready -> nothing to do;
                          */
 
 int limit_mem = 1048576; /* if != 0, max len of a string or text */
+int limit_editmem = DEFAULT_LIMIT_EDITMEM; /* if != 0, max len of a text
+                                            * to edit or view */
 int keepalive = 0;       /* if != 0, seconds without sending to a MUD
                           * after which it gets a telnet NOP: the MUD's
                           * own, or else the user-wide one */

@@ -2422,6 +2422,17 @@ static void cmd_setvar(char *arg)
                 message_printf("#setvar: lines=%d\n", lines);
             }
         }
+    } else if (i != 0 && strncmp(name, "editmem", i) == 0) {
+        if (!set)
+            fmt_next_edit("#setvar editmem=%d", limit_editmem);
+        else {
+            if (buf == 0 || buf >= PARAMLEN)
+                limit_editmem = buf <= INT_MAX ? (int)buf : INT_MAX;
+            if (opt_info) {
+                message_printf("#setvar: editmem=%d%s\n", limit_editmem,
+                               limit_editmem != 0 ? "" : " (unlimited)");
+            }
+        }
     } else if (i != 0 && strncmp(name, "mem", i) == 0) {
         if (!set)
             fmt_next_edit("#setvar mem=%d", limit_mem);
@@ -2468,11 +2479,12 @@ static void cmd_setvar(char *arg)
     } else {
         update_now();
         message_printf("#setvar buffer=%d\n"
+                       "#setvar editmem=%d\n"
                        "#setvar keepalive=%d%s\n"
                        "#setvar lines=%d\n"
                        "#setvar mem=%d\n"
                        "#setvar timer=%ld\n",
-                       log_getsize(), keepalive,
+                       log_getsize(), limit_editmem, keepalive,
                        keepalive_own ? "" : " (user-wide default)", lines,
                        limit_mem, diff_vtime(&now, &ref_time));
     }
@@ -3775,6 +3787,7 @@ static void cmd_load(char *arg)
         tty_add_initial_binds();
         tty_add_walk_binds();
         limit_mem = 1048576;
+        limit_editmem = DEFAULT_LIMIT_EDITMEM;
         message_printf("#emergency loaded default settings.\n");
     }
 }

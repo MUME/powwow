@@ -1011,6 +1011,8 @@ parentheses. Known variables are:
 buffer     bytes of recent text from the MUD to keep and write at the
            beginning of ‘#capture’ and ‘#movie’ files when you open them
            (default 0; else 1000 to 2147483647)
+editmem    the maximum length of a text to edit or view, in bytes
+           (default 16777216; 0: no limit)
 keepalive  seconds without sending anything to a MUD that uses telnet,
            after which powwow sends it a telnet NOP, which does nothing,
            so that a router that forgets idle connections keeps it

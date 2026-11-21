@@ -33,9 +33,12 @@ long *num_var(int n);
 ptr **text_var(int n);
 
 
+/* the default of #setvar editmem: as long as the longest text MUME sends */
+#define DEFAULT_LIMIT_EDITMEM 16777216
+
 /* shared vars from main.c */
 extern int prompt_status, line_status;
-extern int limit_mem;
+extern int limit_mem, limit_editmem;
 extern int keepalive, keepalive_user, keepalive_mud;
 extern bool keepalive_own;
 extern volatile bool confirm;

@@ -375,6 +375,26 @@ run '#save saves #setvar mem=0' "#file =$tmp/mem.pw
 run --args "$tmp/mem.pw" 'loading #setvar mem=0' '#setvar'
 has '#setvar mem=0'
 
+run '#setvar editmem is 16777216 by default, which #save leaves out' \
+    "#file =$tmp/editmem-default.pw
+#setvar
+#save"
+has '#setvar editmem=16777216'
+grep -q editmem "$tmp/editmem-default.pw" \
+    && fail 'expected no #setvar editmem in the file'
+
+run '#save saves a changed #setvar editmem' "#file =$tmp/editmem.pw
+#setvar editmem=0
+#save"
+run --args "$tmp/editmem.pw" 'loading #setvar editmem=0' '#setvar'
+has '#setvar editmem=0'
+
+run --args "$tmp/editmem.pw" \
+    '#load of a file without #setvar editmem sets the default' \
+    "#load $tmp/editmem-default.pw
+#setvar"
+has '#setvar editmem=16777216'
+
 printf '#alias kept=yes\n' > "$tmp/save.pw"
 run --args "$tmp/save.pw" '#option -save keeps the definition file on exit' \
     '#option -save
@@ -3332,15 +3352,15 @@ done
 [ "$(grep -c '^C5$' "$tmp/got")" -eq 1 ] \
     || fail "expected one cancel message, got: $(od -c "$tmp/got")"
 
-# an edited text longer than #setvar mem cancels the session
+# an edited text longer than #setvar editmem cancels the session
 cat > "$tmp/server" <<'EOF'
 read -r identify
 printf '~$#EE14\nM5\ndescr\ntext\n'
 cat > "$1/got"
 touch "$1/done"
 EOF
-run --until '#cancelled session' 'edited text longer than #setvar mem' \
-    "#setvar mem=1000
+run --until '#cancelled session' 'edited text longer than #setvar editmem' \
+    "#setvar editmem=1000
 #option editor=&awk 'BEGIN { for (i = 0; i < 1001; ++i) print }' >
 #spawn n sh $tmp/server $tmp
 ##n #request editor"
@@ -3575,22 +3595,57 @@ run --until '#connection on "n" closed.' 'MPI messages with a bad length' \
 lacks '#out of memory'
 has 'two'
 
-# an MPI message longer than the buffer it starts in, and one longer than
-# #setvar mem, which is shown as text
+# an MPI message longer than the buffer it starts in and than #setvar mem,
+# and a text to edit longer than #setvar editmem, which is read but not
+# edited, as the edited text would replace all of it; the session is
+# cancelled
 cat > "$tmp/server" <<'EOF'
 read -r identify
 printf '~$#EE6000\nM5\ndescr\n'
 awk 'BEGIN { for (i = 0; i < 5991; ++i) printf "x" }'
 sleep 0.2
-printf '~$#EE8001\nM6\ndescr\n#print after\n'
+printf '~$#EE8001\nM6\ndescr\n'
+awk 'BEGIN { for (i = 0; i < 7992; ++i) printf "x" }'
+printf '\n#print after\n'
+cat > "$1/got"
+touch "$1/done"
 EOF
-run --until '#connection on "n" closed.' 'MPI messages and #setvar mem' \
-    "#setvar mem=8000
+run --until 'after' 'MPI messages and #setvar editmem' \
+    "#setvar mem=1000
+#setvar editmem=8000
 #option editor=&wc -c <
+#spawn n sh $tmp/server $tmp
+##n #request editor"
+i=0
+until [ -e "$tmp/done" ] || [ $i -ge 500 ]; do
+    sleep 0.01
+    i=$((i + 1))
+done
+grep -q '^#editor: *5991$' "$tmp/out" || fail 'missing line: #editor: 5991'
+w='#warning: text to edit longer than the 8000 chars of #setvar editmem,'
+has "$w not edited"
+grep -q '^#editor: *7992$' "$tmp/out" && fail 'unexpected line: #editor: 7992'
+has 'after'
+[ "$(grep -c '^C6$' "$tmp/got")" -eq 1 ] \
+    || fail "expected a cancel message, got: $(od -c "$tmp/got")"
+
+# a text to view longer than #setvar editmem is cut short, also with - as
+# the pager
+cat > "$tmp/server" <<'EOF'
+read -r identify
+printf '~$#EV226\ntitle\n'
+awk 'BEGIN { for (i = 0; i < 22; ++i) printf "line %04d\n", i }'
+printf '#print after\n'
+EOF
+run --until '#connection on "n" closed.' \
+    'a text to view longer than #setvar editmem' \
+    "#setvar editmem=106
+#option pager=-
 #spawn n sh $tmp/server
 ##n #request editor"
-grep -q '^#editor: *5991$' "$tmp/out" || fail 'missing line: #editor: 5991'
-has '#warning: MPI message longer than #setvar mem'
+has '#warning: text to view cut short to the 106 chars of #setvar editmem'
+has 'line 0009'
+lacks 'line 0010'
 has 'after'
 
 # the connection closes before the end of an MPI message

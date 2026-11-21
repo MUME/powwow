@@ -1919,6 +1919,8 @@ int read_settings(void)
     hilite_update();
     keepalive_own = false;
     keepalive_update();
+    /* saved only when changed */
+    limit_editmem = DEFAULT_LIMIT_EDITMEM;
     for (int n = 0; n < MAX_HASH; ++n) {
         while (named_vars[VAR_NUM].buckets[n] != NULL)
             delete_varnode(&named_vars[VAR_NUM].buckets[n], VAR_NUM);
@@ -2289,6 +2291,10 @@ int save_settings(void)
 
     if (failed > 0)
         failed = fprintf(f, "#setvar mem=%d\n", limit_mem);
+
+    /* only when changed, as older versions of powwow do not know it */
+    if (failed > 0 && limit_editmem != DEFAULT_LIMIT_EDITMEM)
+        failed = fprintf(f, "#setvar editmem=%d\n", limit_editmem);
 
     if (failed > 0) {
         int size = log_getsize();

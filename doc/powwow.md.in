@@ -2151,6 +2151,16 @@ Known internal variables are:
   To discard the text stored in memory by `buffer`, change its value
   (for example, set it to zero and then back to a non-zero value).
 
+- `editmem`: the maximum length of a text that the MUD sends to edit or
+  view, and of an edited text, in bytes. The default is 16777216
+  (16 MB), as long as the longest text that MUME sends, and 0 (zero)
+  means no limit. Powwow cuts a longer text to view short, with a
+  warning; it does not edit a longer text to edit, as the edited text
+  would replace all of it, but warns and cancels the editing session;
+  and it cancels the editing session instead of sending a longer edited
+  text. Powwow saves it in the definition file only when it is not the
+  default.
+
 - `keepalive`: if not zero, the number of seconds without sending
   anything to a MUD after which powwow sends it a telnet NOP, a
   command that does nothing. Many home routers and firewalls forget a
@@ -2175,11 +2185,8 @@ Known internal variables are:
   error and stops the command. The limit won't give any problem (like
   increased memory usage) as powwow allocates memory only when it *has*
   to; without a limit, running out of memory ends powwow, without
-  saving the definition file. The limit also applies to the texts that
-  the MUD sends to edit or
-  view, as powwow rejects a longer one and shows it as text, and to the
-  texts edited, as powwow cancels the editing session instead of sending
-  a longer one.
+  saving the definition file. The texts to edit or view have a limit
+  of their own, `editmem`.
 
 - `timer`: the number of milliseconds since program start. It can be
   changed to synchronize with an external clock like MUD ticks.
@@ -2753,7 +2760,8 @@ on most systems.
 String variables, text lines and commands can be at most 1 MB long by
 default. You can change the limit with `#setvar mem`, or remove it with
 `#setvar mem=0`. Powwow discards text and strings longer than the
-limit. If memory runs out, powwow ends, without saving the definition
+limit. Texts to edit or view can be at most 16 MB long by default
+(`#setvar editmem`). If memory runs out, powwow ends, without saving the definition
 file.
 
 Exceptions: the labels/patterns of `#aliases`, `#actions`, `#prompts`,

@@ -73,6 +73,51 @@ void mpi_identify(connsess *conn)
     conn->ideditor = true;
 }
 
+/* the text of an MPI message as it arrives */
+struct mpi_text {
+    char *text;                 /* the first 'keep' chars of it */
+    int size;                   /* allocated for 'text' */
+    int kept;                   /* chars in 'text' */
+    int keep;                   /* chars to keep, up to #setvar editmem */
+    int total;                  /* chars of the message received */
+    bool got_iac;               /* the last char was an IAC */
+};
+
+/*
+ * add char c, received in an MPI message, to its text; an IAC IAC is one
+ * IAC; only doing trivial (IAC IAC) processing; this should all be
+ * rewritten
+ */
+static void mpi_text_add(struct mpi_text *t, char c)
+{
+    if (t->got_iac) {
+        t->got_iac = false;
+        if (c == (char)IAC)
+            return;
+        wrap_printf("#warning: unescaped IAC in MPI message, kept as is");
+    }
+    t->got_iac = c == (char)IAC;
+    ++t->total;
+    if (t->kept == t->keep)
+        return;
+    /* the text grows as it arrives, whatever length the header claims */
+    if (t->kept == t->size) {
+        t->size = t->size > t->keep / 2 ? t->keep : 2 * t->size;
+        t->text = xrealloc(t->text, t->size);
+    }
+    t->text[t->kept++] = c;
+}
+
+/* tell the MUD of conn that powwow cancels the editing session key */
+static void send_cancel(connsess *conn, unsigned key)
+{
+    char keystr[16];
+    sprintf(keystr, "C%u\n", key);
+    char hdr[65];
+    sprintf(hdr, "%sE%zu\n%s", MPI, strlen(keystr), keystr);
+    tcp_raw_write(conn, hdr, strlen(hdr));
+}
+
 /*
  * Process editing protocol message from buf with len remaining chars.
  * Return number of characters used in the message.
@@ -100,52 +145,38 @@ int process_message(connsess *conn, char *buf, int len)
         write_message("#warning: bad MPI message header\n");
         return 0;
     }
-    if (limit_mem != 0 && msglen > limit_mem) {
-        write_message("#warning: MPI message longer than #setvar mem\n");
-        return 0;
-    }
-
     ++i;
-    int l = len - i;
 
-    /* the text grows as it arrives, whatever length the header claims */
-    int size = l > BUFSIZE ? l : BUFSIZE;
-    if (size > msglen)
-        size = msglen;
-    char *text = xmalloc(size);
+    /* all of a longer message is read, so as to stay in step with the
+     * MUD, but only this much of it is kept */
+    struct mpi_text t = {
+        .keep = (limit_editmem != 0 && msglen > limit_editmem
+                 ? limit_editmem : msglen)
+    };
+    t.size = len - i > BUFSIZE ? len - i : BUFSIZE;
+    if (t.size > t.keep)
+        t.size = t.keep;
+    t.text = xmalloc(t.size);
 
-    /* only doing trivial (IAC IAC) processing; this should all be
-     * rewritten */
-    bool got_iac = false;
     char *from = buf + i;
-    char *to = text;
-    for (i = 0; i < l && (to - text) < msglen; ++i) {
-        if (got_iac) {
-            if (*from != (char)IAC)
-                wrap_printf("#warning: unescaped IAC in MPI message, kept"
-                            " as is");
-            else
-                ++from;
-            got_iac = false;
-        } else {
-            got_iac = *from == (char)IAC;
-            *to++ = *from++;
-        }
-    }
-    i = to - text;
+    while (from < buf + len && t.total < msglen)
+        mpi_text_add(&t, *from++);
     int used = from - buf;
 
     bool progress = false;      /* "got N chars out of M" shown */
-    while (i < msglen) {
-        if (i == size) {
-            size = size > msglen / 2 ? msglen : 2 * size;
-            text = xrealloc(text, size);
-        }
+    while (t.total < msglen) {
         /*
          * read() might block here, but it shouldn't be long; a TLS record
-         * without data, such as a key update, fails with EAGAIN
+         * without data, such as a key update, fails with EAGAIN; it reads
+         * no more than the rest of the message, as each char of it takes
+         * at least one
          */
-        while ((l = conn->fns->read(conn, text + i, size - i)) < 0
+        char chunk[BUFSIZE];
+        int want = msglen - t.total;
+        if (want > (int)sizeof chunk)
+            want = sizeof chunk;
+        int l;
+        while ((l = conn->fns->read(conn, chunk, want)) < 0
                && (errno == EINTR || errno == EAGAIN
                    || errno == EWOULDBLOCK))
             ;
@@ -159,33 +190,37 @@ int process_message(connsess *conn, char *buf, int len)
                             " an MPI message", conn->id);
             else
                 errmsg("cannot read from connection \"%s\"", conn->id);
-            free(text);
+            free(t.text);
             return used > len ? len : used;
         }
-        from = text + i;
-        to = text + i;
-        for (i = 0; i < l; ++i) {
-            if (got_iac) {
-                if (*from != (char)IAC)
-                    wrap_printf("#warning: unescaped IAC in MPI message,"
-                                " kept as is");
-                else
-                    ++from;
-                got_iac = false;
-            } else {
-                got_iac = *from == (char)IAC;
-                *to++ = *from++;
-            }
-        }
-        i = to - text;
-        tty_printf("\r%s#got %d chars out of %d%s", msgattrbeg, i, msglen,
-                   msgattrend);
+        for (int n = 0; n < l; ++n)
+            mpi_text_add(&t, chunk[n]);
+        tty_printf("\r%s#got %d chars out of %d%s", msgattrbeg, t.total,
+                   msglen, msgattrend);
         tty_flush();
         progress = true;
     }
     /* as a message, over the progress */
     tty_printf("\r%s", tty_clreoln);
     tty_message("#read all %d chars.\n", msglen);
+
+    char *text = t.text;
+    if (t.kept < msglen) {
+        if (*buf == 'V') {
+            wrap_printf("#warning: text to view cut short to the %d chars"
+                        " of #setvar editmem", t.kept);
+            msglen = t.kept;
+        } else if (*buf == 'E') {
+            /* an edited text cut short would replace all of it */
+            wrap_printf("#warning: text to edit longer than the %d chars"
+                        " of #setvar editmem, not edited", t.kept);
+            if (t.kept > 1 && text[0] == 'M'
+                && isdigit((unsigned char)text[1]))
+                send_cancel(conn, strtoul(text + 1, NULL, 10));
+            free(text);
+            return used;
+        }
+    }
 
     switch (*buf) {
     case 'E':
@@ -313,7 +348,7 @@ static void finish_edit(editsess *sp)
     /* +1 is for a possible LF, +64 for the header */
     if (changed
         && (sbuf.st_size > INT_MAX - 65
-            || (limit_mem != 0 && sbuf.st_size > limit_mem))) {
+            || (limit_editmem != 0 && sbuf.st_size > limit_editmem))) {
         wrap_printf("#edited text too long, not sent");
         changed = false;
     }
@@ -353,12 +388,7 @@ static void finish_edit(editsess *sp)
         tty_printf(" (%u)\n", sp->key);
     } else {
         /* file wasn't changed, cancel editing session */
-        char keystr[16];
-        sprintf(keystr, "C%u\n", sp->key);
-        char hdr[65];
-        sprintf(hdr, "%sE%zu\n%s", MPI, strlen(keystr), keystr);
-
-        tcp_raw_write(sp->conn, hdr, strlen(hdr));
+        send_cancel(sp->conn, sp->key);
 
         write_message("#cancelled session ");
         tty_puts(sp->descr);

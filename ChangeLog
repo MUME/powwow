@@ -45,6 +45,10 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	  set, and typed or in the definition file the MUD's own, which
 	  Advanced of a MUD sets, until `#setvar keepalive=default' drops
 	  it.
+	* `#setvar editmem', 16777216 by default, limits the length of the
+	  texts to edit or view that the MUD sends, and of the edited
+	  texts, instead of `#setvar mem', 1048576 by default, as MUME
+	  sends longer ones.
 
 	Platforms and building:
 	* Windows using Cygwin is supported, along with WSL2.  Cygwin
@@ -351,10 +355,12 @@ Changes from 1.3.1 to 1.3.2
 	  powwow print `got N chars out of M' forever.
 	* Connections closed in the middle of an MPI message report it on
 	  a line of its own, instead of after `got N chars out of M'.
-	* MPI messages longer than `#setvar mem' are rejected as text, and
-	  the others take memory as their text arrives, instead of all
-	  that their header claims at once.
-	* Edited texts longer than `#setvar mem', or than 2 GB, cancel
+	* Texts to view longer than `#setvar editmem' are cut short, with a
+	  warning, and texts to edit longer than it are not edited, as the
+	  edited text would replace all of it, but cancelled; MPI messages
+	  take memory as their text arrives, instead of all that their
+	  header claims at once.
+	* Edited texts longer than `#setvar editmem', or than 2 GB, cancel
 	  the editing session instead of being sent.
 	* Fixed editing sessions with a description longer than 230 bytes
 	  overflowing a buffer when they end, crashing powwow.
