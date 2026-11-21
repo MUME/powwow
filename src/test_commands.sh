@@ -3110,6 +3110,46 @@ EOF
     has 'More> '
     has 'HP:>'
 
+    # a MUD that ends each prompt with a telnet GA, and sends the next
+    # prompt with no newline before it, in the same read and in the next
+    cat > "$tmp/server.py" <<'EOF'
+import os, socket, sys, time
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+c.sendall(b'A room.\r\nMore> \xff\xf9HP:>\xff\xf9')
+time.sleep(0.5)
+c.sendall(b'Next>\xff\xf9')
+time.sleep(0.5)
+c.sendall(b'\r\nBye\r\n')
+c.close()
+EOF
+    name='a telnet GA ends a prompt, and the text after it starts a line'
+    rm -f "$tmp/port"
+    python3 -I "$tmp/server.py" "$tmp/port" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+    : > "$tmp/raw"
+    {
+        printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
+        wait_for 'Bye'
+        printf '#quit\n'
+    } | "$POWWOW" > "$tmp/raw" 2>&1
+    wait $server
+    sed -e "s/$esc\[[0-9;?]*[A-Za-z]//g" -e "s/$cr//g" "$tmp/raw" \
+        > "$tmp/out"
+    has 'More> '
+    has 'HP:>'
+    has 'Next>'
+
     # a MUD that sends a prompt with a telnet GA after it
     cat > "$tmp/server.py" <<'EOF'
 import os, socket, sys, time

@@ -1776,8 +1776,9 @@ static void process_singleline(char **pbuf, int *psize)
  * Note that this code also works for _prompts_ splitted into
  * different packets, as long as no #prompts execute #isprompt
  * on an incomplete prompt (as stated in the docs).
+ * A prompt that a telnet GA ended, 'after_ga', is complete too.
  */
-static int process_first_fragment(char *buf, int got)
+static int process_first_fragment(char *buf, int got, bool after_ga)
 {
     int processed = 0;
 
@@ -1843,11 +1844,11 @@ static int process_first_fragment(char *buf, int got)
         else
             lineend = buf + got;
 
-        if (isprompt_len != 0) {
+        if (isprompt_len != 0 || after_ga) {
             /*
-             * either #isprompt _was_ executed,
-             * or we got a MUME spinning bar.
-             * in both cases, don't try to merge.
+             * either #isprompt _was_ executed, or a telnet GA ended the
+             * prompt, or we got a MUME spinning bar.
+             * in all cases, don't try to merge.
              *
              * print a newline (to keep the old prompt on screen)
              * only if !opt_compact and we didn't get a MUME spinning bar.
@@ -1940,14 +1941,17 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
     }
 
     unsigned generation = conn->generation;
+    /* the prompt before this read is complete, ended by a GA */
+    bool after_ga = conn->ga_prompt;
     int got = tcp_read(conn, buf, TCP_READ_EXPANSION * BUFSIZE - len);
     /* commands run by an MPI message may have closed the connection */
     if (conn->generation != generation)
         return;
     /* data that TLS read and keeps, which select() does not see, such as
-     * a prompt after an MPI message that took all the text of this read */
+     * a prompt after an MPI message that took all the text of this read,
+     * and the bytes after a GA that tcp_read() keeps */
     if (!FD_ISSET(conn->fd, read_fds)
-        && conn->fns->can_read(conn)) {
+        && (conn->fns->can_read(conn) || conn->restlen != 0)) {
         FD_SET(conn->fd, read_fds);
         ++*ncache_read_fds;
     }
@@ -2053,7 +2057,7 @@ static void get_remote_input(fd_set *read_fds, unsigned *ncache_read_fds)
     /* line-at-a-time mode: process input in a number of ways */
 
     if (conn == main_connection && promptlen != 0) {
-        int processed = process_first_fragment(buf, got);
+        int processed = process_first_fragment(buf, got, after_ga);
         buf += processed;
         got -= processed;
     } else {

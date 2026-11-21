@@ -471,6 +471,18 @@ static_assert(((TCP_READ_MIN - 1 - CHARSET_DECODE_MAX) / TCP_READ_EXPANSION
               "tcp_read() has no room to read after an MPI header kept");
 
 /*
+ * keep the 'len' bytes at 's' for the next read, before those kept already
+ */
+static void keep_rest(connsess *conn, const byte *s, int len)
+{
+    if (conn->rest == NULL)
+        conn->rest = xmalloc(BUFSIZE);
+    memmove(conn->rest + len, conn->rest, conn->restlen);
+    memcpy(conn->rest, s, len);
+    conn->restlen += len;
+}
+
+/*
  * read from remote host using the telnet protocol, and store at most
  * maxsize bytes of UTF-8 text in buffer. return bytes stored.
  */
@@ -492,7 +504,14 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     int held = conn->mpi_headlen;
     memcpy(rawbuf, conn->mpi_head, held);
     int i;
-    if (conn->ended) {
+    /* the bytes after a GA that ended a prompt, read already */
+    bool rest = conn->restlen != 0;
+    if (rest) {
+        i = MIN2(conn->restlen, (int)maxsize - held);
+        memcpy(rawbuf + held, conn->rest, i);
+        conn->restlen -= i;
+        memmove(conn->rest, conn->rest + i, conn->restlen);
+    } else if (conn->ended) {
         i = conn->end_errno == 0 ? 0 : -1;
         errno = conn->end_errno;
     } else {
@@ -523,7 +542,7 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     }
     /* the bytes just read, before the telnet protocol is interpreted;
      * those held were written when they were read */
-    if (conn == main_connection && !conn->spawn)
+    if (conn == main_connection && !conn->spawn && !rest)
         log_telnet(rawbuf + held, i);
     i += held;
     conn->mpi_headlen = 0;
@@ -543,6 +562,8 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
      * one kept over MPI messages */
     bool after_prompt = midline || conn->prompt_kept;
     bool kept = false;
+    /* where the text ends that a GA ended as a prompt, or NULL */
+    byte *ga_end = NULL;
     for (byte *s = rawbuf; i != 0; ++s, --i) {
         switch (state) {
         case TELNET_NORMAL:
@@ -671,6 +692,17 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
             case GA:
                 p = flush_data(conn, p);
                 state = old_state;
+                /*
+                 * a GA after text ends a prompt: what comes after it is
+                 * read next time, to start a line of its own
+                 */
+                if (midline || p != linestart) {
+                    ga_end = p;
+                    if (i > 1) {
+                        keep_rest(conn, s + 1, i - 1);
+                        i = 1;
+                    }
+                }
                 break;
             default:
                 /* ignore the rest of the telnet commands */
@@ -832,6 +864,11 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
  end:
     conn->state = state;
     conn->old_state = old_state;
+    /* also a GA alone, after the text of an earlier read */
+    if (ga_end != NULL && p == ga_end)
+        conn->ga_prompt = true;
+    else if (p != (byte *)buffer)
+        conn->ga_prompt = false;
     conn->midline = midline || p != linestart || state == TELNET_GOT_CR;
     conn->prompt_kept = p == (byte *)buffer && (kept || conn->prompt_kept);
 
@@ -1365,6 +1402,8 @@ void tcp_close(const char *id)
     conn->mpi_headlen = 0;
     conn->midline = false;
     conn->prompt_kept = false;
+    conn->ga_prompt = false;
+    conn->restlen = 0;
     conn->ended = false;
     conn->port = 0;
     free(conn->host);
@@ -1477,6 +1516,8 @@ void tcp_spawn(const char *id, char *cmd)
     CONN_INDEX(i).old_state = TELNET_NORMAL;
     CONN_INDEX(i).mpi_headlen = 0;
     CONN_INDEX(i).midline = false;
+    CONN_INDEX(i).ga_prompt = false;
+    CONN_INDEX(i).restlen = 0;
     CONN_INDEX(i).ended = false;
     CONN_INDEX(i).port = 0;
     CONN_INDEX(i).fd = sockets[0];

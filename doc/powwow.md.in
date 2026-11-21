@@ -3007,6 +3007,11 @@ finished or there is a continuation we still have to receive.
 2) powwow cannot know if the line, or an initial part of it,
 is a prompt.
 
+An exception is a MUD that ends its prompts with the telnet command
+GA (go ahead), as MUME does: an incomplete line with a GA after it is
+finished, so the text after it starts a line of its own, even with no
+newline before it.
+
 When powwow receives a line (either full or incomplete),
 its beginning part may be a prompt, so it matches `#prompts` on the line.
 If the beginning part is *actually* a prompt, `#prompt` should

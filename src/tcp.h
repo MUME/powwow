@@ -84,6 +84,11 @@ typedef struct connsess {
     bool midline;               /* the last read ended inside a line */
     bool prompt_kept;           /* the prompt before an MPI message was
                                  * kept, and no text came after it */
+    bool ga_prompt;             /* the last text read was a prompt that
+                                 * a telnet GA ended */
+    char *rest;                 /* the bytes read after that GA, kept for
+                                 * the next read, BUFSIZE of room */
+    int restlen;                /* and how many, or 0 */
     bool ended;                 /* a read found the end, to report */
     int end_errno;              /* and its error, or 0 */
     unsigned char cs_flags;     /* CHARSET option state */
