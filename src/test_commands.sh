@@ -3050,6 +3050,45 @@ EOF
     has 'HP:>(look)'
     grep -q 'hunter22' "$tmp/out" && fail 'the secret was reprinted'
 
+    # a MUD that sends a prompt, and later another, with no newline between
+    cat > "$tmp/server.py" <<'EOF'
+import os, socket, sys, time
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+c.sendall(b'A room.\r\nMore> ')
+time.sleep(0.5)
+c.sendall(b'HP:>')
+time.sleep(0.5)
+c.sendall(b'\r\nBye\r\n')
+c.close()
+EOF
+    name='#isprompt without a length draws the whole line as the prompt'
+    rm -f "$tmp/port"
+    python3 -I "$tmp/server.py" "$tmp/port" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+    : > "$tmp/raw"
+    {
+        printf '#prompt >p ^More>=#isprompt\n'
+        printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
+        wait_for 'Bye'
+        printf '#quit\n'
+    } | "$POWWOW" > "$tmp/raw" 2>&1
+    wait $server
+    sed -e "s/$esc\[[0-9;?]*[A-Za-z]//g" -e "s/$cr//g" "$tmp/raw" \
+        > "$tmp/out"
+    has 'More> '
+    has 'HP:>'
+
     # a MUD that tells after how long it got a telnet NOP, if within 3
     # seconds; with $2, it speaks telnet, sending a NOP itself first
     cat > "$tmp/server.py" <<'EOF'

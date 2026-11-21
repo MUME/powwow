@@ -49,6 +49,8 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	  texts to edit or view that the MUD sends, and of the edited
 	  texts, instead of `#setvar mem', 1048576 by default, as MUME
 	  sends longer ones.
+	* Fixed #isprompt without a length never drawing a prompt that has
+	  no newline after it.
 
 	Platforms and building:
 	* Windows using Cygwin is supported, along with WSL2.  Cygwin

@@ -1626,11 +1626,11 @@ static int grab_prompt(char *linestart, int len, bool islast)
          * the line starts with a prompt.
          * #isprompt placed the actual prompt in $prompt,
          * we must still process the rest of the line.
+         * #isprompt without a length takes the whole line.
          */
-        if (isprompt_len > 0 && isprompt_len <= len) {
+        if (isprompt_len > 0 && isprompt_len <= len)
             len = isprompt_len;
-            prompt_status = 1;
-        }
+        prompt_status = 1;
 
         /*
          * following data may be the reply to a previously sent command,
