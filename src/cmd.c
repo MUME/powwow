@@ -1725,6 +1725,8 @@ static void cmd_reset(char *arg)
 
 static void cmd_snoop(char *arg)
 {
+    /* connection names have no spaces; Tab completion adds one after */
+    arg = strip_end(skipspace(arg));
     if (*arg == '\0') {
         message_printf("#snoop: which connection?\n");
     } else
@@ -3031,8 +3033,11 @@ static void cmd_speedwalk(char *arg)
 
 static void cmd_zap(char *arg)
 {
+    /* connection names have no spaces; Tab completion adds one after */
+    arg = strip_end(skipspace(arg));
     if (*arg == '\0') {
-        message_printf("#zap: no connection name.\n");
+        message_printf("#zap: give the name of the connection to close;"
+                       " #connect lists them.\n");
     } else
         tcp_close(arg);
 }

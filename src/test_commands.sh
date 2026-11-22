@@ -4006,6 +4006,19 @@ run --until '#connection on "n" closed.' \
 ##n #identify z"
 has '#connection on "n" closed.'
 
+run --until '#connection on "n" closed.' \
+    '#zap and #snoop take a name that Tab completed, with a space after it' \
+    "#zap
+#spawn n sleep 5
+#snoop n	
+#snoop n
+#zap n	
+"
+has '#zap: give the name of the connection to close; #connect lists them.'
+has '#connection n is now nonactive.'
+has '#connection n is now active.'
+has '#connection on "n" closed.'
+
 # the command run when an editing session starts closes the connection
 # that sent it, which ends the session
 cat > "$tmp/server" <<'EOF'
