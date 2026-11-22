@@ -1010,11 +1010,12 @@ dictionary, can be found from it, and so can a password kept in several
 definition files. Powwow warns about a secret shorter than 8 bytes, which
 may also match other text.
 @setvar
-#setvar <name>[={<number>|(<expr>)}]
+#setvar <name>[={<number>|(<expr>)|default}]
 
 Set or show an internal variable, a whole number, read as in expressions:
 in decimal, or in another base such as ‘#ff’, or an expression in
-parentheses. Known variables are:
+parentheses; ‘default’ sets any of them but ‘timer’ to its default, and
+‘lines’ to the height of the terminal. Known variables are:
 
 buffer     bytes of recent text from the MUD to keep and write at the
            beginning of ‘#capture’ and ‘#movie’ files when you open them

@@ -2145,13 +2145,15 @@ from within an `#alias`, `#action` or whatever you like.
 ### Set/show internal variables
 
 ```
-#setvar <name>[={<number>|(<expr>)}]
+#setvar <name>[={<number>|(<expr>)|default}]
 ```
 
 Evaluate the expression and get result, then set the internal
 variable `name` to that value, a whole number. A number is read as in
 expressions: in decimal, so that `0123` is 123, or in another base, such
-as `#ff`; anything else is an error.
+as `#ff`; anything else is an error. `default` sets any of them but
+`timer` to its default, given below: `lines` to the height of the
+terminal.
 
 Known internal variables are:
 

@@ -340,7 +340,7 @@ run '#setvar buffer rejects sizes too large for powwow' \
     '#setvar buffer=4294968296
 #setvar'
 has '#buffer size must be 0 (zero) or from 1000 to 2147483647'
-has '#setvar buffer=0'
+has '#setvar buffer=0 (default)'
 
 run '#setvar lines rejects numbers out of range' \
     '#setvar lines=30
@@ -360,12 +360,31 @@ has '#setvar: not an integer: 0x10'
 has '#setvar: not an integer: 12x'
 has '#setvar buffer=2000'
 has '#setvar lines=30'
-has '#setvar mem=1048576'
+has '#setvar mem=1048576 (default)'
+
+# default sets the variables but timer to their defaults: lines to the
+# terminal's, or without one, as here, 24
+run '#setvar <name>=default sets the default' \
+    '#setvar buffer=2000
+#setvar editmem=123123
+#setvar lines=30
+#setvar mem=5000
+#setvar buffer=default
+#setvar editmem=default
+#setvar lines=default
+#setvar mem=default
+#setvar timer=default
+#setvar'
+has '#setvar buffer=0 (default)'
+has '#setvar editmem=16777216 (default)'
+has '#setvar lines=24 (default)'
+has '#setvar mem=1048576 (default)'
+has '#setvar: not an integer: default'
 
 run 'texts are limited to 1 MB by default' '#setvar
 #($a = "x" * 1048576)
 #($a = "x" * 1048577)'
-has '#setvar mem=1048576'
+has '#setvar mem=1048576 (default)'
 [ "$(grep -c '^#error: text/string longer than limit, discarded\.$' \
        "$tmp/out")" -eq 1 ] || fail 'expected one error for the limit'
 
@@ -379,7 +398,7 @@ run '#setvar editmem is 16777216 by default, which #save leaves out' \
     "#file =$tmp/editmem-default.pw
 #setvar
 #save"
-has '#setvar editmem=16777216'
+has '#setvar editmem=16777216 (default)'
 grep -q editmem "$tmp/editmem-default.pw" \
     && fail 'expected no #setvar editmem in the file'
 
@@ -393,7 +412,7 @@ run --args "$tmp/editmem.pw" \
     '#load of a file without #setvar editmem sets the default' \
     "#load $tmp/editmem-default.pw
 #setvar"
-has '#setvar editmem=16777216'
+has '#setvar editmem=16777216 (default)'
 
 printf '#alias kept=yes\n' > "$tmp/save.pw"
 run --args "$tmp/save.pw" '#option -save keeps the definition file on exit' \
@@ -646,9 +665,9 @@ run --args "--config=$conf $tmp/ka.pw" \
     'the user-wide keepalive is used without a MUD of its own' '#setvar'
 grep -Fq '#setvar keepalive=300 (user-wide default)' "$tmp/out" \
     || fail 'expected the user-wide keepalive, 300'
-run '#setvar default is only for keepalive' '#setvar mem=default'
+run '#setvar timer has no default' '#setvar timer=default'
 grep -Fq '#setvar: not an integer: default' "$tmp/out" \
-    || fail 'expected default to be rejected for mem'
+    || fail 'expected default to be rejected for timer'
 "$POWWOW" "--config=$conf" --set keepalive=86401 > /dev/null 2>&1 \
     && fail 'expected --set keepalive=86401 to fail'
 "$POWWOW" "--config=$conf" --set keepalive=0 > /dev/null 2>&1 \
@@ -2061,6 +2080,23 @@ if command -v tmux > /dev/null 2>&1; then
         at=$(tm display -p -t t '#{cursor_x},#{cursor_y}')
         [ "$at" = 12,23 ] || fail "the cursor at $at, not 12,23"
     fi
+    tm kill-server 2>/dev/null
+
+    # in a terminal, #setvar lines=default is its height
+    name='#setvar lines=default takes the height of the terminal'
+    tm new-session -d -s t -x 80 -y 30 \
+        "env -i HOME=$tmp TERM=xterm PATH=/usr/bin:/bin $pw --no-config"
+    tm_wait '#help'
+    tm send-keys -t t -l '#setvar lines=50'
+    tm send-keys -t t Enter
+    tm_wait 'lines=50'
+    tm capture-pane -p -t t | grep -Fqx -e '#setvar: lines=50' \
+        || fail 'expected #setvar: lines=50'
+    tm send-keys -t t -l '#setvar lines=default'
+    tm send-keys -t t Enter
+    tm_wait 'lines=30'
+    tm capture-pane -p -t t | grep -Fqx -e '#setvar: lines=30 (default)' \
+        || fail 'expected #setvar: lines=30 (default)'
     tm kill-server 2>/dev/null
 fi
 

@@ -235,7 +235,8 @@ static cmdstruct default_commands[] =
     C("send",       cmd_send,
       "[<|!]{<text>|(<expr>)}\teval expression, sending result to the MUD"),
     C("setvar",     cmd_setvar,
-      "<name>[={<number>|(<expr>)}]\tset/show internal limits and variables"),
+      "<name>[={<number>|(<expr>)|default}]\tset/show internal limits"
+      " and variables"),
     C("snoop",      cmd_snoop,
       "<session-id>\ttoggle output display for connections"),
     C("spawn",      cmd_spawn,
@@ -2352,13 +2353,19 @@ static void cmd_var(char *arg)
     ptrdel(&pbuf);
 }
 
+/* " (default)" after the value of a #setvar variable that has its default */
+static const char *default_note(bool is_default)
+{
+    return is_default ? " (default)" : "";
+}
+
 static void cmd_setvar(char *arg)
 {
     arg = skipspace(arg);
     char *name = arg;
     arg = first_regular(arg, '=');
     bool set = false;           /* else show */
-    bool def = false;           /* default, for keepalive */
+    bool def = false;           /* default, for all but timer */
     long buf;
     if (*arg != '\0') {
         *arg++ = '\0';
@@ -2397,8 +2404,8 @@ static void cmd_setvar(char *arg)
 
     strip_end(name);
     int i = strlen(name);
-    /* default is only for keepalive */
-    if (def && (i == 0 || strncmp(name, "keepalive", i) != 0)) {
+    /* the timer has no default */
+    if (def && (i == 0 || strncmp(name, "timer", i) == 0)) {
         message_printf("#setvar: not an integer: default\n");
         return;
     }
@@ -2416,36 +2423,50 @@ static void cmd_setvar(char *arg)
             add_vtime(&ref_time, &t);
         }
     } else if (i != 0 && strncmp(name, "lines", i) == 0) {
-        if (!set)
+        if (!set && !def)
             fmt_next_edit("#setvar lines=%d", lines);
-        else if (buf < 1 || buf > INT_MAX) {
+        else if (!def && (buf < 1 || buf > INT_MAX)) {
             message_printf("#lines must be from 1 to %d\n", INT_MAX);
         } else {
-            lines = buf;
+            /* by default, the terminal's, as when its window changes
+             * size, or else powwow's own */
+            if (!def)
+                lines = buf;
+            else if (!tty_sig_winch_bottomhalf())
+                lines = DEFAULT_LINES;
             if (opt_info) {
-                message_printf("#setvar: lines=%d\n", lines);
+                message_printf("#setvar: lines=%d%s\n", lines,
+                               default_note(lines == tty_window_lines()));
             }
         }
     } else if (i != 0 && strncmp(name, "editmem", i) == 0) {
-        if (!set)
+        if (!set && !def)
             fmt_next_edit("#setvar editmem=%d", limit_editmem);
         else {
-            if (buf == 0 || buf >= PARAMLEN)
+            if (def)
+                limit_editmem = DEFAULT_LIMIT_EDITMEM;
+            else if (buf == 0 || buf >= PARAMLEN)
                 limit_editmem = buf <= INT_MAX ? (int)buf : INT_MAX;
             if (opt_info) {
                 message_printf("#setvar: editmem=%d%s\n", limit_editmem,
-                               limit_editmem != 0 ? "" : " (unlimited)");
+                               (limit_editmem == 0 ? " (unlimited)"
+                                : default_note(limit_editmem
+                                               == DEFAULT_LIMIT_EDITMEM)));
             }
         }
     } else if (i != 0 && strncmp(name, "mem", i) == 0) {
-        if (!set)
+        if (!set && !def)
             fmt_next_edit("#setvar mem=%d", limit_mem);
         else {
-            if (buf == 0 || buf >= PARAMLEN)
+            if (def)
+                limit_mem = DEFAULT_LIMIT_MEM;
+            else if (buf == 0 || buf >= PARAMLEN)
                 limit_mem = buf <= INT_MAX ? (int)buf : INT_MAX;
             if (opt_info) {
                 message_printf("#setvar: mem=%d%s\n", limit_mem,
-                               limit_mem != 0 ? "" : " (unlimited)");
+                               (limit_mem == 0 ? " (unlimited)"
+                                : default_note(limit_mem
+                                               == DEFAULT_LIMIT_MEM)));
             }
         }
     } else if (i != 0 && strncmp(name, "keepalive", i) == 0) {
@@ -2476,21 +2497,25 @@ static void cmd_setvar(char *arg)
             }
         }
     } else if (i != 0 && strncmp(name, "buffer", i) == 0) {
-        if (!set)
+        if (!set && !def)
             fmt_next_edit("#setvar buffer=%d", log_getsize());
         else
-            log_resize(buf);
+            log_resize(def ? 0 : buf);
     } else {
         update_now();
-        message_printf("#setvar buffer=%d\n"
-                       "#setvar editmem=%d\n"
+        message_printf("#setvar buffer=%d%s\n"
+                       "#setvar editmem=%d%s\n"
                        "#setvar keepalive=%d%s\n"
-                       "#setvar lines=%d\n"
-                       "#setvar mem=%d\n"
+                       "#setvar lines=%d%s\n"
+                       "#setvar mem=%d%s\n"
                        "#setvar timer=%ld\n",
-                       log_getsize(), limit_editmem, keepalive,
-                       keepalive_own ? "" : " (user-wide default)", lines,
-                       limit_mem, diff_vtime(&now, &ref_time));
+                       log_getsize(), default_note(log_getsize() == 0),
+                       limit_editmem,
+                       default_note(limit_editmem == DEFAULT_LIMIT_EDITMEM),
+                       keepalive, keepalive_own ? "" : " (user-wide default)",
+                       lines, default_note(lines == tty_window_lines()),
+                       limit_mem, default_note(limit_mem == DEFAULT_LIMIT_MEM),
+                       diff_vtime(&now, &ref_time));
     }
 }
 

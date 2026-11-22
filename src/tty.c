@@ -270,15 +270,16 @@ void tty_special_keys(void)
 }
 
 /*
- * get window size and react to any window size change
+ * get window size and react to any window size change; return false if
+ * there is none
  */
-void tty_sig_winch_bottomhalf(void)
+bool tty_sig_winch_bottomhalf(void)
 {
     /* if ioctl fails or gives silly values, don't change anything */
     struct winsize wsiz;
     if (ioctl(tty_read_fd, TIOCGWINSZ, &wsiz) != 0 || wsiz.ws_row == 0
         || wsiz.ws_col == 0)
-        return;
+        return false;
     /*
      * a narrower window is drawn as if it were MIN_COLS wide: the input
      * line needs rows of at least 2 columns, for a wide character, and
@@ -310,6 +311,20 @@ void tty_sig_winch_bottomhalf(void)
         olines = lines;
         status(1);
     }
+    return true;
+}
+
+/*
+ * the lines of the terminal's window, or DEFAULT_LINES if it has none, as
+ * #setvar lines=default sets them
+ */
+int tty_window_lines(void)
+{
+    struct winsize wsiz;
+    if (ioctl(tty_read_fd, TIOCGWINSZ, &wsiz) != 0 || wsiz.ws_row == 0
+        || wsiz.ws_col == 0)
+        return DEFAULT_LINES;
+    return wsiz.ws_row;
 }
 
 #ifndef USE_VT100
