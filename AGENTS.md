@@ -82,7 +82,10 @@ committed, understand it, and take responsibility for it as its author.
 
 - **Indentation:** indent each level by 4 columns.
 - **Tabs:** do not add tabs, for indentation or anywhere else; use spaces,
-  also in older files that indent with tabs, each 8 columns wide.
+  also in older files that indent with tabs, each 8 columns wide. Makefiles,
+  such as `Makefile.am`, are the exception and may use tabs, as make
+  requires them in some cases, such as at the start of each line of a
+  recipe.
 - **Line width:** new code keeps lines below 80 columns, counting a tab as 8
   columns. Break long lines before an operator, not after it. Split a long
   string literal into adjacent literals after a `\n` if it has one, or else
