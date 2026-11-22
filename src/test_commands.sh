@@ -2019,7 +2019,8 @@ if command -v tmux > /dev/null 2>&1; then
     # a prompt, as from the MUD, which a line that took two rows starts
     tm send-keys -t t -l "#emulate !printf 'mud-%s> ' prompt"
     tm send-keys -t t Enter
-    tm_wait 'mud-prompt> '
+    # tmux leaves out the space at the end
+    tm_wait 'mud-prompt>'
     line=$(printf 'x%.0s' 1 2 3 4 5 6 7 8 9 10 11 12)
     line=$line$line$line$line$line
     tm send-keys -t t -l "${line}yyyyyyyyyyyyyyy"
@@ -2700,7 +2701,63 @@ run '#connect without an argument connects to the host of #host' \
 #connect'
 has '#cannot connect to 127.0.0.1:1: Connection refused'
 
-# MPI messages longer than a read, with openssl as the MUD, if powwow has
+# a MUD speaking TLS, with the certificate that openssl made, which writes
+# the number of its port to $tmp/port; it then takes steps, each a pair of
+# arguments: wait TEXT, to wait for powwow to send TEXT, file PATH, to wait
+# for the file PATH, pause SECONDS, or send TEXT, where TEXT has escapes
+# such as \r and \377; after them, it waits for powwow to close the
+# connection, as closing it first would show a prompt kept
+cat > "$tmp/tls_server.py" <<'EOF'
+import codecs, os, socket, ssl, sys, time
+port_file, cert, key = sys.argv[1:4]
+steps = sys.argv[4:]
+ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+ctx.load_cert_chain(cert, key)
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(port_file + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(port_file + '.new', port_file)
+c, _ = s.accept()
+t = ctx.wrap_socket(c, server_side=True)
+got = b''
+try:
+    for kind, arg in zip(steps[::2], steps[1::2]):
+        if kind == 'wait':
+            while arg.encode() not in got:
+                data = t.recv(4096)
+                if not data:
+                    sys.exit(1)
+                got += data
+        elif kind == 'file':
+            while not os.path.exists(arg):
+                time.sleep(0.01)
+        elif kind == 'pause':
+            time.sleep(float(arg))
+        else:
+            t.sendall(codecs.escape_decode(arg.encode('latin-1'))[0])
+    while t.recv(4096):
+        pass
+    t.unwrap()
+except (OSError, ssl.SSLError):
+    pass
+EOF
+
+# start the MUD of tls_server.py with the steps in the arguments
+tls_server() {
+    rm -f "$tmp/port"
+    python3 -I "$tmp/tls_server.py" "$tmp/port" "$tmp/cert.pem" \
+        "$tmp/key.pem" "$@" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+}
+
+# MPI messages longer than a read, from a MUD speaking TLS, if powwow has
 # TLS: the prompt before them, which the newlines before them do not end,
 # is drawn again after each; and the prompt at the end of the TLS record
 # with the end of one, which GnuTLS has read and select() does not see,
@@ -2709,34 +2766,21 @@ if command -v openssl > /dev/null 2>&1 \
    && openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=localhost \
         -days 1 -keyout "$tmp/key.pem" -out "$tmp/cert.pem" \
         > /dev/null 2>&1; then
-    port=$((20000 + $$ % 20000))
     x=$(printf '%020000d' 0)
-    {
-        sleep 2
-        printf 'mud-prompt>\377\371'
-        sleep 0.5
-        printf '\r\n~$#EV20007\nstats\n%s\n' "$x"
-        sleep 0.5
-        printf '\r\n~$#EV20007\nstats\n%s\n' "$x"
-        sleep 0.5
-        printf 'second-prompt>\377\371'
-        sleep 0.5
-        printf '\r\n~$#EV20007\nstats\n%s\nnext-prompt>\377\371' "$x"
-        # open until powwow gives up waiting for the prompt, as closing
-        # the connection would show it
-        sleep 15
-    } | openssl s_server -quiet -naccept 1 -accept "$port" \
-            -cert "$tmp/cert.pem" -key "$tmp/key.pem" > /dev/null 2>&1 &
-    server=$!
-    sleep 1
+    mpi="\\r\\n~\$#EV20007\\nstats\\n$x\\n"
+    tls_server wait '~$#EI' send 'mud-prompt>\377\371' \
+        pause 0.3 send "$mpi" pause 0.3 send "$mpi" \
+        pause 0.3 send 'second-prompt>\377\371' \
+        pause 0.3 send "${mpi}next-prompt>\\377\\371"
     run --until 'next-prompt>' 'the prompts around long MPI messages' \
         "#option pager=&true
 #hilite messages bold
-#connect main 127.0.0.1 $port --tls=no-verify
+#connect main 127.0.0.1 $(cat "$tmp/port") --tls=no-verify
 #request editor"
+    # also when powwow has no TLS, and the MUD waits for a connection
     kill $server 2>/dev/null
     wait $server 2>/dev/null
-    if grep -q "#connecting to 127.0.0.1:$port (TLS)" "$tmp/out"; then
+    if grep -q "#connecting to 127.0.0.1:.* (TLS)" "$tmp/out"; then
         all='#read all 20007 chars\.'
         m="$all.*mud-prompt>.*$all.*mud-prompt>.*$all.*second-prompt>"
         m="$m.*next-prompt>"
@@ -2748,31 +2792,25 @@ if command -v openssl > /dev/null 2>&1 \
     fi
 fi
 
-# after a pager that powwow waits for, here cat for an MPI view from
-# openssl as the MUD, in tmux, the input line and the cursor are at the
+# after a pager that powwow waits for, here cat for an MPI view from a
+# MUD speaking TLS, in tmux, the input line and the cursor are at the
 # bottom, also after the line took two rows and then one again
 if command -v tmux > /dev/null 2>&1 && [ -f "$tmp/cert.pem" ]; then
     name='the cursor is on the input line after a pager'
-    port=$((20000 + ($$ + 1) % 20000))
-    {
-        sleep 2
-        printf 'mud-prompt> \377\371'
-        sleep 3
-        printf '\r\n~$#EV%d\nview\n' 765
-        for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 \
-                 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40
-        do
-            printf 'view line %08d\n' "$i"
-        done
-        sleep 15
-    } | openssl s_server -quiet -naccept 1 -accept "$port" \
-            -cert "$tmp/cert.pem" -key "$tmp/key.pem" > /dev/null 2>&1 &
-    server=$!
-    sleep 1
+    view='\r\n~$#EV765\nview\n'
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 \
+             21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40
+    do
+        view=$view$(printf 'view line %08d' "$i")'\n'
+    done
+    rm -f "$tmp/go"
+    tls_server wait '~$#EI' send 'mud-prompt> \377\371' \
+        file "$tmp/go" send "$view"
     tm new-session -d -s t -x 80 -y 24 \
         "env -i HOME=$tmp TERM=xterm PATH=/usr/bin:/bin POWWOWPAGER=cat $pw --no-config"
     tm_wait '#help'
-    tm send-keys -t t -l "#connect main 127.0.0.1 $port --tls=no-verify"
+    tm send-keys -t t -l \
+        "#connect main 127.0.0.1 $(cat "$tmp/port") --tls=no-verify"
     tm send-keys -t t Enter
     tm_wait 'connected!'
     if tm capture-pane -p -t t | grep -q '(TLS)'; then
@@ -2787,7 +2825,15 @@ if command -v tmux > /dev/null 2>&1 && [ -f "$tmp/cert.pem" ]; then
         for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
             tm send-keys -t t BSpace
         done
+        # the view once the keys are done
+        i=0
+        while tm capture-pane -p -t t | grep -q xy && [ $i -lt 500 ]; do
+            sleep 0.01
+            i=$((i + 1))
+        done
         tm send-keys -t t C-a
+        sleep 0.1
+        touch "$tmp/go"
         tm_wait 'view line 00000040'
         # drawn again, after the view scrolled it away
         tm_wait 'mud-prompt> xxxxx'
