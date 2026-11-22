@@ -317,7 +317,7 @@ There are various ways to enter powwow test mode:
    a `#host` line or contains a `#host` alone, without any address
 
 3) starting powwow opening one or more MUD connections,
-   then closing them all. (You'll need to have `#option quit`
+   then closing them all. (You'll need to have `#option exit`
    disabled or powwow will exit when closing the last connection)
 
 Remember that to connect to a MUD from test mode you must use:
