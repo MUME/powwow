@@ -37,6 +37,9 @@ ptr **text_var(int n);
 #define DEFAULT_LIMIT_EDITMEM 16777216
 /* the default of #setvar mem */
 #define DEFAULT_LIMIT_MEM 1048576
+/* the smallest limits of #setvar mem and editmem but 0, none */
+#define MIN_LIMIT_MEM 4096
+#define MIN_LIMIT_EDITMEM 65536
 /* the lines of the screen when the terminal does not give them */
 #define DEFAULT_LINES 24
 /* the default of #groupdelim */

@@ -1024,7 +1024,7 @@ buffer     bytes of recent text from the MUD to keep and write at the
            beginning of ‘#capture’ and ‘#movie’ files when you open them
            (default 0; else 1000 to 2147483647)
 editmem    the maximum length of a text to edit or view, in bytes
-           (default 16777216; 0: no limit)
+           (default 16777216; 0: no limit; else 65536 to 2147483647)
 keepalive  seconds without sending anything to a MUD that uses telnet,
            after which powwow sends it a telnet NOP, which does nothing,
            so that a router that forgets idle connections keeps it
@@ -1033,7 +1033,7 @@ keepalive  seconds without sending anything to a MUD that uses telnet,
            MUD's own, until ‘#setvar keepalive=default’ drops it
 lines      the number of lines of your terminal (1 to 2147483647)
 mem        the maximum length of a text or string, in bytes (default
-           1048576; 0: no limit)
+           1048576; 0: no limit; else 4096 to 2147483647)
 timer      the number of milliseconds since program start
 
 #setvar timer=0                 (reset internal timer to 0)

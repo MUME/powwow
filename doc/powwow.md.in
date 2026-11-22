@@ -2182,7 +2182,8 @@ Known internal variables are:
 - `editmem`: the maximum length of a text that the MUD sends to edit or
   view, and of an edited text, in bytes. The default is 16777216
   (16 MB), as long as the longest text that MUME sends, and 0 (zero)
-  means no limit. Powwow cuts a longer text to view short, with a
+  means no limit; other values must be from 65536 to 2147483647.
+  Powwow cuts a longer text to view short, with a
   warning; it does not edit a longer text to edit, as the edited text
   would replace all of it, but warns and cancels the editing session;
   and it cancels the editing session instead of sending a longer edited
@@ -2207,7 +2208,8 @@ Known internal variables are:
   manually, from 1 to 2147483647.
 
 - `mem`: the maximum length of a text or string, in bytes. The default
-  is 1048576 (1 MB), and 0 (zero) means no limit. It prevents bringing
+  is 1048576 (1 MB), and 0 (zero) means no limit; other values must be
+  from 4096 to 2147483647. It prevents bringing
   down the whole system with things like `#while (1) #($foo += $foo + "x")`:
   powwow *discards* text and strings longer than the limit, reports an
   error and stops the command. The limit won't give any problem (like

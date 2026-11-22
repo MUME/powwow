@@ -350,6 +350,22 @@ run '#setvar lines rejects numbers out of range' \
 has '#lines must be from 1 to 2147483647'
 has '#setvar lines=30'
 
+run '#setvar mem and editmem reject limits out of range' \
+    '#setvar mem=4096
+#setvar mem=4095
+#setvar mem=100
+#setvar mem=2147483648
+#setvar editmem=65536
+#setvar editmem=65535
+#setvar editmem=2147483648
+#setvar'
+has '#mem must be 0 (zero) or from 4096 to 2147483647'
+has '#editmem must be 0 (zero) or from 65536 to 2147483647'
+has '#setvar mem=4096'
+has '#setvar editmem=65536'
+[ "$(grep -c '^#mem must be' "$tmp/out")" -eq 3 ] \
+    || fail 'expected three limits of mem rejected'
+
 run '#setvar reads numbers as expressions do, and rejects others' \
     '#setvar lines=030
 #setvar mem=0x10
@@ -1664,7 +1680,7 @@ run 'repeating a text too many times is an error' \
 #($s = "ab")
 #($s *= 2147483648)
 #print ("s=" + $s)
-#setvar mem=100
+#setvar mem=4096
 #print ("ab" * 4611686018427387904)'
 has '#print: #error: operand or index out of range.'
 has '#error: operand or index out of range.'
@@ -3105,31 +3121,13 @@ run 'no %NAME% in file names without --windows' \
     '#print <%POWWOW_TEST_DIR%/x'
 has "#print: #error opening '%POWWOW_TEST_DIR%/x'"
 
-# a line longer than the memory limit is still processed as a line, not
-# again as a prompt
-awk 'BEGIN { s = sprintf("%150s", ""); gsub(/ /, "x", s); print s
-             print "after" }' > "$tmp/long"
-run 'line longer than the memory limit' "#setvar mem=120
-#emulate <$tmp/long"
-has '#error: text/string longer than limit, discarded.'
-has 'after'
-lacks '#out of memory'
-
-# a prompt longer than the memory limit
-awk 'BEGIN { s = sprintf("%150s", ""); gsub(/ /, "x", s); printf "%s", s }' \
-    > "$tmp/long"
-run 'prompt longer than the memory limit' "#setvar mem=120
-#emulate <$tmp/long"
-has '#error: text/string longer than limit, discarded.'
-lacks '#out of memory'
-
 # a prompt that #mark makes longer than the memory limit, followed by
 # the rest of its line
-awk 'BEGIN { s = sprintf("%90s", ""); gsub(/ /, "x", s); printf s " rest" }' \
-    > "$tmp/long"
-run 'marked prompt longer than the memory limit' "#setvar mem=120
+awk 'BEGIN { s = sprintf("%3000s", ""); gsub(/ /, "x", s)
+             printf s " rest" }' > "$tmp/long"
+run 'marked prompt longer than the memory limit' "#setvar mem=4096
 #mark x=bold
-#prompt >a ^xxx=#isprompt 90
+#prompt >a ^xxx=#isprompt 3000
 #prompt >b rest=#print (\"after\")
 #emulate <$tmp/long"
 has '#error: text/string longer than limit, discarded.'
@@ -3932,8 +3930,8 @@ cat > "$1/got"
 touch "$1/done"
 EOF
 run --until '#cancelled session' 'edited text longer than #setvar editmem' \
-    "#setvar editmem=1000
-#option editor=&awk 'BEGIN { for (i = 0; i < 1001; ++i) print }' >
+    "#setvar editmem=65536
+#option editor=&awk 'BEGIN { for (i = 0; i < 65537; ++i) print }' >
 #spawn n sh $tmp/server $tmp
 ##n #request editor"
 i=0
@@ -4173,18 +4171,18 @@ has 'two'
 # cancelled
 cat > "$tmp/server" <<'EOF'
 read -r identify
-printf '~$#EE6000\nM5\ndescr\n'
-awk 'BEGIN { for (i = 0; i < 5991; ++i) printf "x" }'
+printf '~$#EE10000\nM5\ndescr\n'
+awk 'BEGIN { for (i = 0; i < 9991; ++i) printf "x" }'
 sleep 0.2
-printf '~$#EE8001\nM6\ndescr\n'
-awk 'BEGIN { for (i = 0; i < 7992; ++i) printf "x" }'
+printf '~$#EE65537\nM6\ndescr\n'
+awk 'BEGIN { for (i = 0; i < 65528; ++i) printf "x" }'
 printf '\n#print after\n'
 cat > "$1/got"
 touch "$1/done"
 EOF
 run --until 'after' 'MPI messages and #setvar editmem' \
-    "#setvar mem=1000
-#setvar editmem=8000
+    "#setvar mem=4096
+#setvar editmem=65536
 #option editor=&wc -c <
 #spawn n sh $tmp/server $tmp
 ##n #request editor"
@@ -4193,10 +4191,11 @@ until [ -e "$tmp/done" ] || [ $i -ge 500 ]; do
     sleep 0.01
     i=$((i + 1))
 done
-grep -q '^#editor: *5991$' "$tmp/out" || fail 'missing line: #editor: 5991'
-w='#warning: text to edit longer than the 8000 chars of #setvar editmem,'
+grep -q '^#editor: *9991$' "$tmp/out" || fail 'missing line: #editor: 9991'
+w='#warning: text to edit longer than the 65536 chars of #setvar editmem,'
 has "$w not edited"
-grep -q '^#editor: *7992$' "$tmp/out" && fail 'unexpected line: #editor: 7992'
+grep -q '^#editor: *65528$' "$tmp/out" \
+    && fail 'unexpected line: #editor: 65528'
 has 'after'
 [ "$(grep -c '^C6$' "$tmp/got")" -eq 1 ] \
     || fail "expected a cancel message, got: $(od -c "$tmp/got")"
@@ -4205,19 +4204,19 @@ has 'after'
 # the pager
 cat > "$tmp/server" <<'EOF'
 read -r identify
-printf '~$#EV226\ntitle\n'
-awk 'BEGIN { for (i = 0; i < 22; ++i) printf "line %04d\n", i }'
+printf '~$#EV70006\ntitle\n'
+awk 'BEGIN { for (i = 0; i < 7000; ++i) printf "line %04d\n", i }'
 printf '#print after\n'
 EOF
 run --until '#connection on "n" closed.' \
     'a text to view longer than #setvar editmem' \
-    "#setvar editmem=106
+    "#setvar editmem=65536
 #option pager=-
 #spawn n sh $tmp/server
 ##n #request editor"
-has '#warning: text to view cut short to the 106 chars of #setvar editmem'
-has 'line 0009'
-lacks 'line 0010'
+has '#warning: text to view cut short to the 65536 chars of #setvar editmem'
+has 'line 6552'
+lacks 'line 6553'
 has 'after'
 
 # the connection closes before the end of an MPI message

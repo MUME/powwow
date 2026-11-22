@@ -2442,11 +2442,12 @@ static void cmd_setvar(char *arg)
     } else if (i != 0 && strncmp(name, "editmem", i) == 0) {
         if (!set && !def)
             fmt_next_edit("#setvar editmem=%d", limit_editmem);
-        else {
-            if (def)
-                limit_editmem = DEFAULT_LIMIT_EDITMEM;
-            else if (buf == 0 || buf >= PARAMLEN)
-                limit_editmem = buf <= INT_MAX ? (int)buf : INT_MAX;
+        else if (!def && buf != 0
+                 && (buf < MIN_LIMIT_EDITMEM || buf > INT_MAX)) {
+            message_printf("#editmem must be 0 (zero) or from %d to %d\n",
+                           MIN_LIMIT_EDITMEM, INT_MAX);
+        } else {
+            limit_editmem = def ? DEFAULT_LIMIT_EDITMEM : (int)buf;
             if (opt_info) {
                 message_printf("#setvar: editmem=%d%s\n", limit_editmem,
                                (limit_editmem == 0 ? " (unlimited)"
@@ -2457,11 +2458,11 @@ static void cmd_setvar(char *arg)
     } else if (i != 0 && strncmp(name, "mem", i) == 0) {
         if (!set && !def)
             fmt_next_edit("#setvar mem=%d", limit_mem);
-        else {
-            if (def)
-                limit_mem = DEFAULT_LIMIT_MEM;
-            else if (buf == 0 || buf >= PARAMLEN)
-                limit_mem = buf <= INT_MAX ? (int)buf : INT_MAX;
+        else if (!def && buf != 0 && (buf < MIN_LIMIT_MEM || buf > INT_MAX)) {
+            message_printf("#mem must be 0 (zero) or from %d to %d\n",
+                           MIN_LIMIT_MEM, INT_MAX);
+        } else {
+            limit_mem = def ? DEFAULT_LIMIT_MEM : (int)buf;
             if (opt_info) {
                 message_printf("#setvar: mem=%d%s\n", limit_mem,
                                (limit_mem == 0 ? " (unlimited)"
