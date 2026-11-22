@@ -3746,6 +3746,9 @@ static void cmd_option(char *arg)
             status(1);
             return;
         }
+        /* in a settings file, info takes effect at its end */
+        if (varp == &opt_info && pending_info != NULL)
+            varp = pending_info;
 
         switch (mode) {
         case MODE_REP:

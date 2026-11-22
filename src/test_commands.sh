@@ -1926,6 +1926,28 @@ has 'run5'
 lacks 'not run'
 has 'typed'
 
+# #option info in a definition file takes effect at its end, so that the
+# lines after it, such as those of #option that #save splits, do not
+# report what they do
+printf '%s\n' '#savefile-version 9' '#reset bind' '#option +info' \
+    '#alias quiet=x' '#option +reprint' '#option -info' '#option info' \
+    > "$tmp/info.pw"
+run '#option info in a definition file takes effect at its end' \
+    "#load $tmp/info.pw
+#option"
+lacks "#new alias in group '*': quiet=x"
+lacks '#option reprint is now on.'
+lacks '#option info is now on.'
+has '#settings loaded from file.'
+joined | grep -q -e ' +info' || fail 'expected #option +info'
+printf '%s\n' '#savefile-version 9' '#reset bind' '#option +info' \
+    '#option -info' > "$tmp/info.pw"
+run '#option -info after +info in a definition file' \
+    "#load $tmp/info.pw
+#option"
+lacks '#settings loaded from file.'
+joined | grep -q -e ' -info' || fail 'expected #option -info'
+
 # a key bound with its sequence replaces the key with that sequence
 run '#bind with a sequence replaces the key with that sequence' \
     '#bind ^S ^S=#capture

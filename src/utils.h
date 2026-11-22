@@ -115,6 +115,8 @@ void config_changed(void);
 void config_refresh(bool at_once);
 /* reading the user-wide settings file, whose #hilite is user-wide */
 extern bool reading_config;
+/* while a settings file runs, where #option info goes until its end */
+extern bool *pending_info;
 void suspend_powwow(int signum);
 function_signal sig_permanent(int signum, function_signal sighandler);
 

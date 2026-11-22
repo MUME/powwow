@@ -1827,6 +1827,8 @@ static void convert_identify_init(void)
 /* running a settings file, whose user-wide settings are not saved at once */
 static int settings_depth;
 bool reading_config;
+/* while a settings file runs, where #option info goes until its end */
+bool *pending_info = NULL;
 
 /*
  * run the commands of the settings file 'f', called 'path' in messages;
@@ -1848,6 +1850,12 @@ static int run_settings_file(FILE *f, const char *path, int *version)
     size_t linesize = 0;
     int savefilever = 0;
     bool limit_mem_hit = false;
+    /* #option info, in any of the lines of #option, takes effect at the
+     * end, so that the lines after it do not report what they do: in
+     * that of a settings file that runs this one, or else in opt_info */
+    bool *outer_info = pending_info;
+    bool info = outer_info != NULL ? *outer_info : opt_info;
+    pending_info = &info;
     ++settings_depth;
     while (left > 0 && fgets(buf + len, left + 1, f) != NULL) {
         /* WARNING: accessing private field ->len */
@@ -1929,6 +1937,11 @@ static int run_settings_file(FILE *f, const char *path, int *version)
         }
     }
     --settings_depth;
+    pending_info = outer_info;
+    if (outer_info != NULL)
+        *outer_info = info;
+    else
+        opt_info = info;
 
     int failed = 1;
     if (error != NO_ERROR) {
@@ -2017,6 +2030,10 @@ int read_settings(void)
 
     int savefilever;
     int failed = run_settings_file(f, deffile, &savefilever);
+    /* what an older file lacks is added as quietly, before the file's
+     * #option info takes effect */
+    bool info = opt_info;
+    opt_info = false;
     if (failed > 0) {
         if (savefilever > SAVEFILEVER) {
             wrap_printf("#warning: save-file is from a newer version of "
@@ -2031,6 +2048,7 @@ int read_settings(void)
             load_missing_stuff(savefilever);
         }
     }
+    opt_info = info;
 
     fclose(f);
     a_nice = old_nice;

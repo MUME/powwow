@@ -72,6 +72,10 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	* Fixed #zap of a connection with TLS waiting forever for a MUD
 	  that does not answer the end of the session; it waits for a
 	  second at most.
+	* Fixed loading a definition file reporting what its lines do
+	  after an `#option +info' in it, such as the last of the lines
+	  of #option that #save writes, and what is added to an older
+	  file; #option info takes effect at the end of the file.
 
 	Platforms and building:
 	* Windows using Cygwin is supported, along with WSL2.  Cygwin

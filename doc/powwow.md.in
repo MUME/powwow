@@ -1560,7 +1560,9 @@ but not echoed on screen.
 Normally, powwow prints on screen some messages each time you
 define/edit/delete an `#alias`, `#action`, `#bind` and similar.
 When `info` is off, those messages are not typed at all.
-(But errors are still printed on screen)
+(But errors are still printed on screen) In a definition file, `info`
+takes effect at the end of the file, so that loading it prints none of
+those messages.
 
 #### `#option keyecho`
 
