@@ -64,6 +64,9 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	* CHARSET: powwow sends its REQUEST with its WILL CHARSET, as soon
 	  as the MUD sends DO CHARSET, without waiting for WILL CHARSET,
 	  which saves the MUD a round trip.
+	* Telnet replies to what the MUD sends at once, such as the window
+	  size, the terminal type and CHARSET, go out in one packet, not
+	  in one each.
 	* Fixed #isprompt without a length never drawing a prompt that has
 	  no newline after it.
 	* Fixed #zap of a connection with TLS waiting forever for a MUD

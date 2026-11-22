@@ -274,22 +274,67 @@ static ssize_t conn_write(connsess *conn, const void *data, size_t len)
     return n;
 }
 
+/* write all the 'len' bytes at 'data' to 'conn' */
+static void write_now(connsess *conn, const char *data, size_t len)
+{
+    while (len > 0) {
+        ssize_t i;
+        while ((i = conn_write(conn, data, len)) < 0
+               && errno == EINTR)
+            ;
+        if (i < 0) {
+            errmsg("cannot write to connection \"%s\"", conn->id);
+            break;
+        }
+        data += i;
+        len -= i;
+    }
+}
+
+/*
+ * while tcp_read() handles a read, the telnet replies to it, held to be
+ * sent in one write at the end, rather than in a packet each
+ */
+static bool holding;
+static connsess *held_conn;
+static char held_buf[1024];
+static size_t held_len;
+
+static void flush_held(void)
+{
+    size_t len = held_len;
+    held_len = 0;
+    if (len > 0)
+        write_now(held_conn, held_buf, len);
+}
+
+/* write to 'conn', or hold it if holding, after what is held already */
+static void internal_tcp_raw_write(connsess *conn, const char *data,
+                                   size_t len)
+{
+    if (!holding) {
+        write_now(conn, data, len);
+        return;
+    }
+    if (held_conn != conn || held_len + len > sizeof held_buf)
+        flush_held();
+    if (len > sizeof held_buf) {
+        write_now(conn, data, len);
+        return;
+    }
+    held_conn = conn;
+    memcpy(held_buf + held_len, data, len);
+    held_len += len;
+}
+
 /*
  * send an option negotiation
  * 'what' is one of WILL, WONT, DO, DONT
  */
 static void sendopt(connsess *conn, byte what, byte opt)
 {
-    byte buf[] = { IAC, what, opt };
-    int i;
-
-    while ((i = conn_write(conn, buf, sizeof buf)) < 0
-           && errno == EINTR)
-        ;
-    if (i != sizeof buf) {
-        errmsg("cannot write to connection \"%s\"", conn->id);
-        return;
-    }
+    const char buf[] = { IAC, what, opt };
+    internal_tcp_raw_write(conn, buf, sizeof buf);
 
 #ifdef TELOPTS
     tty_printf("[sent %s %s]\n",
@@ -485,11 +530,8 @@ static void keep_rest(connsess *conn, const byte *s, int len)
     conn->restlen += len;
 }
 
-/*
- * read from remote host using the telnet protocol, and store at most
- * maxsize bytes of UTF-8 text in buffer. return bytes stored.
- */
-int tcp_read(connsess *conn, void *buffer, size_t maxsize)
+/* the work of tcp_read(), which holds the replies this writes */
+static int read_telnet(connsess *conn, void *buffer, size_t maxsize)
 {
     static byte rawbuf[BUFSIZE];
 
@@ -883,20 +925,17 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     return (char *)p - (char *)buffer;
 }
 
-static void internal_tcp_raw_write(connsess *conn, const char *data, int len)
+/*
+ * read from remote host using the telnet protocol, and store at most
+ * maxsize bytes of UTF-8 text in buffer. return bytes stored.
+ */
+int tcp_read(connsess *conn, void *buffer, size_t maxsize)
 {
-    while (len > 0) {
-        int i;
-        while ((i = conn_write(conn, data, len)) < 0
-               && errno == EINTR)
-            ;
-        if (i < 0) {
-            errmsg("cannot write to connection \"%s\"", conn->id);
-            break;
-        }
-        data += i;
-        len -= i;
-    }
+    holding = true;
+    int n = read_telnet(conn, buffer, maxsize);
+    holding = false;
+    flush_held();
+    return n;
 }
 
 void tcp_raw_write(connsess *conn, const void *data, size_t len)
@@ -1137,6 +1176,9 @@ void tcp_write(connsess *conn, const char *data)
  */
 void tcp_flush(void)
 {
+    /* the lines go after the replies held */
+    if (output_len != 0)
+        flush_held();
     if (output_len != 0 && output_connection == NULL) {
         clear_input_line(true);
         warn_no_output();
@@ -1410,6 +1452,9 @@ void tcp_close(const char *id)
         }
     }
 
+    /* the replies held for it are not sent */
+    if (held_conn == conn)
+        held_len = 0;
     conn->fns->close(conn);
 
     abort_edit_fd(conn);

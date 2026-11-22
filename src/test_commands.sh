@@ -3323,6 +3323,52 @@ EOF
     has "S telnet b'look\\r\\n'"
     has "R telnet b'Bye\\r\\n'"
 
+    # a MUD that asks for the window size, the terminal type and the
+    # charset at once, and ends when it got the end of the REQUEST
+    cat > "$tmp/server.py" <<'EOF'
+import os, socket, sys
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+c.sendall(b'\xff\xfd\x1f\xff\xfd\x18\xff\xfd\x2aHi\r\n')
+got = b''
+while b'US-ASCII\xff\xf0' not in got:
+    data = c.recv(1024)
+    if not data:
+        break
+    got += data
+c.sendall(b'Bye\r\n')
+c.close()
+EOF
+    name='the telnet replies to a read are sent in one write'
+    rm -f "$tmp/port" "$tmp/pcap"
+    python3 -I "$tmp/server.py" "$tmp/port" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+    : > "$tmp/raw"
+    {
+        printf '#capture --pcap %s\n' "$tmp/pcap"
+        printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
+        wait_for 'Bye'
+        printf '#capture\n#quit\n'
+    } | "$POWWOW" > "$tmp/raw" 2>&1
+    wait $server
+    python3 -I "$tmp/pcap.py" "$tmp/pcap" "$(cat "$tmp/port")" > "$tmp/out"
+    sent=$(grep -c '^S ' "$tmp/out")
+    [ "$sent" -eq 1 ] || fail "$sent writes, not 1"
+    # WILL NAWS and the size first, and the end of the REQUEST last
+    m="^S telnet b'\\\\xff\\\\xfb\\\\x1f\\\\xff\\\\xfa\\\\x1f"
+    grep -q "$m.*US-ASCII\\\\xff\\\\xf0'\$" "$tmp/out" \
+        || fail 'expected all the replies in the write'
+
     # a MUD that tells after how long it got a telnet NOP, if within 3
     # seconds; with $2, it speaks telnet, sending a NOP itself first
     cat > "$tmp/server.py" <<'EOF'
