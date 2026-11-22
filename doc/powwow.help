@@ -872,7 +872,8 @@ Run one of the line-editing functions, as if its key had been pressed.
 #load [<filename>]
 
 Set the definition file and load settings from it. Current settings are
-completely erased first. To add the contents of a file to your current
+completely erased first, and those that the file does not set get their
+defaults. To add the contents of a file to your current
 settings, use ‘#exe <filename’ instead.
 @map
 #map [-[<number>]|<walk-sequence>]
@@ -976,7 +977,9 @@ or left blank, walk all the way back to where automapping started.
 
 Set the definition file and save settings to it. Powwow also saves them
 automatically before exiting, also when its terminal window is closed.
-The definition file is overwritten only if writing succeeds.
+The definition file is overwritten only if writing succeeds. Settings
+that have their defaults, such as ‘#delim normal’ or the options, are
+left out, and ‘#load’ gives a file that lacks them the defaults.
 
 A definition file in use by another powwow is not saved on exiting, as
 that powwow saves it, unless it has quit by then; ‘#save’ saves it anyway.

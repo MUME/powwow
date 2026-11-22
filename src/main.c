@@ -599,6 +599,7 @@ static void warn_deffile_busy(void)
 
 int main(int argc, char **argv)
 {
+    remember_option_defaults();
 #ifdef __CYGWIN__
     add_cygwin_path();
 #endif
@@ -719,7 +720,7 @@ int main(int argc, char **argv)
     }
 
     /* initializations */
-    group_delim = xstrdup("@");
+    group_delim = xstrdup(DEFAULT_GROUP_DELIM);
 
     update_now();
     ref_time = now;

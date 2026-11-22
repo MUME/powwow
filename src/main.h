@@ -39,6 +39,8 @@ ptr **text_var(int n);
 #define DEFAULT_LIMIT_MEM 1048576
 /* the lines of the screen when the terminal does not give them */
 #define DEFAULT_LINES 24
+/* the default of #groupdelim */
+#define DEFAULT_GROUP_DELIM "@"
 
 /* shared vars from main.c */
 extern int prompt_status, line_status;

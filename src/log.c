@@ -176,8 +176,13 @@ static void log_reset(void)
     }
 }
 
+/* the calls of log_resize(), so that read_settings() knows if a file
+ * set the size */
+unsigned log_resizes = 0;
+
 void log_resize(long newsize)
 {
+    ++log_resizes;
     if (newsize != 0 && (newsize < 1000 || newsize > INT_MAX)) {
         message_printf("#buffer size must be 0 (zero) or from 1000 to %d\n",
                        INT_MAX);

@@ -1755,6 +1755,11 @@ the terminal (`SIGHUP`).
 the definition file only if write succeeds. This is to avoid wiping out
 definition file in case of `disk full` or other errors.
 
+Settings that have their defaults are left out of the file, such as
+`#delim normal`, `#groupdelim @`, `#setvar mem=1048576` and the options
+that are on or off by default, and `#load` gives a file that lacks them
+the defaults.
+
 A session locks its definition file, so that a second powwow started
 with the same file does not overwrite what the first saves: it warns
 that the file is in use by another powwow, and does not save it on
@@ -1771,7 +1776,9 @@ or `/tmp`, and needs `flock()`.
 Useful if you want to undo the changes in your settings.
 
 *Note*: current settings are completely erased before actually loading
-from file. In case of errors, powwow reloads the default editing keys.
+from file, and those that the file does not set, such as `#host` and
+`#init`, get their defaults. In case of errors, powwow reloads the
+default editing keys.
 
 If you just want to add the contents of a file to your current settings
 use `#exe <filename` instead of `#load`.

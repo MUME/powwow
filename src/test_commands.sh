@@ -422,7 +422,51 @@ grep -q 'added' "$tmp/save.pw" && fail 'expected the file as it was'
 run --args "$tmp/save.pw" '#option +save saves the definition file on exit' \
     '#alias added=yes'
 grep -Fxq '#alias added=yes' "$tmp/save.pw" || fail 'expected the alias saved'
-grep -Fq '+save' "$tmp/save.pw" || fail 'expected #option +save saved'
+grep -q -e '[-+]save' "$tmp/save.pw" \
+    && fail 'expected #option save left out, as it is on by default'
+
+# #save leaves out the settings that have their defaults, and #load sets
+# those that a file does not have to their defaults
+run '#save leaves out the settings that have their defaults' \
+    "#file =$tmp/unchanged.pw
+#save"
+for line in '#delim' '#groupdelim' '#setvar' '#option' '#host' '#init'; do
+    grep -q -e "^$line" "$tmp/unchanged.pw" \
+        && fail "expected no $line in $(cat "$tmp/unchanged.pw")"
+done
+run 'settings that are not their defaults are saved' \
+    "#file =$tmp/changed.pw
+#host 192.0.2.1 4242
+#init =#print init
+#delim program
+#groupdelim %
+#setvar mem=5000
+#setvar buffer=2000
+#option +debug -echo
+#save"
+grep -q -e '^#host 192.0.2.1 4242 ' "$tmp/changed.pw" \
+    || fail 'expected #host saved'
+for line in '#init =#print init' '#delim program' '#groupdelim %' \
+            '#setvar mem=5000' '#setvar buffer=2000'; do
+    grep -Fxq -e "$line" "$tmp/changed.pw" || fail "expected $line saved"
+done
+grep -q -e '^#option.* +debug' "$tmp/changed.pw" || fail 'expected +debug'
+grep -q -e '^#option.* -echo' "$tmp/changed.pw" || fail 'expected -echo'
+grep -q -e '^#option.* +info' "$tmp/changed.pw" && fail 'expected no +info'
+run '#load sets what a file does not have to their defaults' \
+    "#load $tmp/changed.pw
+#load $tmp/unchanged.pw
+#delim
+#setvar
+#option
+#init
+#host"
+has '#delim: "normal" ( ;)'
+has '#setvar buffer=0 (default)'
+has '#setvar mem=1048576 (default)'
+has '#option +autoclear -autoprint -compact -debug +echo -exit -history'
+lacks '#init =#print init'
+grep -q 192.0.2.1 "$tmp/out" && fail 'expected no #host'
 
 # the lines of #history must have the line $1, or none that contain $1
 has_history() {

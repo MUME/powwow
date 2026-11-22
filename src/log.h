@@ -12,6 +12,7 @@ void log_clearsleep(void);
 void log_flush(void);
 int log_getsize(void);
 void log_resize(long newsize);
+extern unsigned log_resizes;
 void log_write(const char *str, int len, bool newline, enum charset cs);
 void log_telnet(const void *data, size_t len);
 void log_pcap_start(FILE *f);

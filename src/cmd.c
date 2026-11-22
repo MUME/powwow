@@ -3131,6 +3131,28 @@ static const struct {
     { 0 }
 };
 
+/* the values of the options when powwow starts, their defaults */
+static bool option_defaults[sizeof options / sizeof *options];
+
+/* remember the defaults of the options, before anything changes them */
+void remember_option_defaults(void)
+{
+    for (int i = 0; options[i].name != NULL; ++i)
+        option_defaults[i] = *options[i].option;
+}
+
+/*
+ * set the options of the MUD, all but the user-wide ones, to their
+ * defaults, as a definition file that does not have them wants them
+ */
+void reset_mud_options(void)
+{
+    for (int i = 0; options[i].name != NULL; ++i) {
+        if (!options[i].global)
+            *options[i].option = option_defaults[i];
+    }
+}
+
 char *opt_editor, *opt_help_pager, *opt_pager, *opt_shell;
 
 /* the options that are commands, set as #option <name>=<command> */
@@ -3178,12 +3200,14 @@ static int print_option_line(FILE *file, const char *line)
             : tty_message("%s\n", line));
 }
 
-/* print the options of 'scope' to 'file', or the tty, as messages, if it
- * is NULL; return -1 on error, 1 on success */
+/*
+ * print the options of 'scope' to 'file', or the tty, as messages, if it
+ * is NULL: to a file, only those that are not their defaults, which a file
+ * that does not have them gets; return -1 on error, 1 on success
+ */
 int print_options(FILE *file, enum option_scope scope)
 {
-    /* in a file, the command options come first, as #load reports them
-     * once the line of the other options turns +info back on */
+    /* in a file, the command options come first */
     if (file != NULL && scope != OPTIONS_LOCAL
         && print_command_options(file) < 0)
         return -1;
@@ -3192,7 +3216,8 @@ int print_options(FILE *file, enum option_scope scope)
     int len = 0;
     for (int i = 0; options[i].name != NULL; ++i) {
         if ((scope == OPTIONS_LOCAL && options[i].global)
-            || (scope == OPTIONS_GLOBAL && !options[i].global))
+            || (scope == OPTIONS_GLOBAL && !options[i].global)
+            || (file != NULL && *options[i].option == option_defaults[i]))
             continue;
         if (len == 0)
             len = sprintf(line, "#option");

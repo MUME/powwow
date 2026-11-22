@@ -48,6 +48,11 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	* `#setvar <name>=default' sets buffer, editmem, lines and mem to
 	  their defaults, and lines to the height of the terminal;
 	  #setvar marks those that have them with "(default)".
+	* #save leaves out the settings that have their defaults: #delim,
+	  #groupdelim, #setvar mem and the options, as it did #setvar
+	  editmem; and #load gives those that a file does not set their
+	  defaults, also #host, #init and #setvar buffer, instead of
+	  keeping those of the file loaded before.
 	* `#setvar editmem', 16777216 by default, limits the length of the
 	  texts to edit or view that the MUD sends, and of the edited
 	  texts, instead of `#setvar mem', 1048576 by default, as MUME

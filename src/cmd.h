@@ -32,6 +32,9 @@ int print_options(FILE *file, enum option_scope scope);
 
 /* the user-wide settings as when powwow starts */
 void reset_user_wide_settings(void);
+/* the defaults of the on/off options, and those of the MUD set to them */
+void remember_option_defaults(void);
+void reset_mud_options(void);
 
 /* show the attributes of #hilite as they are now */
 void hilite_update(void);

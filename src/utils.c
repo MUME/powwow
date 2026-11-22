@@ -2009,8 +2009,17 @@ int read_settings(void)
     hilite_update();
     keepalive_own = false;
     keepalive_update();
-    /* saved only when changed */
+    /* the defaults of what save_settings() leaves out when it has them,
+     * and of what a file may not set, as #host */
+    hostinfo.name[0] = '\0';
+    hostinfo.port = 0;
+    *initstr = '\0';
+    delim_mode = DELIM_NORMAL;
+    free(group_delim);
+    group_delim = xstrdup(DEFAULT_GROUP_DELIM);
+    limit_mem = DEFAULT_LIMIT_MEM;
     limit_editmem = DEFAULT_LIMIT_EDITMEM;
+    reset_mud_options();
     for (int n = 0; n < MAX_HASH; ++n) {
         while (named_vars[VAR_NUM].buckets[n] != NULL)
             delete_varnode(&named_vars[VAR_NUM].buckets[n], VAR_NUM);
@@ -2028,12 +2037,21 @@ int read_settings(void)
         ptrdel(text_var(n));
     }
 
-    int savefilever;
-    int failed = run_settings_file(f, deffile, &savefilever);
-    /* what an older file lacks is added as quietly, before the file's
-     * #option info takes effect */
+    /* quietly, with #option info from its default, as reset_mud_options()
+     * set it, to what the file sets; the buffer to its default if the
+     * file does not set it, after, as setting it discards its text */
     bool info = opt_info;
     opt_info = false;
+    bool *outer_info = pending_info;
+    pending_info = &info;
+    unsigned resizes = log_resizes;
+    int savefilever;
+    int failed = run_settings_file(f, deffile, &savefilever);
+    pending_info = outer_info;
+    if (log_resizes == resizes)
+        log_resize(0);
+    /* what an older file lacks is added as quietly, before the file's
+     * #option info takes effect */
     if (failed > 0) {
         if (savefilever > SAVEFILEVER) {
             wrap_printf("#warning: save-file is from a newer version of "
@@ -2355,7 +2373,9 @@ int save_settings(void)
                          charset_flag_str(hostinfo.utf8));
     }
 
-    if (failed > 0) {
+    /* the settings below only when they are not their defaults, which
+     * read_settings() sets those that the file does not have to */
+    if (failed > 0 && delim_mode != DELIM_NORMAL) {
         if (delim_mode == DELIM_CUSTOM) {
             pp = ptrmescape(pp, DELIM, strlen(DELIM), false);
             if (mem_error())
@@ -2378,16 +2398,15 @@ int save_settings(void)
                               deffile_hilite(&message_hilite, split));
     }
 
-    if (failed > 0)
+    if (failed > 0 && strcmp(group_delim, DEFAULT_GROUP_DELIM) != 0)
         failed = fprintf(f, "#groupdelim %s\n", group_delim);
 
     if (failed > 0 && *initstr != '\0')
         failed = fprintf(f, "#init =%s\n", initstr);
 
-    if (failed > 0)
+    if (failed > 0 && limit_mem != DEFAULT_LIMIT_MEM)
         failed = fprintf(f, "#setvar mem=%d\n", limit_mem);
 
-    /* only when changed, as older versions of powwow do not know it */
     if (failed > 0 && limit_editmem != DEFAULT_LIMIT_EDITMEM)
         failed = fprintf(f, "#setvar editmem=%d\n", limit_editmem);
 
