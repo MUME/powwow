@@ -356,7 +356,7 @@ void tty_bootstrap(bool terminal)
 
     if (!terminal) {
         cols = 80;
-        lines = 24;
+        lines = DEFAULT_LINES;
 #ifndef USE_VT100
         strcpy(begoln, "\r");
         len_begoln = 1;
@@ -369,7 +369,7 @@ void tty_bootstrap(bool terminal)
 
 #ifdef USE_VT100
     cols = 80;
-    lines = 24;
+    lines = DEFAULT_LINES;
 #else   /* not USE_VT100 */
     struct tc_init_node {
         char cap[4];

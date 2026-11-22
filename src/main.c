@@ -118,7 +118,7 @@ int line_status = 0;    /* input line status: 0 = ready -> nothing to do;
                          *  1 if printed something -> must redraw.
                          */
 
-int limit_mem = 1048576; /* if != 0, max len of a string or text */
+int limit_mem = DEFAULT_LIMIT_MEM; /* if != 0, max len of a string or text */
 int limit_editmem = DEFAULT_LIMIT_EDITMEM; /* if != 0, max len of a text
                                             * to edit or view */
 int keepalive = 0;       /* if != 0, seconds without sending to a MUD
@@ -227,7 +227,7 @@ char initstr[BUFSIZE];             /* initial string to send on connect */
 int linemode = 0;                  /* line mode flags (LM_* in main.h) */
 
 /* for line editing */
-int cols = 80, lines = 24; /* screen size */
+int cols = 80, lines = DEFAULT_LINES; /* screen size */
 int cols_1 = 79;          /* == cols if tty_wrapglitch, == cols-1 otherwise */
 int olines;               /* previous screen size */
 int col0;                 /* input line offset (= printstrlen of prompt) */

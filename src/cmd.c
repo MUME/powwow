@@ -3851,7 +3851,7 @@ static void cmd_load(char *arg)
             delete_keynode(&keydefs);
         tty_add_initial_binds();
         tty_add_walk_binds();
-        limit_mem = 1048576;
+        limit_mem = DEFAULT_LIMIT_MEM;
         limit_editmem = DEFAULT_LIMIT_EDITMEM;
         message_printf("#emergency loaded default settings.\n");
     }

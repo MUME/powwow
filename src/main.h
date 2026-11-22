@@ -35,6 +35,10 @@ ptr **text_var(int n);
 
 /* the default of #setvar editmem: as long as the longest text MUME sends */
 #define DEFAULT_LIMIT_EDITMEM 16777216
+/* the default of #setvar mem */
+#define DEFAULT_LIMIT_MEM 1048576
+/* the lines of the screen when the terminal does not give them */
+#define DEFAULT_LINES 24
 
 /* shared vars from main.c */
 extern int prompt_status, line_status;

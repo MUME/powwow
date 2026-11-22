@@ -1770,7 +1770,7 @@ static void load_missing_stuff(int n)
         parse_alias(buf);
         sprintf(buf, "#settimer=#setvar timer=$0");
         parse_alias(buf);
-        limit_mem = 1048576;
+        limit_mem = DEFAULT_LIMIT_MEM;
         message_wrap(WRAP_CONT,
                      "#compatibility aliases loaded: #lines, #settimer");
         message_wrap(WRAP_CONT, "#max text/strings length set to 1048576 "
