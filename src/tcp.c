@@ -924,14 +924,57 @@ void tcp_write_escape_iac(connsess *conn, const void *data, size_t len)
 }
 
 /*
+ * whether the text sent to 'conn' must have the line ends of telnet: if it
+ * is a MUD that sent a telnet command
+ */
+static bool telnet_text(const connsess *conn)
+{
+    return conn->telnet && !conn->spawn;
+}
+
+/*
+ * write to 'out', with room for 2 * 'len' bytes, the 'len' bytes at 'data'
+ * with the line ends of telnet (RFC 854): LF, and CR LF, as CR LF, and any
+ * other CR as CR NUL; return the length written
+ */
+static size_t telnet_line_ends(const char *data, size_t len, char *out)
+{
+    char *o = out;
+    for (size_t i = 0; i < len; ++i) {
+        if (data[i] == '\n') {
+            *o++ = '\r';
+            *o++ = '\n';
+        } else if (data[i] == '\r') {
+            *o++ = '\r';
+            if (i + 1 < len && data[i + 1] == '\n') {
+                *o++ = '\n';
+                ++i;
+            } else {
+                *o++ = '\0';
+            }
+        } else {
+            *o++ = data[i];
+        }
+    }
+    return o - out;
+}
+
+/*
  * send characters typed in character mode: convert them to the
- * connection's charset and escape IACs, but add no newline
+ * connection's charset, with the line ends of telnet to a MUD that speaks
+ * it, and escape IACs, but add no newline
  */
 void tcp_write_chars(connsess *conn, const char *data, size_t len)
 {
     char enc[len + 1];
     len = charset_encode(conn->charset, data, len, enc);
-    tcp_write_escape_iac(conn, enc, len);
+    if (telnet_text(conn)) {
+        char tel[2 * len + 1];
+        len = telnet_line_ends(enc, len, tel);
+        tcp_write_escape_iac(conn, tel, len);
+    } else {
+        tcp_write_escape_iac(conn, enc, len);
+    }
 }
 
 /*
@@ -972,7 +1015,9 @@ static void warn_no_output(void)
 }
 
 /*
- * put data in the output buffer for transmission to the remote host
+ * put data in the output buffer for transmission to the remote host, with
+ * a newline after it; to a MUD that speaks telnet, with its line ends,
+ * where a CR at the end and the newline after it are one CR LF
  */
 void tcp_write(connsess *conn, const char *data)
 {
@@ -1007,6 +1052,16 @@ void tcp_write(connsess *conn, const char *data)
     if (conn->charset != CS_UTF8) {
         len = charset_encode(conn->charset, data, len, enc);
         data = enc;
+    }
+
+    bool telnet = telnet_text(conn);
+    char *tel = NULL;
+    if (telnet) {
+        if (len > 0 && data[len - 1] == '\r')
+            --len;
+        tel = xmalloc(2 * len + 1);
+        len = telnet_line_ends(data, len, tel);
+        data = tel;
     }
 
     /* must be AFTER reprint_writeline() */
@@ -1065,12 +1120,15 @@ void tcp_write(connsess *conn, const char *data)
             len -= iacp;
         }
     }
-    if (space == 0) {
+    free(tel);
+    const char *newline = telnet ? "\r\n" : "\n";
+    size_t newline_len = strlen(newline);
+    if (space < newline_len) {
         tcp_flush();
         out = output_buffer;
     }
-    *out++ = '\n';
-    ++output_len;
+    memcpy(out, newline, newline_len);
+    output_len += newline_len;
 }
 
 /*

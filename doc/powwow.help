@@ -938,7 +938,8 @@ characters.
 #rawsend {<text>|(<expr>)}
 
 Like ‘#send’, but does NOT add a final newline nor IAC escaping of ASCII
-255 characters, and can handle ASCII 0 characters.
+255 characters, sends newlines as they are, and can handle ASCII 0
+characters.
 @rebind
 #rebind <key> [<sequence>]
 

@@ -3078,7 +3078,7 @@ EOF
     } | "$POWWOW" > "$tmp/raw" 2>&1
     wait $server
     sed -e "s/$esc/<ESC>/g" "$tmp/raw" > "$tmp/out"
-    printf '\377\375\001hunter22\303\251\360\237\221\215\n' > "$tmp/expected"
+    printf '\377\375\001hunter22\303\251\360\237\221\215\r\n' > "$tmp/expected"
     cmp -s "$tmp/got" "$tmp/expected" \
         || fail "unexpected line: $(od -c "$tmp/got")"
     grep -q 'hunter' "$tmp/out" && fail 'the password was shown'
@@ -3320,7 +3320,7 @@ EOF
     python3 -I "$tmp/pcap.py" "$tmp/pcap" "$(cat "$tmp/port")" > "$tmp/out"
     has 'header 0xa1b2c3d4 2 4 65535 252'
     has "R telnet b'More> \\xff\\xf9'"
-    has "S telnet b'look\\n'"
+    has "S telnet b'look\\r\\n'"
     has "R telnet b'Bye\\r\\n'"
 
     # a MUD that tells after how long it got a telnet NOP, if within 3
@@ -3474,9 +3474,76 @@ EOF
     } | "$POWWOW" > "$tmp/raw" 2>&1
     wait $server
     tr -d '\377\373\374\375\376\001' < "$tmp/got" > "$tmp/line"
-    printf 'hunter22\n' > "$tmp/expected"
+    printf 'hunter22\r\n' > "$tmp/expected"
     cmp -s "$tmp/line" "$tmp/expected" \
         || fail "unexpected line: $(od -c "$tmp/got")"
+
+    # a MUD that writes to $2 what it gets until the x at the end, after a
+    # typed line, the lines of #send, where #send drops a CR at the end, and
+    # after WILL SGA, keys; with $3, it speaks telnet, sending a NOP first
+    cat > "$tmp/server.py" <<'EOF'
+import os, socket, sys
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+telnet = len(sys.argv) > 3
+c.sendall((b'\xff\xf1' if telnet else b'') + b'Ready>\r\n')
+got = b''
+def wait(text):
+    global got
+    while text not in got:
+        data = c.recv(1024)
+        if not data:
+            sys.exit(1)
+        got += data
+wait(b'c\r\n' if telnet else b'c\n')
+c.sendall((b'\xff\xfb\x03' if telnet else b'') + b'Keys>\r\n')
+wait(b'x\r\n' if telnet else b'x')
+with open(sys.argv[2], 'wb') as f:
+    f.write(got)
+c.sendall(b'Bye\r\n')
+c.close()
+EOF
+    printf 'a\r\nb\rc\n' > "$tmp/crlf.txt"
+    for mud in telnet plain; do
+        if [ $mud = telnet ]; then
+            name='lines and keys sent to a MUD speaking telnet end in CR LF'
+            printf 'look\r\na\r\nb\r\0c\r\n\377\375\003x\r\n' > "$tmp/expected"
+        else
+            name='lines sent to a MUD not speaking telnet end in LF'
+            printf 'look\na\nb\rc\nx' > "$tmp/expected"
+        fi
+        rm -f "$tmp/port" "$tmp/got"
+        python3 -I "$tmp/server.py" "$tmp/port" "$tmp/got" \
+            $([ $mud = telnet ] && echo telnet) &
+        server=$!
+        i=0
+        until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+            sleep 0.01
+            i=$((i + 1))
+        done
+        : > "$tmp/raw"
+        {
+            printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
+            wait_for 'Ready>'
+            printf 'look\n#send <%s\n' "$tmp/crlf.txt"
+            wait_for 'Keys>'
+            if [ $mud = telnet ]; then
+                printf 'x\r'
+            else
+                printf '#rawsend x\n'
+            fi
+            wait_for 'Bye'
+            printf '#quit\n'
+        } | "$POWWOW" > "$tmp/raw" 2>&1
+        wait $server
+        cmp -s "$tmp/got" "$tmp/expected" \
+            || fail "unexpected bytes: $(od -c "$tmp/got")"
+    done
 
     # powwow in a terminal of 80x24, connected to a MUD that asks for the
     # window size with DO NAWS if $3 is "ask"; the terminal then becomes

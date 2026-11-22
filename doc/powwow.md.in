@@ -2228,7 +2228,8 @@ This is mostly a MUD debugging tool, but it can be useful in some cases.
 Like its cousin `#send`, `#rawsend` evaluates the expression (or unescapes
 the text) and sends the result to the MUD. The difference is that
 `#rawsend` does NOT add a final newline, nor does IAC escaping to protect
-ASCII 255 characters. On the other hand, `#rawsend` can handle ASCII 0
+ASCII 255 characters, and sends newlines as they are, where `#send`
+sends CR LF to a MUD that speaks telnet. On the other hand, `#rawsend` can handle ASCII 0
 characters, while plain `#send` can't.
 
 ### Send raw data to screen
