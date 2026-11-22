@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 
 #include <gnutls/gnutls.h>
 
@@ -53,10 +54,43 @@ static void tls_nofail(int error, const char *file, int line, const char *func)
 
 #define tls_nofail(expr) tls_nofail((expr), __FILE__, __LINE__, __func__)
 
+/*
+ * end the session: send our close_notify, then read and discard what the
+ * MUD sends until its close_notify, so that the connection closes cleanly,
+ * but for at most a second, as the MUD may not reply, or keep sending;
+ * gnutls_bye(GNUTLS_SHUT_RDWR) could wait forever for either
+ */
+static void tls_bye(gnutls_session_t session)
+{
+    int res;
+    do
+        res = gnutls_bye(session, GNUTLS_SHUT_WR);
+    while (res == GNUTLS_E_AGAIN || res == GNUTLS_E_INTERRUPTED);
+    if (res < 0)
+        return;
+
+    struct timeval end;
+    gettimeofday(&end, NULL);
+    end.tv_sec += 1;
+    for (;;) {
+        struct timeval t;
+        gettimeofday(&t, NULL);
+        long ms = (end.tv_sec - t.tv_sec) * 1000
+            + (end.tv_usec - t.tv_usec) / 1000;
+        if (ms <= 0)
+            return;
+        gnutls_record_set_timeout(session, ms);
+        char buf[4096];
+        ssize_t len = gnutls_record_recv(session, buf, sizeof buf);
+        if (len == 0 || (len < 0 && gnutls_error_is_fatal(len)))
+            return;
+    }
+}
+
 static int tls_close(connsess *conn)
 {
     if (conn->tls->session_ok) {
-        gnutls_bye(conn->tls->session, GNUTLS_SHUT_RDWR);
+        tls_bye(conn->tls->session);
         conn->tls->session_ok = false;
     }
     gnutls_deinit(conn->tls->session);

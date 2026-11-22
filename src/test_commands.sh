@@ -2846,6 +2846,23 @@ if command -v tmux > /dev/null 2>&1 && [ -f "$tmp/cert.pem" ]; then
     wait $server 2>/dev/null
 fi
 
+# #zap of a connection speaking TLS, to a MUD that does not reply to the
+# close_notify of powwow for 10 seconds, waits for at most a second
+if [ -f "$tmp/cert.pem" ]; then
+    tls_server send 'hello\r\n' pause 10
+    started=$(date +%s)
+    run --until 'closed' '#zap waits for a MUD speaking TLS for a second' \
+        "#action >+h hello=#zap main
+#connect main 127.0.0.1 $(cat "$tmp/port") --tls=no-verify"
+    took=$(($(date +%s) - started))
+    kill $server 2>/dev/null
+    wait $server 2>/dev/null
+    if grep -q "#connecting to 127.0.0.1:.* (TLS)" "$tmp/out"; then
+        has '#connection on "main" closed.'
+        [ $took -lt 5 ] || fail "#zap took $took s"
+    fi
+fi
+
 run 'random numbers' "$(for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
     echo '#print (rand 6)'
 done)"
