@@ -1572,6 +1572,21 @@ run '#reset rejects unknown lists' '#bind foo ^[[20~=bar
 has '#no such key: "foo"'
 has '#reset: unknown list "nosuch", must specify one of:'
 
+# a delayed message, as text from the MUD, draws the input line again,
+# and the keys of an incomplete sequence after it
+name='the keys typed so far are shown again after a message'
+: > "$tmp/raw"
+{
+    printf '#in x (2000) #print ("lat" + "er")\n'
+    sleep 0.3
+    printf '\030'
+    wait_for later
+    sleep 0.3
+    printf '\007#quit\n'
+} | "$POWWOW" > "$tmp/raw" 2>&1
+sed -n '/later/,$p' "$tmp/raw" | grep -q 'C-x-' \
+    || fail 'expected C-x- after the message'
+
 run '#help &<function> shows an editing function and its keys' \
     '#help &abort
 #help &nosuch'

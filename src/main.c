@@ -813,21 +813,6 @@ static void printmotd(void)
 }
 #endif
 
-static void redraw_everything(void)
-{
-    if (prompt_status == 1 && line_status == 0)
-        line_status = 1;
-    if (prompt_status == 1) {
-        draw_prompt();
-    } else if (prompt_status == -1) {
-        promptzero();
-        isprompt_len = 0;
-        col0 = 0;
-    }
-    if (line_status == 1)
-        draw_input_line();
-}
-
 static char typed[CAPLEN];     /* keys typed so far, that start a binding */
 static int nchars;              /* number of them */
 static vtime typed_time;        /* when the last of them was typed */
@@ -874,6 +859,25 @@ static void show_typed_hint(void)
     strcat(hint, "-");
     input_show_hint(hint);
     typed_shown = true;
+}
+
+static void redraw_everything(void)
+{
+    if (prompt_status == 1 && line_status == 0)
+        line_status = 1;
+    if (prompt_status == 1) {
+        draw_prompt();
+    } else if (prompt_status == -1) {
+        promptzero();
+        isprompt_len = 0;
+        col0 = 0;
+    }
+    if (line_status == 1) {
+        draw_input_line();
+        /* the keys typed so far, erased with the input line */
+        if (typed_shown)
+            show_typed_hint();
+    }
 }
 
 /*
