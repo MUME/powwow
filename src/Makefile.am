@@ -83,7 +83,8 @@ SUFFIXES = .tidy
 .c.tidy:
 	$(AM_V_at)$(CLANG_TIDY) --quiet \
 	    --config-file=$(top_srcdir)/.clang-tidy $(CLANG_TIDY_FLAGS) $< \
-	    -- $(DEFS) $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS)
+	    -- $(DEFS) $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	    $(TIDY_CPPFLAGS)
 
 # "make -j8 tidy" checks everything, "make foo.tidy" checks only foo.c
 tidy: $(SOURCES:.c=.tidy) plugtest.tidy

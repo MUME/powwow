@@ -126,6 +126,19 @@ AC_CACHE_CHECK([for clang-tidy], [ac_cv_path_CLANG_TIDY],
         [ac_cv_path_CLANG_TIDY=clang-tidy],
         [$PATH:/opt/homebrew/opt/llvm/bin:/usr/local/opt/llvm/bin])])
 AC_SUBST([CLANG_TIDY], [$ac_cv_path_CLANG_TIDY])
+# the include directories that the compiler searches by default, such as
+# /usr/local/include for Apple's, which the clang of clang-tidy may not
+# search; after its own, as the compiler's own headers do not suit it
+TIDY_CPPFLAGS=
+for dir in `LC_ALL=C $CC -E -v -x c /dev/null 2>&1 \
+        | sed -n '/^#include <\.\.\.> search starts here:$/,/^End of search/{
+            /^ /!d
+            / (framework directory)$/d
+            s/^ //p
+        }'`; do
+    TIDY_CPPFLAGS="${TIDY_CPPFLAGS:+${TIDY_CPPFLAGS} }-idirafter ${dir}"
+done
+AC_SUBST([TIDY_CPPFLAGS])
 # markdownlint-cli2, which make lint runs on the Markdown if it is found
 AC_PATH_PROGS([MARKDOWNLINT], [markdownlint-cli2])
 
