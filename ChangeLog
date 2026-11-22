@@ -95,7 +95,10 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	  Edited texts are sent without the byte order mark and the CR of
 	  CR LF that editors with Windows settings write.  #spawn is not
 	  available, as Windows programs cannot talk through its
-	  connection.
+	  connection.  A file name that Windows does not allow, which
+	  Cygwin would turn into another, such as `c:' for C:\, is an
+	  error, for #capture, #movie, #record, #write, #file, #save and
+	  #load.
 
 Changes from 1.3.1 to 1.3.2
 

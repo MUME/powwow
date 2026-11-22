@@ -2190,6 +2190,26 @@ run --args --windows '--windows: #help names variables as %NAME%' \
     '#help option'
 has "others; they come before '%POWWOWEDITOR%', '%POWWOWPAGER%',"
 
+# with --windows, a file is not written with a name that Windows does not
+# allow, which Cygwin would turn into another
+mkdir "$tmp/win"
+run --args --windows '--windows: file names that Windows does not allow' \
+    "#capture $tmp/win/c:
+#record $tmp/win/a?b
+#movie $tmp/win/nul.txt
+#save $tmp/win/dot.
+#write >(\"hi\";\"$tmp/win/com1\")"
+has "#invalid file name '$tmp/win/c:': Windows allows ':' only after a drive letter, as in 'C:\\'"
+has "#invalid file name '$tmp/win/a?b': Windows does not allow '?' in it"
+has "#invalid file name '$tmp/win/nul.txt': 'nul' is a device on Windows"
+has "#invalid file name '$tmp/win/dot.': Windows does not allow 'dot.', which ends in a dot or a space"
+has "#invalid file name '$tmp/win/com1': 'com1' is a device on Windows"
+[ -z "$(ls -A "$tmp/win")" ] || fail "files written: $(ls -A "$tmp/win")"
+run 'a : in a file name without --windows' "#capture $tmp/win/c:
+#capture"
+has "#capture to '$tmp/win/c:' active, '#capture' ends."
+[ -f "$tmp/win/c:" ] || fail "no file $tmp/win/c:"
+
 printf '#alias kept=yes\n' > "$tmp/groups.pw"
 printf '#hilite input none\n#hilite messages none\n' > "$tmp/groups.conf"
 run --args "--config=$tmp/groups.conf $tmp/groups.pw" \

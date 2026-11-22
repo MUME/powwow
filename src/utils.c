@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -486,6 +487,82 @@ const char *file_name(const char *name, char *buf, size_t size)
     }
     buf[n] = '\0';
     return buf;
+}
+
+/*
+ * is 'name' a name that Windows allows for a file, checked in Windows mode
+ * only: Cygwin gives a name that it does not allow another one, such as
+ * c: the file c followed by U+F03A, a character of private use; if it is
+ * not, print why
+ */
+bool file_name_allowed(const char *name)
+{
+    if (!windows_mode)
+        return true;
+    const char *p = name;
+    /* \\?\ and \\.\, which Windows passes on as they are, and a drive */
+    if (is_path_sep(p[0]) && is_path_sep(p[1]) && (p[2] == '?' || p[2] == '.')
+        && is_path_sep(p[3]))
+        p += 4;
+    if (isalpha((unsigned char)p[0]) && p[1] == ':' && is_path_sep(p[2]))
+        p += 3;
+
+    for (const char *s = p; *s != '\0'; ++s) {
+        if ((unsigned char)*s < ' ') {
+            wrap_printf("#invalid file name " LQUOTE "%s" RQUOTE ": Windows"
+                        " does not allow control characters in it", name);
+            return false;
+        } else if (*s == ':') {
+            wrap_printf("#invalid file name " LQUOTE "%s" RQUOTE ": Windows"
+                        " allows " LQUOTE ":" RQUOTE " only after a drive"
+                        " letter, as in " LQUOTE "C:\\" RQUOTE, name);
+            return false;
+        } else if (strchr("\"*<>?|", *s) != NULL) {
+            wrap_printf("#invalid file name " LQUOTE "%s" RQUOTE ": Windows"
+                        " does not allow " LQUOTE "%c" RQUOTE " in it",
+                        name, *s);
+            return false;
+        }
+    }
+
+    /* each folder and the file: not ending in a dot or a space, but . and
+     * .., nor the name of a device, also with an extension, as in nul.txt */
+    static const char *const devices[] = { "CON", "PRN", "AUX", "NUL" };
+    while (*p != '\0') {
+        size_t len = 0;
+        while (p[len] != '\0' && !is_path_sep(p[len]))
+            ++len;
+        bool dots = (len == 1 && p[0] == '.')
+                    || (len == 2 && p[0] == '.' && p[1] == '.');
+        if (len > 0 && !dots && (p[len - 1] == '.' || p[len - 1] == ' ')) {
+            wrap_printf("#invalid file name " LQUOTE "%s" RQUOTE ": Windows"
+                        " does not allow " LQUOTE "%.*s" RQUOTE ", which ends"
+                        " in a dot or a space", name, (int)len, p);
+            return false;
+        }
+        size_t base = strcspn(p, ".");
+        if (base > len)
+            base = len;
+        bool device = false;
+        for (size_t i = 0; i < sizeof devices / sizeof *devices; ++i) {
+            if (base == 3 && strncasecmp(p, devices[i], 3) == 0)
+                device = true;
+        }
+        if (base == 4 && (strncasecmp(p, "COM", 3) == 0
+                          || strncasecmp(p, "LPT", 3) == 0)
+            && p[3] >= '1' && p[3] <= '9')
+            device = true;
+        if (device) {
+            wrap_printf("#invalid file name " LQUOTE "%s" RQUOTE ": "
+                        LQUOTE "%.*s" RQUOTE " is a device on Windows",
+                        name, (int)base, p);
+            return false;
+        }
+        p += len;
+        while (is_path_sep(*p))
+            ++p;
+    }
+    return true;
 }
 
 /*

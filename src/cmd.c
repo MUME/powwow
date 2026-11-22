@@ -2047,6 +2047,8 @@ static void cmd_write(char *arg)
             goto write_cleanup;
         }
         arg = ptrdata(p2);
+        if (kind != '!' && !file_name_allowed(arg))
+            goto write_cleanup2;
 
         FILE *fp = (kind == '!'
                     ? shell_popen(arg, "w")
@@ -2702,6 +2704,8 @@ static void cmd_capture(char *arg)
         }
         char buf[BUFSIZE];
         const char *file = file_name(arg, buf, sizeof(buf));
+        if (!file_name_allowed(file))
+            return;
         /* binary for --telnet and --pcap, where \r\n stays as it is on
          * Windows */
         bool binary = kind != 0;
@@ -2747,6 +2751,8 @@ static void cmd_movie(char *arg)
         } else {
             char buf[BUFSIZE];
             const char *file = file_name(arg, buf, sizeof(buf));
+            if (!file_name_allowed(file))
+                return;
             moviefile = fopen(file, "w");
             if (moviefile == NULL) {
                 wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, file);
@@ -2786,6 +2792,8 @@ static void cmd_record(char *arg)
         } else {
             char buf[BUFSIZE];
             const char *file = file_name(arg, buf, sizeof(buf));
+            if (!file_name_allowed(file))
+                return;
             recordfile = fopen(file, "w");
             if (recordfile == NULL) {
                 wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, file);
@@ -3771,7 +3779,10 @@ static void cmd_file(char *arg)
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
     if (*arg == '=') {
-        set_deffile(++arg);
+        char buf[BUFSIZE];
+        if (!file_name_allowed(file_name(++arg, buf, sizeof(buf))))
+            return;
+        set_deffile(arg);
         if (opt_info) {
             if (*arg != '\0') {
                 wrap_printf("#save-file set to " LQUOTE "%s" RQUOTE, deffile);
@@ -3791,6 +3802,9 @@ static void cmd_save(char *arg)
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
     if (*arg != '\0') {
+        char buf[BUFSIZE];
+        if (!file_name_allowed(file_name(arg, buf, sizeof(buf))))
+            return;
         set_deffile(arg);
         if (opt_info) {
             wrap_printf("#save-file set to " LQUOTE "%s" RQUOTE, deffile);
@@ -3810,6 +3824,9 @@ static void cmd_load(char *arg)
     arg = skipspace(arg);
     strip_end(arg);        /* such as after Tab completion */
     if (*arg != '\0') {
+        char buf[BUFSIZE];
+        if (!file_name_allowed(file_name(arg, buf, sizeof(buf))))
+            return;
         set_deffile(arg);
         if (opt_info) {
             wrap_printf("#save-file set to " LQUOTE "%s" RQUOTE, deffile);

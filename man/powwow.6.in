@@ -205,7 +205,14 @@ the commands with cmd, where they are found; a
 in double quotes in those commands, and in those of
 .BR #! ,
 is one backslash, as it is for sh; Tab completes file names
-in any case, with a backslash after folders; and
+in any case, with a backslash after folders; a file name that
+Windows does not allow, with
+.B :
+but after a drive letter, one of
+.BR "\(dq * < > ? |" ,
+a name ending in a dot or a space, or that of a device such as
+.BR NUL ,
+is an error; and
 .B #spawn
 is not available
 .TP
