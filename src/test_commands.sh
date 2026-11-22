@@ -3696,6 +3696,18 @@ run --until '#connection on "n" closed.' \
     "#spawn n sh $tmp/server"
 has 'ab'
 
+# DO CHARSET gets WILL CHARSET and a REQUEST at once, also from a MUD
+# that did not send WILL CHARSET, which then accepts a charset of it
+cat > "$tmp/server" <<'EOF'
+printf '\377\375\052'
+od -An -tu1 -N7 | tr -s ' ' | sed -e 's/^/#print got/' -e 's/ *$//'
+printf '\377\372\052\002ISO-8859-1\377\360'
+EOF
+run --until '#connection on "n" closed.' 'a charset REQUEST after DO CHARSET' \
+    "#spawn n sh $tmp/server"
+has 'got 255 251 42 255 250 42 1'
+has '#charset: iso-8859-1 (negotiated)'
+
 # a suboption that fills the buffer, overflowing it without the fix when
 # built with -fsanitize=address
 cat > "$tmp/server" <<'EOF'

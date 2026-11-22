@@ -168,12 +168,13 @@ static void charset_reply_subopt(connsess *conn, byte type,
 
 /*
  * RFC 2066: a REQUEST may be sent by the side that sent WILL CHARSET
- * and received DO CHARSET.  We only send one when the server has also
- * offered WILL CHARSET, and at most once per connection.
+ * and received DO CHARSET.  We send one as soon as we may, with our WILL,
+ * so that the server need not wait for it to send its own, and at most
+ * once per connection.
  */
 static void maybe_send_charset_request(connsess *conn)
 {
-    const unsigned char need = CS_SRV_WILL | CS_WILL_SENT | CS_DO_RCVD;
+    const unsigned char need = CS_WILL_SENT | CS_DO_RCVD;
     if ((conn->cs_flags & need) != need || (conn->cs_flags & CS_REQ_SENT))
         return;
 
