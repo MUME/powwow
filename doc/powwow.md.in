@@ -1095,7 +1095,7 @@ See "Attributes: colors and other highlighting" below for more syntax.
 ### Capture output to file
 
 ```
-#capture [[--telnet] [>]<filename>]
+#capture [[--telnet|--pcap] [>]<filename>]
 ```
 
 This captures all output from the main MUD connection and your typed
@@ -1129,6 +1129,9 @@ Look at it with a hex dump, such as `xxd`:
 > #capture
 > #! xxd raw
 ```
+
+With `--pcap`, the file also gets the bytes that powwow sends, in pcap
+format for Wireshark or tcpdump.
 
 ### Record typed commands to file
 

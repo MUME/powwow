@@ -11,7 +11,11 @@
  *
  */
 
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <netinet/in.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +34,7 @@
 vtime movie_last;                   /* time movie_file was last written */
 FILE *capturefile = NULL;           /* capture file or NULL */
 FILE *telnetfile = NULL;            /* #capture --telnet file or NULL */
+FILE *pcapfile = NULL;              /* #capture --pcap file or NULL */
 FILE *moviefile = NULL;             /* movie file or NULL */
 FILE *recordfile = NULL;            /* record file or NULL */
 
@@ -305,6 +310,142 @@ void log_telnet(const void *data, size_t len)
 {
     if (telnetfile != NULL && len > 0)
         fwrite(data, 1, len, telnetfile);
+}
+
+/* the link type of Wireshark's exported PDUs, which name their dissector */
+#define PCAP_LINKTYPE_UPPER_PDU 252
+#define PCAP_SNAPLEN            65535
+
+/* the tags of an exported PDU */
+enum {
+    PDU_TAG_END       = 0,
+    PDU_TAG_PROTO     = 12,
+    PDU_TAG_IPV4_SRC  = 20,
+    PDU_TAG_IPV4_DST  = 21,
+    PDU_TAG_IPV6_SRC  = 22,
+    PDU_TAG_IPV6_DST  = 23,
+    PDU_TAG_PORT_TYPE = 24,
+    PDU_TAG_SRC_PORT  = 25,
+    PDU_TAG_DST_PORT  = 26
+};
+
+static void put_be16(unsigned char *p, unsigned v)
+{
+    p[0] = v >> 8;
+    p[1] = v;
+}
+
+static void put_be32(unsigned char *p, uint32_t v)
+{
+    put_be16(p, v >> 16);
+    put_be16(p + 2, v & 0xffff);
+}
+
+/* add tag 'tag' with the 'len' bytes at 'data' at 'p'; return its end */
+static unsigned char *put_tag(unsigned char *p, unsigned tag,
+                              const void *data, unsigned len)
+{
+    put_be16(p, tag);
+    put_be16(p + 2, len);
+    memcpy(p + 4, data, len);
+    return p + 4 + len;
+}
+
+static unsigned char *put_tag32(unsigned char *p, unsigned tag, uint32_t v)
+{
+    unsigned char buf[4];
+    put_be32(buf, v);
+    return put_tag(p, tag, buf, sizeof buf);
+}
+
+/*
+ * start the #capture --pcap file 'f', unless it has data already, as
+ * when appending to it
+ */
+void log_pcap_start(FILE *f)
+{
+    if (fseek(f, 0, SEEK_END) != 0 || ftell(f) != 0)
+        return;
+    /* in the byte order of the writer, which the magic number tells */
+    const uint32_t magic = 0xa1b2c3d4;
+    const uint16_t version[] = { 2, 4 };
+    const uint32_t rest[] = {
+        0,                      /* time zone */
+        0,                      /* time stamp accuracy */
+        PCAP_SNAPLEN,
+        PCAP_LINKTYPE_UPPER_PDU
+    };
+    fwrite(&magic, sizeof magic, 1, f);
+    fwrite(version, sizeof version, 1, f);
+    fwrite(rest, sizeof rest, 1, f);
+}
+
+/*
+ * add at 'p' the tags of the address and port of 'sa', the source if
+ * 'src', or else the destination, unless it is neither IPv4 nor IPv6;
+ * return their end
+ */
+static unsigned char *put_addr_tags(unsigned char *p, bool src,
+                                    const struct sockaddr_storage *sa)
+{
+    unsigned port_tag = src ? PDU_TAG_SRC_PORT : PDU_TAG_DST_PORT;
+    if (sa->ss_family == AF_INET) {
+        const struct sockaddr_in *in = (const struct sockaddr_in *)sa;
+        p = put_tag(p, src ? PDU_TAG_IPV4_SRC : PDU_TAG_IPV4_DST,
+                    &in->sin_addr, 4);
+        return put_tag32(p, port_tag, ntohs(in->sin_port));
+    }
+    if (sa->ss_family == AF_INET6) {
+        const struct sockaddr_in6 *in6 = (const struct sockaddr_in6 *)sa;
+        p = put_tag(p, src ? PDU_TAG_IPV6_SRC : PDU_TAG_IPV6_DST,
+                    &in6->sin6_addr, 16);
+        return put_tag32(p, port_tag, ntohs(in6->sin6_port));
+    }
+    return p;
+}
+
+/*
+ * write to the #capture --pcap file the 'len' bytes at 'data', which
+ * powwow sent to the MUD on socket 'fd' if 'to_mud', or else read from
+ * it, as telnet packets between the addresses and ports of the socket
+ */
+void log_pcap(int fd, bool to_mud, const void *data, size_t len)
+{
+    if (pcapfile == NULL)
+        return;
+
+    struct sockaddr_storage mud = { 0 }, user = { 0 };
+    socklen_t salen = sizeof mud;
+    if (getpeername(fd, (struct sockaddr *)&mud, &salen) != 0)
+        mud.ss_family = AF_UNSPEC;
+    salen = sizeof user;
+    if (getsockname(fd, (struct sockaddr *)&user, &salen) != 0)
+        user.ss_family = AF_UNSPEC;
+
+    unsigned char tags[128];
+    unsigned char *p = put_tag(tags, PDU_TAG_PROTO, "telnet", 6);
+    p = put_tag32(p, PDU_TAG_PORT_TYPE, 2);         /* TCP */
+    p = put_addr_tags(p, true, to_mud ? &user : &mud);
+    p = put_addr_tags(p, false, to_mud ? &mud : &user);
+    put_be16(p, PDU_TAG_END);
+    put_be16(p + 2, 0);
+    p += 4;
+    size_t tagslen = p - tags;
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    const char *s = data;
+    while (len > 0) {
+        size_t n = MIN2(len, PCAP_SNAPLEN - tagslen);
+        const uint32_t record[] = {
+            tv.tv_sec, tv.tv_usec, tagslen + n, tagslen + n
+        };
+        fwrite(record, sizeof record, 1, pcapfile);
+        fwrite(tags, 1, tagslen, pcapfile);
+        fwrite(s, 1, n, pcapfile);
+        s += n;
+        len -= n;
+    }
 }
 
 /*

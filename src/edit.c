@@ -1288,13 +1288,29 @@ static void complete_file(struct word_list *l, int arg, const char *args,
     closedir(d);
 }
 
-/* the argument of #capture: --telnet, and a file name, after it too */
+/* the argument of #capture: --telnet or --pcap, and a file name, after it
+ * too */
 static void complete_capture(struct word_list *l, int arg, const char *args,
                              const char *word)
 {
-    if (arg == 0 && *args == '\0')
+    if (arg == 0 && *args == '\0') {
         word_list_add(l, "--telnet");
+        word_list_add(l, "--pcap");
+    }
     complete_file(l, 0, "", word);
+}
+
+/* the length of the option of #capture at 's' and the space after it, or
+ * 0 */
+static int capture_option_len(const char *s)
+{
+    static const char *const options[] = { "--telnet ", "--pcap " };
+    for (size_t i = 0; i < sizeof options / sizeof options[0]; ++i) {
+        size_t len = strlen(options[i]);
+        if (strncmp(s, options[i], len) == 0)
+            return len;
+    }
+    return 0;
 }
 
 /*
@@ -1501,9 +1517,10 @@ static bool complete_command(void)
                          || arg_completions[i].complete == complete_capture;
             if (file_names) {
                 word = args;
+                int optlen = capture_option_len(edbuf + args);
                 if (arg_completions[i].complete == complete_capture
-                    && strncmp(edbuf + args, "--telnet ", 9) == 0) {
-                    word += 9;
+                    && optlen != 0) {
+                    word += optlen;
                     while (word < pos && edbuf[word] == ' ')
                         ++word;
                 }

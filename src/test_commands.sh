@@ -3187,6 +3187,79 @@ EOF
     cmp -s "$tmp/telnet" "$tmp/expected" \
         || fail "unexpected bytes: $(od -c "$tmp/telnet")"
 
+    # a MUD that sends a prompt with a telnet GA, and answers a line
+    cat > "$tmp/server.py" <<'EOF'
+import os, socket, sys
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(1)
+with open(sys.argv[1] + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(sys.argv[1] + '.new', sys.argv[1])
+c, _ = s.accept()
+c.sendall(b'More> \xff\xf9')
+got = b''
+while not got.endswith(b'\n'):
+    got += c.recv(100)
+c.sendall(b'Bye\r\n')
+c.close()
+EOF
+    # each record of the file as R or S, for read from or sent to the MUD
+    # at 127.0.0.1 port $2, and its bytes
+    cat > "$tmp/pcap.py" <<'EOF'
+import struct, sys
+data = open(sys.argv[1], 'rb').read()
+magic, major, minor, _, _, snaplen, linktype = struct.unpack('<IHHiIII',
+                                                             data[:24])
+print('header', hex(magic), major, minor, snaplen, linktype)
+pos = 24
+while pos < len(data):
+    _, _, caplen, origlen = struct.unpack('<IIII', data[pos:pos + 16])
+    rec = data[pos + 16:pos + 16 + caplen]
+    pos += 16 + caplen
+    tags = {}
+    i = 0
+    while True:
+        tag, length = struct.unpack('>HH', rec[i:i + 4])
+        i += 4
+        if tag == 0:
+            break
+        tags[tag] = rec[i:i + length]
+        i += length
+    mud = (bytes([127, 0, 0, 1]), struct.pack('>I', int(sys.argv[2])))
+    if (tags[21], tags[26]) == mud and tags[20] == mud[0]:
+        kind = 'S'
+    elif (tags[20], tags[25]) == mud and tags[21] == mud[0]:
+        kind = 'R'
+    else:
+        kind = '?'
+    print(kind, tags[12].decode(), repr(rec[i:]))
+EOF
+    name='#capture --pcap writes the bytes read and sent, for Wireshark'
+    rm -f "$tmp/port" "$tmp/pcap"
+    python3 -I "$tmp/server.py" "$tmp/port" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+    : > "$tmp/raw"
+    {
+        printf '#capture --pcap %s\n' "$tmp/pcap"
+        printf '#connect m --no-tls 127.0.0.1 %s\n' "$(cat "$tmp/port")"
+        wait_for 'More>'
+        printf 'look\n'
+        wait_for 'Bye'
+        printf '#capture\n#quit\n'
+    } | "$POWWOW" > "$tmp/raw" 2>&1
+    wait $server
+    python3 -I "$tmp/pcap.py" "$tmp/pcap" "$(cat "$tmp/port")" > "$tmp/out"
+    has 'header 0xa1b2c3d4 2 4 65535 252'
+    has "R telnet b'More> \\xff\\xf9'"
+    has "S telnet b'look\\n'"
+    has "R telnet b'Bye\\r\\n'"
+
     # a MUD that tells after how long it got a telnet NOP, if within 3
     # seconds; with $2, it speaks telnet, sending a NOP itself first
     cat > "$tmp/server.py" <<'EOF'

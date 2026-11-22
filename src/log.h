@@ -5,7 +5,7 @@
 
 #include "charset.h"
 
-extern FILE *capturefile, *telnetfile, *recordfile, *moviefile;
+extern FILE *capturefile, *telnetfile, *pcapfile, *recordfile, *moviefile;
 extern vtime movie_last;
 
 void log_clearsleep(void);
@@ -14,6 +14,8 @@ int log_getsize(void);
 void log_resize(long newsize);
 void log_write(const char *str, int len, bool newline, enum charset cs);
 void log_telnet(const void *data, size_t len);
+void log_pcap_start(FILE *f);
+void log_pcap(int fd, bool to_mud, const void *data, size_t len);
 void log_record_line(const char *line);
 
 void reprint_writeline(const char *line);

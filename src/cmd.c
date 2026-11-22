@@ -118,7 +118,7 @@ static cmdstruct default_commands[] =
     C("cancel",     cmd_cancel,
       "[<number>]\tcancel editing session"),
     C("capture",    cmd_capture,
-      "[[--telnet] [>]<filename>]\tbegin/end of capture to file"),
+      "[[--telnet|--pcap] [>]<filename>]\tbegin/end of capture to file"),
     C("clear",      cmd_clear,
       "\tclear input line (use from spawned programs)"),
     C("connect",    cmd_connect,
@@ -2646,35 +2646,51 @@ static void cmd_capture(char *arg)
     strip_end(arg);        /* such as after Tab completion */
 
     /* --telnet: the bytes from the MUD, before the telnet protocol is
-     * interpreted */
-    bool telnet = strncmp(arg, "--telnet", 8) == 0
-                  && (arg[8] == ' ' || arg[8] == '\0');
-    if (telnet)
-        arg = skipspace(arg + 8);
-
-    if (*arg == '\0' && !telnet) {
-        if (capturefile != NULL) {
-            log_flush();
-            fclose(capturefile);
-            capturefile = NULL;
-            if (opt_info) {
-                wrap_printf("#end of capture to "
-                            LQUOTE "%s" RQUOTE ".", name);
-            }
-        } else if (telnetfile != NULL) {
-            fclose(telnetfile);
-            telnetfile = NULL;
-            if (opt_info) {
-                wrap_printf("#end of telnet capture to "
-                            LQUOTE "%s" RQUOTE ".", name);
-            }
-        } else {
-            wrap_printf("#capture to what file?");
+     * interpreted; --pcap: those and the bytes sent to it, for Wireshark */
+    static const struct {
+        const char *option;
+        const char *what;
+        FILE **file;
+    } kinds[] = {
+        { NULL,       "capture",        &capturefile },
+        { "--telnet", "telnet capture", &telnetfile  },
+        { "--pcap",   "pcap capture",   &pcapfile    },
+    };
+    const size_t nkinds = sizeof kinds / sizeof kinds[0];
+    size_t kind = 0;
+    for (size_t i = 1; i < nkinds; ++i) {
+        size_t len = strlen(kinds[i].option);
+        if (strncmp(arg, kinds[i].option, len) == 0
+            && (arg[len] == ' ' || arg[len] == '\0')) {
+            kind = i;
+            arg = skipspace(arg + len);
+            break;
         }
-    } else if (capturefile != NULL || telnetfile != NULL) {
+    }
+
+    size_t active = nkinds;     /* the capture active, if any */
+    for (size_t i = 0; i < nkinds; ++i) {
+        if (*kinds[i].file != NULL)
+            active = i;
+    }
+
+    if (*arg == '\0' && kind == 0) {
+        if (active == nkinds) {
+            wrap_printf("#capture to what file?");
+            return;
+        }
+        if (active == 0)
+            log_flush();
+        fclose(*kinds[active].file);
+        *kinds[active].file = NULL;
+        if (opt_info) {
+            wrap_printf("#end of %s to " LQUOTE "%s" RQUOTE ".",
+                        kinds[active].what, name);
+        }
+    } else if (active != nkinds) {
         message_printf("#capture already active.\n");
     } else if (*arg == '\0') {
-        wrap_printf("#capture --telnet to what file?");
+        wrap_printf("#capture %s to what file?", kinds[kind].option);
     } else {
         bool append = false;
         /* Append to log file, if the name starts with '>' */
@@ -2684,21 +2700,23 @@ static void cmd_capture(char *arg)
         }
         char buf[BUFSIZE];
         const char *file = file_name(arg, buf, sizeof(buf));
-        /* binary for --telnet, where \r\n stays as it is on Windows */
-        FILE *f = fopen(file, telnet ? (append ? "ab" : "wb")
-                                     : (append ? "a" : "w"));
+        /* binary for --telnet and --pcap, where \r\n stays as it is on
+         * Windows */
+        bool binary = kind != 0;
+        FILE *f = fopen(file, (binary
+                               ? (append ? "ab" : "wb")
+                               : (append ? "a" : "w")));
         if (f == NULL) {
             wrap_printf("#error writing file " LQUOTE "%s" RQUOTE, file);
         } else {
-            if (telnet)
-                telnetfile = f;
-            else
-                capturefile = f;
+            *kinds[kind].file = f;
+            if (f == pcapfile)
+                log_pcap_start(f);
             snprintf(name, sizeof(name), "%s", file);
             if (opt_info) {
                 wrap_printf("#%s to " LQUOTE "%s" RQUOTE " active, "
                             LQUOTE "#capture" RQUOTE " ends.",
-                            telnet ? "telnet capture" : "capture", file);
+                            kinds[kind].what, file);
             }
         }
     }

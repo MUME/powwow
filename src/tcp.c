@@ -267,6 +267,8 @@ static ssize_t conn_write(connsess *conn, const void *data, size_t len)
     if (n > 0) {
         update_now();
         conn->last_sent = now;
+        if (conn == main_connection && !conn->spawn)
+            log_pcap(conn->fd, true, data, n);
     }
     return n;
 }
@@ -542,8 +544,10 @@ int tcp_read(connsess *conn, void *buffer, size_t maxsize)
     }
     /* the bytes just read, before the telnet protocol is interpreted;
      * those held were written when they were read */
-    if (conn == main_connection && !conn->spawn && !rest)
+    if (conn == main_connection && !conn->spawn && !rest) {
         log_telnet(rawbuf + held, i);
+        log_pcap(conn->fd, false, rawbuf + held, i);
+    }
     i += held;
     conn->mpi_headlen = 0;
 

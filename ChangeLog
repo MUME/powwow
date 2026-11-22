@@ -51,6 +51,9 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	  sends longer ones.
 	* `#capture --telnet <file>' writes the bytes the MUD sends, with
 	  the telnet commands, such as IAC GA after a prompt.
+	* `#capture --pcap <file>' writes the bytes the MUD sends and those
+	  powwow sends, each read and write a packet with the time, for
+	  Wireshark and tcpdump.
 	* A telnet GA after a prompt ends it, so that text after it with
 	  no newline before it, such as MUME's prompt after the prompt
 	  of its pager, starts a line of its own.
