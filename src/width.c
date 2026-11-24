@@ -102,10 +102,14 @@ bool cell_add(struct cell_state *c, uint32_t cp)
         return false;
     c->gstate = gstate;
 #else
-    /* combining characters, skin tones, and characters after a ZWJ as
-     * in emoji sequences */
-    if (!join && !is_skin_tone(cp) && c->prev != UNICODE_ZWJ)
+    /* combining characters, skin tones, characters after a ZWJ as in
+     * emoji sequences, and the second regional indicator of a flag */
+    bool flag = (!c->flag && c->prev == c->first
+                 && is_regional_indicator(c->first)
+                 && is_regional_indicator(cp));
+    if (!join && !flag && !is_skin_tone(cp) && c->prev != UNICODE_ZWJ)
         return false;
+    c->flag = c->flag || flag;
 #endif
     c->prev = cp;
     if (c->width == 0)

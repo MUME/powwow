@@ -18,7 +18,7 @@ int utf8_width(const char *s, size_t len);
  * such as a character with combining characters, a flag, or emoji
  * joined by ZWJ.  Without libgrapheme, it is a character followed by
  * any combining characters and skin tones, and by the characters
- * joined to it by ZWJ.  An ASCII control character is always a
+ * joined to it by ZWJ, or a flag.  An ASCII control character is always a
  * cell of its own.  The line editor moves and deletes one cell at a
  * time.  On the input line, characters that join the cell before them,
  * such as combining characters, where there is none, at the start of
@@ -29,6 +29,7 @@ int utf8_width(const char *s, size_t len);
 struct cell_state {
     uint32_t first, prev;       /* its first and last characters */
     uint_least16_t gstate;      /* libgrapheme's state */
+    bool flag;                  /* a pair of regional indicators */
     int width;                  /* in terminal columns */
     bool on_space;              /* shown on a space, on the input line */
 };

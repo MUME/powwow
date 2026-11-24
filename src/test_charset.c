@@ -210,19 +210,25 @@ static void test_width(void)
     static const char ctl[] = "\001\xcc\x81" "a";
     check_int("combining after control", utf8_prev_cell(ctl, ctl + 3) - ctl,
               1);
-#ifdef HAVE_LIBGRAPHEME
     /* flag: two regional indicators */
     static const char flag[] = "x\xf0\x9f\x87\xb8\xf0\x9f\x87\xaay";
     check_int("flag next cell", utf8_next_cell(flag + 1, flag + 10) - flag, 9);
     check_int("flag prev cell", utf8_prev_cell(flag, flag + 9) - flag, 1);
     check_int("flag width", utf8_width(flag, 10), 4);
+    /* three regional indicators: a flag, and one on its own */
+    static const char ri3[] = "\xf0\x9f\x87\xb8\xf0\x9f\x87\xaa"
+        "\xf0\x9f\x87\xb3";
+    check_int("flag and one", utf8_cell_len(ri3, 12), 8);
+    /* the same letter three times: a pair, and one on its own */
+    static const char aaa[] = "\xf0\x9f\x87\xa6\xf0\x9f\x87\xa6"
+        "\xf0\x9f\x87\xa6";
+    check_int("same letter flag", utf8_cell_len(aaa, 12), 8);
     /* kiss with skin tones: 10 characters, 35 bytes */
     static const char kiss[] = "\xf0\x9f\x91\xa9\xf0\x9f\x8f\xbb\xe2\x80\x8d"
         "\xe2\x9d\xa4\xef\xb8\x8f\xe2\x80\x8d\xf0\x9f\x92\x8b\xe2\x80\x8d"
         "\xf0\x9f\x91\xa8\xf0\x9f\x8f\xbcz";
     check_int("long cluster", utf8_cell_len(kiss, sizeof kiss - 1), 35);
     check_int("long cluster width", utf8_width(kiss, sizeof kiss - 1), 3);
-#endif
 }
 
 int main(void)
