@@ -87,6 +87,10 @@ Changes from 1.3.2 to 2.0.0 (unreleased)
 	  after an `#option +info' in it, such as the last of the lines
 	  of #option that #save writes, and what is added to an older
 	  file; #option info takes effect at the end of the file.
+	* Fixed the cursor moving rows too high on a long input line
+	  after lines from the MUD wider than the screen, such as one
+	  that came in more than one read, and after such #print text
+	  and messages.
 
 	Platforms and building:
 	* Windows using Cygwin is supported, along with WSL2.  Cygwin

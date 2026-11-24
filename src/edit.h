@@ -41,6 +41,8 @@ void draw_prompt(void);
 void clear_input_line(bool deleteprompt);
 bool prompt_row_ended(void);
 void prompt_newline(void);
+void input_cursor(int *line, int *col);
+void input_moved_down(int line, int rows);
 void draw_input_line(void);
 void redraw_line(char *dummy);
 void redraw_line_noprompt(char *dummy);

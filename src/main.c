@@ -1748,8 +1748,6 @@ static void process_singleline(char **pbuf, int *psize)
             }
         }
         if (len == 0 && (!search_action(linestart, false) || opt_autoprint)) {
-            if (line0 < lines - 1)
-                ++line0;
             if (current_connection != main_connection) /* sub connection */
                 tty_message("##%s> ", current_connection->id);
 

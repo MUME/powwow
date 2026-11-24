@@ -298,6 +298,34 @@ void prompt_newline(void)
 }
 
 /*
+ * where the cursor is, before text is written there: on the input line,
+ * or else after the prompt
+ */
+void input_cursor(int *line, int *col)
+{
+    if (line_status == 0) {
+        *line = CURLINE(pos);
+        *col = CURCOL(pos);
+    } else {
+        *line = line0 + col0 / cols_1;
+        *col = col0 % cols_1;
+    }
+}
+
+/*
+ * text written from the row 'line' moved the cursor down 'rows' rows: the
+ * input line starts on the row where it ended
+ */
+void input_moved_down(int line, int rows)
+{
+    if (rows == 0)
+        return;
+    line0 = line + rows;
+    if (line0 > lines - 1)
+        line0 = lines - 1;
+}
+
+/*
  * clear current input line (deleteprompt if to clear also prompt)
  * cursor is left right after the prompt.
  *

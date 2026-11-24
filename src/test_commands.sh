@@ -2158,6 +2158,50 @@ if command -v tmux > /dev/null 2>&1; then
     tm capture-pane -p -t t | grep -Fqx -e '#setvar: lines=30 (default)' \
         || fail 'expected #setvar: lines=30 (default)'
     tm kill-server 2>/dev/null
+
+    # text that takes several rows, after a prompt that took several:
+    # the next prompt and the input line are drawn below it; test $1, with
+    # the #action $2, and the text $3 from the MUD after the prompt
+    rows_test() {
+        name=$1
+        printf '%0200d' 0 > "$tmp/rows1"
+        printf %b "$3" > "$tmp/rows2"
+        tm new-session -d -s t -x 80 -y 24 \
+            "env -i HOME=$tmp TERM=xterm PATH=/usr/bin:/bin $pw --no-config"
+        tm_wait '#help'
+        tm send-keys -t t -l '#option -info'
+        tm send-keys -t t Enter
+        if [ -n "$2" ]; then
+            tm send-keys -t t -l "#action $2"
+            tm send-keys -t t Enter
+        fi
+        # nothing typed once the prompt is there, which draws it again
+        tm send-keys -t t -l "#in rows2 (1000) #emulate !cat $tmp/rows2"
+        tm send-keys -t t Enter
+        tm send-keys -t t -l "#in rows1 (300) #emulate !cat $tmp/rows1"
+        tm send-keys -t t Enter
+        # tmux leaves out the space at the end
+        tm_wait 'mud-prompt>'
+        line=$(printf 'x%.0s' 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15)
+        line=$line$line$line$line$line
+        tm send-keys -t t -l "${line}yyyyy"
+        tm_wait yyyyy
+        tm send-keys -t t C-a
+        sleep 0.2
+        tm capture-pane -p -t t | sed -n 23p | grep -q '^mud-prompt> x' \
+            || fail 'expected the prompt and the input line on row 23'
+        at=$(tm display -p -t t '#{cursor_x},#{cursor_y}')
+        [ "$at" = 12,22 ] || fail "the cursor at $at, not 12,22"
+        tm kill-server 2>/dev/null
+    }
+    rows_test 'the input line after a line that takes several rows' '' \
+        "$(printf '%0200d' 0)\\nmud-prompt> "
+    long=$(printf 'q%.0s' 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15)
+    long=$long$long$long$long$long$long$long$long$long$long
+    rows_test 'the input line after #print takes several rows' \
+        ">+t ^trigger=#print $long" 'trigger\nmud-prompt> '
+    rows_test 'the input line after a message takes several rows' \
+        ">+t ^trigger=#$long" 'trigger\nmud-prompt> '
 fi
 
 run '#help &<function> shows an editing function and its keys' \

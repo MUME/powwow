@@ -627,6 +627,10 @@ static int vmessage(const char *format, va_list ap)
     vsnprintf(text, len + 1, format, ap2);
     va_end(ap2);
 
+    /* before the lines of 'text' are cut apart */
+    int from, col;
+    input_cursor(&from, &col);
+    int rows = tty_text_rows(text, col);
     if (msgattrbeg[0] == '\0') {
         tty_puts(text);
     } else {
@@ -642,6 +646,7 @@ static int vmessage(const char *format, va_list ap)
             line = nl + 1;
         }
     }
+    input_moved_down(from, rows);
     free(text);
     return len;
 }
@@ -1261,9 +1266,9 @@ static void sgr_reset_to_eol(void)
 
 /*
  * write string to tty, word wrapping to next line if needed.
- * don't print a final \n
+ * don't print a final \n; return the number of rows the cursor moved down
  */
-static void wrap_print(char *s)
+static int wrap_print(char *s)
 {
     char buf[BUFSIZE]; /* ASSERT(cols<BUFSIZE) */
     const char *end = s + strlen(s);
@@ -1272,6 +1277,7 @@ static void wrap_print(char *s)
     int l = printstrlen(s);
     bool reset = l > cols_1 && l < (int)strlen(s);
     bool follow = true;
+    int rows = 0;
 
     while (l >= cols_1 - col0 && *s != '\0') {
         char *p = buf;
@@ -1343,14 +1349,20 @@ static void wrap_print(char *s)
 
         *p = '\0';
         tty_printf("%s%s", buf, follow ? "\n" : "");
-        if (follow)
+        rows += tty_text_rows(buf, col0);
+        if (follow) {
+            ++rows;
             col0 = 0;
+        }
     }
 
-    if (follow)
+    if (follow) {
         tty_puts(s);
+        rows += tty_text_rows(s, col0);
+    }
     if (reset)
         sgr_reset_to_eol();
+    return rows;
 }
 
 /* restore the rendition of the text from the MUD, if needed */
@@ -1404,6 +1416,8 @@ void sgr_prompt_commit(const char *text, size_t len)
 void smart_print(const char *line, bool newline)
 {
     static ptr *ptrbuf = NULL;
+    int rows = 0, from, col;
+    input_cursor(&from, &col);
 
     do {
         if (ptrbuf == NULL) {
@@ -1420,9 +1434,10 @@ void smart_print(const char *line, bool newline)
         sgr_output_sync();
         sgr_output(buf, ptrlen(ptrbuf));
         if (opt_wrap) {
-            wrap_print(buf);
+            rows = wrap_print(buf);
         } else {
             tty_puts(buf);
+            rows = tty_text_rows(buf, col);
             int l = printstrlen(buf);
             if (l > cols_1 && l < ptrlen(ptrbuf))
                 sgr_reset_to_eol();
@@ -1434,7 +1449,9 @@ void smart_print(const char *line, bool newline)
     } else if (newline) {
         col0 = 0;
         tty_putc('\n');
+        ++rows;
     }
+    input_moved_down(from, rows);
 }
 
 /*

@@ -890,17 +890,13 @@ bool tty_cell_fits(int col, const char *s, size_t n, int w)
 }
 
 /*
- * write the prompt 's' from the start of a row, and return where the
- * cursor is after it, as rows * cols_1 + column (see input_layout_end):
- * the terminal starts a new row where a character, such as a wide one,
- * does not fit; a row that the prompt fills up to the last column used
- * by the input line is ended here, as the input line starts on the next
+ * add to 'rows' and set 'col' to where the cursor is after the terminal
+ * shows 's' from column 'col', and return whether its last character
+ * filled the row, so that it started a new one
  */
-int tty_put_prompt(const char *s)
+static bool text_layout(const char *s, int *rows, int *col)
 {
-    tty_puts(s);
-    int rows = 0, col = 0;
-    bool filled = false;        /* the last character filled the row */
+    bool filled = false;
     enum { NORM, ESCAPE, BRACKET } state = NORM;
     const char *end = s + strlen(s);
     while (s < end) {
@@ -915,23 +911,27 @@ int tty_put_prompt(const char *s)
                 state = ESCAPE;
             } else if (cp == '\b') {
                 filled = false;
-                if (col > 0)
-                    --col;
+                if (*col > 0)
+                    --*col;
             } else if (cp == '\r') {
                 filled = false;
-                col = 0;
+                *col = 0;
+            } else if (cp == '\n') {
+                filled = false;
+                ++*rows;
+                *col = 0;
             } else if (w > 0) {
                 filled = false;
-                if (col + w > cols) {
-                    ++rows;
-                    col = 0;
+                if (*col + w > cols) {
+                    ++*rows;
+                    *col = 0;
                 }
-                col += w;
+                *col += w;
                 /* without the wrap glitch, the last column wraps */
-                if (!wrapglitch && col == cols) {
+                if (!wrapglitch && *col == cols) {
                     filled = true;
-                    ++rows;
-                    col = 0;
+                    ++*rows;
+                    *col = 0;
                 }
             }
             break;
@@ -946,6 +946,32 @@ int tty_put_prompt(const char *s)
             break;
         }
     }
+    return filled;
+}
+
+/*
+ * the number of rows the cursor moves down when the terminal shows 's'
+ * from column 'col'
+ */
+int tty_text_rows(const char *s, int col)
+{
+    int rows = 0;
+    text_layout(s, &rows, &col);
+    return rows;
+}
+
+/*
+ * write the prompt 's' from the start of a row, and return where the
+ * cursor is after it, as rows * cols_1 + column (see input_layout_end):
+ * the terminal starts a new row where a character, such as a wide one,
+ * does not fit; a row that the prompt fills up to the last column used
+ * by the input line is ended here, as the input line starts on the next
+ */
+int tty_put_prompt(const char *s)
+{
+    tty_puts(s);
+    int rows = 0, col = 0;
+    bool filled = text_layout(s, &rows, &col);
     if (filled) {
         /*
          * some terminals, such as Windows Terminal, wait to wrap all
