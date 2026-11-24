@@ -27,6 +27,8 @@ enum {
     UNICODE_COMBINING_FIRST = 0x300,    /* COMBINING DIACRITICAL MARKS */
     UNICODE_ZWJ = 0x200d,               /* ZERO WIDTH JOINER */
     UNICODE_VS16 = 0xfe0f,              /* VARIATION SELECTOR-16 */
+    UNICODE_SKIN_FIRST = 0x1f3fb,       /* EMOJI MODIFIER FITZPATRICK */
+    UNICODE_SKIN_LAST = 0x1f3ff,        /* TYPE-1-2 to TYPE-6: skin tones */
     UNICODE_REGIONAL_A = 0x1f1e6,       /* REGIONAL INDICATOR SYMBOL */
     UNICODE_REGIONAL_Z = 0x1f1ff        /* LETTER A to Z, of flags */
 };
@@ -66,6 +68,11 @@ static bool is_control(uint32_t cp)
     return cp < ' ' || cp == ASCII_DEL;
 }
 
+static bool is_skin_tone(uint32_t cp)
+{
+    return cp >= UNICODE_SKIN_FIRST && cp <= UNICODE_SKIN_LAST;
+}
+
 static bool is_regional_indicator(uint32_t cp)
 {
     return cp >= UNICODE_REGIONAL_A && cp <= UNICODE_REGIONAL_Z;
@@ -95,9 +102,9 @@ bool cell_add(struct cell_state *c, uint32_t cp)
         return false;
     c->gstate = gstate;
 #else
-    /* combining characters, and characters after a ZWJ as in emoji
-     * sequences */
-    if (!join && c->prev != UNICODE_ZWJ)
+    /* combining characters, skin tones, and characters after a ZWJ as
+     * in emoji sequences */
+    if (!join && !is_skin_tone(cp) && c->prev != UNICODE_ZWJ)
         return false;
 #endif
     c->prev = cp;

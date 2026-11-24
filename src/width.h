@@ -17,7 +17,8 @@ int utf8_width(const char *s, size_t len);
  * A "cell" is what the terminal draws as a unit: a grapheme cluster,
  * such as a character with combining characters, a flag, or emoji
  * joined by ZWJ.  Without libgrapheme, it is a character followed by
- * any combining characters.  An ASCII control character is always a
+ * any combining characters and skin tones, and by the characters
+ * joined to it by ZWJ.  An ASCII control character is always a
  * cell of its own.  The line editor moves and deletes one cell at a
  * time.  On the input line, characters that join the cell before them,
  * such as combining characters, where there is none, at the start of

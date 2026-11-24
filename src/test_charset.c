@@ -186,6 +186,12 @@ static void test_width(void)
     check_int("zwj cell width", utf8_cell_width(z + 2, 13), 2);
     /* U+2764 U+FE0F: heart in emoji presentation */
     check_int("vs16 width", utf8_width("\xe2\x9d\xa4\xef\xb8\x8f", 6), 2);
+    /* U+1F44D U+1F3FE: thumbs up with a skin tone */
+    static const char thumbs[] = "\xf0\x9f\x91\x8d\xf0\x9f\x8f\xbex";
+    check_int("skin tone cell", utf8_cell_len(thumbs, 9), 8);
+    check_int("skin tone width", utf8_width(thumbs, 9), 3);
+    check_int("skin tone prev cell", utf8_prev_cell(thumbs, thumbs + 8)
+              - thumbs, 0);
     check_int("cr lf", utf8_cell_len("\r\n", 2), 1);
     check_int("control", utf8_cell_len("\033\xcc\x81", 3), 1);
     /* U+0301 with nothing before it: it joins the next cell, but on the
