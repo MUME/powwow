@@ -1748,8 +1748,12 @@ static void process_singleline(char **pbuf, int *psize)
             }
         }
         if (len == 0 && (!search_action(linestart, false) || opt_autoprint)) {
-            if (current_connection != main_connection) /* sub connection */
-                tty_message("##%s> ", current_connection->id);
+            if (current_connection != main_connection) {
+                /* sub connection: the line goes after "##id> " */
+                const char *id = current_connection->id;
+                tty_message("##%s> ", id);
+                col0 = 4 + utf8_width(id, strlen(id));
+            }
 
             smart_print(linestart, true);
         }

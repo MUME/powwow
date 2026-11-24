@@ -3028,6 +3028,59 @@ if command -v tmux > /dev/null 2>&1 && [ -f "$tmp/cert.pem" ]; then
     wait $server 2>/dev/null
 fi
 
+# with #option wrap, a line from a connection that is not the default one
+# is wrapped after the "##sub> " before it: from two MUDs without TLS,
+# where the first, sub, sends the line once the file $tmp/go is there
+if command -v tmux > /dev/null 2>&1; then
+    name='#option wrap wraps a line after ##<connection>>'
+    cat > "$tmp/two_muds.py" <<'EOF'
+import os, socket, sys, time
+port_file, go, line = sys.argv[1:4]
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+s.listen(2)
+with open(port_file + '.new', 'w') as f:
+    f.write(str(s.getsockname()[1]))
+os.rename(port_file + '.new', port_file)
+sub, _ = s.accept()
+main, _ = s.accept()
+while not os.path.exists(go):
+    time.sleep(0.01)
+sub.sendall(line.encode() + b'\r\n')
+while main.recv(4096):
+    pass
+EOF
+    rm -f "$tmp/port" "$tmp/go"
+    words='abcdefghi abcdefghi abcdefghi abcdefghi abcdefghi abcdefghi'
+    python3 -I "$tmp/two_muds.py" "$tmp/port" "$tmp/go" \
+        "$words abcdefghi endofline" &
+    server=$!
+    i=0
+    until [ -s "$tmp/port" ] || [ $i -ge 500 ]; do
+        sleep 0.01
+        i=$((i + 1))
+    done
+    port=$(cat "$tmp/port")
+    tm new-session -d -s t -x 80 -y 24 \
+        "env -i HOME=$tmp TERM=xterm PATH=/usr/bin:/bin $pw --no-config"
+    tm_wait '#help'
+    tm send-keys -t t -l '#option +wrap'
+    tm send-keys -t t Enter
+    tm send-keys -t t -l "#connect sub --no-tls 127.0.0.1 $port"
+    tm send-keys -t t Enter
+    tm_wait 'is now "sub"'
+    tm send-keys -t t -l "#connect main --no-tls 127.0.0.1 $port"
+    tm send-keys -t t Enter
+    tm_wait 'is now "main"'
+    touch "$tmp/go"
+    tm_wait endofline
+    tm capture-pane -p -t t | grep -Fqx -e "##sub> $words abcdefghi" \
+        || fail 'expected the line wrapped before endofline'
+    tm kill-server 2>/dev/null
+    kill $server 2>/dev/null
+    wait $server 2>/dev/null
+fi
+
 # #zap of a connection speaking TLS, to a MUD that does not reply to the
 # close_notify of powwow for 10 seconds, waits for at most a second
 if [ -f "$tmp/cert.pem" ]; then
